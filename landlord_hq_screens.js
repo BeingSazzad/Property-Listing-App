@@ -1,28 +1,35 @@
 /* Landlord HQ — Interactive Prototype */
+const imgUrl = (id, w = 600) =>
+    `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=85&fm=jpg`;
+const avatarUrl = (seed) => `https://i.pravatar.cc/152?u=landlordhq-${seed}`;
+
 const IMG = {
-    hero: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80',
+    fallback: imgUrl('1600585154526-990dced4db0d', 400),
+    hero: imgUrl('1600585154526-990dced4db0d', 900),
     props: [
-        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=600&q=80',
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80',
+        imgUrl('1600585154526-990dced4db0d', 800),
+        imgUrl('1600596542815-ffad4c1539a9', 800),
+        imgUrl('1564013799919-ab600027ffc6', 800),
+        imgUrl('1512917774080-9991f1c4c750', 800),
     ],
     avatar: {
-        john: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
-        sarah: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-        david: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-        michael: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80',
-        plumber: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80',
+        john: avatarUrl('john'),
+        sarah: avatarUrl('sarah'),
+        david: avatarUrl('david'),
+        michael: avatarUrl('michael'),
+        plumber: avatarUrl('plumber'),
+        electric: avatarUrl('electric'),
+        heating: avatarUrl('heating'),
     },
     maint: [
-        'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80',
-        'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=300&q=80',
-        'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&w=300&q=80',
+        imgUrl('1584622650111-993a426fbf0a', 400),
+        imgUrl('1621905251189-08b45d6a269e', 400),
+        imgUrl('1556912172-45b7abe8b7e1', 400),
     ],
     interior: [
-        'https://images.unsplash.com/photo-1560448204-e02f11c45772?auto=format&fit=crop&w=200&q=80',
-        'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=200&q=80',
-        'https://images.unsplash.com/photo-1631889992176-5e84c3802040?auto=format&fit=crop&w=200&q=80',
+        imgUrl('1618221195710-dd6b41faaea6', 400),
+        imgUrl('1616486338812-3dadae4b4ace', 400),
+        imgUrl('1616594039964-ae9021a400a0', 400),
     ],
 };
 
@@ -36,7 +43,7 @@ const PROPERTIES = [
 const STATE = {
     screen: 'dashboard', tab: 'overview', tenantTab: 'profile',
     propertyId: 0, tenantId: 0, maintId: 0, invoiceId: 0, roomId: 0,
-    propertiesView: 'grid', propertiesFilter: 'all', showPropFilters: false,
+    propertiesView: 'list', propertiesFilter: 'all', showPropFilters: false,
     propertiesAdvanced: { rent: 'all', beds: 'any' },
     search: { properties: '', tenants: '', messages: '' },
     maintFilter: 'open', logPriority: 'Medium',
@@ -64,7 +71,7 @@ const FAQ_ITEMS = [
     { id:4, cat:'Maintenance', q:'How do I log a maintenance issue?', a:'Use the + FAB menu and select "Log Maintenance", or open a property → Maintenance section → "Log New Issue". Add a title, priority, description, and photos.' },
     { id:5, cat:'Maintenance', q:'How are contractors assigned?', a:'You can assign contractors manually from the maintenance detail screen, or enable auto-assignment in Preferences. Contractors receive notifications via the app.' },
     { id:6, cat:'Compliance', q:'What compliance documents should I track?', a:'We recommend tracking Gas Safety Certificate, Electrical Installation Condition Report (EICR), EPC rating, smoke/CO alarms, landlord insurance, and Right to Rent checks. Reminders appear on your dashboard.' },
-    { id:7, cat:'Account', q:'How do I change my password?', a:'Go to Profile → Security → Password. Enter your current password, then your new password twice. We recommend enabling two-factor authentication for extra security.' },
+    { id:7, cat:'Account', q:'How do I change my password?', a:'Go to Profile → Change Password. Enter your current password, then your new password twice.' },
     { id:8, cat:'Account', q:'How do I cancel my subscription?', a:'Go to Profile → Subscription → Manage Plan. You can downgrade or cancel at any time. Your data remains accessible until the end of the billing period.' },
 ];
 
@@ -114,10 +121,10 @@ const PREF_OPTIONS = {
     dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
     timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
 };
-const NO_NAV = ['chat','tenant-detail','property-detail','maintenance-detail','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','preferences','payment-methods','subscription','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','edit-property','invite-tenant','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference'];
+const NO_NAV = ['chat','tenant-detail','property-detail','maintenance-detail','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','preferences','payment-methods','subscription','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','invite-tenant','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference'];
 
 function go(screen, opts = {}) {
-    Object.assign(STATE, opts, { screen, drawer: false, fab: false });
+    Object.assign(STATE, opts, { screen, drawer: false, fab: false, showPropFilters: false });
     if (screen === 'property-detail') STATE.tab = opts.tab ?? 'overview';
     if (screen === 'tenant-detail') { STATE.tenantId = opts.tenantId ?? STATE.tenantId; STATE.tenantTab = opts.tenantTab || 'profile'; }
     if (screen === 'faq-detail') STATE.faqId = opts.faqId ?? 0;
@@ -138,7 +145,7 @@ function back() {
         'document-preview':'property-detail','inventory-room':'property-detail',
         'personal-info':'profile','notifications-settings':'profile',
         'security':'profile','password':'profile','preferences':'profile',
-        'payment-methods':'profile','subscription':'profile','help-support':'profile',
+        'payment-methods':'profile','subscription':'profile','help-support':'profile','transaction-history':'profile',
         'faq':'profile','faq-detail':'faq','privacy':'profile','terms':'profile','about':'profile',
         'edit-property':'property-detail','invite-tenant':'property-detail',
         'edit-tenant':'tenant-detail','reschedule-inspection':'property-detail',
@@ -168,20 +175,36 @@ function setTenantTab(tab) { STATE.tenantTab = tab; render(); }
 function setPropertiesView(v) { STATE.propertiesView = v; render(); }
 function setPropFilter(f) { STATE.propertiesFilter = f; render(); }
 function setPropAdvanced(key, val) { STATE.propertiesAdvanced[key] = val; render(); }
-function togglePropFilters() { STATE.showPropFilters = !STATE.showPropFilters; render(); }
+function togglePropFilters() { STATE.showPropFilters = !STATE.showPropFilters; if (STATE.showPropFilters) STATE.drawer = false; render(); }
+function closePropFilters() { STATE.showPropFilters = false; render(); }
 function resetPropFilters() {
     STATE.propertiesFilter = 'all';
     STATE.propertiesAdvanced = { rent: 'all', beds: 'any' };
     STATE.search.properties = '';
-    STATE.showPropFilters = false;
     render();
+}
+
+function filterProperties() {
+    const q = STATE.search.properties.toLowerCase();
+    const adv = STATE.propertiesAdvanced;
+    return PROPERTIES.filter(p => {
+        const matchFilter = STATE.propertiesFilter === 'all' ||
+            (STATE.propertiesFilter === 'occupied' && p.status === 'Occupied') ||
+            (STATE.propertiesFilter === 'vacant' && p.status === 'Vacant');
+        const matchSearch = !q || p.name.toLowerCase().includes(q) || p.address.toLowerCase().includes(q) ||
+            (p.tenant && p.tenant.toLowerCase().includes(q));
+        const rentNum = parseInt(p.rent.replace(/[^\d]/g, ''), 10);
+        const matchRent = adv.rent === 'all' || (adv.rent === 'under2k' && rentNum < 2000) || (adv.rent === 'over2k' && rentNum >= 2000);
+        const matchBeds = adv.beds === 'any' || p.beds >= parseInt(adv.beds, 10);
+        return matchFilter && matchSearch && matchRent && matchBeds;
+    });
 }
 function setMaintFilter(f) { STATE.maintFilter = f; render(); }
 function setLogPriority(p) { STATE.logPriority = p; render(); }
 function setSearch(key, val) { STATE.search[key] = val; render(); }
 function toggleSwitch(key) { STATE.toggles[key] = !STATE.toggles[key]; render(); }
 
-function toggleDrawer() { STATE.drawer = !STATE.drawer; render(); }
+function toggleDrawer() { STATE.drawer = !STATE.drawer; if (STATE.drawer) STATE.showPropFilters = false; render(); }
 function toggleFab() { STATE.fab = !STATE.fab; render(); }
 
 function toast(msg) {
@@ -253,9 +276,9 @@ const CONVERSATIONS = [
     { img: IMG.avatar.sarah, name: 'Sarah Johnson', sub: '12 Park Lane', preview: 'Hi, the maintenance issue has been fixed!', time: '10:30 AM', unread: 2, online: true },
     { img: IMG.avatar.plumber, name: 'Plumber Pro', sub: 'Regarding job #M-125', preview: 'Please let me know when you are free for access.', time: '9:15 AM', unread: 1, online: true },
     { img: IMG.avatar.david, name: 'David Wilson', sub: '45 Queens Road', preview: 'Thanks for the update.', time: 'Yesterday', unread: 0, online: false },
-    { img: IMG.avatar.michael, name: 'Electric Fixers', sub: 'Job completed — #M-120', preview: 'The issue has been fixed.', time: 'Yesterday', unread: 0, online: false },
+    { img: IMG.avatar.electric, name: 'Electric Fixers', sub: 'Job completed — #M-120', preview: 'The issue has been fixed.', time: 'Yesterday', unread: 0, online: false },
     { img: IMG.avatar.michael, name: 'Michael Lee', sub: '15 Victoria Ave', preview: 'Can we schedule an inspection?', time: '2d ago', unread: 0, online: false },
-    { img: IMG.avatar.plumber, name: 'Heating Experts', sub: 'Boiler service completed', preview: 'Invoice uploaded.', time: '2d ago', unread: 0, online: false },
+    { img: IMG.avatar.heating, name: 'Heating Experts', sub: 'Boiler service completed', preview: 'Invoice uploaded.', time: '2d ago', unread: 0, online: false },
 ];
 
 const messagesHeader = () => `
@@ -281,7 +304,6 @@ const msgRow = (c) => `
     </div>
     <div class="inbox-body">
         <p class="inbox-name">${c.name}</p>
-        <p class="inbox-sub">${c.sub}</p>
         <p class="inbox-preview ${c.unread ? 'inbox-preview-unread' : ''}">${c.preview}</p>
     </div>
     <div class="inbox-meta">
@@ -301,13 +323,17 @@ const BOTTOM_NAV = [
 ];
 
 const DRAWER_NAV = [
-    { section: 'Account' },
-    ['user-round', 'Profile & Settings', 'profile'],
-    ['bell', 'Notifications', 'notifications-list'],
-    { section: 'Finance' },
+    ['user-round', 'Profile', 'profile'],
     ['wallet', 'Financial', 'financial'],
-    { section: 'Support' },
-    ['life-buoy', 'Help & Support', 'help-support'],
+    ['life-buoy', 'Help & FAQ', 'help-support'],
+];
+
+const TRANSACTIONS = [
+    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Paid', date: 'Mar 1, 2025', prop: '12 Park Lane', iid: 0 },
+    { tenant: 'David Wilson', amount: '£1,850', status: 'Overdue', date: 'Mar 1, 2025', prop: '45 Queens Rd', iid: 1 },
+    { tenant: 'Michael Lee', amount: '£1,950', status: 'Paid', date: 'Feb 1, 2025', prop: '15 Victoria Ave', iid: 2 },
+    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Paid', date: 'Feb 1, 2025', prop: '12 Park Lane', iid: 0 },
+    { tenant: 'David Wilson', amount: '£1,850', status: 'Paid', date: 'Feb 1, 2025', prop: '45 Queens Rd', iid: 1 },
 ];
 
 const DRAWER_QUICK = [
@@ -399,13 +425,10 @@ const fabFloat = () => {
 
 const drawer = () => {
     const isActive = (sc) => STATE.screen === sc;
-    const navHtml = DRAWER_NAV.map(item => {
-        if (item.section) return `<p class="drawer-section">${item.section}</p>`;
-        const [ic, label, sc] = item;
-        return `<button data-go="${sc}" class="drawer-item ${isActive(sc) ? 'active' : ''}">
+    const navHtml = DRAWER_NAV.map(([ic, label, sc]) => `
+        <button data-go="${sc}" class="drawer-item ${isActive(sc) ? 'active' : ''}">
             <i data-lucide="${ic}" class="w-5 h-5"></i><span>${label}</span>
-        </button>`;
-    }).join('');
+        </button>`).join('');
     return `
     <div class="drawer-overlay ${STATE.drawer?'open':''}" data-action="drawer-close"></div>
     <div class="drawer ${STATE.drawer?'open':''}">
@@ -417,12 +440,10 @@ const drawer = () => {
             </div>
         </div>
         <nav class="drawer-nav">${navHtml}</nav>
-        <div class="drawer-quick">
-            <p class="drawer-section">Quick actions</p>
-            ${DRAWER_QUICK.map(([ic, label, sc]) => `
-            <button data-go="${sc}" class="drawer-quick-item">
-                <i data-lucide="${ic}" class="w-4 h-4"></i><span>${label}</span>
-            </button>`).join('')}
+        <div class="drawer-footer">
+            <button data-action="toast" data-msg="Signed out successfully" class="drawer-logout">
+                <i data-lucide="log-out" class="w-5 h-5"></i><span>Log out</span>
+            </button>
         </div>
     </div>`;
 };
@@ -439,6 +460,45 @@ const fabMenu = () => `
         </button>
     </div>
 </div>`;
+
+const propFilterSheet = () => {
+    if (!STATE.showPropFilters || STATE.screen !== 'properties') return '';
+    const adv = STATE.propertiesAdvanced;
+    const count = filterProperties().length;
+    const opt = (key, val, label, active) =>
+        `<button type="button" data-adv-filter="${key}" data-adv-val="${val}" class="filter-sheet-option ${active ? 'active' : ''}">${label}</button>`;
+    return `
+    <div class="filter-sheet-overlay open" data-action="close-prop-filters"></div>
+    <div class="filter-sheet open">
+        <div class="filter-sheet-handle"></div>
+        <div class="filter-sheet-header">
+            <p class="filter-sheet-title">Filters</p>
+            <button type="button" data-action="reset-prop-filters" class="filter-sheet-reset">Reset</button>
+        </div>
+        <div class="filter-sheet-body">
+            <div class="filter-sheet-group">
+                <p class="filter-sheet-label">Monthly Rent</p>
+                <div class="filter-sheet-grid filter-sheet-grid-3">
+                    ${opt('rent', 'all', 'All', adv.rent === 'all')}
+                    ${opt('rent', 'under2k', 'Under £2k', adv.rent === 'under2k')}
+                    ${opt('rent', 'over2k', '£2k+', adv.rent === 'over2k')}
+                </div>
+            </div>
+            <div class="filter-sheet-group">
+                <p class="filter-sheet-label">Bedrooms</p>
+                <div class="filter-sheet-grid filter-sheet-grid-4">
+                    ${opt('beds', 'any', 'Any', adv.beds === 'any')}
+                    ${opt('beds', '1', '1+', adv.beds === '1')}
+                    ${opt('beds', '2', '2+', adv.beds === '2')}
+                    ${opt('beds', '3', '3+', adv.beds === '3')}
+                </div>
+            </div>
+        </div>
+        <div class="filter-sheet-footer">
+            <button type="button" data-action="close-prop-filters" class="btn-primary w-full py-3.5 text-[14px]">Show ${count} propert${count === 1 ? 'y' : 'ies'}</button>
+        </div>
+    </div>`;
+};
 
 const PROP_SECTIONS = { details:'Overview', tenant:'Tenant', documents:'Documents', maintenance:'Maintenance', inspection:'Inspection', compliance:'Compliance', inventory:'Inventory', timeline:'Timeline' };
 
@@ -471,24 +531,27 @@ const propSectionBar = (title, subtitle) => `
 
 /* ─── Screens ─── */
 function screenDashboard() {
+    const openMaint = MAINTENANCE_ITEMS.filter(m => m.status === 'open').length;
+    const tenantCount = TENANTS.length;
+    const monthlyRent = PROPERTIES.reduce((s, p) => s + parseInt(p.rent.replace(/[^\d]/g, ''), 10), 0);
     return `${topBar('Landlord HQ', { sub: 'Good morning, John 👋' })}
     <div class="gutter-x pb-6 space-y-5 screen-enter">
         <div class="portfolio-card">
             ${buildingSvg}
             <p class="text-[12px] font-medium text-blue-100">Portfolio Overview</p>
             <p class="text-[13px] text-blue-100/80 mt-3">Total Properties</p>
-            <p class="text-[32px] font-bold leading-none mt-0.5">12</p>
+            <p class="text-[32px] font-bold leading-none mt-0.5">${PROPERTIES.length}</p>
             <button data-go="properties" class="view-all-btn">View all</button>
         </div>
         <div class="grid grid-cols-2 gap-3">
             ${[
-                ['users','Active Tenants','18','#ECFDF5','#059669','tenants'],
-                ['wrench','Open Maintenance','7','#FFFBEB','#D97706','maintenance'],
-                ['circle-pound-sterling','Monthly Rent','£24,560','#EFF6FF','#2563EB','financial'],
+                ['users','Active Tenants',tenantCount,'#ECFDF5','#059669','tenants'],
+                ['wrench','Open Maintenance',openMaint,'#FFFBEB','#D97706','maintenance'],
+                ['banknote','Monthly Rent','£'+monthlyRent.toLocaleString(),'#EFF6FF','#2563EB','financial'],
                 ['alert-circle','Overdue Rent','£4,250','#FEF2F2','#DC2626','financial'],
             ].map(([ic,l,v,bg,c,go])=>`
             <button data-go="${go}" class="stat-mini card text-left">
-                <div class="stat-icon" style="background:${bg};color:${c}"><i data-lucide="${ic==='circle-pound-sterling'?'banknote':ic}" class="w-[18px] h-[18px]"></i></div>
+                <div class="stat-icon" style="background:${bg};color:${c}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></div>
                 <p class="text-[11px] text-[#64748B] font-medium">${l}</p>
                 <p class="text-[20px] font-bold text-[#0F172A] mt-0.5">${v}</p>
             </button>`).join('')}
@@ -496,8 +559,8 @@ function screenDashboard() {
         <div>
             <h3 class="text-[15px] font-bold text-[#0F172A] mb-3">Upcoming Reminders</h3>
             <div class="space-y-2">
-                ${[['flame','Gas Certificate Expiry','12 Park Lane','3 days left','#FEE2E2','#DC2626',0],['search','Inspection','45 Queens Road','5 days left','#FEF3C7','#D97706',1],['banknote','Rent Review','88 King Street','10 days left','#FEF3C7','#D97706',2]].map(([ic,t,p,d,bg,c,pid])=>`
-                <button data-go="property-detail" data-pid="${pid}" data-tab="compliance" class="card w-full p-3.5 flex items-center gap-3 text-left">
+                ${[['flame','Gas Certificate Expiry','12 Park Lane','3 days left','#FEE2E2','#DC2626',0,'compliance'],['search','Inspection','45 Queens Road','5 days left','#FEF3C7','#D97706',1,'inspection'],['banknote','Rent Review','88 King Street','10 days left','#FEF3C7','#D97706',2,'overview']].map(([ic,t,p,d,bg,c,pid,tab])=>`
+                <button data-go="property-detail" data-pid="${pid}" data-tab="${tab}" class="card w-full p-3.5 flex items-center gap-3 text-left">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:${bg};color:${c}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></div>
                     <div class="flex-1 min-w-0"><p class="text-[13px] font-semibold text-[#0F172A]">${t}</p><p class="text-[11px] text-[#64748B]">${p}</p></div>
                     <span class="badge shrink-0" style="background:${bg};color:${c}">${d}</span>
@@ -517,20 +580,9 @@ function screenDashboard() {
 
 function screenProperties() {
     const grid = STATE.propertiesView === 'grid';
-    const q = STATE.search.properties.toLowerCase();
-    const adv = STATE.propertiesAdvanced;
-    const filtered = PROPERTIES.filter(p => {
-        const matchFilter = STATE.propertiesFilter === 'all' ||
-            (STATE.propertiesFilter === 'occupied' && p.status === 'Occupied') ||
-            (STATE.propertiesFilter === 'vacant' && p.status === 'Vacant');
-        const matchSearch = !q || p.name.toLowerCase().includes(q) || p.address.toLowerCase().includes(q) ||
-            (p.tenant && p.tenant.toLowerCase().includes(q));
-        const rentNum = parseInt(p.rent.replace(/[^\d]/g, ''), 10);
-        const matchRent = adv.rent === 'all' || (adv.rent === 'under2k' && rentNum < 2000) || (adv.rent === 'over2k' && rentNum >= 2000);
-        const matchBeds = adv.beds === 'any' || p.beds >= parseInt(adv.beds, 10);
-        return matchFilter && matchSearch && matchRent && matchBeds;
-    });
+    const filtered = filterProperties();
     const counts = { all: PROPERTIES.length, occupied: PROPERTIES.filter(p=>p.status==='Occupied').length, vacant: PROPERTIES.filter(p=>p.status==='Vacant').length };
+    const adv = STATE.propertiesAdvanced;
     const activeAdv = adv.rent !== 'all' || adv.beds !== 'any';
     const propCard = (p, i) => grid ? `
         <button data-go="property-detail" data-pid="${p.id}" class="card overflow-hidden text-left">
@@ -564,33 +616,11 @@ function screenProperties() {
                 <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
                 <input data-search="properties" type="text" value="${STATE.search.properties}" placeholder="Search properties..." class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
             </div>
-            <button type="button" data-action="toggle-prop-filters" class="search-bar w-11 justify-center px-0 shrink-0 relative ${activeAdv || STATE.showPropFilters ? 'ring-2 ring-[#2563EB]' : ''}">
-                <i data-lucide="sliders-horizontal" class="w-[18px] h-[18px] text-[#64748B]"></i>
-                ${activeAdv ? '<span class="absolute top-1 right-1 w-2 h-2 bg-[#2563EB] rounded-full"></span>' : ''}
+            <button type="button" data-action="toggle-prop-filters" class="filter-btn ${activeAdv ? 'filter-btn-active' : ''}">
+                <i data-lucide="sliders-horizontal" class="w-[18px] h-[18px]"></i>
+                ${activeAdv ? '<span class="filter-btn-dot"></span>' : ''}
             </button>
         </div>
-        ${STATE.showPropFilters ? `
-        <div class="card p-4 space-y-4 filter-panel">
-            <div class="flex items-center justify-between">
-                <p class="text-[14px] font-bold text-[#0F172A]">Advanced Filters</p>
-                <button type="button" data-action="reset-prop-filters" class="text-[12px] font-semibold text-[#2563EB]">Reset all</button>
-            </div>
-            <div>
-                <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide mb-2">Monthly Rent</p>
-                <div class="flex flex-wrap gap-2">
-                    ${[['all','All'],['under2k','Under £2k'],['over2k','£2k+']].map(([k,l])=>`
-                    <button type="button" data-adv-filter="rent" data-adv-val="${k}" class="filter-chip ${adv.rent===k?'active':''}">${l}</button>`).join('')}
-                </div>
-            </div>
-            <div>
-                <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide mb-2">Bedrooms</p>
-                <div class="flex flex-wrap gap-2">
-                    ${[['any','Any'],['1','1+'],['2','2+'],['3','3+']].map(([k,l])=>`
-                    <button type="button" data-adv-filter="beds" data-adv-val="${k}" class="filter-chip ${adv.beds===k?'active':''}">${l}</button>`).join('')}
-                </div>
-            </div>
-            <button type="button" data-action="toggle-prop-filters" class="btn-primary w-full py-2.5 text-[13px]">Apply Filters (${filtered.length})</button>
-        </div>` : ''}
         <div class="flex gap-2 overflow-x-auto pb-0.5">
             ${[['all','All',counts.all],['occupied','Occupied',counts.occupied],['vacant','Vacant',counts.vacant]].map(([k,l,n])=>`
             <button type="button" data-prop-filter="${k}" class="filter-chip ${STATE.propertiesFilter===k?'active':''}">${l} (${n})</button>`).join('')}
@@ -735,7 +765,6 @@ function screenPropertyDetail() {
             <img src="${IMG.props[STATE.propertyId]}" class="img-cover" alt="">
             <div class="absolute inset-0 hero-gradient"></div>
             <button data-action="back" class="top-icon-btn absolute bg-white/90 rounded-full shadow-md" style="top:12px;left:20px"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <button class="top-icon-btn absolute bg-white/90 rounded-full shadow-md" style="top:12px;right:20px"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
             <span class="badge absolute bottom-3 left-5" style="background:${p.statusColor[0]};color:${p.statusColor[1]}">${p.status}</span>
         </div>
         <div class="gutter-x pt-3 pb-1 flex items-start justify-between gap-3">
@@ -931,10 +960,6 @@ function screenChat() {
             </div>
             <button data-action="toast" data-msg="Calling Sarah Johnson" class="chat-header-action"><i data-lucide="phone" class="w-[18px] h-[18px]"></i></button>
         </div>
-        <div class="chat-context gutter-x">
-            <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
-            <span>Kitchen sink leaking · Maintenance #M-084</span>
-        </div>
         <div class="screen-body-inner gutter-x py-4 chat-messages">
             <p class="chat-date-label">Today</p>
             <div class="chat-bubble-in">
@@ -961,32 +986,26 @@ function screenChat() {
 function screenProfile() {
     return `${topBar('Profile', { hideBell: true })}
     <div class="gutter-x pb-8 screen-enter">
-        <div class="profile-header">
-            <div class="profile-avatar-wrap">
-                <img src="${IMG.avatar.john}" class="w-[88px] h-[88px] rounded-full object-cover ring-4 ring-white shadow-md" alt="">
-                <button data-go="personal-info" class="profile-edit-badge"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+        <button data-go="personal-info" class="profile-card">
+            <img src="${IMG.avatar.john}" class="profile-card-avatar" alt="">
+            <div class="profile-card-body">
+                <p class="profile-card-name">John Smith</p>
+                <p class="profile-card-hint">View & edit profile</p>
             </div>
-            <h2 class="text-[20px] font-bold text-[#0F172A] mt-3">John Smith</h2>
-            <p class="text-[13px] text-[#64748B] font-medium">Property Owner</p>
-            <p class="text-[12px] text-[#94A3B8] mt-1">john.smith@email.com</p>
-            <p class="text-[12px] text-[#94A3B8]">+44 7700 900123</p>
-        </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+        </button>
         ${menuList([
-            ['user','Personal Information','personal-info'],
             ['bell','Notification Settings','notifications-settings'],
-            ['shield-check','Security','security'],
-            ['credit-card','Payment Methods','payment-methods'],
+            ['key-round','Change Password','password'],
+            ['receipt','Transaction History','transaction-history'],
             ['gem','Subscription','subscription'],
         ])}
         <p class="section-title mt-5">Support & Legal</p>
         ${menuList([
             ['help-circle','Help & Support','help-support'],
-            ['circle-help','FAQ','faq'],
             ['shield','Privacy Policy','privacy'],
             ['file-text','Terms & Conditions','terms'],
-            ['info','About','about'],
         ])}
-        <button data-action="toast" data-msg="Signed out successfully" class="w-full py-3.5 mt-4 bg-[#FEF2F2] text-[#DC2626] text-[14px] font-semibold rounded-xl">Sign Out</button>
     </div>`;
 }
 
@@ -1025,25 +1044,19 @@ function screenNotificationsSettings() {
     </div>`;
 }
 
-function screenSecurity() {
-    return `${topBar('Security', { back: true })}
-    <div class="gutter-x pb-8 space-y-3 screen-enter">
-        ${menuList([['smartphone','Two-Factor Authentication','password'],['monitor','Active Sessions','password'],['history','Login History','password']])}
-        <button data-toggle="biometric" class="card p-4 flex items-center justify-between w-full text-left mt-4">
-            <div><p class="text-[14px] font-semibold">Biometric Login</p><p class="text-[12px] text-[#64748B]">Use Face ID to sign in</p></div>
-            <div class="toggle ${STATE.toggles.biometric?'':'off'}"></div>
-        </button>
-    </div>`;
-}
-
 function screenPassword() {
-    return `${topBar('Password', { back: true })}
+    return `${topBar('Change Password', { back: true })}
     <div class="gutter-x pb-8 space-y-4 screen-enter">
+        <p class="text-[13px] text-[#64748B]">Update your account password. Use at least 8 characters.</p>
         <div><label class="form-label">Current Password</label><input type="password" class="form-input" placeholder="Enter current password"></div>
         <div><label class="form-label">New Password</label><input type="password" class="form-input" placeholder="Enter new password"></div>
         <div><label class="form-label">Confirm Password</label><input type="password" class="form-input" placeholder="Confirm new password"></div>
         <button data-action="toast" data-msg="Password updated" class="btn-primary w-full py-3.5 text-[14px]">Update Password</button>
     </div>`;
+}
+
+function screenSecurity() {
+    return screenPassword();
 }
 
 function screenPreferences() {
@@ -1090,56 +1103,67 @@ function screenSubscription() {
     </div>`;
 }
 
+function screenTransactionHistory() {
+    return `${topBar('Transaction History', { back: true, sub: 'Payments processed via Stripe' })}
+    <div class="gutter-x pb-8 screen-enter">
+        <div class="txn-list">
+            ${TRANSACTIONS.map(t => `
+            <button data-go="invoice-detail" data-iid="${t.iid}" class="txn-row">
+                <div class="txn-icon ${t.status === 'Paid' ? 'txn-icon-paid' : 'txn-icon-overdue'}">
+                    <i data-lucide="${t.status === 'Paid' ? 'check' : 'alert-circle'}" class="w-4 h-4"></i>
+                </div>
+                <div class="txn-body">
+                    <p class="txn-title">${t.tenant}</p>
+                    <p class="txn-sub">${t.prop} · ${t.date}</p>
+                </div>
+                <div class="txn-meta">
+                    <p class="txn-amount">${t.amount}</p>
+                    <span class="txn-badge ${t.status === 'Paid' ? 'txn-badge-paid' : 'txn-badge-overdue'}">${t.status}</span>
+                </div>
+            </button>`).join('')}
+        </div>
+    </div>`;
+}
+
 function screenHelpSupport() {
     return `${topBar('Help & Support', { back: true })}
-    <div class="gutter-x pb-8 space-y-4 screen-enter">
-        <div class="card p-5 bg-gradient-to-br from-[#EFF6FF] to-white">
-            <div class="w-12 h-12 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center mb-3"><i data-lucide="headphones" class="w-6 h-6"></i></div>
-            <p class="text-[16px] font-bold text-[#0F172A]">How can we help?</p>
-            <p class="text-[13px] text-[#64748B] mt-1">Browse FAQ or contact our support team</p>
-            <button data-go="faq" class="btn-primary w-full py-3 text-[13px] mt-4">Browse FAQ</button>
-        </div>
-        ${menuList([
-            ['message-circle','Contact Support','chat'],
-        ])}
-        <button data-action="toast" data-msg="support@landlordhq.com" class="card w-full p-4 flex items-center justify-between text-left menu-row">
-            <div class="flex items-center gap-4"><i data-lucide="mail" class="w-5 h-5 text-[#374151]"></i><span class="text-[15px] font-medium text-[#1F2937]">support@landlordhq.com</span></div>
-            <i data-lucide="copy" class="w-4 h-4 text-[#9CA3AF]"></i>
+    <div class="gutter-x pb-8 space-y-3 screen-enter">
+        <p class="text-[14px] text-[#64748B] leading-relaxed">Quick answers or reach our team directly.</p>
+        <button data-go="faq" class="help-card">
+            <div class="help-card-icon"><i data-lucide="circle-help" class="w-5 h-5"></i></div>
+            <div class="help-card-body">
+                <p class="help-card-title">FAQ</p>
+                <p class="help-card-sub">Common questions answered</p>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
         </button>
-        <button data-action="toast" data-msg="Report submitted — we'll be in touch" class="card w-full p-4 flex items-center justify-between text-left menu-row mt-3">
-            <div class="flex items-center gap-4"><i data-lucide="bug" class="w-5 h-5 text-[#374151]"></i><span class="text-[15px] font-medium text-[#1F2937]">Report a Problem</span></div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#9CA3AF]"></i>
+        <button data-go="chat" class="help-card">
+            <div class="help-card-icon"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
+            <div class="help-card-body">
+                <p class="help-card-title">Contact Support</p>
+                <p class="help-card-sub">Chat with our team</p>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
         </button>
-        <button data-action="toast" data-msg="Thanks for rating Landlord HQ!" class="card w-full p-4 flex items-center justify-between text-left menu-row mt-3">
-            <div class="flex items-center gap-4"><i data-lucide="star" class="w-5 h-5 text-[#374151]"></i><span class="text-[15px] font-medium text-[#1F2937]">Rate the App</span></div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#9CA3AF]"></i>
+        <button data-action="toast" data-msg="support@landlordhq.com" class="help-email">
+            <i data-lucide="mail" class="w-4 h-4"></i>
+            <span>support@landlordhq.com</span>
         </button>
-        <p class="section-title">Legal</p>
-        ${menuList([
-            ['shield','Privacy Policy','privacy'],
-            ['file-text','Terms & Conditions','terms'],
-            ['info','About Landlord HQ','about'],
-        ])}
     </div>`;
 }
 
 function screenFaq() {
-    const cats = [...new Set(FAQ_ITEMS.map(f => f.cat))];
     return `${topBar('FAQ', { back: true })}
-    <div class="gutter-x pb-8 space-y-5 screen-enter">
-        <div class="search-bar">
-            <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-            <span class="text-[13px] text-[#94A3B8]">Search questions...</span>
+    <div class="gutter-x pb-8 screen-enter">
+        <div class="faq-list-minimal">
+            ${FAQ_ITEMS.map((f, i) => `
+            <button data-go="faq-detail" data-fid="${f.id}" class="faq-minimal-row">
+                <p class="faq-minimal-q">${f.q}</p>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>`).join('')}
         </div>
-        ${cats.map(cat => `
-        <div>
-            <p class="section-title">${cat}</p>
-            ${faqList(FAQ_ITEMS, cat)}
-        </div>`).join('')}
-        <div class="card p-4 text-center">
-            <p class="text-[13px] text-[#64748B]">Still need help?</p>
-            <button data-go="chat" class="text-[13px] font-semibold text-[#2563EB] mt-2">Contact Support</button>
-        </div>
+        <p class="text-center text-[13px] text-[#64748B] mt-6">Can't find an answer?</p>
+        <button data-go="chat" class="btn-primary w-full py-3 text-[13px] mt-2">Contact Support</button>
     </div>`;
 }
 
@@ -1533,6 +1557,7 @@ const SCREEN_MAP = {
     password: screenPassword,
     preferences: screenPreferences,
     'payment-methods': screenPaymentMethods,
+    'transaction-history': screenTransactionHistory,
     subscription: screenSubscription,
     'help-support': screenHelpSupport,
     faq: screenFaq,
@@ -1556,6 +1581,17 @@ const SCREEN_MAP = {
     'log-maintenance': screenLogMaintenance,
 };
 
+function bindImageFallbacks() {
+    document.querySelectorAll('#app img').forEach(img => {
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = function() {
+            if (this.src !== IMG.fallback) this.src = IMG.fallback;
+        };
+    });
+}
+
 function render() {
     const focusId = document.activeElement?.dataset?.search;
     const selStart = document.activeElement?.selectionStart;
@@ -1570,8 +1606,9 @@ function render() {
         content = `<div class="${bodyClass}">${fn()}</div>`;
     }
 
-    document.getElementById('app').innerHTML = statusBar() + content + (showNav ? bottomNav() : '') + (showNav ? fabFloat() : '') + homeIndicator() + drawer() + fabMenu();
+    document.getElementById('app').innerHTML = statusBar() + content + (showNav ? bottomNav() : '') + (showNav ? fabFloat() : '') + homeIndicator() + drawer() + fabMenu() + propFilterSheet();
     lucide.createIcons();
+    bindImageFallbacks();
     bindEvents();
     if (focusId) {
         const el = document.querySelector(`[data-search="${focusId}"]`);
@@ -1641,6 +1678,7 @@ function bindEvents() {
     app.querySelectorAll('[data-action="drawer-close"]').forEach(el => { el.onclick = toggleDrawer; });
     app.querySelectorAll('[data-action="fab"]').forEach(el => { el.onclick = toggleFab; });
     app.querySelectorAll('[data-action="toggle-prop-filters"]').forEach(el => { el.onclick = togglePropFilters; });
+    app.querySelectorAll('[data-action="close-prop-filters"]').forEach(el => { el.onclick = closePropFilters; });
     app.querySelectorAll('[data-action="reset-prop-filters"]').forEach(el => { el.onclick = resetPropFilters; });
     app.querySelectorAll('[data-action="save"]').forEach(el => {
         el.onclick = (e) => { e.stopPropagation(); toast(el.dataset.msg || 'Saved'); back(); };
