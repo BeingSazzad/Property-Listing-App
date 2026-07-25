@@ -2737,5 +2737,15 @@ if (!AppStore.inventory) AppStore.inventory = {};
 if (!AppStore.complianceCerts) AppStore.complianceCerts = {};
 PROPERTIES.forEach(p => AppStore.meta(p.id));
 
+try {
+    render();
+} catch (err) {
+    console.error('Landlord HQ render error:', err);
+    const app = document.getElementById('app');
+    if (app) {
+        app.innerHTML = `<div style="padding:24px;font-family:system-ui;color:#0F172A"><h2 style="font-size:18px;margin:0 0 8px">Something went wrong</h2><p style="font-size:14px;color:#64748B;margin:0">Please refresh the page. If this keeps happening, clear site data for this page.</p></div>`;
+    }
+}
+
 window.addEventListener('online', () => render());
 window.addEventListener('offline', () => render());

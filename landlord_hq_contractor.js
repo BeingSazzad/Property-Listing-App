@@ -313,8 +313,8 @@ function screenContractorInvite() {
                 <p class="text-[12px] text-[#64748B] mt-1">Trade: Plumbing & Heating</p>
                 <p class="text-[12px] text-[#64748B]">Invited: Mar 10, 2025</p>
             </div>
-            <button type="button" data-action="contractor-signup" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Create Account</button>
-            <button type="button" data-go="sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Already have an account? Sign In</button>
+            <button type="button" data-action="contractor-signup" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Try Demo Contractor</button>
+            <button type="button" data-action="contractor-sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Sign In with Email</button>
         </div>
     </div>`;
 }
@@ -416,9 +416,11 @@ function screenTenantInvite() {
                 <p class="text-[12px] text-[#64748B] mt-1">Sign in with your email and password.</p>
             </div>
             <button type="button" data-action="tenant-sign-in" class="btn-auth btn-auth-primary" style="margin-top:20px;width:100%">Sign In</button>
+            <button type="button" data-action="demo-login" data-demo-role="tenant" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Try Demo Tenant</button>
             ` : `
             <button type="button" data-action="tenant-activate" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Accept & Set Password</button>
             <button type="button" data-action="tenant-sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Already activated? Sign In</button>
+            <button type="button" data-action="demo-login" data-demo-role="tenant" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Try Demo Tenant</button>
             `}
             <p class="auth-security-note" style="margin-top:20px"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Tenant accounts require a landlord invitation</p>
         </div>
@@ -581,7 +583,7 @@ function screenContractorDashboard() {
     const active = CONTRACTOR_JOBS.filter(j => ['accepted', 'scheduled', 'in_progress'].includes(j.status)).length;
     const completed = CONTRACTOR_JOBS.filter(j => ['completed', 'paid', 'waiting_approval'].includes(j.status)).length;
     const upcoming = CONTRACTOR_JOBS.filter(j => ['assigned', 'accepted', 'scheduled', 'in_progress'].includes(j.status)).slice(0, 3);
-    return `${dashboardHeader('Mike Thompson', 'Plumber Pro Ltd')}
+    return `${contractorDashboardHeader('Mike Thompson', 'Plumber Pro Ltd')}
     <div class="screen-content screen-enter">
         ${assigned ? `
         <button type="button" data-go="contractor-jobs" data-contractor-filter="assigned" class="fin-alert" style="background:#FFFBEB;border-color:#FDE68A;color:#92400E">
@@ -622,7 +624,7 @@ function screenContractorDashboard() {
     </div>`;
 }
 
-function dashboardHeader(name, sub) {
+function contractorDashboardHeader(name, sub) {
     return `
 <div class="screen-header dash-header">
     <div class="dash-header-top">

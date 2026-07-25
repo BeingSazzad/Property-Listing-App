@@ -77,6 +77,13 @@ let TENANT_INVITATIONS = [
 let TENANT_ACCOUNTS = [];
 
 let LANDLORD_ACCOUNTS = [];
+let CONTRACTOR_ACCOUNTS = [];
+
+const DEMO_CREDENTIALS = {
+    landlord: { email: 'john@landlordhq.co.uk', password: 'Password1' },
+    tenant: { email: 'sarah.j@email.com', password: 'Password1' },
+    contractor: { email: 'mike@plumberpro.co.uk', password: 'Password1' },
+};
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -117,6 +124,123 @@ function loadTenantData() {
 function saveTenantData() {
     sessionStorage.setItem('lhq_tenant_invites', JSON.stringify(TENANT_INVITATIONS));
     sessionStorage.setItem('lhq_tenant_accounts', JSON.stringify(TENANT_ACCOUNTS));
+}
+
+function ensureDemoTenantAccount() {
+    if (tenantAccountByEmail(DEMO_CREDENTIALS.tenant.email)) return;
+    TENANT_ACCOUNTS.push({
+        id: 0,
+        inviteToken: 'DEMO-TENANT',
+        firstName: 'Sarah',
+        lastName: 'Johnson',
+        email: DEMO_CREDENTIALS.tenant.email,
+        phone: '+44 7700 900456',
+        propertyId: 0,
+        unit: 'Flat 2A',
+        rent: '£2,450',
+        leaseStart: 'Jan 2024',
+        leaseEnd: 'Jan 2026',
+        landlord: 'John Smith',
+        password: DEMO_CREDENTIALS.tenant.password,
+    });
+    saveTenantData();
+}
+
+function loadContractorAccounts() {
+    try {
+        const raw = sessionStorage.getItem('lhq_contractor_accounts');
+        if (raw) {
+            CONTRACTOR_ACCOUNTS = JSON.parse(raw);
+            return;
+        }
+    } catch (_) { /* ignore */ }
+    CONTRACTOR_ACCOUNTS = [{
+        id: 0,
+        firstName: 'Mike',
+        lastName: 'Thompson',
+        email: DEMO_CREDENTIALS.contractor.email,
+        company: 'Plumber Pro Ltd',
+        trade: 'Plumbing & Heating',
+        password: DEMO_CREDENTIALS.contractor.password,
+    }];
+    saveContractorAccounts();
+}
+
+function saveContractorAccounts() {
+    sessionStorage.setItem('lhq_contractor_accounts', JSON.stringify(CONTRACTOR_ACCOUNTS));
+}
+
+function contractorAccountByEmail(email) {
+    return CONTRACTOR_ACCOUNTS.find(a => a.email.toLowerCase() === email.toLowerCase());
+}
+
+function signInSubtitle() {
+    if (STATE.authRole === 'tenant') return 'Sign in to your tenant portal with email and password';
+    if (STATE.authRole === 'contractor') return 'Sign in to your contractor workspace';
+    return 'Sign in with your landlord email and password';
+}
+
+function authDemoCard() {
+    const role = STATE.authRole || 'landlord';
+    const demo = DEMO_CREDENTIALS[role];
+    if (!demo) return '';
+    const roleName = { landlord: 'Landlord', tenant: 'Tenant', contractor: 'Contractor' }[role] || 'Landlord';
+    return `
+    <div class="auth-demo-card">
+        <div class="auth-demo-head">
+            <span class="auth-demo-badge">Demo</span>
+            <p class="auth-demo-title">${roleName} account for testing</p>
+        </div>
+        <p class="auth-demo-creds"><span>${demo.email}</span><span>Password: ${demo.password}</span></p>
+        <button type="button" data-action="demo-login" data-demo-role="${role}" class="auth-demo-btn">Sign in with demo</button>
+    </div>`;
+}
+
+function completeDemoLogin(role) {
+    const demo = DEMO_CREDENTIALS[role];
+    if (!demo) return;
+    STATE.authRole = role;
+    STATE.showPassword = false;
+    if (role === 'landlord') {
+        const account = landlordAccountByEmail(demo.email);
+        if (!account) {
+            toast('Demo landlord account not found');
+            return;
+        }
+        LANDLORD_USER.firstName = account.firstName;
+        LANDLORD_USER.lastName = account.lastName;
+        LANDLORD_USER.email = account.email;
+        if (typeof AppStore !== 'undefined') AppStore.save();
+    }
+    if (role === 'tenant') {
+        loadTenantData();
+        ensureDemoTenantAccount();
+        const account = tenantAccountByEmail(demo.email);
+        if (!account) {
+            toast('Demo tenant account not available');
+            return;
+        }
+        STATE.activeTenantId = account.id;
+    }
+    if (role === 'contractor') {
+        loadContractorAccounts();
+        if (!contractorAccountByEmail(demo.email)) {
+            toast('Demo contractor account not available');
+            return;
+        }
+    }
+    STATE.isAuthenticated = true;
+    STATE.userRole = role;
+    saveAuthSession();
+    go(getRoleHome());
+    const name = role === 'landlord' ? LANDLORD_USER.firstName
+        : role === 'tenant' ? getActiveTenant()?.firstName || 'Tenant'
+        : 'Mike';
+    setTimeout(() => toast(`Welcome back, ${name}!`), 50);
+}
+
+function demoLogin(role) {
+    completeDemoLogin(role || STATE.authRole || 'landlord');
 }
 
 const tenantInviteByToken = (token) => TENANT_INVITATIONS.find(i => i.token === token);
@@ -451,9 +575,9 @@ function signIn() {
         return;
     }
     const tenantAccount = tenantAccountByEmail(email);
-    if (tenantAccount || STATE.authRole === 'tenant') {
+    if (STATE.authRole === 'tenant' || tenantAccount) {
         if (!tenantAccount) {
-            toast('No activated tenant account found. Use your invitation link first.');
+            toast('No tenant account found. Use demo login or activate via invitation.');
             return;
         }
         if (tenantAccount.password !== password) {
@@ -467,6 +591,25 @@ function signIn() {
         saveAuthSession();
         go('tenant-dashboard');
         setTimeout(() => toast(`Welcome back, ${tenantAccount.firstName}!`), 50);
+        return;
+    }
+    if (STATE.authRole === 'contractor') {
+        loadContractorAccounts();
+        const contractorAccount = contractorAccountByEmail(email);
+        if (!contractorAccount) {
+            toast('No contractor account found. Use demo login below.');
+            return;
+        }
+        if (contractorAccount.password !== password) {
+            toast('Incorrect password');
+            return;
+        }
+        STATE.isAuthenticated = true;
+        STATE.userRole = STATE.authRole = 'contractor';
+        STATE.showPassword = false;
+        saveAuthSession();
+        go('contractor-dashboard');
+        setTimeout(() => toast(`Welcome back, ${contractorAccount.firstName}!`), 50);
         return;
     }
     if (STATE.authRole === 'landlord') {
@@ -491,12 +634,7 @@ function signIn() {
         setTimeout(() => toast(`Welcome back, ${account.firstName}!`), 50);
         return;
     }
-    STATE.isAuthenticated = true;
-    STATE.userRole = STATE.authRole;
-    STATE.showPassword = false;
-    saveAuthSession();
-    go(getRoleHome());
-    setTimeout(() => toast('Welcome back!'), 50);
+    toast('Select your role and try again');
 }
 
 function markMaintComplete() {
@@ -1048,11 +1186,12 @@ function screenSignIn() {
                 <i data-lucide="log-in" class="w-7 h-7 text-[#2563EB]"></i>
             </div>
             <h1 class="auth-heading">Welcome Back!</h1>
-            <p class="auth-sub">${STATE.authRole === 'tenant' ? 'Sign in with the email from your invitation' : 'Sign in with your landlord email and password'}</p>
+            <p class="auth-sub">${signInSubtitle()}</p>
+            ${authDemoCard()}
             <div class="auth-form">
                 <div class="auth-field">
                     <label>Email address</label>
-                    <input type="email" data-signin-email class="auth-input" placeholder="you@email.com" autocomplete="username" inputmode="email">
+                    <input type="email" data-signin-email class="auth-input" placeholder="${DEMO_CREDENTIALS[STATE.authRole]?.email || 'you@email.com'}" autocomplete="username" inputmode="email">
                 </div>
                 <div class="auth-field">
                     <label>Password</label>
@@ -3658,6 +3797,18 @@ function bindImageFallbacks() {
 }
 
 function render() {
+    try {
+        _renderApp();
+    } catch (err) {
+        console.error('Render failed:', err);
+        const app = document.getElementById('app');
+        if (app) {
+            app.innerHTML = `<div style="padding:24px;font-family:system-ui;color:#0F172A"><h2 style="font-size:18px;margin:0 0 8px">Something went wrong</h2><p style="font-size:14px;color:#64748B;margin:0">Please refresh the page.</p></div>`;
+        }
+    }
+}
+
+function _renderApp() {
     const focusId = document.activeElement?.dataset?.search;
     const selStart = document.activeElement?.selectionStart;
     const fn = SCREEN_MAP[STATE.screen] || (STATE.userRole === 'contractor' ? screenContractorDashboard : screenDashboard);
@@ -3801,7 +3952,13 @@ function bindEvents() {
         el.onclick = roleContinue;
     });
     app.querySelectorAll('[data-action="contractor-signup"]').forEach(el => {
-        el.onclick = () => { STATE.authRole = 'contractor'; go('sign-up'); };
+        el.onclick = () => { STATE.authRole = 'contractor'; demoLogin('contractor'); };
+    });
+    app.querySelectorAll('[data-action="contractor-sign-in"]').forEach(el => {
+        el.onclick = () => { STATE.authRole = 'contractor'; go('sign-in'); };
+    });
+    app.querySelectorAll('[data-action="demo-login"]').forEach(el => {
+        el.onclick = () => demoLogin(el.dataset.demoRole || STATE.authRole);
     });
     app.querySelectorAll('[data-action="toggle-password"]').forEach(el => { el.onclick = togglePassword; });
     app.querySelectorAll('[data-action="otp-key"]').forEach(el => {
@@ -3868,6 +4025,8 @@ function bindEvents() {
 loadAuthSession();
 loadLandlordAccounts();
 loadTenantData();
+ensureDemoTenantAccount();
+loadContractorAccounts();
 const _inviteToken = new URLSearchParams(window.location.search).get('invite');
 if (_inviteToken && tenantInviteByToken(_inviteToken)) {
     STATE.tenantInviteToken = _inviteToken;
