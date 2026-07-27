@@ -1715,7 +1715,7 @@ function toast(msg) {
     if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.getElementById('app').appendChild(t); }
     t.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>${msg}`;
     t.classList.add('show');
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     setTimeout(() => t.classList.remove('show'), 2200);
 }
 
@@ -3827,7 +3827,7 @@ function _renderApp() {
     const app = document.getElementById('app');
     app.className = isPreAuth ? 'app-preauth' : '';
     app.innerHTML = (hideChrome ? '' : statusBar()) + content + (showNav ? bottomNav() : '') + (showNav ? fabFloat() : '') + (hideChrome && STATE.screen !== 'splash' ? '' : homeIndicator()) + drawer() + fabMenu() + propFilterSheet();
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     bindImageFallbacks();
     bindEvents();
     if (STATE.screen === 'splash') {

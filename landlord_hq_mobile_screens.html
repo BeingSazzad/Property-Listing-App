@@ -2358,8 +2358,33 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js"></script>
-    <script src="landlord_hq_contractor.js"></script>
-    <script src="landlord_hq_features.js"></script>
+    <script src="landlord_hq_screens.js?v=3"></script>
+    <script src="landlord_hq_contractor.js?v=3"></script>
+    <script src="landlord_hq_features.js?v=3"></script>
+    <script>
+    (function () {
+        function showBootError(msg) {
+            var app = document.getElementById('app');
+            if (!app || app.innerHTML.trim()) return;
+            app.className = 'app-preauth';
+            app.innerHTML = '<div style="padding:32px 24px;font-family:Plus Jakarta Sans,system-ui,sans-serif;text-align:center">'
+                + '<div style="width:56px;height:56px;border-radius:16px;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">&#8962;</div>'
+                + '<h1 style="font-size:20px;font-weight:700;color:#0F172A;margin:0 0 8px">Landlord HQ</h1>'
+                + '<p style="font-size:14px;color:#64748B;line-height:1.5;margin:0 0 20px">' + msg + '</p>'
+                + '<button type="button" onclick="location.reload()" style="background:#2563EB;color:#fff;border:0;border-radius:12px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer">Reload app</button>'
+                + '</div>';
+        }
+        window.addEventListener('error', function (e) {
+            if (e.target && e.target.tagName === 'SCRIPT') {
+                showBootError('A required file failed to load. Please refresh the page.');
+            }
+        }, true);
+        setTimeout(function () {
+            if (!document.getElementById('app') || !document.getElementById('app').innerHTML.trim()) {
+                showBootError('The app is taking longer than expected to start. Please refresh or clear site data.');
+            }
+        }, 5000);
+    })();
+    </script>
 </body>
 </html>
