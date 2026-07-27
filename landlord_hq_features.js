@@ -122,9 +122,11 @@ const AppStore = {
         this.tenancies = [
             { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active' },
             { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', start: '2023-06-01', end: '2027-05-31', status: 'active' },
-            { id: 2, propertyId: 3, tenantId: 2, type: 'group', unit: 'Flat 2A', rent: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active', occupants: 2, leadName: 'Michael Lee', members: [
-                { name: 'Michael Lee', email: 'michael.lee@email.com', phone: '+44 7700 900458', tenantId: 2, status: 'active', role: 'lead' },
-                { name: 'Emma Lee', email: 'emma.lee@email.com', phone: '+44 7700 900322', status: 'no-account' },
+            { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active' },
+            { id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
+                { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
+                { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
+                { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
             ]},
         ];
         this.inspections = [
@@ -760,6 +762,90 @@ function tenancyTypeLabel(type) {
     return type === 'group' ? 'Group tenancy' : 'Solo tenancy';
 }
 
+function tenancyTypePill(type) {
+    const isGroup = type === 'group';
+    return `<span class="tenancy-type-pill ${isGroup ? 'tenancy-type-pill--group' : 'tenancy-type-pill--solo'}">${isGroup ? 'Group' : 'Solo'}</span>`;
+}
+
+function flatTenancyListHint(propertyId, unitName) {
+    const { tenancy, members, count } = getFlatMemberRoster(propertyId, unitName);
+    if (!tenancy) return '';
+    if (tenancy.type === 'group') return `Group · ${count} member${count === 1 ? '' : 's'}`;
+    const lead = members.find(m => m.isLead) || members[0];
+    return lead?.name ? `Solo · ${lead.name}` : 'Solo tenancy';
+}
+
+function tenancyHintClass(type) {
+    return type === 'group' ? 'flat-list-tenancy-hint--group' : 'flat-list-tenancy-hint--solo';
+}
+
+function getTenancyForTenantListItem(t) {
+    if (!t?.propertyId || !t.unit) return null;
+    return getTenancyForUnit(t.propertyId, t.unit);
+}
+
+function tenantTenancyMetaLine(t) {
+    const tenancy = getTenancyForTenantListItem(t);
+    if (!tenancy) return '';
+    if (tenancy.type === 'group') {
+        const { count } = getFlatMemberRoster(t.propertyId, t.unit);
+        return count > 1 ? `Group member · ${count} on flat` : 'Group tenancy';
+    }
+    return 'Solo tenancy';
+}
+
+function renderTenancyDemoTip(propertyId) {
+    const active = getActiveTenanciesForProperty(propertyId);
+    const hasSolo = active.some(t => t.type === 'solo');
+    const hasGroup = active.some(t => t.type === 'group');
+    if (!hasSolo || !hasGroup) return '';
+    return `
+    <div class="ux-tip tenancy-demo-tip">
+        <p class="ux-tip-title">Solo vs group examples</p>
+        <p class="ux-tip-text">Compare <strong>Flat 2A</strong> (solo — one tenant) with <strong>Flat 2B</strong> (group — several members on one lease).</p>
+    </div>`;
+}
+
+function renderPropertyFlatRow(propertyId, u, opts = {}) {
+    const name = unitName(u);
+    const occ = u.status === 'occupied';
+    const thumb = getFlatCoverPhoto(propertyId, name);
+    const { tenancy, members, count } = getFlatMemberRoster(propertyId, name);
+    const flatPending = (opts.pendingInvites || []).filter(i => i.unit === name);
+    if (opts.tenantsOnly && !tenancy && !count && !flatPending.length) return '';
+    const tenancyHint = occ && tenancy ? flatTenancyListHint(propertyId, name) : '';
+    const hintClass = tenancy ? tenancyHintClass(tenancy.type) : 'flat-list-tenancy-hint--solo';
+    const lead = members.find(m => m.isLead) || members[0];
+    const memberLine = count > 1
+        ? `${lead?.name || 'Tenant'} +${count - 1} more`
+        : lead?.name;
+    const tenantMeta = memberLine
+        ? `${memberLine}${tenancy ? ` · ${tenancy.rent}/month` : ''}`
+        : flatPending.length
+            ? `Invite pending · ${flatPending[0].firstName} ${flatPending[0].lastName}`
+            : tenancy
+                ? `${tenancyTypeLabel(tenancy.type)} · ${tenancy.rent}/month`
+                : occ ? 'Occupied' : 'Vacant';
+    const metaLine = opts.tenantsOnly ? tenantMeta : flatRentSpecLine(u);
+    const typePill = tenancy && opts.showTypePill ? tenancyTypePill(tenancy.type) : '';
+    return `
+    <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="flat-list-card card w-full text-left ${tenancy ? `flat-list-card--${tenancy.type}` : ''}">
+        <div class="flat-list-thumb"><img src="${thumb}" alt=""></div>
+        <div class="flat-list-body">
+            <div class="flat-list-top">
+                <p class="flat-list-name">${name}</p>
+                <div class="flat-list-badges">
+                    ${typePill}
+                    <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
+                </div>
+            </div>
+            <p class="flat-list-meta">${metaLine}</p>
+            ${tenancyHint ? `<p class="flat-list-tenancy-hint ${hintClass}">${tenancyHint}</p>` : ''}
+        </div>
+        <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+    </button>`;
+}
+
 function memberAccountLabel(status) {
     return { active: 'Account active', pending: 'Invite pending', 'no-account': 'No account yet' }[status] || 'No account yet';
 }
@@ -770,6 +856,76 @@ function memberAccountStyle(status) {
         pending: ['#FEF3C7', '#D97706'],
         'no-account': ['#F1F5F9', '#64748B'],
     }[status] || ['#F1F5F9', '#64748B'];
+}
+
+const PERSON_AVATAR_PALETTE = [
+    ['#E0E7FF', '#4338CA'],
+    ['#FCE7F3', '#BE185D'],
+    ['#D1FAE5', '#047857'],
+    ['#FEF3C7', '#B45309'],
+    ['#EDE9FE', '#6D28D9'],
+    ['#FFE4E6', '#BE123C'],
+];
+
+function personInitials(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function personAvatarSeed(name, id) {
+    const s = String(name || id || 0);
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h + s.charCodeAt(i) * (i + 1)) % PERSON_AVATAR_PALETTE.length;
+    return h;
+}
+
+function memberUsesPhotoAvatar(member) {
+    const img = member?.img || '';
+    if (!img) return false;
+    if (typeof IMG !== 'undefined' && IMG.interior?.includes(img)) return false;
+    return /unsplash|avatar|pravatar|i\.pravatar/i.test(img) || (typeof IMG !== 'undefined' && Object.values(IMG.avatar || {}).includes(img));
+}
+
+function renderPersonAvatar(name, id, size = 'md') {
+    const [bg, color] = PERSON_AVATAR_PALETTE[personAvatarSeed(name, id)];
+    return `<span class="person-avatar person-avatar--${size}" style="background:${bg};color:${color}" aria-hidden="true">${personInitials(name)}</span>`;
+}
+
+function renderMemberAvatar(member, size = 'md') {
+    if (memberUsesPhotoAvatar(member)) {
+        return `<img src="${member.img}" class="member-row-avatar member-row-avatar--${size}" alt="">`;
+    }
+    const [bg, color] = PERSON_AVATAR_PALETTE[personAvatarSeed(member.name, member.tenantId ?? member.listId)];
+    return `<span class="person-avatar member-row-avatar member-row-avatar--${size}" style="background:${bg};color:${color}" aria-hidden="true">${personInitials(member.name)}</span>`;
+}
+
+function memberStatusCopy(member) {
+    if (member.isLead && member.accountStatus === 'active') return 'Main contact · on the lease';
+    if (member.isLead && member.accountStatus === 'pending') return 'Main contact · invite sent';
+    if (member.isLead) return 'Main contact · no account yet';
+    if (member.accountStatus === 'active') return 'On the lease · account active';
+    if (member.accountStatus === 'pending') return 'Invite sent · waiting to join';
+    return 'On the lease · not invited yet';
+}
+
+function memberStatusDotClass(status) {
+    return {
+        active: 'member-status-dot--active',
+        pending: 'member-status-dot--pending',
+        'no-account': 'member-status-dot--none',
+    }[status] || 'member-status-dot--none';
+}
+
+function flatTenancyHumanLine(tenancy, members = []) {
+    if (!tenancy) return '';
+    const lead = members.find(m => m.isLead) || members[0];
+    if (tenancy.type === 'group') {
+        const n = members.length;
+        return n ? `${n} people sharing this lease` : 'Group lease';
+    }
+    return lead?.name ? `${lead.name.split(' ')[0]} lives here` : 'One person on the lease';
 }
 
 function resolveMemberIdentity(member, propertyId, unitName, tenancy) {
@@ -893,8 +1049,16 @@ function linkMemberToTenancy(tenancy, invite, tenantId) {
     tenancy.tenantId = tenancy.tenantId ?? tenantId;
 }
 
+function memberStatusPill(member) {
+    const pills = [];
+    if (member.isLead) pills.push('<span class="member-status-pill member-status-pill--lead">Lead</span>');
+    if (member.accountStatus === 'active') pills.push('<span class="member-status-pill member-status-pill--active">Active</span>');
+    else if (member.accountStatus === 'pending') pills.push('<span class="member-status-pill member-status-pill--pending">Pending</span>');
+    else pills.push('<span class="member-status-pill member-status-pill--none">No account</span>');
+    return pills.join('');
+}
+
 function renderMemberRow(member, propertyId, unitName, opts = {}) {
-    const [bg, color] = memberAccountStyle(member.accountStatus);
     const canOpenProfile = member.tenantId != null;
     const nameParts = (member.name || '').trim().split(/\s+/);
     const inviteFirst = nameParts[0] || '';
@@ -905,16 +1069,12 @@ function renderMemberRow(member, propertyId, unitName, opts = {}) {
             ? `data-go="tenant-invite-sent" data-invite-token="${member.inviteToken}"`
             : `data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unitName}" data-invite-email="${member.email || ''}" data-invite-first="${inviteFirst}" data-invite-last="${inviteLast}" data-invite-phone="${member.phone || ''}"`;
     return `
-    <button type="button" ${action} class="member-row card w-full text-left">
-        <img src="${member.img}" class="member-row-avatar" alt="">
+    <button type="button" ${action} class="member-row member-row--simple">
         <div class="member-row-body">
-            <div class="member-row-top">
-                <p class="member-row-name">${member.name}${member.isLead ? ' <span class="member-lead-tag">Lead</span>' : ''}</p>
-                <span class="badge shrink-0" style="background:${bg};color:${color}">${member.accountStatus === 'active' ? 'Active' : member.accountStatus === 'pending' ? 'Pending' : 'No account'}</span>
-            </div>
-            <p class="member-row-meta">${member.email || member.phone || memberAccountLabel(member.accountStatus)}</p>
+            <p class="member-row-name">${member.name}</p>
+            <div class="member-row-tags">${memberStatusPill(member)}</div>
         </div>
-        <i data-lucide="${canOpenProfile ? 'chevron-right' : member.inviteToken ? 'mail' : 'user-plus'}" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+        <i data-lucide="chevron-right" class="member-row-chevron w-4 h-4"></i>
     </button>`;
 }
 
@@ -922,14 +1082,19 @@ function renderFlatTenancyCard(propertyId, unitName, opts = {}) {
     const { tenancy, members, count } = getFlatMemberRoster(propertyId, unitName);
     const compact = opts.compact;
     if (!tenancy && !members.length) return '';
+    const isGroup = tenancy?.type === 'group';
     const leaseLine = tenancy
         ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.start) : tenancy.start} – ${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.end) : tenancy.end}`
         : '—';
+    const membersLabel = isGroup ? `Members (${count})` : 'Tenant';
     return `
-    <div class="tenancy-card card p-4">
+    <div class="tenancy-card card p-4 ${isGroup ? 'tenancy-card--group' : 'tenancy-card--solo'}">
         <div class="detail-title-row">
             <div>
-                <p class="tenancy-card-label">Tenancy</p>
+                <div class="tenancy-card-head-tags">
+                    <p class="tenancy-card-label">Tenancy</p>
+                    ${tenancy ? tenancyTypePill(tenancy.type) : ''}
+                </div>
                 <p class="tenancy-card-title">${tenancy ? tenancyTypeLabel(tenancy.type) : 'Occupied'}</p>
                 <p class="tenancy-card-meta">${tenancy?.rent || '—'}/month · ${leaseLine}</p>
             </div>
@@ -937,7 +1102,7 @@ function renderFlatTenancyCard(propertyId, unitName, opts = {}) {
         </div>
         ${count ? `
         <div class="tenancy-member-strip">
-            <p class="tenancy-member-count">${count} member${count === 1 ? '' : 's'}${members.filter(m => m.accountStatus === 'active').length ? ` · ${members.filter(m => m.accountStatus === 'active').length} with account` : ''}</p>
+            <p class="tenancy-member-count">${membersLabel}${isGroup && members.filter(m => m.accountStatus === 'active').length ? ` · ${members.filter(m => m.accountStatus === 'active').length} with account` : ''}</p>
             ${!compact ? `<div class="stack-sm mt-3">${members.map(m => renderMemberRow(m, propertyId, unitName)).join('')}</div>` : `
             <div class="member-avatar-stack mt-2">
                 ${members.slice(0, 4).map(m => `<img src="${m.img}" class="member-avatar-stack-item" alt="" title="${m.name}">`).join('')}
@@ -952,15 +1117,43 @@ function renderTenancyMemberList(tenantId) {
     const { tenancy, members } = getFlatMemberRoster(listItem.propertyId, listItem.unit);
     if (!tenancy || tenancy.type !== 'group' || members.length <= 1) return '';
     return `
-    <div class="card p-4 mt-3">
+    <div class="card p-4 mt-3 tenancy-card tenancy-card--group">
         <div class="detail-title-row mb-3">
             <div>
-                <p class="tenancy-card-label">Flat members</p>
+                <div class="tenancy-card-head-tags">
+                    <p class="tenancy-card-label">Flat members</p>
+                    ${tenancyTypePill('group')}
+                </div>
                 <p class="text-[14px] font-semibold text-[#0F172A]">${members.length} people on this tenancy</p>
             </div>
             <button data-go="tenancy-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="header-text-link">View</button>
         </div>
         <div class="stack-sm">${members.map(m => renderMemberRow(m, listItem.propertyId, listItem.unit)).join('')}</div>
+    </div>`;
+}
+
+function renderTenancyContextCard(tenantId) {
+    const listItem = TENANT_LIST[tenantId];
+    if (!listItem) return '';
+    const { tenancy, members } = getFlatMemberRoster(listItem.propertyId, listItem.unit);
+    if (!tenancy) return '';
+    if (tenancy.type === 'group' && members.length > 1) return renderTenancyMemberList(tenantId);
+    const lead = members.find(m => m.isLead) || members[0];
+    const leaseLine = `${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.start) : tenancy.start} – ${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.end) : tenancy.end}`;
+    return `
+    <div class="card p-4 mt-3 tenancy-card tenancy-card--solo">
+        <div class="detail-title-row">
+            <div>
+                <div class="tenancy-card-head-tags">
+                    <p class="tenancy-card-label">Tenancy</p>
+                    ${tenancyTypePill('solo')}
+                </div>
+                <p class="tenancy-card-title">Solo tenancy</p>
+                <p class="tenancy-card-meta">${tenancy.rent}/month · ${leaseLine}</p>
+                ${lead ? `<p class="tenancy-card-meta mt-1">Tenant · ${lead.name}</p>` : ''}
+            </div>
+            <button data-go="tenancy-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="header-text-link">View</button>
+        </div>
     </div>`;
 }
 
@@ -979,23 +1172,26 @@ function screenTenancyDetail() {
     const lead = members.find(m => m.isLead) || members[0];
     return `${topBar('Tenancy', { back: true, sub: `${p?.name || ''} · ${unit}` })}
     <div class="screen-content screen-enter">
-        <div class="tenancy-hero card p-4">
+        <div class="tenancy-hero card p-4 ${tenancy.type === 'group' ? 'tenancy-hero--group' : 'tenancy-hero--solo'}">
             <div class="flex items-center justify-between gap-3">
-                <span class="badge bg-[#EFF6FF] text-[#2563EB]">${tenancyTypeLabel(tenancy.type)}</span>
+                ${tenancyTypePill(tenancy.type)}
                 <span class="badge" style="background:#DCFCE7;color:#16A34A">Active</span>
             </div>
-            <p class="tenancy-hero-rent mt-3">${tenancy.rent}<span>/month</span></p>
+            <p class="tenancy-hero-title mt-3">${tenancyTypeLabel(tenancy.type)}</p>
+            <p class="tenancy-hero-rent">${tenancy.rent}<span>/month</span></p>
             <p class="tenancy-hero-dates">${leaseStart} – ${leaseEnd}</p>
             ${lead ? `<p class="tenancy-hero-lead mt-2">Lead tenant · ${lead.name}</p>` : ''}
         </div>
         <div class="ux-tip">
             <p class="ux-tip-title">Tenancy vs tenant</p>
-            <p class="ux-tip-text">The tenancy is the lease for this flat. Members are the people living here — each can have their own portal account.</p>
+            <p class="ux-tip-text">${tenancy.type === 'group'
+                ? 'A group tenancy has several people on one lease. Each member can get their own portal account — the lead tenant is your main contact.'
+                : 'A solo tenancy is one person on the lease. They get one portal account linked to this flat.'}</p>
         </div>
         <div class="screen-list-header">
             <div>
-                <h2>Members</h2>
-                <p>${members.length} on this flat</p>
+                <h2>${tenancy.type === 'group' ? 'Members' : 'Tenant'}</h2>
+                <p>${tenancy.type === 'group' ? `${members.length} on this flat` : (lead?.name || 'Occupant')}</p>
             </div>
             <button data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="header-text-link">+ Invite</button>
         </div>
@@ -1089,10 +1285,26 @@ function normalizeDemoPortfolio() {
     if (INVOICES.length !== canonicalInvoices.length || INVOICES.some((inv, idx) => inv.num !== canonicalInvoices[idx]?.num)) {
         INVOICES.splice(0, INVOICES.length, ...canonicalInvoices);
     }
-    const canonicalNids = ['4859217360', '7391045826', '6028471935', '9183746502'];
+    const canonicalTenancies = [
+        { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active' },
+        { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', start: '2023-06-01', end: '2027-05-31', status: 'active' },
+        { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active' },
+        { id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
+            { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
+            { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
+            { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
+        ]},
+    ];
+    const staleGroupMichael = AppStore.tenancies?.some(t => t.propertyId === 3 && t.type === 'group');
+    const missingGroupDemo = !AppStore.tenancies?.some(t => t.propertyId === 0 && t.unit === 'Flat 2B' && t.type === 'group');
+    if (staleGroupMichael || missingGroupDemo) {
+        AppStore.tenancies = JSON.parse(JSON.stringify(canonicalTenancies));
+        AppStore.save();
+    }
+    const canonicalNids = ['4859217360', '7391045826', '6028471935', '9183746502', '3849201756', '5928173046'];
     TENANTS.forEach((t, i) => {
         if (!t.idNumber || String(t.idNumber).startsWith('TN-')) t.idNumber = canonicalNids[i] || t.idNumber;
-        if (!t.nidProof) t.nidProof = 'NID Proof.jpg';
+        if (!t.nidProof && t.id !== 5) t.nidProof = 'NID Proof.jpg';
     });
     syncInspectionDates();
 }
@@ -1310,23 +1522,7 @@ function renderPropertyUnitsTab(propertyId) {
     ensureFlatPhotos(propertyId);
     const units = getPropertyUnits(propertyId);
     const groupFloors = shouldGroupFlatsByFloor(propertyId);
-    const renderFlatRow = (u) => {
-        const name = unitName(u);
-        const occ = u.status === 'occupied';
-        const thumb = getFlatCoverPhoto(propertyId, name);
-        return `
-        <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="flat-list-card card w-full text-left">
-            <div class="flat-list-thumb"><img src="${thumb}" alt=""></div>
-            <div class="flat-list-body">
-                <div class="flat-list-top">
-                    <p class="flat-list-name">${name}</p>
-                    <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
-                </div>
-                <p class="flat-list-meta">${flatRentSpecLine(u)}</p>
-            </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
-        </button>`;
-    };
+    const renderFlatRow = (u) => renderPropertyFlatRow(propertyId, u);
     const flatList = groupFloors
         ? [...new Set(units.map(u => u.floor || 1))].sort((a, b) => a - b).map(floor => {
             const floorUnits = units.filter(u => (u.floor || 1) === floor);
@@ -1340,6 +1536,7 @@ function renderPropertyUnitsTab(propertyId) {
         : `<div class="stack-sm">${units.map(renderFlatRow).join('')}</div>`;
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
+        ${renderTenancyDemoTip(propertyId)}
         <div class="screen-list-header">
             <div>
                 <h2>Flats</h2>
@@ -1355,39 +1552,56 @@ function renderPropertyUnitsTab(propertyId) {
 function flatDetailMetaLine(u, tenancy, members = []) {
     const rent = String(tenancy?.rent || u.rent || '—').replace(/\s*\/month/i, '').trim();
     const rentPart = rent === '—' ? '—' : `${rent}/month`;
-    const lead = members.find(m => m.isLead) || members[0];
-    const parts = [];
-    if (lead?.name) parts.push(lead.name);
-    parts.push(rentPart, flatSpecLine(u));
+    const parts = [rentPart, flatSpecLine(u)];
     return parts.join(' · ');
+}
+
+function renderFlatDetailChips(u, tenancy, members = []) {
+    const rent = String(tenancy?.rent || u.rent || '—').replace(/\s*\/month/i, '').trim();
+    const chips = [];
+    if (tenancy?.type) {
+        chips.push(`<span class="flat-chip flat-chip--${tenancy.type}">${tenancy.type === 'group' ? `Group · ${members.length} people` : 'Solo'}</span>`);
+    }
+    if (rent !== '—') chips.push(`<span class="flat-chip">${rent}/mo</span>`);
+    if (u.beds) chips.push(`<span class="flat-chip">${u.beds} bed</span>`);
+    if (u.baths) chips.push(`<span class="flat-chip">${u.baths} bath</span>`);
+    const lead = members.find(m => m.isLead) || members[0];
+    if (lead?.name && tenancy?.type !== 'group') {
+        chips.push(`<span class="flat-chip flat-chip--person">${lead.name.split(' ')[0]}</span>`);
+    }
+    return chips.length ? `<div class="flat-detail-chips">${chips.join('')}</div>` : '';
 }
 
 function renderFlatOccupiedPanel(propertyId, unit) {
     const { tenancy, members, count } = getFlatMemberRoster(propertyId, unit);
+    const isGroup = tenancy?.type === 'group';
     const leaseLine = tenancy
         ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.start) : tenancy.start} – ${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.end) : tenancy.end}`
         : '—';
+    const humanLine = flatTenancyHumanLine(tenancy, members);
+    const membersLabel = isGroup ? `Who lives here` : 'Tenant';
     return `
-    <div class="card flat-tenancy-panel flat-tenancy-panel--occupied">
+    <div class="card flat-tenancy-panel flat-tenancy-panel--occupied flat-tenancy-panel--human ${isGroup ? 'flat-tenancy-panel--group' : 'flat-tenancy-panel--solo'}">
+        <div class="flat-tenancy-panel-accent" aria-hidden="true"></div>
         <div class="flat-tenancy-panel-head">
             <div class="min-w-0">
-                <p class="tenancy-card-label">Tenancy</p>
-                <p class="tenancy-card-title">${tenancy ? tenancyTypeLabel(tenancy.type) : 'Occupied'}</p>
-                <p class="tenancy-card-meta">${tenancy?.rent || '—'}/month · ${leaseLine}</p>
+                <div class="flat-tenancy-panel-tags">
+                    ${tenancy ? tenancyTypePill(tenancy.type) : ''}
+                    <span class="flat-tenancy-panel-rent">${tenancy?.rent || '—'}/month</span>
+                </div>
+                <p class="flat-tenancy-human">${humanLine}</p>
+                <p class="flat-tenancy-dates">${leaseLine}</p>
             </div>
-            ${tenancy ? `<button data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="header-text-link shrink-0">View</button>` : ''}
+            ${tenancy ? `<button data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-tenancy-view-btn">Details</button>` : ''}
         </div>
         ${count ? `
         <div class="flat-tenancy-panel-members">
-            <div class="flat-tenancy-panel-members-head">
-                <p class="flat-tenancy-panel-members-label">Members</p>
-                <p class="flat-tenancy-panel-members-count">${count} on this flat</p>
-            </div>
-            <div class="stack-sm">${members.map(m => renderMemberRow(m, propertyId, unit)).join('')}</div>
+            <p class="flat-tenancy-panel-members-label">${membersLabel}</p>
+            <div class="member-list-human">${members.map(m => renderMemberRow(m, propertyId, unit)).join('')}</div>
         </div>` : `
         <div class="flat-tenancy-panel-members">
-            <p class="flat-tenancy-panel-members-empty">No members added yet</p>
-            <button data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mt-2">Invite tenant</button>
+            <p class="flat-tenancy-panel-members-empty">No one added to this lease yet.</p>
+            <button data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mt-2">Invite someone</button>
         </div>`}
     </div>`;
 }
@@ -1429,6 +1643,7 @@ function screenFlatDetail() {
                             <span class="badge shrink-0" style="background:${statusBg};color:${statusColor}">${statusLabel}</span>
                         </div>
                         <p class="flat-detail-meta">${flatDetailMetaLine(u, tenancy, members)}</p>
+                        ${renderFlatDetailChips(u, tenancy, members)}
                     </div>
                     <button data-go="edit-flat" data-pid="${propertyId}" data-unit="${unit}" class="flat-detail-edit" aria-label="Edit flat">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -1436,14 +1651,17 @@ function screenFlatDetail() {
                 </div>
             </div>
             ${occ || tenancy || count ? renderFlatOccupiedPanel(propertyId, unit) : `
-            <div class="card flat-tenancy-panel">
-                <div class="flat-tenancy-panel-empty">
-                    <div class="flat-empty-icon"><i data-lucide="users" class="w-6 h-6 text-[#CBD5E1]"></i></div>
-                    <p class="flat-empty-title">No tenancy yet</p>
-                    <p class="flat-empty-desc">Set up the lease or send an invite.</p>
+            <div class="card flat-tenancy-panel flat-tenancy-panel--empty">
+                <div class="flat-empty-state">
+                    <div class="flat-empty-illustration" aria-hidden="true">
+                        <span class="flat-empty-home">🏠</span>
+                        <span class="flat-empty-spark">✦</span>
+                    </div>
+                    <p class="flat-empty-title">This flat is empty</p>
+                    <p class="flat-empty-desc">When you're ready, set up the lease or invite someone to move in.</p>
                 </div>
                 <div class="flat-tenancy-panel-actions">
-                    <button data-go="create-tenancy" data-pid="${propertyId}" class="btn-secondary flex-1 py-2.5 text-[13px]">Create tenancy</button>
+                    <button data-go="create-tenancy" data-pid="${propertyId}" class="btn-secondary flex-1 py-2.5 text-[13px]">Set up lease</button>
                     <button data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="btn-primary flex-1 py-2.5 text-[13px]">Invite tenant</button>
                 </div>
             </div>`}
@@ -1491,39 +1709,15 @@ function renderPropertyTenantTab(propertyId) {
         </div>`;
     }
 
-    const flatRows = units.map(u => {
-        const name = unitName(u);
-        const occ = u.status === 'occupied';
-        const { tenancy, members, count } = getFlatMemberRoster(propertyId, name);
-        const flatPending = pendingInvites.filter(i => i.unit === name);
-        if (!tenancy && !count && !flatPending.length) return '';
-        const lead = members.find(m => m.isLead) || members[0];
-        const memberLine = count > 1
-            ? `${lead?.name || 'Tenant'} +${count - 1} more`
-            : lead?.name;
-        const meta = memberLine
-            ? `${memberLine}${tenancy ? ` · ${tenancy.rent}/month` : ''}`
-            : flatPending.length
-                ? `Invite pending · ${flatPending[0].firstName} ${flatPending[0].lastName}`
-                : tenancy
-                    ? `${tenancyTypeLabel(tenancy.type)} · ${tenancy.rent}/month`
-                    : occ ? 'Occupied' : 'Vacant';
-        return `
-        <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="flat-list-card card w-full text-left">
-            <div class="flat-list-thumb"><img src="${getFlatCoverPhoto(propertyId, name)}" alt=""></div>
-            <div class="flat-list-body">
-                <div class="flat-list-top">
-                    <p class="flat-list-name">${name}</p>
-                    <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
-                </div>
-                <p class="flat-list-meta">${meta}</p>
-            </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
-        </button>`;
-    }).filter(Boolean).join('');
+    const flatRows = units.map(u => renderPropertyFlatRow(propertyId, u, {
+        tenantsOnly: true,
+        showTypePill: true,
+        pendingInvites,
+    })).filter(Boolean).join('');
 
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
+        ${renderTenancyDemoTip(propertyId)}
         <div class="screen-list-header">
             <div>
                 <h2>Tenants</h2>
@@ -1539,9 +1733,10 @@ function renderPropertyTimelineTab(propertyId) {
     const events = [];
     const p = PROPERTIES[propertyId];
     AppStore.tenancies.filter(t => t.propertyId === propertyId).forEach(t => {
+        const typeLabel = t.type === 'group' ? 'Group tenancy' : 'Solo tenancy';
         if (t.status === 'ended') events.push(['#94A3B8', 'Tenancy ended', `${t.unit} · ${t.leadName || 'Tenant'}`, typeof formatDisplayDate === 'function' ? formatDisplayDate(t.end) || t.end : t.end]);
-        else if (t.status === 'active') events.push(['#2563EB', 'Active tenancy', `${t.unit} · ${t.rent || ''}`, typeof formatDisplayDate === 'function' ? formatDisplayDate(t.start) || t.start : t.start]);
-        else events.push(['#F59E0B', 'Tenancy created', `${t.unit} · pending tenant`, typeof formatDisplayDate === 'function' ? formatDisplayDate(t.start) || t.start : t.start]);
+        else if (t.status === 'active') events.push([t.type === 'group' ? '#7C3AED' : '#2563EB', typeLabel, `${t.unit} · ${t.rent || ''}`, typeof formatDisplayDate === 'function' ? formatDisplayDate(t.start) || t.start : t.start]);
+        else events.push(['#F59E0B', `${typeLabel} created`, `${t.unit} · pending tenant`, typeof formatDisplayDate === 'function' ? formatDisplayDate(t.start) || t.start : t.start]);
     });
     pendingInvitesForProperty(propertyId).forEach(inv => {
         events.push(['#D97706', 'Invite sent', `${inv.unit} · ${inv.firstName} ${inv.lastName}`, inv.sentAt || 'Pending']);
@@ -2315,6 +2510,74 @@ function seedConversationsIfNeeded() {
     AppStore.conversations = JSON.parse(JSON.stringify(CONVERSATIONS));
 }
 
+function getMaintTenantForItem(item) {
+    if (!item) return null;
+    if (item.tenantName) {
+        const byName = TENANT_LIST.find(t =>
+            t.name === item.tenantName && t.propertyId === item.propertyId &&
+            (!item.unit || item.unit === '—' || t.unit === item.unit)
+        );
+        if (byName) return byName;
+    }
+    return TENANT_LIST.find(t =>
+        t.propertyId === item.propertyId && t.status === 'active' &&
+        (!item.unit || item.unit === '—' || t.unit === item.unit)
+    ) || null;
+}
+
+function isTenantMaintReport(item) {
+    return item?.reportedBy === 'tenant' || !!item?.tenantName;
+}
+
+function suggestContractorForIssue(item) {
+    const text = `${item?.issue || ''} ${item?.desc || ''}`.toLowerCase();
+    if (/boiler|radiator|heat|gas|hot water/.test(text)) return CONTRACTORS.find(c => c.trade === 'Heating') || CONTRACTORS[1];
+    if (/light|electric|flicker|socket|fuse/.test(text)) return CONTRACTORS.find(c => c.trade === 'Electrical') || CONTRACTORS[2];
+    if (/sink|tap|leak|pipe|plumb|water|damp/.test(text)) return CONTRACTORS.find(c => c.trade === 'Plumbing') || CONTRACTORS[0];
+    return CONTRACTORS[0];
+}
+
+function renderMaintTenantComplaint(item) {
+    const tenant = getMaintTenantForItem(item);
+    const tenantName = item.tenantName || tenant?.name;
+    if (!isTenantMaintReport(item) && !tenantName) return '';
+    const chatId = tenant ? getTenantChatId(tenant.id) : null;
+    const reportedWhen = item.reportedAt || item.time || 'Recently';
+    return `
+    <div class="maint-tenant-complaint card">
+        <div class="maint-tenant-complaint-head">
+            <div>
+                <p class="maint-tenant-complaint-label">Tenant complaint</p>
+                <p class="maint-tenant-complaint-who">${tenantName || 'Tenant'}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}</p>
+            </div>
+            ${chatId != null ? `<button data-go="chat" data-chat="${chatId}" class="maint-tenant-complaint-chat">Message</button>` : ''}
+        </div>
+        <p class="maint-tenant-complaint-text">"${item.desc || item.issue}"</p>
+        <p class="maint-tenant-complaint-meta">Reported ${reportedWhen}</p>
+    </div>`;
+}
+
+function renderMaintAssignmentStatus(item, contractorJob) {
+    const assigned = item.contractor && item.contractor !== '—';
+    const steps = [
+        { label: 'Tenant reported', done: true, detail: isTenantMaintReport(item) ? (item.tenantName || 'Tenant') : 'Logged' },
+        { label: 'Contractor assigned', done: assigned, detail: assigned ? item.contractor : 'Not yet' },
+        { label: item.status === 'done' ? 'Resolved' : 'Work in progress', done: item.status === 'done', detail: contractorJob?.visitDate || (item.status === 'progress' ? 'On site' : 'Pending') },
+    ];
+    return `
+    <div class="maint-assign-flow card">
+        <p class="maint-assign-flow-title">What happens next</p>
+        ${steps.map((s, i) => `
+        <div class="maint-assign-step ${s.done ? 'maint-assign-step--done' : ''}">
+            <span class="maint-assign-step-dot">${s.done ? '✓' : i + 1}</span>
+            <div>
+                <p class="maint-assign-step-label">${s.label}</p>
+                <p class="maint-assign-step-meta">${s.detail}</p>
+            </div>
+        </div>`).join('')}
+    </div>`;
+}
+
 function getTenantChatId(tenantId) {
     const t = TENANTS[tenantId];
     if (!t) return 0;
@@ -2680,21 +2943,15 @@ function screenMaintenanceDetailEnhanced() {
     const contractorAvatar = item.contractor === 'Heating Co.' ? IMG.avatar.heating
         : item.contractor === 'Electric Fix' ? IMG.avatar.electric : IMG.avatar.plumber;
     const chatId = getContractorChatId(item.contractor);
-    const tenantChatId = contractorJob?.tenantChatId ?? (() => {
-        const match = TENANT_LIST.find(t =>
-            t.propertyId === item.propertyId && t.status === 'active' &&
-            (!item.unit || item.unit === '—' || t.unit === item.unit)
-        );
-        return match ? getTenantChatId(match.id) : null;
-    })();
+    const tenant = getMaintTenantForItem(item);
+    const tenantChatId = contractorJob?.tenantChatId ?? (tenant ? getTenantChatId(tenant.id) : null);
     const jobPhotos = contractorJob?.photos
         ? [...(contractorJob.photos.before || []), ...(contractorJob.photos.during || []), ...(contractorJob.photos.after || [])]
         : [];
     const photos = item.photos?.length ? item.photos : jobPhotos;
     const location = `${item.prop.split(',')[0]}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}`;
     const actions = [];
-    if (item.contractor === '—') actions.push(`<button data-action="go-assign-contractor" class="btn-primary w-full py-3 text-[13px]">Assign contractor</button>`);
-    else {
+    if (item.contractor !== '—') {
         if (item.status !== 'done') actions.push(`<button data-action="go-assign-contractor" class="btn-secondary w-full py-3 text-[13px]">Reassign contractor</button>`);
         if (item.status === 'open') actions.push(`<button data-action="maint-status" data-status="progress" class="btn-primary w-full py-3 text-[13px]">Mark in progress</button>`);
         if (item.status === 'progress') actions.push(`<button data-action="maint-status" data-status="done" class="btn-primary w-full py-3.5 text-[14px]">Mark complete</button>`);
@@ -2707,26 +2964,35 @@ function screenMaintenanceDetailEnhanced() {
                 <div class="maint-detail-badges">
                     <span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span>
                     <span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span>
+                    ${isTenantMaintReport(item) ? `<span class="badge" style="background:#FEF3C7;color:#B45309">Tenant report</span>` : ''}
                 </div>
             </div>
             <p class="maint-detail-meta">${location} · ${item.time}</p>
-            <p class="maint-detail-desc">${item.desc}</p>
+            ${!isTenantMaintReport(item) ? `<p class="maint-detail-desc">${item.desc}</p>` : ''}
         </div>
+        ${renderMaintTenantComplaint(item)}
         ${photos.length ? `
         <div class="maint-photo-strip">
             ${photos.slice(0, 3).map(src => `<div class="maint-photo-strip-item"><img src="${src}" class="img-cover" alt=""></div>`).join('')}
         </div>` : ''}
+        ${renderMaintAssignmentStatus(item, contractorJob)}
         ${item.contractor !== '—' ? `
-        <div class="member-row card w-full">
+        <div class="member-row card w-full maint-contractor-row">
             <img src="${contractorAvatar}" class="member-row-avatar" alt="">
             <div class="member-row-body">
                 <p class="member-row-name">${item.contractor}</p>
-                <p class="member-row-meta">${contractorJob ? contractorJob.status.replace(/_/g, ' ') : 'Assigned contractor'}</p>
+                <p class="member-row-meta">${contractorJob ? contractorJob.status.replace(/_/g, ' ') : 'Assigned — job sent to their app'}</p>
             </div>
             <div class="maint-detail-chats">
-                ${chatId != null ? `<button data-go="chat" data-chat="${chatId}" class="header-text-link text-[12px]">Chat</button>` : ''}
+                ${chatId != null ? `<button data-go="chat" data-chat="${chatId}" class="header-text-link text-[12px]">Contractor</button>` : ''}
+                ${tenantChatId != null ? `<button data-go="chat" data-chat="${tenantChatId}" class="header-text-link text-[12px]">Tenant</button>` : ''}
             </div>
-        </div>` : ''}
+        </div>` : `
+        <div class="maint-assign-prompt card">
+            <p class="maint-assign-prompt-title">Assign a contractor</p>
+            <p class="maint-assign-prompt-text">They'll receive the tenant's complaint, property access details, and can update you when work is done.</p>
+            <button data-action="go-assign-contractor" class="btn-primary w-full py-3 text-[13px] mt-3">Choose contractor</button>
+        </div>`}
         ${actions.length ? `<div class="maint-detail-actions">${actions.join('')}</div>` : ''}
         ${item.status !== 'done' ? `
         <div class="danger-zone">
@@ -2975,12 +3241,24 @@ function screenGlobalSearch() {
             <div class="flex-1 min-w-0"><p class="text-[14px] font-bold">${p.name}</p><p class="text-[12px] text-[#64748B]">${p.address}</p></div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
         </button>`)}
-        ${resultBlock('Tenants', tenants, t => `
+        ${resultBlock('Tenants', tenants, t => {
+            const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(t) : null;
+            const metaExtra = typeof tenantTenancyMetaLine === 'function' ? tenantTenancyMetaLine(t) : '';
+            const pill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
+            return `
         <button data-go="tenant-detail" data-tid="${t.id}" class="card p-4 flex items-center gap-3 w-full text-left">
             <img src="${t.img}" class="w-12 h-12 rounded-xl object-cover" alt="">
-            <div class="flex-1 min-w-0"><p class="text-[14px] font-bold">${t.name}</p><p class="text-[12px] text-[#64748B]">${t.prop}${t.unit ? ` · ${t.unit}` : ''}</p></div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <p class="text-[14px] font-bold">${t.name}</p>
+                    ${pill}
+                </div>
+                <p class="text-[12px] text-[#64748B]">${t.prop}${t.unit ? ` · ${t.unit}` : ''}</p>
+                ${metaExtra ? `<p class="text-[11px] font-semibold mt-0.5 ${tenancy?.type === 'group' ? 'flat-list-tenancy-hint--group' : 'flat-list-tenancy-hint--solo'}">${metaExtra}</p>` : ''}
+            </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
-        </button>`)}
+        </button>`;
+        })}
         ${resultBlock('Maintenance', maintenance, m => `
         <button data-go="maintenance-detail" data-mid="${m.id}" class="card p-4 flex items-center gap-3 w-full text-left">
             <div class="w-12 h-12 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]"><i data-lucide="wrench" class="w-5 h-5"></i></div>
@@ -3137,20 +3415,36 @@ function screenCheckoutTenancy() {
 
 function screenAssignContractor() {
     const item = maintItem(STATE.assignMaintId ?? STATE.maintId);
+    const suggested = suggestContractorForIssue(item);
+    const tenant = getMaintTenantForItem(item);
     return `${topBar('Assign Contractor', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4">
             <p class="text-[14px] font-bold">${item.issue}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">${item.prop} · ${item.priority} priority</p>
-            ${item.contractor !== '—' ? `<p class="text-[12px] text-[#D97706] mt-2">Currently: ${item.contractor}</p>` : '<p class="text-[12px] text-[#64748B] mt-2">No contractor assigned</p>'}
+            <p class="text-[12px] text-[#64748B] mt-1">${item.prop}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''} · ${item.priority} priority</p>
+            ${item.contractor !== '—' ? `<p class="text-[12px] text-[#D97706] mt-2">Currently: ${item.contractor}</p>` : ''}
         </div>
-        <p class="screen-section-title">Select Contractor</p>
-        ${CONTRACTORS.map(c => `
-        <button data-action="assign-contractor" data-cid="${c.id}" class="card p-4 flex items-center gap-3 w-full text-left mb-2">
+        ${renderMaintTenantComplaint(item)}
+        <div class="ux-tip">
+            <p class="ux-tip-title">What the contractor sees</p>
+            <p class="ux-tip-text">The full complaint, flat address, and tenant contact. They accept the job in their app, then schedule a visit.</p>
+        </div>
+        <p class="screen-section-title">Select contractor</p>
+        ${CONTRACTORS.map(c => {
+            const isSuggested = suggested?.id === c.id;
+            return `
+        <button data-action="assign-contractor" data-cid="${c.id}" class="card p-4 flex items-center gap-3 w-full text-left mb-2 ${isSuggested ? 'maint-contractor-pick--suggested' : ''}">
             <img src="${c.img}" class="w-12 h-12 rounded-xl object-cover" alt="">
-            <div class="flex-1"><p class="text-[14px] font-semibold">${c.name}</p><p class="text-[12px] text-[#64748B]">${c.trade}</p></div>
+            <div class="flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <p class="text-[14px] font-semibold">${c.name}</p>
+                    ${isSuggested ? `<span class="maint-suggested-pill">Suggested</span>` : ''}
+                </div>
+                <p class="text-[12px] text-[#64748B]">${c.trade}${tenant ? ` · will contact ${tenant.name.split(' ')[0]}` : ''}</p>
+            </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
-        </button>`).join('')}
+        </button>`;
+        }).join('')}
     </div>`;
 }
 
@@ -3389,20 +3683,22 @@ function screenAddFlat() {
     const draft = flatDraftFromSource(STATE.propertyId, sourceName || null);
     const showFloor = shouldGroupFlatsByFloor(STATE.propertyId) || draft.floor !== '' && draft.floor != null;
     return `${topBar(isDup ? 'Duplicate flat' : 'Add flat', { back: true, sub: p?.name || '' })}
-    <div class="screen-content screen-enter">
+    <div class="screen-content screen-content-sm screen-enter flat-edit-page">
         ${isDup ? uxTip('Change only what is different for this new flat.', `Copied from ${sourceName}`) : uxIntro('Add rent, rooms and size for this flat.')}
-        <div><label class="form-label">Flat name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${draft.name.replace(/"/g, '&quot;')}" placeholder="e.g. Flat 2A"></div>
-        <div><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${draft.rent}" min="1"></div>
-        <div class="grid grid-cols-3 gap-3">
-            <div><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${draft.beds}" min="1"></div>
-            <div><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${draft.baths}" min="1"></div>
-            <div><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${draft.sqft}" placeholder="750"></div>
+        <div class="flat-edit-fields stack-sm">
+            <div class="form-field"><label class="form-label">Flat name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${draft.name.replace(/"/g, '&quot;')}" placeholder="e.g. Flat 2A"></div>
+            <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${draft.rent}" min="1"></div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="form-field"><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${draft.beds}" min="1"></div>
+                <div class="form-field"><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${draft.baths}" min="1"></div>
+                <div class="form-field"><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${draft.sqft}" placeholder="750"></div>
+            </div>
+            ${showFloor ? `<div class="grid grid-cols-2 gap-3">
+                <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${draft.floor !== '' && draft.floor != null ? draft.floor : ''}" placeholder="Optional" min="0"></div>
+                <div class="form-field"><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(draft.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>
+            </div>` : ''}
         </div>
-        ${showFloor ? `<div class="grid grid-cols-2 gap-3">
-            <div><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${draft.floor !== '' && draft.floor != null ? draft.floor : ''}" placeholder="Optional" min="0"></div>
-            <div><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(draft.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>
-        </div>` : ''}
-        <p class="form-helper">New flats start as vacant. Occupancy updates when a tenant moves in.</p>
+        <p class="form-helper flat-edit-helper">New flats start as vacant. Occupancy updates when a tenant moves in.</p>
         <button data-action="save" class="btn-primary w-full">${isDup ? 'Save duplicated flat' : 'Save flat'}</button>
     </div>`;
 }
@@ -3446,31 +3742,36 @@ function screenEditFlat() {
     const rent = (u.rent || '').replace(/[£,]/g, '');
     const occ = u.status === 'occupied';
     return `${topBar('Edit flat', { back: true, sub: `${p?.name || ''} · ${unitName(u)}` })}
-    <div class="screen-content screen-enter">
+    <div class="screen-content screen-content-sm screen-enter flat-edit-page">
         <div class="flat-edit-photo card overflow-hidden">
             <img src="${thumb}" class="img-cover" alt="" style="height:140px">
             <button type="button" data-action="upload-flat-photo" class="flat-edit-photo-btn">Change flat photo</button>
         </div>
-            <div>
-                <p class="text-[14px] font-bold text-[#0F172A]">Status</p>
-                <p class="text-[13px] text-[#64748B] mt-0.5">Updates when a tenant moves in or out</p>
+        <div class="flat-edit-status card">
+            <div class="flat-edit-status-body">
+                <p class="flat-edit-status-title">Status</p>
+                <p class="flat-edit-status-desc">Updates when a tenant moves in or out</p>
             </div>
-            <span class="badge" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
+            <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
         </div>
-        <div><label class="form-label">Flat name</label><input data-field="flatName" type="text" class="form-input" value="${unitName(u).replace(/"/g, '&quot;')}"></div>
-        <div><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${rent}" min="1"></div>
-        <div class="grid grid-cols-3 gap-3">
-            <div><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${u.beds || 2}" min="1"></div>
-            <div><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${u.baths || 1}" min="1"></div>
-            <div><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
+        <div class="flat-edit-fields stack-sm">
+            <div class="form-field"><label class="form-label">Flat name</label><input data-field="flatName" type="text" class="form-input" value="${unitName(u).replace(/"/g, '&quot;')}"></div>
+            <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${rent}" min="1"></div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="form-field"><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${u.beds || 2}" min="1"></div>
+                <div class="form-field"><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${u.baths || 1}" min="1"></div>
+                <div class="form-field"><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
+            </div>
+            ${u.floor != null ? `<div class="form-field"><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(u.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>` : ''}
         </div>
-        ${u.floor != null ? `<div><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(u.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>` : ''}
-        <p class="form-helper">For building-wide details, use Edit Property instead.</p>
-        <button data-action="save" class="btn-primary w-full">Save flat</button>
-        ${canDeleteFlat(STATE.propertyId, unit) ? `
-        <div class="danger-zone">
-            ${dangerZoneButton('Remove flat', 'delete-flat')}
-        </div>` : ''}
+        <p class="form-helper flat-edit-helper">For building-wide details, use Edit Property instead.</p>
+        <div class="flat-edit-actions stack-sm">
+            <button data-action="save" class="btn-primary w-full">Save flat</button>
+            ${canDeleteFlat(STATE.propertyId, unit) ? `
+            <div class="danger-zone flat-edit-danger">
+                ${dangerZoneButton('Remove flat', 'delete-flat')}
+            </div>` : ''}
+        </div>
     </div>`;
 }
 
@@ -3793,7 +4094,10 @@ function saveLogMaintenance() {
     if (isTenant) {
         entry.reportedBy = 'tenant';
         entry.tenantName = `${tenant.firstName} ${tenant.lastName}`;
+        entry.reportedAt = 'Just now';
         if (typeof ensureLandlordConversation === 'function') ensureLandlordConversation({ propertyId: pid });
+    } else {
+        entry.reportedBy = 'landlord';
     }
     MAINTENANCE_ITEMS.unshift(entry);
     STATE.logMaintPhotos = [];
@@ -4187,29 +4491,41 @@ function assignContractorToJob(cid) {
     const item = maintItem(STATE.assignMaintId ?? STATE.maintId);
     const c = CONTRACTORS[cid];
     if (!item || !c) return;
+    const tenant = getMaintTenantForItem(item);
     item.contractor = c.name;
     if (item.status === 'open') {
         item.status = 'progress';
-        addMaintHistoryEvent(item, 'Contractor assigned', c.name);
+        addMaintHistoryEvent(item, 'Contractor assigned', `${c.name} · job sent to contractor app`);
         addMaintHistoryEvent(item, 'Work in progress', 'Awaiting contractor visit');
+    } else {
+        addMaintHistoryEvent(item, 'Contractor reassigned', c.name);
     }
-    createContractorJobFromMaintenance(item, c);
+    createContractorJobFromMaintenance(item, c, tenant);
+    if (tenant) {
+        pushNotification({
+            icon: 'wrench', color: ['#DBEAFE', '#2563EB'],
+            title: 'Contractor assigned', desc: `${c.name} assigned to ${item.issue}`,
+            time: 'Just now', unread: true, screen: 'maintenance-detail', opts: { mid: item.id },
+        });
+    }
     AppStore.save();
-    toast(`${c.name} assigned — job sent to contractor`);
+    toast(`${c.name} assigned — they'll see the tenant complaint`);
     go('maintenance-detail', { maintId: item.id });
 }
 
-function createContractorJobFromMaintenance(item, contractor) {
+function createContractorJobFromMaintenance(item, contractor, tenantOverride) {
     if (typeof CONTRACTOR_JOBS === 'undefined') return;
     const p = PROPERTIES[item.propertyId];
-    const activeTenant = TENANT_LIST.find(t => t.propertyId === item.propertyId && t.status === 'active');
-    const tenantName = activeTenant?.name || '—';
+    const tenant = tenantOverride || getMaintTenantForItem(item);
+    const tenantName = tenant?.name || item.tenantName || '—';
     const existing = CONTRACTOR_JOBS.find(j => j.maintId === item.id);
+    const complaintBlock = item.desc ? `\n\nTenant report: ${item.desc}` : '';
     const jobData = {
         maintId: item.id,
         propertyId: item.propertyId,
         property: p?.name || item.prop,
         address: p?.address || '',
+        unit: item.unit && item.unit !== '—' ? item.unit : '',
         tenant: tenantName,
         landlord: `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`,
         issue: item.issue,
@@ -4217,9 +4533,9 @@ function createContractorJobFromMaintenance(item, contractor) {
         visitDate: 'Not scheduled',
         status: 'assigned',
         assignedDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-        desc: item.desc || item.issue,
+        desc: `${item.desc || item.issue}${complaintBlock}`.trim(),
         contractorName: contractor.name,
-        tenantChatId: activeTenant?.chatId ?? ({ 'Sarah Johnson': 0, 'David Wilson': 2, 'Michael Lee': 4 }[tenantName] ?? null),
+        tenantChatId: tenant?.chatId ?? (tenant?.id != null ? getTenantChatId(tenant.id) : null),
         landlordChatId: typeof getLandlordChatId === 'function' ? getLandlordChatId() : null,
     };
     if (existing) {

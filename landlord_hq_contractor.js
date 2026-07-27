@@ -506,7 +506,10 @@ function screenTenantDashboard() {
     }
     const p = PROPERTIES[t.propertyId];
     const tenantIssues = typeof MAINTENANCE_ITEMS !== 'undefined'
-        ? MAINTENANCE_ITEMS.filter(m => m.propertyId === t.propertyId).slice(0, 4)
+        ? MAINTENANCE_ITEMS.filter(m =>
+            m.propertyId === t.propertyId &&
+            (!t.unit || !m.unit || m.unit === '—' || m.unit === t.unit)
+        ).slice(0, 4)
         : [];
     const maintStatusLabel = (status) => ({
         open: { label: 'Reported', bg: '#FEF3C7', color: '#D97706' },
@@ -548,15 +551,18 @@ function screenTenantDashboard() {
             </div>
             ${tenantIssues.length ? tenantIssues.map(m => {
                 const st = maintStatusLabel(m.status);
+                const contractorNote = m.contractor && m.contractor !== '—'
+                    ? `${m.contractor} assigned`
+                    : 'Waiting for contractor';
                 return `
-            <div class="flex items-center gap-3 py-2.5 border-b border-[#F1F5F9] last:border-0">
+            <button data-go="maintenance-detail" data-mid="${m.id}" class="flex items-center gap-3 py-2.5 border-b border-[#F1F5F9] last:border-0 w-full text-left">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#EFF6FF;color:#2563EB"><i data-lucide="wrench" class="w-4 h-4"></i></div>
                 <div class="flex-1 min-w-0">
                     <p class="text-[13px] font-semibold text-[#0F172A] truncate">${m.issue}</p>
-                    <p class="text-[11px] text-[#64748B]">${m.time}${m.contractor && m.contractor !== '—' ? ` · ${m.contractor}` : ''}</p>
+                    <p class="text-[11px] text-[#64748B]">${m.time} · ${contractorNote}</p>
                 </div>
                 <span class="badge shrink-0" style="background:${st.bg};color:${st.color}">${st.label}</span>
-            </div>`;
+            </button>`;
             }).join('') : `<p class="text-[12px] text-[#64748B] py-2">No issues reported yet. Tap Report Issue to notify your landlord.</p>`}
         </div>
         <div class="card p-4">
@@ -714,21 +720,21 @@ function screenContractorJobDetail() {
     const overview = `
         <div class="card p-4">
             <p class="ctr-section-label">Property</p>
-            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.property}</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.property}${job.unit ? ` · ${job.unit}` : ''}</p>
             <p class="text-[14px] text-[#64748B] mt-1">${job.address}</p>
+        </div>
+        <div class="card p-4">
+            <p class="ctr-section-label">Tenant complaint</p>
+            <p class="text-[14px] text-[#475569] mt-2 leading-relaxed">${job.desc}</p>
+            <div class="flex gap-2 mt-3 flex-wrap">
+                <span class="badge bg-[#FEF3C7] text-[#B45309]">From tenant</span>
+                <span class="badge" style="background:${pBg};color:${pColor}">${job.priority} priority</span>
+            </div>
         </div>
         <div class="card p-4">
             <p class="ctr-section-label">People</p>
             <p class="text-[13px] font-semibold mt-1">Tenant: ${job.tenant}</p>
             <p class="text-[14px] text-[#64748B] mt-1">Landlord: ${job.landlord}</p>
-        </div>
-        <div class="card p-4">
-            <p class="ctr-section-label">Issue</p>
-            <p class="text-[14px] text-[#475569] mt-2 leading-relaxed">${job.desc}</p>
-            <div class="flex gap-2 mt-3 flex-wrap">
-                <span class="badge" style="background:${pBg};color:${pColor}">${job.priority} priority</span>
-                <span class="badge bg-[#F1F5F9] text-[#64748B]">Assigned ${job.assignedDate}</span>
-            </div>
         </div>
         <div class="card p-4">
             <p class="ctr-section-label">Visit</p>

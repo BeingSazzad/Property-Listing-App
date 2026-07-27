@@ -106,8 +106,12 @@ function setField(page, key, value, invite = false) {
 
   // Create tenancy
   await run(page, () => go('create-tenancy', { propertyId: 0 }));
-  const tenancyBefore = await page.evaluate(() => AppStore.tenancies.length);
-  await setField(page, 'unit', 'Flat 2B');
+  const tenancySetup = await page.evaluate(() => {
+    const avail = typeof getAvailableUnits === 'function' ? getAvailableUnits(0) : [];
+    const unit = avail.length ? unitName(avail[0]) : 'Flat 1B';
+    return { before: AppStore.tenancies.length, unit };
+  });
+  await setField(page, 'unit', tenancySetup.unit);
   await setField(page, 'rent', '950');
   await setField(page, 'start', '2026-02-01');
   await setField(page, 'end', '2027-01-31');
@@ -117,7 +121,7 @@ function setField(page, key, value, invite = false) {
     screen: STATE.screen,
     last: AppStore.tenancies[AppStore.tenancies.length - 1],
   }));
-  log(afterTenancy.len > tenancyBefore && afterTenancy.last?.unit === 'Flat 2B' ? 'PASS' : 'FAIL', 'Flow', `Create tenancy: unit=${afterTenancy.last?.unit}, screen=${afterTenancy.screen}`);
+  log(afterTenancy.len > tenancySetup.before && afterTenancy.last?.unit === tenancySetup.unit ? 'PASS' : 'FAIL', 'Flow', `Create tenancy: unit=${afterTenancy.last?.unit}, screen=${afterTenancy.screen}`);
 
   // Property detail units tab
   await run(page, () => go('property-detail', { propertyId: 0, tab: 'units' }));

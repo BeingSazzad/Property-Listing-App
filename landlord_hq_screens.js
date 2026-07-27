@@ -250,13 +250,13 @@ const getActiveTenant = () => {
 const makeInviteToken = () => `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
 const MAINTENANCE_ITEMS = [
-    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'open', propertyId: 0, desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.' },
-    { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Main Flat', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, desc:'Bedroom window latch broken — window cannot be secured. Unit currently vacant.' },
-    { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, desc:'Damp patch appearing on bedroom wall near window frame.' },
-    { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, desc:'No hot water or heating. Boiler showing error code E119.' },
-    { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, desc:'Living room radiator cold while others work. Possible air lock or valve issue.' },
-    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2B', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, desc:'Living room ceiling light flickering — resolved with new fitting.' },
-    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, desc:'Kitchen tap replaced. No further issues reported.' },
+    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'open', propertyId: 0, desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
+    { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Main Flat', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, desc:'Bedroom window latch broken — window cannot be secured. Unit currently vacant.', reportedBy:'landlord' },
+    { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, desc:'Damp patch appearing on bedroom wall near window frame. Getting worse after recent rain.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2d ago' },
+    { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, desc:'No hot water or heating. Boiler showing error code E119.', reportedBy:'tenant', tenantName:'David Wilson', reportedAt:'3d ago' },
+    { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, desc:'Living room radiator cold while others work. Possible air lock or valve issue.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'4d ago' },
+    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2B', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, desc:'Living room ceiling light flickering — resolved with new fitting.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'5d ago' },
+    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, desc:'Kitchen tap replaced. No further issues reported.', reportedBy:'landlord' },
 ];
 
 const maintItem = (id) => MAINTENANCE_ITEMS.find(m => m.id === id) || MAINTENANCE_ITEMS[0];
@@ -447,6 +447,8 @@ const TENANT_LIST = [
     { id: 1, propertyId: 1, chatId: 2, name: 'David Wilson', prop: '45 Queens Road', unit: 'Flat 1A', lease: 'Jun 2023 – Jun 2027', leaseEnd: 'Jun 2027', img: IMG.avatar.david, status: 'active', rent: '£1,850/mo' },
     { id: 2, propertyId: 3, chatId: 4, name: 'Michael Lee', prop: '15 Victoria Ave', unit: 'Flat 2A', lease: 'Mar 2024 – Mar 2027', leaseEnd: 'Mar 2027', img: IMG.avatar.michael, status: 'active', rent: '£1,950/mo' },
     { id: 3, propertyId: 2, chatId: null, name: 'Emma Roberts', prop: '88 King Street', unit: 'Main Flat', lease: 'Ended Dec 2024', leaseEnd: 'Dec 2024', img: IMG.interior[2], status: 'inactive', rent: '—' },
+    { id: 4, propertyId: 0, chatId: null, name: 'Priya Sharma', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.interior[0], status: 'active', rent: '£2,200/mo' },
+    { id: 5, propertyId: 0, chatId: null, name: 'James Chen', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.interior[1], status: 'pending', rent: '£2,200/mo' },
 ];
 
 const TENANT_MENU = [
@@ -468,6 +470,8 @@ const TENANTS = [
     { id:1, propertyId:1, firstName:'David', lastName:'Wilson', email:'david.w@email.com', phone:'+44 7700 900457', prop:'45 Queens Road', unit:'Flat 1A', idNumber:'7391045826', nidProof:'NID Proof.jpg', dob:'1988-11-02', rent:'1850', moveIn:'2023-06-01', leaseEnd:'2027-05-31', emergency:'Lisa Wilson', emergencyPhone:'+44 7700 900790' },
     { id:2, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2A', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1950', moveIn:'2024-03-10', leaseEnd:'2027-03-09', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
     { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', unit:'Main Flat', idNumber:'9183746502', nidProof:'NID Proof.jpg', dob:'1995-01-22', rent:'2100', moveIn:'2022-01-01', leaseEnd:'2024-12-01', emergency:'—', emergencyPhone:'—' },
+    { id:4, propertyId:0, firstName:'Priya', lastName:'Sharma', email:'priya.sh@email.com', phone:'+44 7700 900501', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'3849201756', nidProof:'NID Proof.jpg', dob:'1993-08-14', rent:'2200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Raj Sharma', emergencyPhone:'+44 7700 900502' },
+    { id:5, propertyId:0, firstName:'James', lastName:'Chen', email:'james.chen@email.com', phone:'+44 7700 900503', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'5928173046', nidProof:'', dob:'1994-02-03', rent:'2200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'—', emergencyPhone:'—' },
 ];
 
 const COMPLIANCE_ITEMS = [
@@ -2006,8 +2010,13 @@ const maintCard = (m) => {
     const [sBg, sColor] = maintStatusStyle[m.status];
     const thumb = IMG.maint[m.id % IMG.maint.length];
     const location = `${m.prop.split(',')[0]}${m.unit && m.unit !== '—' ? ` · ${m.unit}` : ''}`;
+    const isTenantReport = m.reportedBy === 'tenant';
+    const needsContractor = m.contractor === '—' && m.status !== 'done';
+    const contractorLine = m.contractor && m.contractor !== '—'
+        ? `Assigned · ${m.contractor}`
+        : needsContractor ? 'Needs contractor' : '';
     return `
-    <button data-go="maintenance-detail" data-mid="${m.id}" class="flat-list-card card w-full text-left">
+    <button data-go="maintenance-detail" data-mid="${m.id}" class="flat-list-card card w-full text-left ${needsContractor ? 'maint-card--needs-contractor' : ''}">
         <div class="flat-list-thumb"><img src="${thumb}" alt=""></div>
         <div class="flat-list-body">
             <div class="flat-list-top">
@@ -2015,6 +2024,8 @@ const maintCard = (m) => {
                 <span class="badge shrink-0" style="background:${sBg};color:${sColor}">${maintStatusLabel[m.status]}</span>
             </div>
             <p class="flat-list-meta">${location} · ${m.time} · ${m.priority}</p>
+            ${isTenantReport ? `<p class="maint-card-tenant">Tenant report${m.tenantName ? ` · ${m.tenantName}` : ''}</p>` : ''}
+            ${contractorLine ? `<p class="maint-card-contractor ${needsContractor ? 'maint-card-contractor--warn' : ''}">${contractorLine}</p>` : ''}
         </div>
         <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
     </button>`;
@@ -2626,19 +2637,29 @@ const tenantStatusPill = (status) => {
     return `<span class="tenant-status-pill" style="background:${bg};color:${color}">${label}</span>`;
 };
 
-const tenantListRow = (t) => `
-<button type="button" data-go="tenant-detail" data-tid="${t.id}" class="tenant-row card w-full text-left">
+const tenantListRow = (t) => {
+    const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(t) : null;
+    const typePill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
+    const tenancyMeta = typeof tenantTenancyMetaLine === 'function' ? tenantTenancyMetaLine(t) : '';
+    const metaClass = tenancy?.type === 'group' ? 'tenant-row-tenancy--group' : 'tenant-row-tenancy--solo';
+    return `
+<button type="button" data-go="tenant-detail" data-tid="${t.id}" class="tenant-row card w-full text-left ${tenancy ? `tenant-row--${tenancy.type}` : ''}">
     <img src="${t.img}" class="tenant-row-avatar" alt="">
     <div class="tenant-row-body">
         <div class="tenant-row-top">
             <p class="tenant-row-name">${t.name}</p>
-            ${tenantStatusPill(t.status)}
+            <div class="tenant-row-badges">
+                ${typePill}
+                ${tenantStatusPill(t.status)}
+            </div>
         </div>
         <p class="tenant-row-prop">${t.prop}${t.unit ? ` · ${t.unit}` : ''}</p>
         <p class="tenant-row-meta">${t.lease} · ${t.rent}</p>
+        ${tenancyMeta ? `<p class="tenant-row-tenancy ${metaClass}">${tenancyMeta}</p>` : ''}
     </div>
     <i data-lucide="chevron-right" class="tenant-row-chevron w-5 h-5"></i>
 </button>`;
+};
 
 const tenantDetailField = (label, value) => `
 <div class="tenant-field">
@@ -2671,8 +2692,10 @@ const tenantMenuItem = (icon, label, tab) => `
 
 const tenantOverview = (t, avatar) => {
     const listItem = TENANT_LIST[STATE.tenantId] || TENANT_LIST[0];
+    const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(listItem) : null;
+    const typePill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
     return `
-    <div class="tenant-hero-card">
+    <div class="tenant-hero-card ${tenancy ? `tenant-hero-card--${tenancy.type}` : ''}">
         <div class="tenant-hero-glow tenant-hero-glow-1" aria-hidden="true"></div>
         <div class="tenant-hero-glow tenant-hero-glow-2" aria-hidden="true"></div>
         <div class="tenant-hero-shine" aria-hidden="true"></div>
@@ -2685,7 +2708,10 @@ const tenantOverview = (t, avatar) => {
                 <img src="${avatar}" class="tenant-hero-avatar" alt="">
             </div>
             <h2 class="tenant-hero-name">${t.firstName} ${t.lastName}</h2>
-            <span class="tenant-hero-badge"><span class="tenant-hero-badge-dot"></span>${listItem.status === 'active' ? 'Active Tenant' : listItem.status === 'pending' ? 'Invitation Pending' : 'Inactive'}</span>
+            <div class="tenant-hero-tags">
+                <span class="tenant-hero-badge"><span class="tenant-hero-badge-dot"></span>${listItem.status === 'active' ? 'Active Tenant' : listItem.status === 'pending' ? 'Invitation Pending' : 'Inactive'}</span>
+                ${typePill}
+            </div>
         </div>
         <div class="tenant-hero-meta">
             <div class="tenant-hero-chip">
@@ -2782,7 +2808,7 @@ const tenantSectionContent = (tab, t) => {
                 <button type="button" data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-3 text-[13px]">View flat</button>
                 ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-3 text-[13px]">View tenancy</button>` : `<button type="button" data-go="property-detail" data-pid="${listItem.propertyId}" class="btn-secondary py-3 text-[13px]">View property</button>`}
             </div>
-            ${typeof renderTenancyMemberList === 'function' ? renderTenancyMemberList(STATE.tenantId) : ''}`;
+            ${typeof renderTenancyContextCard === 'function' ? renderTenancyContextCard(STATE.tenantId) : (typeof renderTenancyMemberList === 'function' ? renderTenancyMemberList(STATE.tenantId) : '')}`;
         },
         lease: () => sections.property(),
         identity: () => sections.documents(),

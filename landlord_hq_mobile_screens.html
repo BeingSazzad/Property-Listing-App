@@ -725,42 +725,85 @@
             font-size: var(--text-caption); color: #64748B;
             margin: 6px 0 0; line-height: 1.4;
         }
-        .flat-tenancy-panel { padding: var(--card-pad); }
-        .flat-tenancy-panel--occupied { padding: 0; overflow: hidden; }
+        .flat-detail-chips {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+        }
+        .flat-chip {
+            display: inline-flex; align-items: center;
+            font-size: 11px; font-weight: 600; color: #475569;
+            background: #F8FAFC; border: 1px solid #E2E8F0;
+            padding: 4px 10px; border-radius: 999px;
+        }
+        .flat-chip--solo { color: #1D4ED8; background: #EFF6FF; border-color: #DBEAFE; }
+        .flat-chip--group { color: #6D28D9; background: #F5F3FF; border-color: #DDD6FE; }
+        .flat-chip--person { color: #0F766E; background: #F0FDFA; border-color: #CCFBF1; }
+        .flat-tenancy-panel { padding: var(--card-pad); position: relative; overflow: hidden; }
+        .flat-tenancy-panel--occupied { padding: 0; }
+        .flat-tenancy-panel--solo .flat-tenancy-panel-accent { background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%); }
+        .flat-tenancy-panel--group .flat-tenancy-panel-accent { background: linear-gradient(90deg, #7C3AED 0%, #A78BFA 100%); }
+        .flat-tenancy-panel-accent {
+            height: 3px; width: 100%;
+        }
         .flat-tenancy-panel-head {
             display: flex; align-items: flex-start; justify-content: space-between;
-            gap: 12px; padding: var(--card-pad);
+            gap: 12px; padding: 16px var(--card-pad) 14px;
         }
+        .flat-tenancy-panel-tags {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        .flat-tenancy-panel-rent {
+            font-size: 12px; font-weight: 600; color: #64748B;
+        }
+        .flat-tenancy-human {
+            font-size: 16px; font-weight: 700; color: #0F172A;
+            margin: 8px 0 0; line-height: 1.35; letter-spacing: -0.01em;
+        }
+        .flat-tenancy-dates {
+            font-size: 12px; color: #94A3B8; margin: 4px 0 0;
+        }
+        .flat-tenancy-view-btn {
+            font-size: 12px; font-weight: 600; color: #2563EB;
+            background: #EFF6FF; border: none; border-radius: 999px;
+            padding: 8px 14px; cursor: pointer; flex-shrink: 0;
+        }
+        .flat-tenancy-view-btn:active { background: #DBEAFE; }
         .flat-tenancy-panel-members {
-            border-top: 1px solid #F1F5F9; padding: 12px var(--card-pad) var(--card-pad);
-        }
-        .flat-tenancy-panel-members-head {
-            display: flex; align-items: baseline; justify-content: space-between;
-            gap: 8px; margin-bottom: 10px;
+            border-top: 1px solid #F1F5F9; padding: 12px var(--card-pad) 14px;
         }
         .flat-tenancy-panel-members-label {
-            font-size: 13px; font-weight: 600; color: #0F172A; margin: 0;
-        }
-        .flat-tenancy-panel-members-count {
-            font-size: 11px; color: #94A3B8; margin: 0;
+            font-size: 12px; font-weight: 600; color: #64748B; margin: 0 0 8px;
         }
         .flat-tenancy-panel-members-empty {
-            font-size: 12px; color: #64748B; margin: 0; text-align: center;
+            font-size: 13px; color: #64748B; margin: 0; text-align: center; line-height: 1.45;
         }
         .flat-tenancy-panel-empty { text-align: center; padding: 8px 4px 16px; }
+        .flat-empty-state { text-align: center; padding: 20px 12px 8px; }
+        .flat-empty-illustration {
+            position: relative; width: 72px; height: 72px; margin: 0 auto 14px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(145deg, #F8FAFC 0%, #EFF6FF 100%);
+            border-radius: 22px; border: 1px solid #E2E8F0;
+        }
+        .flat-empty-home { font-size: 28px; line-height: 1; }
+        .flat-empty-spark {
+            position: absolute; top: 8px; right: 10px;
+            font-size: 11px; color: #F59E0B;
+        }
         .flat-empty-icon {
             width: 48px; height: 48px; border-radius: var(--radius-full);
             background: var(--color-bg); display: flex; align-items: center;
             justify-content: center; margin: 0 auto;
         }
         .flat-empty-title {
-            font-size: var(--text-body); font-weight: var(--font-semibold);
-            color: var(--color-text); margin: 12px 0 0;
+            font-size: 15px; font-weight: 700;
+            color: var(--color-text); margin: 0;
+            letter-spacing: -0.01em;
         }
         .flat-empty-desc {
-            font-size: var(--text-caption); color: var(--color-text-secondary);
-            margin: 4px 0 0; line-height: 1.45;
+            font-size: 13px; color: var(--color-text-secondary);
+            margin: 6px 0 0; line-height: 1.5; max-width: 260px; margin-left: auto; margin-right: auto;
         }
+        .flat-tenancy-panel--empty { padding: var(--card-pad); }
         .flat-tenancy-panel-actions {
             display: flex; gap: 8px; margin-top: 14px; padding-top: 14px;
             border-top: 1px solid #F1F5F9;
@@ -794,6 +837,48 @@
         .maint-detail-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
         .maint-detail-meta { font-size: var(--text-caption); color: #64748B; margin-top: 6px; }
         .maint-detail-desc { font-size: var(--text-body); color: #475569; line-height: 1.5; margin: 10px 0 0; }
+        .maint-tenant-complaint { padding: 14px 16px; background: #FFFBEB; border: 1px solid #FDE68A; }
+        .maint-tenant-complaint-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+        }
+        .maint-tenant-complaint-label {
+            font-size: 11px; font-weight: 700; color: #B45309; text-transform: uppercase; letter-spacing: .04em;
+        }
+        .maint-tenant-complaint-who { font-size: 14px; font-weight: 700; color: #0F172A; margin-top: 4px; }
+        .maint-tenant-complaint-text {
+            font-size: 13px; color: #78350F; line-height: 1.5; margin: 10px 0 0; font-style: italic;
+        }
+        .maint-tenant-complaint-meta { font-size: 11px; color: #B45309; margin: 6px 0 0; }
+        .maint-tenant-complaint-chat {
+            font-size: 12px; font-weight: 600; color: #2563EB; background: #EFF6FF;
+            border: none; border-radius: 999px; padding: 6px 12px; cursor: pointer; flex-shrink: 0;
+        }
+        .maint-assign-flow { padding: 14px 16px; }
+        .maint-assign-flow-title { font-size: 13px; font-weight: 700; color: #0F172A; margin: 0 0 10px; }
+        .maint-assign-step {
+            display: flex; align-items: flex-start; gap: 10px; padding: 8px 0;
+        }
+        .maint-assign-step + .maint-assign-step { border-top: 1px solid #F1F5F9; }
+        .maint-assign-step-dot {
+            width: 22px; height: 22px; border-radius: 50%; background: #F1F5F9; color: #64748B;
+            font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .maint-assign-step--done .maint-assign-step-dot { background: #DCFCE7; color: #16A34A; }
+        .maint-assign-step-label { font-size: 13px; font-weight: 600; color: #0F172A; margin: 0; }
+        .maint-assign-step-meta { font-size: 11px; color: #94A3B8; margin: 2px 0 0; }
+        .maint-assign-prompt { padding: 14px 16px; background: #F8FAFC; }
+        .maint-assign-prompt-title { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; }
+        .maint-assign-prompt-text { font-size: 12px; color: #64748B; margin: 6px 0 0; line-height: 1.45; }
+        .maint-contractor-row { padding: 12px 14px; }
+        .maint-card-tenant { font-size: 11px; font-weight: 600; color: #B45309; margin: 4px 0 0; }
+        .maint-card-contractor { font-size: 11px; font-weight: 600; color: #64748B; margin: 2px 0 0; }
+        .maint-card-contractor--warn { color: #DC2626; }
+        .maint-card--needs-contractor { border-left: 3px solid #F59E0B; }
+        .maint-contractor-pick--suggested { border: 1px solid #BFDBFE; background: #F8FAFF; }
+        .maint-suggested-pill {
+            font-size: 10px; font-weight: 700; color: #2563EB; background: #EFF6FF;
+            padding: 2px 8px; border-radius: 999px;
+        }
         .maint-photo-strip { display: flex; gap: 8px; overflow-x: auto; }
         .maint-photo-strip-item { width: 88px; height: 88px; border-radius: var(--radius-thumb); overflow: hidden; flex-shrink: 0; }
         .maint-detail-actions { display: flex; flex-direction: column; gap: 8px; }
@@ -810,8 +895,50 @@
             padding: 8px 12px; font-size: 12px; font-weight: 600; color: #2563EB;
             cursor: pointer; box-shadow: var(--shadow-sm);
         }
+        .flat-edit-page { gap: 18px; padding-bottom: 32px; }
+        .flat-edit-status {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 14px; padding: 14px 16px;
+        }
+        .flat-edit-status-body { flex: 1; min-width: 0; }
+        .flat-edit-status-title {
+            font-size: 14px; font-weight: 700; color: #0F172A; margin: 0;
+        }
+        .flat-edit-status-desc {
+            font-size: 12px; color: #64748B; margin: 4px 0 0; line-height: 1.45;
+        }
+        .flat-edit-fields { margin-top: 2px; }
+        .flat-edit-helper { margin: 0; }
+        .flat-edit-actions { margin-top: 4px; }
+        .flat-edit-danger { margin-top: 0; padding-top: 0; border-top: none; }
+        .form-field { display: flex; flex-direction: column; gap: 0; }
 
         /* Flat tenancy & members */
+        .tenancy-card-head-tags {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        .tenancy-type-pill {
+            display: inline-block; font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 999px; letter-spacing: .02em;
+        }
+        .tenancy-type-pill--solo { color: #2563EB; background: #EFF6FF; }
+        .tenancy-type-pill--group { color: #7C3AED; background: #F3E8FF; }
+        .tenancy-card--solo { border-left: 3px solid #2563EB; }
+        .tenancy-card--group { border-left: 3px solid #7C3AED; }
+        .tenancy-hero--solo { border-left: 3px solid #2563EB; }
+        .tenancy-hero--group { border-left: 3px solid #7C3AED; }
+        .tenancy-hero-title { font-size: 15px; font-weight: 700; color: #0F172A; }
+        .flat-list-tenancy-hint {
+            font-size: 11px; font-weight: 600; margin: 4px 0 0;
+        }
+        .flat-list-tenancy-hint--solo { color: #2563EB; }
+        .flat-list-tenancy-hint--group { color: #7C3AED; }
+        .flat-list-badges {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
+        }
+        .flat-list-card--solo { border-left: 3px solid #2563EB; }
+        .flat-list-card--group { border-left: 3px solid #7C3AED; }
+        .tenancy-demo-tip { margin-bottom: 4px; }
         .tenancy-card-label {
             font-size: 11px; font-weight: 700; color: #94A3B8;
             text-transform: uppercase; letter-spacing: .04em;
@@ -826,18 +953,37 @@
             border: 2px solid #fff; margin-left: -8px;
         }
         .member-avatar-stack-item:first-child { margin-left: 0; }
+        .person-avatar {
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-weight: 700; flex-shrink: 0;
+            letter-spacing: -0.02em;
+        }
+        .person-avatar--sm { width: 32px; height: 32px; font-size: 11px; }
+        .person-avatar--md { width: 40px; height: 40px; font-size: 13px; }
+        .member-list-human {
+            display: flex; flex-direction: column;
+            border: 1px solid #F1F5F9; border-radius: 14px; overflow: hidden;
+            background: #FAFBFC;
+        }
         .member-row {
-            display: flex; align-items: center; gap: 12px;
+            display: flex; align-items: center; gap: 10px;
             padding: 12px 14px; border: none; cursor: pointer;
+            background: transparent; width: 100%; text-align: left;
         }
-        .member-row-avatar {
-            width: 40px; height: 40px; border-radius: 50%;
-            object-fit: cover; flex-shrink: 0; background: #F1F5F9;
-        }
+        .member-row--simple + .member-row--simple { border-top: 1px solid #F1F5F9; }
+        .member-row--simple:active { background: #F8FAFC; }
         .member-row-body { flex: 1; min-width: 0; }
-        .member-row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .member-row-name { font-size: 14px; font-weight: 600; color: #0F172A; }
-        .member-row-meta { font-size: 12px; color: #64748B; margin-top: 2px; }
+        .member-row-name { font-size: 14px; font-weight: 600; color: #0F172A; margin: 0; }
+        .member-row-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .member-status-pill {
+            display: inline-block; font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 999px;
+        }
+        .member-status-pill--lead { color: #2563EB; background: #EFF6FF; }
+        .member-status-pill--active { color: #16A34A; background: #DCFCE7; }
+        .member-status-pill--pending { color: #D97706; background: #FEF3C7; }
+        .member-status-pill--none { color: #64748B; background: #F1F5F9; }
+        .member-row-chevron { color: #CBD5E1; flex-shrink: 0; }
         .member-lead-tag {
             display: inline-block; font-size: 10px; font-weight: 700;
             color: #2563EB; background: #EFF6FF; padding: 1px 6px;
@@ -1677,7 +1823,13 @@
         .tenant-row:active { opacity: 0.9; }
         .tenant-row-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
         .tenant-row-body { flex: 1; min-width: 0; }
-        .tenant-row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .tenant-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .tenant-row-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .tenant-row-tenancy { font-size: 11px; font-weight: 600; margin: 4px 0 0; }
+        .tenant-row-tenancy--solo { color: #2563EB; }
+        .tenant-row-tenancy--group { color: #7C3AED; }
+        .tenant-row--solo { border-left: 3px solid #2563EB; }
+        .tenant-row--group { border-left: 3px solid #7C3AED; }
         .tenant-row-name { font-size: var(--text-body); font-weight: var(--font-bold); color: var(--color-text); margin: 0; }
         .tenant-row-prop { font-size: var(--text-caption); color: var(--color-text-secondary); margin: 3px 0 0; }
         .tenant-row-meta { font-size: 11px; color: var(--color-text-muted); margin: 2px 0 0; }
@@ -1750,7 +1902,17 @@
             margin: 0 0 10px; letter-spacing: -0.02em;
             text-shadow: 0 2px 8px rgba(15,23,42,.15);
         }
-        .tenant-hero-badge {
+        .tenant-hero-card--solo { box-shadow: inset 4px 0 0 rgba(96,165,250,.9); }
+        .tenant-hero-card--group { box-shadow: inset 4px 0 0 rgba(196,181,253,.95); }
+        .tenant-hero-tags {
+            display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+        }
+        .tenant-hero-tags .tenancy-type-pill--solo,
+        .tenant-hero-tags .tenancy-type-pill--group {
+            border: 1px solid rgba(255,255,255,.35);
+            background: rgba(255,255,255,.2);
+            color: #fff;
+        }
             display: inline-flex; align-items: center; gap: 6px;
             font-size: 11px; font-weight: var(--font-bold);
             padding: 6px 12px; border-radius: var(--radius-full);
@@ -2573,6 +2735,7 @@
         /* Forms — validation & states */
         .form-required { color: #DC2626; }
         .form-helper { font-size: 12px; color: #64748B; margin-top: 4px; line-height: 1.45; }
+        .flat-edit-page .form-helper { margin-top: 0; }
         .form-error-msg { font-size: 12px; color: #DC2626; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
         .form-input-error { border-color: #FCA5A5 !important; background: #FEF2F2; }
         .form-group-error .form-label { color: #DC2626; }
