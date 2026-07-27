@@ -38,18 +38,18 @@ const IMG = {
 };
 
 const PROPERTIES = [
-    { id: 0, name: '12 Park Lane', address: 'London, SW1A 1AA', status: 'Occupied', statusColor: ['#DCFCE7','#16A34A'], tenant: 'Sarah Johnson', rent: '£2,450', beds: 3, baths: 2, sqft: '1,200', compliance: true },
-    { id: 1, name: '45 Queens Road', address: 'London, SW2 3TR', status: 'Occupied', statusColor: ['#DCFCE7','#16A34A'], tenant: 'David Wilson', rent: '£1,850', beds: 2, baths: 1, sqft: '890', compliance: true },
-    { id: 2, name: '88 King Street', address: 'London, EC2V 8BB', status: 'Vacant', statusColor: ['#FEF3C7','#D97706'], tenant: null, rent: '£2,100', beds: 3, baths: 2, sqft: '1,050', compliance: false },
-    { id: 3, name: '15 Victoria Ave', address: 'London, N1 5EH', status: 'Occupied', statusColor: ['#DCFCE7','#16A34A'], tenant: 'Michael Lee', rent: '£1,950', beds: 2, baths: 1, sqft: '920', compliance: true },
+    { id: 0, name: '12 Park Lane', address: 'London, SW1A 1AA', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£2,450', compliance: true },
+    { id: 1, name: '45 Queens Road', address: 'London, SW2 3TR', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,850', compliance: true },
+    { id: 2, name: '88 King Street', address: 'London, EC2V 8BB', status: 'Vacant', statusColor: ['#FEF3C7','#D97706'], rent: '£2,100', compliance: false },
+    { id: 3, name: '15 Victoria Ave', address: 'London, N1 5EH', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,950', compliance: true },
 ];
 
 const STATE = {
     screen: 'splash', tab: 'overview', tenantTab: 'overview',
     propertyId: 0, tenantId: 0, maintId: 0, invoiceId: 0, roomId: 0, chatId: 0,
-    propertiesView: 'list', propertiesFilter: 'all', showPropFilters: false,
+    propertiesView: 'grid', propertiesFilter: 'all', showPropFilters: false,
     propertiesAdvanced: { rent: 'all', beds: 'any' },
-    search: { properties: '', tenants: '', messages: '' },
+    search: { properties: '', tenants: '', messages: '', global: '' },
     maintFilter: 'open', invoiceFilter: 'pending', logPriority: 'Medium',
     onboardingStep: 0, authRole: 'landlord', userRole: 'landlord', otpDigits: [], otpContext: 'signup',
     showPassword: false, showConfirmPassword: false, resetEmail: '',
@@ -68,10 +68,16 @@ const STATE = {
     activeTenantId: 0,
     signupEmail: '',
     signupDraft: null,
+    selectedUnit: null,
+    flatDuplicateFrom: null,
+    inspectionPhotos: [],
+    photoMenuIdx: null,
+    rentReceiveIds: [],
+    rentReceiveDate: '',
 };
 
 let TENANT_INVITATIONS = [
-    { id: 0, token: 'DEMO-88KS', firstName: 'Emma', lastName: 'Roberts', email: 'emma.r@email.com', phone: '+44 7700 900459', propertyId: 2, unit: 'Flat 1', rent: '£2,100', leaseStart: '2025-04-01', leaseEnd: '2026-03-31', message: 'Welcome to your new home!', landlord: 'John Smith', status: 'pending', sentAt: 'Mar 10, 2025' },
+    { id: 0, token: 'DEMO-88KS', firstName: 'Emma', lastName: 'Roberts', email: 'emma.r@email.com', phone: '+44 7700 900459', propertyId: 2, unit: 'Main Flat', rent: '£2,100', leaseStart: '2025-04-01', leaseEnd: '2026-03-31', message: 'Welcome to your new home!', landlord: 'John Smith', status: 'pending', sentAt: 'Mar 10, 2025' },
 ];
 
 let TENANT_ACCOUNTS = [];
@@ -181,19 +187,7 @@ function signInSubtitle() {
 }
 
 function authDemoCard() {
-    const role = STATE.authRole || 'landlord';
-    const demo = DEMO_CREDENTIALS[role];
-    if (!demo) return '';
-    const roleName = { landlord: 'Landlord', tenant: 'Tenant', contractor: 'Contractor' }[role] || 'Landlord';
-    return `
-    <div class="auth-demo-card">
-        <div class="auth-demo-head">
-            <span class="auth-demo-badge">Demo</span>
-            <p class="auth-demo-title">${roleName} account for testing</p>
-        </div>
-        <p class="auth-demo-creds"><span>${demo.email}</span><span>Password: ${demo.password}</span></p>
-        <button type="button" data-action="demo-login" data-demo-role="${role}" class="auth-demo-btn">Sign in with demo</button>
-    </div>`;
+    return '';
 }
 
 function completeDemoLogin(role) {
@@ -256,13 +250,13 @@ const getActiveTenant = () => {
 const makeInviteToken = () => `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
 const MAINTENANCE_ITEMS = [
-    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'open', propertyId: 0, desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.' },
-    { id: 1, issue:'Window latch broken', prop:'88 King Street', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, desc:'Bedroom window latch broken — window cannot be secured. Property currently vacant.' },
-    { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, desc:'Damp patch appearing on bedroom wall near window frame.' },
-    { id: 3, issue:'Boiler not working', prop:'45 Queens Rd', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, desc:'No hot water or heating. Boiler showing error code E119.' },
-    { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, desc:'Living room radiator cold while others work. Possible air lock or valve issue.' },
-    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, desc:'Living room ceiling light flickering — resolved with new fitting.' },
-    { id: 6, issue:'Tap replaced', prop:'45 Queens Rd', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, desc:'Kitchen tap replaced. No further issues reported.' },
+    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'open', propertyId: 0, desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.' },
+    { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Main Flat', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, desc:'Bedroom window latch broken — window cannot be secured. Unit currently vacant.' },
+    { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, desc:'Damp patch appearing on bedroom wall near window frame.' },
+    { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, desc:'No hot water or heating. Boiler showing error code E119.' },
+    { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, desc:'Living room radiator cold while others work. Possible air lock or valve issue.' },
+    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2B', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, desc:'Living room ceiling light flickering — resolved with new fitting.' },
+    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, desc:'Kitchen tap replaced. No further issues reported.' },
 ];
 
 const maintItem = (id) => MAINTENANCE_ITEMS.find(m => m.id === id) || MAINTENANCE_ITEMS[0];
@@ -273,20 +267,20 @@ const LANDLORD_USER = {
 };
 const FAQ_BY_ROLE = {
     landlord: [
-        { id: 0, cat: 'Getting Started', q: 'How do I add a new property?', a: 'Tap the + button on the bottom navigation bar and select "Add Property". Fill in the address, rent amount, bedrooms, and upload photos. Your property will appear in your portfolio immediately.' },
-        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Open the property details, go to the Tenant section, and tap "Invite Tenant". Enter their email address and we\'ll send a secure invitation link. Once accepted, their profile links to the property automatically.' },
-        { id: 2, cat: 'Rent & Payments', q: 'How does rent collection work?', a: 'Landlord HQ tracks rent due dates and sends automatic reminders to tenants. You can view payment status on the Financial screen. Overdue rent is highlighted in red on your dashboard.' },
-        { id: 3, cat: 'Rent & Payments', q: 'Can I export financial reports?', a: 'Yes. Go to Financial → tap any invoice → Download PDF. Full monthly reports are available on the Pro plan under Subscription settings.' },
+        { id: 0, cat: 'Getting Started', q: 'How do I add a new property?', a: 'Tap the + button (bottom right) and select Add Property, or go to Properties → Add. Enter the address and flat details — your building appears in your portfolio immediately.' },
+        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Go to Tenants → Invite Tenant, choose the property and flat, then enter their details. We\'ll email a secure invitation link. Once accepted, their profile links to the flat automatically.' },
+        { id: 2, cat: 'Rent & Payments', q: 'How does rent collection work?', a: 'Landlord HQ tracks rent due dates and payment status on the Financial screen. Mark rent received when payment arrives, or create invoices for tenants. Overdue rent is highlighted on your dashboard.' },
+        { id: 3, cat: 'Rent & Payments', q: 'Can I export financial reports?', a: 'Go to Financial → Payment history, or open any invoice and tap Download PDF for a record of that payment.' },
         { id: 4, cat: 'Maintenance', q: 'How do I log a maintenance issue?', a: 'Use the + FAB menu and select "Log Maintenance", or open a property → Maintenance section → "Log New Issue". Add a title, priority, description, and photos.' },
         { id: 5, cat: 'Maintenance', q: 'How are contractors assigned?', a: 'Assign contractors from the maintenance detail screen. The job is sent to their contractor app, and you\'ll be notified when work is submitted or invoiced.' },
         { id: 6, cat: 'Compliance', q: 'What compliance documents should I track?', a: 'We recommend tracking Gas Safety Certificate, Electrical Installation Condition Report (EICR), EPC rating, smoke/CO alarms, landlord insurance, and Right to Rent checks. Reminders appear on your dashboard.' },
         { id: 7, cat: 'Account', q: 'How do I change my password?', a: 'Go to Profile → Change Password. Enter your current password, then your new password twice.' },
-        { id: 8, cat: 'Account', q: 'How do I cancel my subscription?', a: 'Go to Profile → Subscription → Manage Plan. You can downgrade or cancel at any time. Your data remains accessible until the end of the billing period.' },
+        { id: 8, cat: 'Account', q: 'How do I update my account details?', a: 'Open Profile → Personal Information to update your name, email, and contact details. Change your password under Security.' },
     ],
     tenant: [
         { id: 0, cat: 'Getting Started', q: 'How do I activate my tenant account?', a: 'Tenant accounts are invitation-only. Open the secure link from your landlord, set a password, and your portal will link to your property automatically.' },
         { id: 1, cat: 'Getting Started', q: 'What can I see on my dashboard?', a: 'Your home details, next rent due date, maintenance request status, and quick actions to report issues or message your landlord.' },
-        { id: 2, cat: 'Rent & Payments', q: 'How do I pay rent?', a: 'Tap Pay Rent on your dashboard when payment is due. Your landlord can enable reminders and auto-pay options. Payment history appears under Recent Activity.' },
+        { id: 2, cat: 'Rent & Payments', q: 'How do I pay rent?', a: 'Your rent due date appears on your dashboard. Pay using the method agreed with your landlord (bank transfer, standing order, etc.). Payment status updates when your landlord records it.' },
         { id: 3, cat: 'Rent & Payments', q: 'Who receives my rent payment?', a: 'Rent is paid directly to your landlord through their configured payment method. Landlord HQ tracks status but does not hold tenant funds.' },
         { id: 4, cat: 'Maintenance', q: 'How do I report a maintenance issue?', a: 'Tap Report Issue on your dashboard or Issues tab. Your property is pre-selected. Add a title, priority, description, and photos — your landlord is notified immediately.' },
         { id: 5, cat: 'Maintenance', q: 'Who handles repairs in my home?', a: 'Your landlord manages repairs and may assign a contractor. You can track progress on your dashboard and message your landlord for updates.' },
@@ -339,7 +333,7 @@ const TERMS_BY_ROLE = {
         ['Agreement', ['These Terms govern your use of Landlord HQ as a property owner or manager. By using the app, you accept these Terms in full.']],
         ['Account Registration', ['You must provide accurate information and keep login credentials secure. You must be 18+ and legally able to manage rental properties.']],
         ['Your Responsibilities', ['You are solely responsible for compliance with UK landlord-tenant law, deposit protection, licensing, and safety certificates.', 'Landlord HQ is a management tool — it does not provide legal advice.']],
-        ['Subscription & Payments', ['Pro features require a paid subscription. Prices are shown before purchase and may change with 30 days notice.', 'Cancel anytime via Subscription settings.']],
+        ['Subscription & Payments', ['Billing and plan management is handled separately from the mobile app.', 'Contact support@landlordhq.com for billing questions.']],
         ['Tenant & Contractor Data', ['You must have lawful grounds to store tenant data and only invite tenants who have agreed to use the portal.', 'Contractor assignments should follow your own service agreements.']],
         ['Limitation of Liability', ['Landlord HQ is provided "as is". We are not liable for indirect damages or losses arising from tenancy disputes or missed compliance deadlines.']],
         ['Governing Law', ['These Terms are governed by the laws of England and Wales.']],
@@ -357,7 +351,7 @@ const TERMS_BY_ROLE = {
         ['Agreement', ['These Terms govern your use of Landlord HQ as a contractor receiving jobs from landlords on the platform.']],
         ['Account & Profile', ['Keep company details, insurance, and trade certifications accurate and up to date.', 'You are responsible for the security of your account and any staff who use it.']],
         ['Job Performance', ['Accept jobs only when you can attend within a reasonable timeframe. Update visit schedules promptly.', 'Complete work to a professional standard and upload accurate photos, notes, and invoices.']],
-        ['Invoicing & Payment', ['Submit invoices for completed work as agreed with the landlord. Payment timing is between you and the assigning landlord.', 'Landlord HQ records payment status but does not process contractor payouts directly in this demo.']],
+        ['Invoicing & Payment', ['Submit invoices for completed work as agreed with the landlord. Payment timing is between you and the assigning landlord.', 'Landlord HQ records payment status when the landlord marks an invoice as paid.']],
         ['Safety & Compliance', ['Hold valid insurance and trade registrations required for the work undertaken. Upload certificates when requested.']],
         ['Limitation of Liability', ['Landlord HQ facilitates job assignment but is not liable for disputes between you and landlords or tenants regarding workmanship or payment.']],
         ['Governing Law', ['These Terms are governed by the laws of England and Wales.']],
@@ -446,45 +440,34 @@ const faqList = (items, cat) => {
     </div>`;
 };
 
-const TENANT_TABS = ['overview','personal','contact','emergency','property','lease','employment','identity','documents','insurance','guarantor','payments','maintenance','notes','activity'];
+const TENANT_TABS = ['overview','personal','contact','property','documents','payments','maintenance','notes','activity'];
 
 const TENANT_LIST = [
-    { id: 0, propertyId: 0, chatId: 0, name: 'Sarah Johnson', prop: '12 Park Lane', unit: 'Flat 2A', lease: 'Jan 2024 – Jan 2026', leaseEnd: 'Jan 2026', img: IMG.avatar.sarah, status: 'active', rent: '£2,450/mo' },
-    { id: 1, propertyId: 1, chatId: 2, name: 'David Wilson', prop: '45 Queens Rd', unit: 'Unit 1', lease: 'Jun 2023 – May 2025', leaseEnd: 'May 2025', img: IMG.avatar.david, status: 'active', rent: '£1,850/mo' },
-    { id: 2, propertyId: 3, chatId: 4, name: 'Michael Lee', prop: '15 Victoria Ave', unit: 'Flat B', lease: 'Mar 2024 – Mar 2026', leaseEnd: 'Mar 2026', img: IMG.avatar.michael, status: 'active', rent: '£1,950/mo' },
-    { id: 3, propertyId: 2, chatId: null, name: 'Emma Roberts', prop: '88 King Street', unit: 'Flat 1', lease: 'Ended Dec 2024', leaseEnd: 'Dec 2024', img: IMG.avatar.michael, status: 'inactive', rent: '—' },
+    { id: 0, propertyId: 0, chatId: 0, name: 'Sarah Johnson', prop: '12 Park Lane', unit: 'Flat 2A', lease: 'Jan 2024 – Jan 2027', leaseEnd: 'Jan 2027', img: IMG.avatar.sarah, status: 'active', rent: '£2,450/mo' },
+    { id: 1, propertyId: 1, chatId: 2, name: 'David Wilson', prop: '45 Queens Road', unit: 'Flat 1A', lease: 'Jun 2023 – Jun 2027', leaseEnd: 'Jun 2027', img: IMG.avatar.david, status: 'active', rent: '£1,850/mo' },
+    { id: 2, propertyId: 3, chatId: 4, name: 'Michael Lee', prop: '15 Victoria Ave', unit: 'Flat 2A', lease: 'Mar 2024 – Mar 2027', leaseEnd: 'Mar 2027', img: IMG.avatar.michael, status: 'active', rent: '£1,950/mo' },
+    { id: 3, propertyId: 2, chatId: null, name: 'Emma Roberts', prop: '88 King Street', unit: 'Main Flat', lease: 'Ended Dec 2024', leaseEnd: 'Dec 2024', img: IMG.interior[2], status: 'inactive', rent: '—' },
 ];
 
 const TENANT_MENU = [
-    { group: 'Tenant Information', items: [
-        ['user', 'Personal Info', 'personal'],
-        ['phone', 'Contact Info', 'contact'],
-        ['heart-pulse', 'Emergency Contact', 'emergency'],
-        ['building-2', 'Property Info', 'property'],
-        ['file-text', 'Lease Info', 'lease'],
-        ['briefcase', 'Employment Info', 'employment'],
+    { group: 'Tenant', items: [
+        ['user', 'Personal & ID', 'personal'],
+        ['phone', 'Contact', 'contact'],
+        ['building-2', 'Tenancy', 'property'],
     ]},
-    { group: 'Documents & Verification', items: [
-        ['shield-check', 'Identity Verification', 'identity'],
-        ['folder-open', 'Uploaded Documents', 'documents'],
-        ['shield', 'Insurance', 'insurance'],
-        ['user-check', 'Guarantor Info', 'guarantor'],
-    ]},
-    { group: 'Financial & Maintenance', items: [
-        ['wallet', 'Payment & Ledger', 'payments'],
-        ['wrench', 'Maintenance Requests', 'maintenance'],
-    ]},
-    { group: 'Notes & Activity', items: [
+    { group: 'Records', items: [
+        ['folder-open', 'Documents', 'documents'],
+        ['wallet', 'Payments', 'payments'],
+        ['wrench', 'Maintenance', 'maintenance'],
         ['sticky-note', 'Notes', 'notes'],
-        ['activity', 'Activity Timeline', 'activity'],
     ]},
 ];
 
 const TENANTS = [
-    { id:0, propertyId:0, firstName:'Sarah', lastName:'Johnson', email:'sarah.j@email.com', phone:'+44 7700 900456', prop:'12 Park Lane', rent:'2450', moveIn:'2024-01-15', leaseEnd:'2026-01-14', emergency:'James Johnson', emergencyPhone:'+44 7700 900789' },
-    { id:1, propertyId:1, firstName:'David', lastName:'Wilson', email:'david.w@email.com', phone:'+44 7700 900457', prop:'45 Queens Rd', rent:'1850', moveIn:'2023-06-01', leaseEnd:'2025-05-31', emergency:'Lisa Wilson', emergencyPhone:'+44 7700 900790' },
-    { id:2, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', rent:'1950', moveIn:'2024-03-10', leaseEnd:'2026-03-09', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
-    { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', rent:'2100', moveIn:'2022-01-01', leaseEnd:'2024-12-01', emergency:'—', emergencyPhone:'—' },
+    { id:0, propertyId:0, firstName:'Sarah', lastName:'Johnson', email:'sarah.j@email.com', phone:'+44 7700 900456', prop:'12 Park Lane', unit:'Flat 2A', idNumber:'4859217360', nidProof:'NID Proof.jpg', dob:'1992-04-18', rent:'2450', moveIn:'2024-01-15', leaseEnd:'2027-01-14', emergency:'James Johnson', emergencyPhone:'+44 7700 900789' },
+    { id:1, propertyId:1, firstName:'David', lastName:'Wilson', email:'david.w@email.com', phone:'+44 7700 900457', prop:'45 Queens Road', unit:'Flat 1A', idNumber:'7391045826', nidProof:'NID Proof.jpg', dob:'1988-11-02', rent:'1850', moveIn:'2023-06-01', leaseEnd:'2027-05-31', emergency:'Lisa Wilson', emergencyPhone:'+44 7700 900790' },
+    { id:2, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2A', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1950', moveIn:'2024-03-10', leaseEnd:'2027-03-09', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
+    { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', unit:'Main Flat', idNumber:'9183746502', nidProof:'NID Proof.jpg', dob:'1995-01-22', rent:'2100', moveIn:'2022-01-01', leaseEnd:'2024-12-01', emergency:'—', emergencyPhone:'—' },
 ];
 
 const COMPLIANCE_ITEMS = [
@@ -500,7 +483,7 @@ const PREF_OPTIONS = {
     dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
     timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
 };
-const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','preferences','payment-methods','subscription','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite'];
+const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','preferences','payment-methods','subscription','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','global-search'];
 
 const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
@@ -530,10 +513,9 @@ const AUTH_ROLES = [
     { id: 'landlord', title: 'Landlord', desc: 'Manage properties & tenants', icon: 'home', color: '#2563EB', bg: '#EFF6FF' },
     { id: 'tenant', title: 'Tenant', desc: 'Pay rent & report issues', icon: 'user', color: '#16A34A', bg: '#DCFCE7' },
     { id: 'contractor', title: 'Contractor', desc: 'Receive & complete jobs', icon: 'wrench', color: '#EA580C', bg: '#FFEDD5' },
-    { id: 'admin', title: 'Admin', desc: 'Platform management', icon: 'shield', color: '#7C3AED', bg: '#EDE9FE' },
 ];
 
-const SELECTABLE_ROLES = AUTH_ROLES.filter(r => !['admin', 'tenant'].includes(r.id));
+const SELECTABLE_ROLES = AUTH_ROLES.filter(r => r.id !== 'tenant');
 
 const getRoleHome = () => ({
     landlord: 'dashboard',
@@ -577,7 +559,7 @@ function signIn() {
     const tenantAccount = tenantAccountByEmail(email);
     if (STATE.authRole === 'tenant' || tenantAccount) {
         if (!tenantAccount) {
-            toast('No tenant account found. Use demo login or activate via invitation.');
+            toast('No tenant account found. Activate your account using the invitation link from your landlord.');
             return;
         }
         if (tenantAccount.password !== password) {
@@ -597,7 +579,7 @@ function signIn() {
         loadContractorAccounts();
         const contractorAccount = contractorAccountByEmail(email);
         if (!contractorAccount) {
-            toast('No contractor account found. Use demo login below.');
+            toast('No contractor account found. Sign up or accept your invitation first.');
             return;
         }
         if (contractorAccount.password !== password) {
@@ -728,12 +710,15 @@ function resendSignupCode() {
 }
 
 function inviteField(name) {
-    return document.querySelector(`[data-invite="${name}"]`)?.value?.trim() || '';
+    const el = document.querySelector(`[data-invite="${name}"]`) || document.querySelector(`[data-field="${name}"]`);
+    return el?.value?.trim() || '';
 }
 
 function sendTenantInvitation() {
     const firstName = inviteField('firstName');
     const lastName = inviteField('lastName');
+    const idNumber = inviteField('idNumber');
+    const dob = inviteField('dob');
     const email = inviteField('email');
     const phone = inviteField('phone');
     const unit = inviteField('unit');
@@ -741,8 +726,20 @@ function sendTenantInvitation() {
     const leaseStart = inviteField('leaseStart');
     const leaseEnd = inviteField('leaseEnd');
     const message = inviteField('message');
+    if (!idNumber) {
+        toast('Enter tenant NID');
+        return;
+    }
+    if (!STATE.nidProofName && STATE.screen === 'invite-tenant') {
+        toast('Upload NID document proof');
+        return;
+    }
     if (!firstName || !lastName) {
         toast('Enter tenant first and last name');
+        return;
+    }
+    if (!dob) {
+        toast('Enter date of birth');
         return;
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -754,7 +751,7 @@ function sendTenantInvitation() {
         return;
     }
     if (!unit) {
-        toast('Select a unit');
+        toast('Select a flat');
         return;
     }
     if (!leaseStart || !leaseEnd) {
@@ -772,11 +769,14 @@ function sendTenantInvitation() {
         token,
         firstName,
         lastName,
+        idNumber,
+        dob,
+        nidProof: STATE.nidProofName || 'NID Proof.jpg',
         email,
         phone,
         propertyId: STATE.propertyId,
         unit,
-        rent: rent || p.rent,
+        rent: rent || getUnitByName(STATE.propertyId, unit)?.rent || propertyDefaultFlatRent(STATE.propertyId),
         leaseStart,
         leaseEnd,
         message,
@@ -785,6 +785,7 @@ function sendTenantInvitation() {
         sentAt: 'Just now',
     };
     TENANT_INVITATIONS.push(invite);
+    STATE.nidProofName = null;
     saveTenantData();
     if (typeof syncLandlordAfterInviteSent === 'function') syncLandlordAfterInviteSent(invite);
     STATE.tenantInviteToken = token;
@@ -845,15 +846,20 @@ function activateTenantAccount() {
 
 function openTenantInvite(token) {
     loadTenantData();
-    const invite = tenantInviteByToken(token);
-    if (!invite) {
-        toast('Invalid or expired invitation');
-        go('tenant-invite');
+    const inviteToken = token || new URLSearchParams(window.location.search).get('invite');
+    if (!inviteToken) {
+        toast('Open the invitation link from your email');
         return;
     }
-    STATE.tenantInviteToken = token;
+    const invite = tenantInviteByToken(inviteToken);
+    if (!invite) {
+        toast('Invalid or expired invitation');
+        go('role-select');
+        return;
+    }
+    STATE.tenantInviteToken = inviteToken;
     STATE.authRole = 'tenant';
-    go('tenant-invite', { token });
+    go('tenant-invite', { token: inviteToken });
 }
 
 function enterApp(targetScreen) {
@@ -874,7 +880,7 @@ const ONBOARDING_SLIDES = [
     },
     {
         title: 'Never Miss Important Things',
-        body: 'Smart reminders for certificates, inspections, rent, and more.',
+        body: 'Reminders for certificates, inspections, rent due dates, and lease renewals.',
         art: 'reminders',
     },
 ];
@@ -1164,7 +1170,7 @@ function screenRoleSelect() {
                 </button>`).join('')}
             </div>
             <button type="button" data-action="role-continue" class="btn-auth btn-auth-primary" style="margin-top:32px">Continue</button>
-            <p class="auth-footer-text" style="margin-top:20px">Tenant invited? <button type="button" data-action="open-tenant-invite" data-token="DEMO-88KS">Open invitation</button></p>
+            <p class="auth-footer-text" style="margin-top:20px">Tenant invited? <button type="button" data-action="open-tenant-invite">Open invitation link</button></p>
             <p class="auth-footer-text" style="margin-top:12px">Contractor invited? <button type="button" data-go="contractor-invite">Open invitation</button></p>
             <p class="auth-footer-text" style="margin-top:12px">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>
         </div>
@@ -1191,7 +1197,7 @@ function screenSignIn() {
             <div class="auth-form">
                 <div class="auth-field">
                     <label>Email address</label>
-                    <input type="email" data-signin-email class="auth-input" placeholder="${DEMO_CREDENTIALS[STATE.authRole]?.email || 'you@email.com'}" autocomplete="username" inputmode="email">
+                    <input type="email" data-signin-email class="auth-input" placeholder="you@email.com" autocomplete="username" inputmode="email">
                 </div>
                 <div class="auth-field">
                     <label>Password</label>
@@ -1384,7 +1390,7 @@ function screenVerifyOtp() {
             <p class="auth-sub">Enter the 6-digit code sent to<br><strong>${target}</strong></p>
             ${otpBoxesHtml(digits)}
             <p class="otp-resend">Didn't get it? <button type="button" data-action="resend-signup-code">Resend code</button></p>
-            <p class="auth-security-note"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Demo: enter any 6 digits</p>
+            <p class="auth-security-note"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Enter the 6-digit code from your email</p>
         </div>
         ${otpKeypadHtml()}
     </div>`;
@@ -1457,9 +1463,9 @@ function screenWelcome() {
                         <span class="welcome-quick-icon welcome-quick-icon-blue"><i data-lucide="plus" class="w-4 h-4"></i></span>
                         <span>Add Property</span>
                     </button>
-                    <button type="button" data-action="enter-app" data-go-after="select-property-invite" class="welcome-quick-item">
-                        <span class="welcome-quick-icon welcome-quick-icon-green"><i data-lucide="user-plus" class="w-4 h-4"></i></span>
-                        <span>Invite Tenant</span>
+                    <button type="button" data-action="enter-app" data-go-after="tenants" class="welcome-quick-item">
+                        <span class="welcome-quick-icon welcome-quick-icon-green"><i data-lucide="users" class="w-4 h-4"></i></span>
+                        <span>View Tenants</span>
                     </button>
                     <button type="button" data-action="enter-app" data-go-after="profile" class="welcome-quick-item">
                         <span class="welcome-quick-icon welcome-quick-icon-purple"><i data-lucide="settings" class="w-4 h-4"></i></span>
@@ -1478,10 +1484,6 @@ function screenWelcome() {
 }
 
 function roleContinue() {
-    if (STATE.authRole === 'admin') {
-        toast('Admin access is managed separately');
-        return;
-    }
     go('sign-in');
 }
 
@@ -1516,14 +1518,39 @@ function go(screen, opts = {}) {
         STATE.otpContext = 'signup';
     }
     if (screen === 'reset-verify-code') STATE.otpDigits = [];
-    if (screen === 'property-detail') STATE.tab = opts.tab ?? 'overview';
+    if (screen === 'property-detail') {
+        const legacyTabs = { photos: 'details', 'floor-plans': 'details', timeline: 'details' };
+        STATE.tab = legacyTabs[opts.tab] ?? opts.tab ?? 'units';
+    }
+    if (screen === 'flat-detail') {
+        STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+        if (opts.unit) STATE.selectedUnit = opts.unit;
+    }
+    if (screen === 'tenancy-detail') {
+        STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+        if (opts.unit) STATE.selectedUnit = opts.unit;
+    }
+    if (screen === 'financial' && opts.invoiceFilter) STATE.invoiceFilter = opts.invoiceFilter;
     if (screen === 'maintenance-detail') STATE.maintId = opts.maintId ?? STATE.maintId ?? 0;
     if (screen === 'chat') STATE.chatId = opts.chatId ?? STATE.chatId ?? 0;
     if (screen === 'tenant-invite' || screen === 'tenant-activate') {
         STATE.tenantInviteToken = opts.token ?? STATE.tenantInviteToken;
         if (opts.token) STATE.authRole = 'tenant';
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'tenant-invite-sent') {
+        if (opts.token) STATE.tenantInviteToken = opts.token;
+    }
+    if (screen === 'conduct-inspection') STATE.inspectionPhotos = [];
+    if (screen === 'log-maintenance') STATE.selectedUnit = opts.unit ?? STATE.selectedUnit;
+    if (screen === 'invite-tenant' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'flat-detail') {
+        if (opts.unit) STATE.selectedUnit = opts.unit;
+    }
+    if (screen === 'invite-tenant') STATE.nidProofName = null;
+    if (screen === 'add-flat') {
+        STATE.flatDuplicateFrom = opts.duplicateFrom || null;
+        STATE.selectedUnit = null;
+    }
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
     if (screen === 'checkout-tenancy') STATE.tenantId = opts.tenantId ?? STATE.tenantId;
     if (screen === 'share-document') STATE.shareDocId = opts.shareDocId ?? STATE.shareDocId;
     if (screen === 'assign-contractor') STATE.assignMaintId = opts.maintId ?? STATE.maintId;
@@ -1543,6 +1570,7 @@ function go(screen, opts = {}) {
         STATE.previewDocId = opts.docId ?? STATE.previewDocId;
         STATE.previewDocIdx = opts.previewDocIdx ?? STATE.previewDocIdx;
         STATE.previewDocSource = opts.previewDocSource ?? STATE.previewDocSource ?? 'property';
+        if (opts.tenantId != null) STATE.tenantId = opts.tenantId;
     }
     if (screen === 'tenant-invite-sent' && STATE.tenantInviteToken) {
         const inv = tenantInviteByToken(STATE.tenantInviteToken);
@@ -1559,8 +1587,20 @@ function splashContinue() {
 }
 
 function back() {
-    if (STATE.screen === 'property-detail' && STATE.tab !== 'overview') {
-        setTab('overview');
+    if (STATE.screen === 'invite-tenant' && STATE.selectedUnit) {
+        go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit });
+        return;
+    }
+    if (STATE.screen === 'tenancy-detail') {
+        go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit });
+        return;
+    }
+    if (STATE.screen === 'flat-detail') {
+        go('property-detail', { propertyId: STATE.propertyId, tab: 'units' });
+        return;
+    }
+    if (STATE.screen === 'property-detail' && STATE.tab !== 'units') {
+        setTab('units');
         return;
     }
     if (STATE.screen === 'welcome') return;
@@ -1613,12 +1653,14 @@ function back() {
         'security': profileParent,'password': profileParent,'preferences': profileParent,
         'payment-methods': profileParent,'subscription': profileParent,'transaction-history': profileParent,
         'faq-detail':'faq','about': profileParent,
-        'edit-property':'property-detail','invite-tenant':'property-detail',
+        'edit-property':'property-detail','edit-flat':'property-detail','add-flat':'property-detail','invite-tenant':'property-detail','flat-detail':'property-detail','tenancy-detail':'flat-detail',
         'edit-tenant':'tenant-detail','reschedule-inspection':'property-detail',
         'renew-compliance':'property-detail','edit-inventory-room':'inventory-room',
         'add-payment-method':'payment-methods','edit-payment-method':'payment-methods',
         'edit-preference':'preferences',
         'add-property':'properties',
+        'tenants':'dashboard',
+        'profile':'dashboard',
         'log-maintenance': STATE.userRole === 'tenant' ? 'tenant-dashboard' : 'maintenance',
         'notifications-list': defaultHome,
         'financial': defaultHome,
@@ -1632,10 +1674,11 @@ function back() {
         'tenant-invite-sent':'invite-tenant',
         'tenant-activate':'tenant-invite',
         'contractor-company':'contractor-profile','contractor-invite':'role-select',
+        'contractor-notifications':'contractor-dashboard',
     };
     const tabMap = {
         'inventory-room':'inventory',
-        'edit-property':'overview', 'invite-tenant':'tenant',
+        'edit-property':'units', 'edit-flat':'units', 'add-flat':'units', 'invite-tenant':'tenant', 'flat-detail':'units', 'tenancy-detail':'units',
         'reschedule-inspection':'inspection', 'renew-compliance':'compliance',
         'contractor-work':'work', 'contractor-documents':'invoice',
     };
@@ -1675,14 +1718,25 @@ function filterProperties() {
     const q = STATE.search.properties.toLowerCase();
     const adv = STATE.propertiesAdvanced;
     return PROPERTIES.filter(p => {
+        const occupiedFlats = typeof propertyOccupiedFlatCount === 'function'
+            ? propertyOccupiedFlatCount(p.id)
+            : (['Occupied', 'Partial', 'Full'].includes(p.status) ? 1 : 0);
         const matchFilter = STATE.propertiesFilter === 'all' ||
-            (STATE.propertiesFilter === 'occupied' && p.status === 'Occupied') ||
-            (STATE.propertiesFilter === 'vacant' && p.status === 'Vacant');
+            (STATE.propertiesFilter === 'occupied' && occupiedFlats > 0) ||
+            (STATE.propertiesFilter === 'vacant' && occupiedFlats === 0);
         const matchSearch = !q || p.name.toLowerCase().includes(q) || p.address.toLowerCase().includes(q) ||
-            (p.tenant && p.tenant.toLowerCase().includes(q));
-        const rentNum = parseInt(p.rent.replace(/[^\d]/g, ''), 10);
+            (typeof propertyOccupancyBadge === 'function' ? propertyOccupancyBadge(p.id).label : p.occupancyLabel || '').toLowerCase().includes(q);
+        const rentNum = (() => {
+            if (typeof getPropertyRentSummary === 'function') {
+                const { potential, min } = getPropertyRentSummary(p.id);
+                return potential || min || 0;
+            }
+            return parseInt(p.rent.replace(/[^\d]/g, ''), 10);
+        })();
         const matchRent = adv.rent === 'all' || (adv.rent === 'under2k' && rentNum < 2000) || (adv.rent === 'over2k' && rentNum >= 2000);
-        const matchBeds = adv.beds === 'any' || p.beds >= parseInt(adv.beds, 10);
+        const matchBeds = adv.beds === 'any' || (typeof getPropertyUnits === 'function'
+            ? getPropertyUnits(p.id).some(u => (u.beds || 0) >= parseInt(adv.beds, 10))
+            : true);
         return matchFilter && matchSearch && matchRent && matchBeds;
     });
 }
@@ -1748,6 +1802,7 @@ const topBar = (title, opts = {}) => {
             </div>
         </div>
         ${opts.search ? `<button data-focus-search="${opts.searchKey || 'main'}" class="top-icon-btn shrink-0 w-10 h-10 rounded-full border border-[#E2E8F0] bg-white"><i data-lucide="search" class="w-[18px] h-[18px]"></i></button>` : ''}
+        ${opts.more ? `<button data-go="edit-property" data-pid="${opts.pid != null ? opts.pid : STATE.propertyId}" class="top-icon-btn shrink-0 w-10 h-10 rounded-full border border-[#E2E8F0] bg-white" title="Property options"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>` : ''}
     </div>
 </div>`;
     }
@@ -1899,12 +1954,21 @@ const msgRow = (c) => `
     </div>
 </button>`;
 
-const MAIN_SCREENS = ['dashboard','properties','tenants','maintenance','messages'];
+const MAIN_SCREENS = ['dashboard','properties','financial','maintenance','messages'];
+const TENANT_NAV_SCREENS = ['tenant-dashboard','log-maintenance','messages','personal-info'];
+const CONTRACTOR_NAV_SCREENS = ['contractor-dashboard','contractor-jobs','messages','contractor-profile'];
+
+function shouldShowBottomNav(screen = STATE.screen) {
+    if (PRE_AUTH_SCREENS.includes(screen)) return false;
+    if (STATE.userRole === 'contractor') return CONTRACTOR_NAV_SCREENS.includes(screen);
+    if (STATE.userRole === 'tenant') return TENANT_NAV_SCREENS.includes(screen);
+    return MAIN_SCREENS.includes(screen);
+}
 
 const BOTTOM_NAV = [
     ['layout-dashboard', 'Home', 'dashboard'],
     ['building-2', 'Properties', 'properties'],
-    ['users', 'Tenants', 'tenants'],
+    ['wallet', 'Financial', 'financial'],
     ['wrench', 'Maintenance', 'maintenance'],
     ['message-square', 'Messages', 'messages'],
 ];
@@ -1924,12 +1988,9 @@ const TENANT_DRAWER_NAV = [
 ];
 
 const INVOICES = [
-    { id: 0, num: 'INV-2025-1048', prop: '12 Park Lane, London SW1A 1AA', amount: '£2,450', status: 'Pending', due: 'May 25, 2025' },
-    { id: 1, num: 'INV-2025-1047', prop: '45 Queens Road, London SW2 3TR', amount: '£1,850', status: 'Overdue', due: 'May 10, 2025' },
-    { id: 2, num: 'INV-2025-1046', prop: '88 King Street, London EC2V 8BB', amount: '£2,100', status: 'Paid', due: 'May 1, 2025' },
-    { id: 3, num: 'INV-2025-1045', prop: '15 Victoria Ave, London N1 5EH', amount: '£1,950', status: 'Pending', due: 'May 28, 2025' },
-    { id: 4, num: 'INV-2025-1044', prop: '12 Park Lane, London SW1A 1AA', amount: '£2,450', status: 'Overdue', due: 'Apr 25, 2025' },
-    { id: 5, num: 'INV-2025-1043', prop: '45 Queens Road, London SW2 3TR', amount: '£1,850', status: 'Paid', due: 'Apr 10, 2025' },
+    { id: 0, num: 'INV-2026-1048', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', amount: '£2,450', status: 'Pending', due: 'Jul 1, 2026' },
+    { id: 1, num: 'INV-2026-1047', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', amount: '£1,850', status: 'Overdue', due: 'Jul 1, 2026' },
+    { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026' },
 ];
 
 const invoiceStatusStyle = (status) => ({
@@ -1942,26 +2003,20 @@ const maintStatusLabel = { open: 'Open', progress: 'In Progress', done: 'Complet
 const maintStatusStyle = { open: ['#FEF3C7', '#D97706'], progress: ['#DBEAFE', '#2563EB'], done: ['#ECFDF5', '#16A34A'] };
 
 const maintCard = (m) => {
-    const [pBg, pColor] = maintPriorityStyle(m.priority);
     const [sBg, sColor] = maintStatusStyle[m.status];
-    const avatars = [IMG.avatar.plumber, IMG.avatar.heating, IMG.avatar.electric];
     const thumb = IMG.maint[m.id % IMG.maint.length];
+    const location = `${m.prop.split(',')[0]}${m.unit && m.unit !== '—' ? ` · ${m.unit}` : ''}`;
     return `
-    <button data-go="maintenance-detail" data-mid="${m.id}" class="maint-card card w-full text-left">
-        <img src="${thumb}" class="maint-card-thumb" alt="">
-        <div class="maint-card-body">
-            <p class="maint-card-title">${m.issue}</p>
-            <p class="maint-card-sub">${m.prop}</p>
-            <p class="maint-card-time">Reported ${m.time}</p>
-            ${m.contractor !== '—' ? `<div class="maint-card-contractor">
-                <img src="${avatars[m.id % avatars.length]}" class="maint-card-avatar" alt="">
-                <span>${m.contractor}</span>
-            </div>` : ''}
+    <button data-go="maintenance-detail" data-mid="${m.id}" class="flat-list-card card w-full text-left">
+        <div class="flat-list-thumb"><img src="${thumb}" alt=""></div>
+        <div class="flat-list-body">
+            <div class="flat-list-top">
+                <p class="flat-list-name">${m.issue}</p>
+                <span class="badge shrink-0" style="background:${sBg};color:${sColor}">${maintStatusLabel[m.status]}</span>
+            </div>
+            <p class="flat-list-meta">${location} · ${m.time} · ${m.priority}</p>
         </div>
-        <div class="maint-card-badges">
-            <span class="badge" style="background:${pBg};color:${pColor}">${m.priority}</span>
-            <span class="badge" style="background:${sBg};color:${sColor}">${maintStatusLabel[m.status]}</span>
-        </div>
+        <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
     </button>`;
 };
 
@@ -2002,11 +2057,9 @@ const DRAWER_NAV = [
 ];
 
 const TRANSACTIONS = [
-    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Paid', date: 'Mar 1, 2025', prop: '12 Park Lane', iid: 0 },
-    { tenant: 'David Wilson', amount: '£1,850', status: 'Overdue', date: 'Mar 1, 2025', prop: '45 Queens Rd', iid: 1 },
-    { tenant: 'Michael Lee', amount: '£1,950', status: 'Paid', date: 'Feb 1, 2025', prop: '15 Victoria Ave', iid: 2 },
-    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Paid', date: 'Feb 1, 2025', prop: '12 Park Lane', iid: 0 },
-    { tenant: 'David Wilson', amount: '£1,850', status: 'Paid', date: 'Feb 1, 2025', prop: '45 Queens Rd', iid: 1 },
+    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Pending', date: 'Jul 1, 2026', prop: '12 Park Lane', iid: 0 },
+    { tenant: 'David Wilson', amount: '£1,850', status: 'Overdue', date: 'Jul 1, 2026', prop: '45 Queens Rd', iid: 1 },
+    { tenant: 'Michael Lee', amount: '£1,950', status: 'Pending', date: 'Jul 28, 2026', prop: '15 Victoria Ave', iid: 2 },
 ];
 
 const DRAWER_QUICK = [
@@ -2060,20 +2113,24 @@ const formTextarea = (label, value = '', ph = '', key = '') => {
 <textarea class="form-input min-h-[96px] resize-none"${fieldAttr} placeholder="${placeholder}">${content}</textarea></div>`;
 };
 
+const uxIntro = (text) => `<p class="ux-intro">${text}</p>`;
+const uxTip = (text, title = '') => `<div class="ux-tip">${title ? `<p class="ux-tip-title">${title}</p>` : ''}<p class="ux-tip-text">${text}</p></div>`;
+const uxStatGrid = (items) => `<div class="ux-stat-grid">${items.map(([v, l]) => `<div class="ux-stat"><p class="ux-stat-label">${l}</p><p class="ux-stat-value">${v}</p></div>`).join('')}</div>`;
+
 const formSelect = (label, value, options, key = '') => {
     const fieldAttr = key ? ` data-field="${key}"` : '';
     return `<div><label class="form-label">${label}</label>
 <select class="form-input form-select"${fieldAttr}>${options.map(o => `<option ${o === value ? 'selected' : ''}>${o}</option>`).join('')}</select></div>`;
 };
 
-const photoUpload = (label = 'Add photos') => `
+const photoUpload = (label = 'Add photos (simulated upload)') => `
 <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full">
     <i data-lucide="image-plus" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
     <p class="text-[12px] text-[#64748B] mt-2">${label}</p>
 </button>`;
 
 const saveBtn = (label = 'Save Changes', msg = 'Changes saved') => `
-<button type="button" data-action="save" data-msg="${msg}" class="btn-primary w-full py-3.5 text-[14px]">${label}</button>`;
+<button type="button" data-action="save" data-msg="${msg}" class="btn-primary w-full">${label}</button>`;
 
 const menuList = (items) => `
 <div class="card overflow-hidden shadow-sm">
@@ -2081,7 +2138,7 @@ const menuList = (items) => `
     <button data-go="${target}" class="menu-row menu-row-item ${i < items.length - 1 ? 'border-b border-[#F1F5F9]' : ''}">
         <div class="flex items-center gap-3 min-w-0">
             <i data-lucide="${icon}" class="w-5 h-5 text-[#374151] shrink-0"></i>
-            <span class="text-[15px] font-medium text-[#1F2937]">${label}</span>
+            <span class="text-[13px] font-medium text-[#1F2937]">${label}</span>
         </div>
         <i data-lucide="chevron-right" class="w-5 h-5 text-[#9CA3AF] shrink-0"></i>
     </button>`).join('')}
@@ -2121,8 +2178,8 @@ const bottomNav = () => {
 };
 
 const fabFloat = () => {
-    if (STATE.userRole === 'contractor' || STATE.userRole === 'tenant') return '';
-    if (!MAIN_SCREENS.includes(STATE.screen)) return '';
+    if (STATE.userRole !== 'landlord') return '';
+    if (!shouldShowBottomNav()) return '';
     return `<button class="fab-float" data-action="fab" aria-label="Quick actions"><i data-lucide="plus" class="w-6 h-6"></i></button>`;
 };
 
@@ -2196,7 +2253,7 @@ const propFilterSheet = () => {
         </div>
         <div class="filter-sheet-body">
             <div class="filter-sheet-group">
-                <p class="filter-sheet-label">Monthly Rent</p>
+                <p class="filter-sheet-label">Flat Rent (from)</p>
                 <div class="filter-sheet-grid filter-sheet-grid-3">
                     ${opt('rent', 'all', 'All', adv.rent === 'all')}
                     ${opt('rent', 'under2k', 'Under £2k', adv.rent === 'under2k')}
@@ -2204,7 +2261,7 @@ const propFilterSheet = () => {
                 </div>
             </div>
             <div class="filter-sheet-group">
-                <p class="filter-sheet-label">Bedrooms</p>
+                <p class="filter-sheet-label">Bedrooms (any flat)</p>
                 <div class="filter-sheet-grid filter-sheet-grid-4">
                     ${opt('beds', 'any', 'Any', adv.beds === 'any')}
                     ${opt('beds', '1', '1+', adv.beds === '1')}
@@ -2219,14 +2276,13 @@ const propFilterSheet = () => {
     </div>`;
 };
 
-const PROP_SECTIONS = { details:'Overview', photos:'Photos', tenant:'Tenant', documents:'Documents', maintenance:'Maintenance', inspection:'Inspection', compliance:'Compliance', inventory:'Inventory', timeline:'Timeline', 'floor-plans':'Floor Plans' };
+const PROP_SECTIONS = { details:'Building Info', units:'Flats', tenant:'Tenants', documents:'Documents', maintenance:'Maintenance', inspection:'Inspection', compliance:'Compliance', inventory:'Inventory' };
 
 const propMenuList = () => {
     const items = [
-        ['info','Overview','details'],['image','Photos','photos'],['users','Tenant','tenant'],['file-text','Documents','documents'],
+        ['layout-grid','Flats','units'],['users','Tenants','tenant'],['file-text','Documents','documents'],
         ['wrench','Maintenance','maintenance'],['clipboard-list','Inspection','inspection'],
-        ['shield-check','Compliance','compliance'],['package','Inventory','inventory'],
-        ['layout','Floor Plans','floor-plans'],['clock','Timeline','timeline'],
+        ['shield-check','Compliance','compliance'],['package','Inventory','inventory'],['info','Building info','details'],
     ];
     return `<div class="card overflow-hidden">
         ${items.map(([ic,label,tab])=>`
@@ -2241,7 +2297,7 @@ const propMenuList = () => {
 const propSectionBar = (title, subtitle) => `
 <div class="prop-section-bar">
     <div class="sub-header-left">
-        <button data-tab="overview" class="back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+        <button type="button" data-action="back" class="back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
         <div class="min-w-0">
             <h2 class="sub-header-title">${title}</h2>
             ${subtitle ? `<p class="text-[11px] text-[#64748B] truncate leading-tight mt-0.5">${subtitle}</p>` : ''}
@@ -2266,9 +2322,11 @@ function screenDashboard() {
     const occupiedCount = PROPERTIES.length - vacantCount;
     const compliantCount = PROPERTIES.filter(p => p.compliance).length;
     const occupancy = PROPERTIES.length ? Math.round((occupiedCount / PROPERTIES.length) * 100) : 0;
-    const monthlyRent = PROPERTIES.reduce((s, p) => s + parseInt(p.rent.replace(/[^\d]/g, ''), 10), 0);
-    const overdueAmount = '£4,250';
-    const collectedPct = 92;
+    const monthlyRent = typeof portfolioStats === 'function' ? portfolioStats().monthlyRent : PROPERTIES.reduce((s, p) => s + parseInt(p.rent.replace(/[^\d]/g, ''), 10), 0);
+    const overdueAmt = INVOICES.filter(i => i.status === 'Overdue').reduce((s, i) => s + parseInt(i.amount.replace(/[^\d]/g, ''), 10), 0);
+    const overdueAmount = overdueAmt ? `£${overdueAmt.toLocaleString()}` : null;
+    const fin = typeof financialStats === 'function' ? financialStats() : null;
+    const collectedPct = fin?.pct ?? null;
     const compliancePct = PROPERTIES.length ? Math.round((compliantCount / PROPERTIES.length) * 100) : 0;
     const reminders = (typeof AppStore !== 'undefined' ? AppStore.reminders : [
         { title: 'Gas Certificate Expiry', propertyId: 0, daysLeft: 3, urgency: 'high', type: 'gas' },
@@ -2277,7 +2335,7 @@ function screenDashboard() {
     ]).slice(0, 3).map(r => {
         const p = PROPERTIES[r.propertyId];
         const rt = (typeof REMINDER_TYPES !== 'undefined' ? REMINDER_TYPES.find(t => t[0] === r.type) : null) || ['custom', r.title, 'bell', '#EFF6FF', '#2563EB'];
-        const tab = r.type === 'inspection' ? 'inspection' : r.type === 'rent-review' ? 'overview' : 'compliance';
+        const tab = r.type === 'inspection' ? 'inspection' : r.type === 'rent-review' ? 'units' : 'compliance';
         return [rt[2], r.title, p?.name || '', `${r.daysLeft} days left`, rt[3], rt[4], r.propertyId, tab, r.urgency];
     });
     return `${dashboardHeader()}
@@ -2306,14 +2364,15 @@ function screenDashboard() {
             </div>
         </div>
 
-        <button data-go="financial" class="dash-alert">
+        ${overdueAmount ? `
+        <button data-go="financial" data-invoice-preset="overdue" class="dash-alert">
             <div class="dash-alert-icon"><i data-lucide="alert-circle" class="w-5 h-5"></i></div>
             <div class="dash-alert-body">
                 <p class="dash-alert-title">${overdueAmount} overdue rent</p>
                 <p class="dash-alert-desc">Tap to review and follow up with tenant</p>
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 dash-alert-chevron"></i>
-        </button>
+        </button>` : ''}
 
         <div class="dash-quick">
             ${[
@@ -2336,7 +2395,7 @@ function screenDashboard() {
             })}
             ${dashStatCard({
                 go: 'properties', variant: 'vacant', icon: 'home',
-                label: 'Vacant Units', value: vacantCount,
+                label: 'Vacant Flats', value: vacantCount,
                 pill: vacantCount ? 'Fill' : null,
             })}
             ${dashStatCard({
@@ -2344,11 +2403,11 @@ function screenDashboard() {
                 label: 'Compliant', value: `${compliantCount}/${PROPERTIES.length}`,
                 pill: compliancePct === 100 ? 'OK' : null,
             })}
-            ${dashStatCard({
+            ${collectedPct != null ? dashStatCard({
                 go: 'financial', variant: 'collected', icon: 'trending-up',
                 label: 'Collected', value: `${collectedPct}%`,
-                pill: '+4%',
-            })}
+                pill: null,
+            }) : ''}
         </div>
 
         <div>
@@ -2388,36 +2447,34 @@ function screenDashboard() {
 }
 
 function screenProperties() {
-    const grid = STATE.propertiesView === 'grid';
+    if (typeof syncPropertyStatus === 'function') PROPERTIES.forEach(p => syncPropertyStatus(p.id));
     const filtered = filterProperties();
-    const counts = { all: PROPERTIES.length, occupied: PROPERTIES.filter(p=>p.status==='Occupied').length, vacant: PROPERTIES.filter(p=>p.status==='Vacant').length };
+    const counts = {
+        all: PROPERTIES.length,
+        occupied: PROPERTIES.filter(p => typeof propertyOccupiedFlatCount === 'function' ? propertyOccupiedFlatCount(p.id) > 0 : ['Occupied', 'Partial', 'Full'].includes(p.status)).length,
+        vacant: PROPERTIES.filter(p => typeof propertyOccupiedFlatCount === 'function' ? propertyOccupiedFlatCount(p.id) === 0 : p.status === 'Vacant').length,
+    };
     const adv = STATE.propertiesAdvanced;
     const activeAdv = adv.rent !== 'all' || adv.beds !== 'any';
-    const propCard = (p, i) => grid ? `
-        <button data-go="property-detail" data-pid="${p.id}" class="card overflow-hidden text-left">
-            <div class="relative h-[100px]">
-                <img src="${IMG.props[i]}" class="img-cover" alt="">
-                <span class="badge absolute top-2 left-2" style="background:${p.statusColor[0]};color:${p.statusColor[1]}">${p.status}</span>
-            </div>
-            <div class="p-2.5">
-                <p class="text-[12px] font-bold text-[#0F172A] leading-tight">${p.name}</p>
-                <p class="text-[10px] text-[#64748B] mt-0.5 truncate">${p.tenant || 'No tenant'}</p>
-                <p class="text-[13px] font-bold text-[#2563EB] mt-1">${p.rent}</p>
-            </div>
-        </button>` : `
-        <button data-go="property-detail" data-pid="${p.id}" class="prop-list-card card w-full text-left">
+    const coverFor = (p) => typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(p.id) : IMG.props[p.id];
+    const propCard = (p) => {
+        const badge = typeof propertyOccupancyBadge === 'function' ? propertyOccupancyBadge(p.id) : { label: p.status, bg: p.statusColor[0], color: p.statusColor[1] };
+        return `
+        <button data-go="property-detail" data-pid="${p.id}" data-tab="units" class="prop-list-card card w-full text-left">
             <div class="prop-list-thumb">
-                <img src="${IMG.props[i]}" alt="">
+                <img src="${coverFor(p)}" alt="">
             </div>
             <div class="prop-list-body">
                 <div class="prop-list-top">
                     <p class="prop-list-name">${p.name}</p>
-                    <span class="badge shrink-0" style="background:${p.statusColor[0]};color:${p.statusColor[1]}">${p.status}</span>
+                    <span class="badge shrink-0" style="background:${badge.bg};color:${badge.color}">${badge.label}</span>
                 </div>
                 <p class="prop-list-addr">${p.address}</p>
-                <p class="prop-list-rent">${p.rent}<span>/mo</span></p>
+                <p class="prop-list-rent">${typeof propertyRentListLabel === 'function' ? propertyRentListLabel(p.id) : p.rent}</p>
             </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0 self-center mr-3"></i>
         </button>`;
+    };
     return `${topBar('Properties', { search: true, searchKey: 'properties' })}
     <div class="screen-content screen-enter">
         <div class="flex gap-2">
@@ -2434,27 +2491,24 @@ function screenProperties() {
             ${[['all','All',counts.all],['occupied','Occupied',counts.occupied],['vacant','Vacant',counts.vacant]].map(([k,l,n])=>`
             <button type="button" data-prop-filter="${k}" class="filter-chip ${STATE.propertiesFilter===k?'active':''}">${l} (${n})</button>`).join('')}
         </div>
-        <div class="segment-toggle">
-            <button type="button" data-prop-view="grid" class="${grid?'active':''}">Grid</button>
-            <button type="button" data-prop-view="list" class="${!grid?'active':''}">List</button>
-        </div>
-        <p class="text-[12px] text-[#94A3B8]">${filtered.length} propert${filtered.length===1?'y':'ies'} shown</p>
-        ${filtered.length ? `<div class="${grid?'grid grid-cols-2 gap-4':'stack-sm'}">
-            ${filtered.map(p=>propCard(p, p.id)).join('')}
+        ${filtered.length ? `<div class="stack-sm">
+            ${filtered.map(p=>propCard(p)).join('')}
         </div>` : `<div class="card p-8 text-center"><i data-lucide="building-2" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i><p class="text-[14px] font-semibold text-[#0F172A] mt-3">No properties found</p><p class="text-[12px] text-[#64748B] mt-1">Try a different search or filter</p></div>`}
     </div>`;
 }
 
 function screenPropertyDetail() {
     const p = PROPERTIES[STATE.propertyId];
-    const isHub = STATE.tab === 'overview';
     const tabContent = {
         details: typeof renderPropertyOverviewDetails === 'function'
             ? renderPropertyOverviewDetails(STATE.propertyId)
             : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading property details…</p></div>`,
         tenant: typeof renderPropertyTenantTab === 'function'
             ? renderPropertyTenantTab(STATE.propertyId)
-            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading tenant…</p></div>`,
+            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading tenants…</p></div>`,
+        units: typeof renderPropertyUnitsTab === 'function'
+            ? renderPropertyUnitsTab(STATE.propertyId)
+            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading units…</p></div>`,
         documents: (() => {
             const docs = typeof AppStore !== 'undefined' ? AppStore.docsForProperty(STATE.propertyId) : [];
             const docIcons = { 'Tenancy Agreement': 'file-text', 'Deposit Certificate': 'shield', 'Gas Certificate': 'flame', 'Electrical Certificate': 'zap', 'EPC Certificate': 'leaf', 'How to Rent Guide': 'book-open', 'Signed Document': 'file-check', 'Custom Document': 'file' };
@@ -2469,49 +2523,26 @@ function screenPropertyDetail() {
                 ${docs.length ? docs.map(d => `
                 <div class="card p-3.5 flex items-center gap-3 mb-2">
                     <div class="w-11 h-11 rounded-xl bg-[#F8FAFC] flex items-center justify-center" style="color:${docColors[d.type] || '#64748B'}"><i data-lucide="${docIcons[d.type] || 'file'}" class="w-5 h-5"></i></div>
-                    <button data-go="document-preview" data-doc="${d.id}" class="flex-1 text-left">
+                    <button data-go="document-preview" data-doc="${d.id}" class="flex-1 text-left min-w-0">
                         <p class="text-[13px] font-semibold">${d.name}</p>
                         <p class="text-[11px] text-[#64748B]">${d.type} · ${d.date}${d.shared ? ' · Shared' : ''}${d.signed ? ' · Signed' : ''}</p>
                     </button>
-                    <button data-action="share-doc" data-doc="${d.id}" class="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center" title="Share"><i data-lucide="share-2" class="w-4 h-4 text-[#2563EB]"></i></button>
+                    <div class="row-actions">
+                        <button data-action="share-doc" data-doc="${d.id}" class="row-icon-btn row-icon-btn--primary" title="Share"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                        ${d.type === 'Custom Document' ? `<button data-action="delete-document" data-doc="${d.id}" class="row-icon-btn row-icon-btn--danger" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    </div>
                 </div>`).join('') : `<div class="card p-8 text-center"><i data-lucide="folder-open" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i><p class="text-[14px] font-semibold text-[#0F172A] mt-3">No documents</p><p class="text-[12px] text-[#64748B] mt-1">Upload agreements and certificates</p></div>`}
             </div>`;
         })(),
         maintenance: (() => {
             const propMaint = propertyMaintenanceItems(p.name);
-            const groups = [
-                ['open', 'Open'],
-                ['progress', 'In Progress'],
-                ['done', 'Completed'],
-            ];
-            const groupHtml = groups.map(([status, label]) => {
-                const items = propMaint.filter(m => m.status === status);
-                if (!items.length) return '';
-                return `
-                <div class="maint-group">
-                    <p class="maint-group-label">${label} <span>${items.length}</span></p>
-                    <div class="space-y-2">
-                        ${items.map(m => {
-                            const [bg, color] = maintPriorityStyle(m.priority);
-                            return `
-                        <button data-go="maintenance-detail" data-mid="${m.id}" class="maint-card card w-full text-left">
-                            <div class="maint-card-top">
-                                <span class="badge" style="background:${bg};color:${color}">${m.priority}</span>
-                                <span class="maint-card-time">${m.time}</span>
-                            </div>
-                            <p class="maint-card-title">${m.issue}</p>
-                            ${m.contractor !== '—' ? `<p class="maint-card-sub">${m.contractor}</p>` : ''}
-                        </button>`;
-                        }).join('')}
-                    </div>
-                </div>`;
-            }).join('');
+            const openItems = propMaint.filter(m => m.status !== 'done');
             return `
-            <div class="screen-content">
-                ${propMaint.length ? groupHtml : `
+            <div class="screen-content screen-content-sm prop-hub-page">
+                ${openItems.length ? `<div class="stack-sm">${openItems.map(m => maintCard(m)).join('')}</div>` : `
                 <div class="card p-8 text-center">
                     <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
-                    <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No maintenance issues</p>
+                    <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No open issues</p>
                     <p class="text-[12px] text-[#64748B] mt-1">Log a new issue to get started</p>
                 </div>`}
                 <button data-go="log-maintenance" class="btn-primary w-full py-3.5 text-[13px]">Log New Issue</button>
@@ -2523,50 +2554,17 @@ function screenPropertyDetail() {
         compliance: typeof renderPropertyComplianceTab === 'function'
             ? renderPropertyComplianceTab(STATE.propertyId)
             : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading compliance…</p></div>`,
-        inventory: `
-            <div class="screen-content screen-content-sm">
-                ${[['utensils','Kitchen','Good','4 photos'],['sofa','Living Room','Good','6 items'],['bed-double','Bedroom','Fair','5 items'],['bath','Bathroom','Good','3 items'],['door-open','Hallway','Good','2 items']].map(([ic,r,c,n],idx)=>`
-                <button data-go="inventory-room" data-room="${idx}" class="card w-full p-4 flex items-center justify-between card-hover text-left">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center"><i data-lucide="${ic}" class="w-[18px] h-[18px] text-[#64748B]"></i></div>
-                        <div><p class="text-[13px] font-semibold">${r}</p><p class="text-[11px] text-[#64748B]">${n}</p></div>
-                    </div>
-                    <span class="badge ${c==='Good'?'bg-[#DCFCE7] text-[#16A34A]':'bg-[#FEF3C7] text-[#D97706]'}">${c}</span>
-                </button>`).join('')}
-            </div>`,
-        'floor-plans': `<div class="screen-content"><p class="text-[13px] text-[#64748B] mb-3">Floor plans and layout diagrams for this property.</p><button data-go="property-floor-plans" class="btn-primary w-full py-3.5 text-[14px]">Open Floor Plans</button></div>`,
-        photos: `<div class="screen-content"><p class="text-[13px] text-[#64748B] mb-3">Upload photos, set a cover image, and manage the property gallery.</p><button data-go="property-photos" data-pid="${STATE.propertyId}" class="btn-primary w-full py-3.5 text-[14px]">Open Photo Gallery</button></div>`,
-        timeline: typeof renderPropertyTimelineTab === 'function'
-            ? renderPropertyTimelineTab(STATE.propertyId)
-            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">No activity yet</p></div>`,
+        inventory: typeof renderPropertyInventoryTab === 'function'
+            ? renderPropertyInventoryTab(STATE.propertyId)
+            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading inventory…</p></div>`,
+        'floor-plans': `<div class="screen-content"><button data-tab="details" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
+        photos: `<div class="screen-content"><button data-tab="details" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
+        timeline: `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Activity is shown on the dashboard and in each section (maintenance, compliance, inspections).</p></div>`,
     };
 
-    if (isHub) {
-        return `
-        <div class="relative h-[180px] shrink-0 w-full">
-            <img src="${typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(STATE.propertyId) : IMG.props[STATE.propertyId]}" class="img-cover" alt="">
-            <div class="absolute inset-0 hero-gradient"></div>
-            <button data-action="back" class="top-icon-btn absolute bg-white/90 rounded-full shadow-md" style="top:12px;left:var(--gutter)"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <span class="badge absolute bottom-3 left-5" style="background:${p.statusColor[0]};color:${p.statusColor[1]}">${p.status}</span>
-        </div>
-        <div class="property-hub-meta">
-            <div class="min-w-0">
-                <h2 class="sub-header-title">${p.name}</h2>
-                <p class="sub-header-sub">${p.address}</p>
-            </div>
-            <button data-go="edit-property" data-pid="${STATE.propertyId}" class="text-[13px] font-semibold text-[#2563EB] shrink-0">Edit</button>
-        </div>
-        <div class="property-hub-actions">
-            ${[['users','Tenant','tenant'],['wrench','Maintenance','maintenance'],['file-text','Documents','documents']].map(([ic,l,tab])=>`
-            <button data-tab="${tab}" class="quick-action">
-                <div class="quick-action-circle"><i data-lucide="${ic}" class="w-[20px] h-[20px]"></i></div>
-                <span>${l}</span>
-            </button>`).join('')}
-        </div>
-        <div class="screen-content screen-enter">
-            <p class="section-title">All Sections</p>
-            ${propMenuList()}
-        </div>`;
+    if (STATE.tab === 'units') {
+        return `${topBar(p.name, { back: true, more: true, pid: STATE.propertyId, sub: p.address })}
+        <div class="screen-enter">${tabContent.units}</div>`;
     }
 
     const sectionTitle = PROP_SECTIONS[STATE.tab] || 'Section';
@@ -2612,8 +2610,8 @@ function screenTenants() {
                 <p class="tenant-empty-sub">Try adjusting your search or filters</p>
             </div>`}
         </div>
-        <button type="button" data-go="invite-tenant" data-pid="0" class="btn-primary tenant-add-btn">
-            <i data-lucide="plus" class="w-5 h-5"></i> Add Tenant
+        <button type="button" data-go="select-property-invite" class="btn-primary tenant-add-btn">
+            <i data-lucide="plus" class="w-5 h-5"></i> Invite Tenant
         </button>
     </div>`;
 }
@@ -2680,7 +2678,7 @@ const tenantOverview = (t, avatar) => {
         <div class="tenant-hero-shine" aria-hidden="true"></div>
         <div class="tenant-hero-toolbar">
             <button type="button" data-action="back" class="tenant-hero-back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <button type="button" data-action="toast" data-msg="More options" class="tenant-hero-more"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
+            <button type="button" data-go="edit-tenant" class="tenant-hero-more" title="Edit tenant"><i data-lucide="pencil" class="w-5 h-5"></i></button>
         </div>
         <div class="tenant-hero-content">
             <div class="tenant-hero-avatar-wrap">
@@ -2709,13 +2707,16 @@ const tenantOverview = (t, avatar) => {
     </div>
     <div class="tenant-quick-actions">
         ${[
-            ['phone', 'Call', 'call', null],
-            ['message-square', 'Message', null, listItem.chatId],
-            ['mail', 'Email', 'email', null],
-            ['more-horizontal', 'More', 'more', null],
-            ...(listItem.status === 'active' ? [['log-out', 'Check-out', null, 'checkout']] : []),
-        ].map(([ic, label, action, chatOrCheckout]) => `
-        <button type="button" ${action === 'checkout' || chatOrCheckout === 'checkout' ? `data-go="checkout-tenancy" data-tid="${STATE.tenantId}"` : action === 'call' ? `data-action="call-tenant"` : action === 'email' ? `data-action="email-tenant"` : chatOrCheckout != null && typeof chatOrCheckout === 'number' ? `data-go="chat" data-chat="${chatOrCheckout}"` : action === 'more' ? `data-action="toast" data-msg="More tenant options"` : `data-action="toast" data-msg="Unavailable"`} class="tenant-quick-btn">
+            ['phone', 'Call', 'call'],
+            ['message-square', 'Message', 'message'],
+            ...(listItem.status === 'active' ? [['log-out', 'Check-out', 'checkout']] : []),
+        ].map(([ic, label, action]) => `
+        <button type="button" ${
+            action === 'checkout' ? `data-go="checkout-tenancy" data-tid="${STATE.tenantId}"`
+            : action === 'call' ? `data-action="call-tenant"`
+            : action === 'message' && listItem.chatId != null ? `data-go="chat" data-chat="${listItem.chatId}"`
+            : `data-action="toast" data-msg="Unavailable"`
+        } class="tenant-quick-btn">
             <div class="tenant-quick-icon"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
             <span>${label}</span>
         </button>`).join('')}
@@ -2734,82 +2735,61 @@ const tenantOverview = (t, avatar) => {
 
 const tenantSectionContent = (tab, t) => {
     const listItem = TENANT_LIST[STATE.tenantId] || TENANT_LIST[0];
+    const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(STATE.tenantId) : null;
+    const formatDob = (dob) => {
+        if (!dob) return '—';
+        const d = new Date(dob);
+        return Number.isNaN(d.getTime()) ? dob : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
     const sections = {
-        personal: () => tenantFieldsCard([
-            ['Full Name', `${t.firstName} ${t.lastName}`],
-            ['Date of Birth', '15 Mar 1990'],
-            ['Nationality', 'British'],
-            ['National Insurance', 'AB 12 34 56 C'],
-            ['Preferred Language', 'English (UK)'],
-        ]),
-        contact: () => tenantFieldsCard([
-            ['Phone', t.phone],
-            ['Email', t.email],
-            ['Alternate Phone', '—'],
-            ['Preferred Contact', 'Email'],
-        ]),
-        emergency: () => tenantFieldsCard([
-            ['Contact Name', t.emergency],
-            ['Relationship', 'Spouse'],
-            ['Phone', t.emergencyPhone],
-            ['Email', 'james.j@email.com'],
-        ]),
-        property: () => `
-            ${tenantFieldsCard([
-                ['Property', listItem.prop],
-                ['Unit', listItem.unit || '—'],
-                ['Address', 'London, UK'],
-                ['Move-in Date', 'Jan 15, 2024'],
-            ])}
-            <button type="button" data-go="property-detail" data-pid="${listItem.propertyId}" class="btn-secondary w-full py-3 text-[13px]">View Property</button>`,
-        lease: () => `
-            ${tenantFieldsCard([
-                ['Lease Type', 'AST · 12 months'],
-                ['Start Date', typeof formatDisplayDate === 'function' ? formatDisplayDate(t.moveIn) || '—' : '—'],
-                ['End Date', typeof formatDisplayDate === 'function' ? formatDisplayDate(t.leaseEnd) || '—' : '—'],
-                ['Monthly Rent', '£' + Number(t.rent || 0).toLocaleString()],
-                ['Deposit', '£' + Number(t.rent || 0).toLocaleString()],
-                ['Deposit Scheme', 'DPS'],
-            ])}
-            <p class="text-[12px] text-[#64748B] leading-relaxed px-1">Dates come from tenant profile. Edit via <strong>Edit Tenant</strong> or set when inviting a new tenant.</p>
-            <button type="button" data-go="edit-tenant" class="btn-secondary w-full py-3 text-[13px]">Edit Lease Dates</button>
-            <button type="button" data-go="document-preview" class="btn-secondary w-full py-3 text-[13px]">View Lease PDF</button>
-            ${typeof renderTenancyMemberList === 'function' ? renderTenancyMemberList(STATE.tenantId) : ''}`,
-        employment: () => tenantFieldsCard([
-            ['Employer', 'Tech Solutions Ltd'],
-            ['Job Title', 'Software Engineer'],
-            ['Annual Income', '£65,000'],
-            ['Employment Status', 'Full-time'],
-            ['Start Date', 'Sep 2019'],
-        ]),
-        identity: () => {
-            const avatars = [IMG.avatar.sarah, IMG.avatar.david, IMG.avatar.michael, IMG.avatar.michael];
-            const thumb = avatars[STATE.tenantId] || IMG.avatar.sarah;
+        personal: () => {
+            const nidDoc = typeof getTenantNidProof === 'function' ? getTenantNidProof(STATE.tenantId) : null;
             return `
-            <div class="stack-sm">
-                ${[
-                    ['Passport', 'Verified', 'Jan 2024', thumb],
-                    ['Driving Licence', 'Verified', 'Jan 2024', thumb],
-                    ['Right to Rent', 'Valid', 'Jan 2026', null],
-                ].map(([name, status, date, idThumb]) => `
-                <div class="card tenant-id-card">
-                    <div class="tenant-id-main">
-                        <div class="tenant-id-icon"><i data-lucide="file-badge" class="w-5 h-5"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <p class="tenant-id-name">${name}</p>
-                            <p class="tenant-id-date">Uploaded ${date}</p>
-                        </div>
-                        <span class="tenant-verified-badge"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>${status}</span>
+            ${tenantFieldsCard([
+                ['Full Name', `${t.firstName} ${t.lastName}`],
+                ['Date of Birth', formatDob(t.dob)],
+                ['NID', t.idNumber || '—'],
+            ])}
+            <div class="card p-4">
+                <div class="flex items-center gap-3">
+                    <div class="tenant-doc-icon" style="color:#7C3AED"><i data-lucide="id-card" class="w-5 h-5"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[13px] font-semibold text-[#0F172A]">NID Document Proof</p>
+                        <p class="text-[12px] text-[#64748B] mt-0.5">${nidDoc ? nidDoc.name : 'Not uploaded'}</p>
                     </div>
-                    ${idThumb ? `<img src="${idThumb}" class="tenant-id-thumb" alt="">` : ''}
-                </div>`).join('')}
+                    ${nidDoc ? `<button type="button" data-go="document-preview" data-preview-source="tenant-nid" data-tid="${STATE.tenantId}" class="header-text-link text-[12px]">View</button>` : ''}
+                </div>
             </div>`;
         },
+        contact: () => tenantFieldsCard([
+            ['Phone', t.phone || '—'],
+            ['Email', t.email || '—'],
+            ['Emergency Contact', t.emergency || '—'],
+            ['Emergency Phone', t.emergencyPhone || '—'],
+        ]),
+        property: () => {
+            const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(listItem.propertyId, listItem.unit) : null;
+            return `
+            ${tenantFieldsCard([
+                ['Property', listItem.prop],
+                ['Flat', listItem.unit || '—'],
+                ['Tenancy', tenancy ? tenancyTypeLabel(tenancy.type) : '—'],
+                ['Move-in', typeof formatDisplayDate === 'function' ? formatDisplayDate(t.moveIn) || '—' : '—'],
+                ['Lease End', typeof formatDisplayDate === 'function' ? formatDisplayDate(t.leaseEnd) || '—' : '—'],
+                ['Monthly Rent', '£' + Number(t.rent || 0).toLocaleString()],
+            ])}
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-3 text-[13px]">View flat</button>
+                ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-3 text-[13px]">View tenancy</button>` : `<button type="button" data-go="property-detail" data-pid="${listItem.propertyId}" class="btn-secondary py-3 text-[13px]">View property</button>`}
+            </div>
+            ${typeof renderTenancyMemberList === 'function' ? renderTenancyMemberList(STATE.tenantId) : ''}`;
+        },
+        lease: () => sections.property(),
+        identity: () => sections.documents(),
         documents: () => {
             const docs = typeof getTenantDocuments === 'function' ? getTenantDocuments(t.id) : [
                 ['file-text', 'Lease Agreement.pdf', 'Jan 15, 2024', '#2563EB'],
-                ['file-image', 'ID Scan.jpg', 'Jan 10, 2024', '#7C3AED'],
-                ['file-check', 'Reference Letter.pdf', 'Jan 8, 2024', '#059669'],
+                ['file-image', 'NID Proof.jpg', 'Jan 10, 2024', '#7C3AED'],
             ];
             return `
             <div class="stack-sm">
@@ -2820,43 +2800,23 @@ const tenantSectionContent = (tab, t) => {
                         <p class="tenant-doc-name">${name}</p>
                         <p class="tenant-doc-date">${date}</p>
                     </div>
-                    <i data-lucide="download" class="w-4 h-4 text-[#94A3B8]"></i>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8]"></i>
                 </button>`).join('')}
                 <button type="button" data-action="upload-tenant-doc" class="tenant-upload-zone">
                     <i data-lucide="upload" class="w-6 h-6"></i>
-                    <p>Upload Document</p>
+                    <p>Upload document</p>
                 </button>
             </div>`;
         },
-        insurance: () => tenantFieldsCard([
-            ['Provider', 'Contents Cover Plus'],
-            ['Policy Number', 'CCP-2024-8891'],
-            ['Coverage', '£25,000'],
-            ['Expiry Date', 'Dec 2025'],
-            ['Status', 'Active'],
-        ]),
-        guarantor: () => tenantFieldsCard([
-            ['Name', 'James Johnson'],
-            ['Relationship', 'Spouse'],
-            ['Phone', '+44 7700 900789'],
-            ['Email', 'james.j@email.com'],
-            ['Annual Income', '£58,000'],
-        ]),
         payments: () => `
             <div class="tenant-balance-card card">
                 <p class="tenant-balance-label">Outstanding Balance</p>
-                <p class="tenant-balance-amount">£0.00</p>
+                <p class="tenant-balance-amount">${pay?.balance || '£0.00'}</p>
                 <div class="tenant-balance-grid">
-                    <div><p class="tenant-balance-mini-label">Last Payment</p><p class="tenant-balance-mini-value">£${t.rent} · Mar 1</p></div>
-                    <div><p class="tenant-balance-mini-label">Next Due</p><p class="tenant-balance-mini-value">Apr 1, 2025</p></div>
+                    <div><p class="tenant-balance-mini-label">Last Payment</p><p class="tenant-balance-mini-value">${pay?.lastPayment || '—'}</p></div>
+                    <div><p class="tenant-balance-mini-label">Next Due</p><p class="tenant-balance-mini-value">${pay?.nextDue || '—'}</p></div>
                 </div>
             </div>
-            ${tenantFieldsCard([
-                ['Payment Method', 'Bank Transfer'],
-                ['Auto Pay', 'Enabled'],
-                ['Security Deposit', '£2,450'],
-                ['Deposit Status', 'Protected'],
-            ])}
             <button type="button" data-go="transaction-history" class="btn-secondary w-full py-3 text-[13px]">View Payment History</button>`,
         maintenance: () => typeof renderTenantMaintenanceSection === 'function'
             ? renderTenantMaintenanceSection(STATE.tenantId)
@@ -2884,12 +2844,11 @@ const tenantSectionContent = (tab, t) => {
 };
 
 const TENANT_SECTION_TITLES = {
-    personal: 'Personal Info', contact: 'Contact Info', emergency: 'Emergency Contact',
-    property: 'Property Info', lease: 'Lease Info', employment: 'Employment Info',
-    identity: 'Identity Verification', documents: 'Uploaded Documents',
-    insurance: 'Insurance', guarantor: 'Guarantor Info',
-    payments: 'Payment & Ledger', maintenance: 'Maintenance Requests',
-    notes: 'Notes', activity: 'Activity Timeline',
+    personal: 'Personal & ID', contact: 'Contact',
+    property: 'Tenancy', lease: 'Tenancy',
+    identity: 'Documents', documents: 'Documents',
+    payments: 'Payments', maintenance: 'Maintenance',
+    notes: 'Notes',
 };
 
 function screenTenantDetail() {
@@ -2920,16 +2879,18 @@ function screenMaintenance() {
         done: MAINTENANCE_ITEMS.filter(m=>m.status==='done').length,
     };
     return `${topBar('Maintenance')}
-    <div class="screen-content screen-enter">
+    <div class="screen-content screen-content-sm screen-enter prop-hub-page">
         <div class="filter-tabs">
-            ${[['all','All',counts.all],['open','Open',counts.open],['progress','In Progress',counts.progress],['done','Completed',counts.done]].map(([k,l,n])=>`
-            <button type="button" data-maint-filter="${k}" class="filter-chip ${f===k?'active':''}">${l} (${n})</button>`).join('')}
+            ${[['all','All',counts.all],['open','Open',counts.open],['progress','In Progress',counts.progress],['done','Done',counts.done]].map(([k,l,n])=>`
+            <button type="button" data-maint-filter="${k}" class="filter-chip ${f===k?'active':''}">${l}${f===k ? ` (${n})` : ''}</button>`).join('')}
         </div>
-        <div class="stack-sm">
-        ${items.length ? items.map(m => maintCard(m)).join('') : `<div class="card p-8 text-center"><i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i><p class="text-[14px] font-semibold text-[#0F172A] mt-3">No issues found</p></div>`}
-        </div>
+        ${items.length ? `<div class="stack-sm">${items.map(m => maintCard(m)).join('')}</div>` : `
+        <div class="card p-8 text-center">
+            <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
+            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No issues found</p>
+        </div>`}
         <button data-go="log-maintenance" class="btn-primary w-full py-3.5 text-[13px]">Log New Issue</button>
-        <button data-go="maintenance-history" class="btn-secondary w-full py-3 text-[13px] mt-2">View Full History</button>
+        ${counts.done ? `<button data-go="maintenance-history" class="btn-secondary w-full py-3 text-[13px]">View completed (${counts.done})</button>` : ''}
     </div>`;
 }
 
@@ -3004,7 +2965,7 @@ function screenChat() {
             <div class="chat-header-info">
                 <img src="${c.img}" class="chat-header-avatar" alt="">
                 <div class="min-w-0">
-                    <p class="text-[15px] font-bold text-[#0F172A] leading-tight">${c.name}</p>
+                    <p class="text-[13px] font-bold text-[#0F172A] leading-tight">${c.name}</p>
                     ${statusLine}
                 </div>
             </div>
@@ -3027,7 +2988,7 @@ function screenChat() {
 }
 
 function screenProfile() {
-    return `${topBar('Profile', { hideBell: true })}
+    return `${topBar('Profile', { back: true, hideBell: true })}
     <div class="screen-content screen-enter">
         <button data-go="personal-info" class="profile-card">
             <img src="${IMG.avatar.john}" class="profile-card-avatar" alt="">
@@ -3044,7 +3005,6 @@ function screenProfile() {
             ['key-round','Change Password','password'],
             ['shield','Security','security'],
             ['receipt','Transaction History','transaction-history'],
-            ['gem','Subscription','subscription'],
         ])}
         <p class="section-title">Support & Legal</p>
         ${menuList([
@@ -3060,14 +3020,15 @@ function screenProfile() {
 function screenPersonalInfo() {
     if (STATE.userRole === 'tenant') {
         const t = getActiveTenant();
+        const tenantNav = typeof shouldShowBottomNav === 'function' && shouldShowBottomNav('personal-info');
         if (!t) {
-            return `${topBar('Account', { back: true })}
+            return `${topBar('Account', { back: !tenantNav })}
             <div class="screen-content screen-enter">
                 <p class="text-[14px] text-[#64748B]">Activate your account via invitation link to view profile.</p>
             </div>`;
         }
         const p = PROPERTIES[t.propertyId];
-        return `${topBar('Account', { back: true })}
+        return `${topBar('Account', { back: !tenantNav })}
         <div class="screen-content screen-enter">
             <div class="flex justify-center mb-2">
                 <img src="${IMG.avatar.sarah}" class="w-20 h-20 rounded-2xl object-cover" alt="">
@@ -3075,7 +3036,7 @@ function screenPersonalInfo() {
             ${formField('First Name', t.firstName, 'text', '', 'firstName')}${formField('Last Name', t.lastName, 'text', '', 'lastName')}
             ${formField('Email', t.email, 'email', '', 'email')}${formField('Phone', t.phone || '—', 'tel', '', 'phone')}
             <div><label class="form-label">Property</label><input class="form-input" value="${p?.name || '—'}" readonly></div>
-            <div><label class="form-label">Unit</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
+            <div><label class="form-label">Flat</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
             <p class="section-title">Support & Legal</p>
             ${menuList([
                 ['help-circle', 'Help & Support', 'help-support'],
@@ -3195,14 +3156,13 @@ function screenSubscription() {
     <div class="screen-content screen-enter">
         <div class="card p-5 border-l-4 border-l-[#2563EB]">
             <p class="text-[11px] font-bold text-[#2563EB] uppercase tracking-wide">Current Plan</p>
-            <p class="text-[20px] font-bold text-[#0F172A] mt-1">Pro Landlord</p>
+            <p class="text-[17px] font-bold text-[#0F172A] mt-1">Pro Landlord</p>
             <p class="text-[13px] text-[#64748B] mt-1">£19/month · Renews Mar 15, 2025</p>
         </div>
         <div class="card divide-y divide-[#F1F5F9]">
             ${['Up to 20 properties','Unlimited tenants','Compliance tracking','Priority support'].map(f=>`
             <div class="px-4 py-3 flex items-center gap-2 text-[13px]"><i data-lucide="check" class="w-4 h-4 text-[#22C55E]"></i>${f}</div>`).join('')}
         </div>
-        <button data-action="toast" data-msg="Manage subscription" class="btn-primary w-full py-3.5 text-[14px]">Manage Plan</button>
     </div>`;
 }
 
@@ -3319,7 +3279,7 @@ function screenAbout() {
             <div class="w-20 h-20 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center mx-auto shadow-lg shadow-blue-200">
                 <i data-lucide="building-2" class="w-10 h-10"></i>
             </div>
-            <h2 class="text-[22px] font-bold text-[#0F172A] mt-4">Landlord HQ</h2>
+            <h2 class="text-[14px] font-bold text-[#0F172A] mt-4">Landlord HQ</h2>
             <p class="text-[13px] text-[#64748B] mt-1">${about.tagline}</p>
             <span class="badge bg-[#F1F5F9] text-[#64748B] mt-3 inline-block">Version 1.0.0</span>
         </div>
@@ -3358,7 +3318,7 @@ function screenMaintenanceDetail() {
     <div class="screen-content screen-enter">
         <img src="${IMG.maint[item.id % IMG.maint.length]}" class="w-full h-44 rounded-xl object-cover" alt="">
         <div class="flex gap-2"><span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span><span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span></div>
-        <h2 class="text-[18px] font-bold">${item.issue}</h2>
+        <h2 class="text-[14px] font-bold">${item.issue}</h2>
         <p class="text-[13px] text-[#64748B]">${item.prop} · ${item.time}</p>
         <div class="card p-4"><p class="text-[13px] leading-relaxed text-[#475569]">${item.desc}</p></div>
         ${item.contractor !== '—' ? `<div class="card p-4 flex items-center gap-3">
@@ -3379,7 +3339,9 @@ function screenMaintenanceDetail() {
 function screenInvoiceDetail() {
     const inv = INVOICES.find(i => i.id === STATE.invoiceId) || INVOICES[0];
     const detailRows = [
-        ['Property', inv.prop],
+        ['Tenant', inv.tenant || tenantNameForInvoice(inv)],
+        ['Property', inv.prop.split(',')[0]],
+        ...(inv.unit ? [['Flat', inv.unit]] : []),
         ['Due Date', inv.due],
         ['Invoice #', inv.num],
     ];
@@ -3400,21 +3362,27 @@ function screenInvoiceDetail() {
             <button data-action="toast" data-msg="Invoice downloaded" class="btn-secondary py-3 text-[13px]">Download PDF</button>
             ${inv.status !== 'Paid' ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Mark Received</button>` : `<button data-action="toast" data-msg="Receipt downloaded" class="btn-primary py-3 text-[13px]">Download Receipt</button>`}
         </div>
+        ${inv.status !== 'Paid' ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel invoice</button>` : ''}
     </div>`;
 }
 
 function screenInventoryRoom() {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms() : [['Kitchen','Good','4 items'],['Living Room','Good','6 items'],['Bedroom','Fair','5 items'],['Bathroom','Good','3 items'],['Hallway','Good','2 items']];
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(STATE.propertyId) : [['Kitchen','Good','4 items'],['Living Room','Good','6 items'],['Bedroom','Fair','5 items'],['Bathroom','Good','3 items'],['Hallway','Good','2 items']];
     const room = rooms[STATE.roomId] || rooms[0];
     const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : [['Oven & Hob','Good'],['Fridge Freezer','Good'],['Washing Machine','Fair'],['Microwave','Good']];
     const notes = typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : 'Minor wear on worktop near sink. All appliances tested and working.';
+    const invKey = typeof inventoryKey === 'function' ? inventoryKey(STATE.propertyId, STATE.roomId) : `${STATE.propertyId}-${STATE.roomId}`;
+    const roomPhotos = (typeof AppStore !== 'undefined' && AppStore.inventory?.[invKey]?.photos?.length)
+        ? AppStore.inventory[invKey].photos
+        : IMG.interior.slice(0, 2);
     return `${topBar(room[0], { back: true })}
     <div class="screen-content screen-enter">
         <div class="flex items-center justify-between">
             <span class="badge ${room[1]==='Good'?'bg-[#DCFCE7] text-[#16A34A]':'bg-[#FEF3C7] text-[#D97706]'}">Condition: ${room[1]}</span>
             <button data-go="edit-inventory-room" data-room="${STATE.roomId}" class="text-[13px] font-semibold text-[#2563EB]">Edit</button>
         </div>
-        <div class="grid grid-cols-2 gap-2">${IMG.interior.map(src=>`<div class="aspect-square rounded-xl overflow-hidden"><img src="${src}" class="img-cover" alt=""></div>`).join('')}</div>
+        <div class="grid grid-cols-2 gap-2">${roomPhotos.map(src=>`<div class="aspect-square rounded-xl overflow-hidden"><img src="${src}" class="img-cover" alt=""></div>`).join('')}</div>
+        <button type="button" data-action="upload-photo" class="btn-secondary w-full py-3 text-[13px]">+ Add room photo</button>
         <div class="card p-4 space-y-3">
             <h3 class="text-[14px] font-bold">Items</h3>
             ${items.map(([item,c])=>`
@@ -3429,7 +3397,7 @@ function screenDocumentPreview() {
     <div class="screen-content screen-enter">
         <div class="card p-6 text-center mt-2">
             <i data-lucide="file-text" class="w-16 h-16 text-[#2563EB] mx-auto"></i>
-            <p class="text-[16px] font-bold mt-4">Lease Agreement</p>
+            <p class="text-[14px] font-bold mt-4">Lease Agreement</p>
             <p class="text-[13px] text-[#64748B]">12 Park Lane · PDF · 2.4 MB</p>
             <p class="text-[12px] text-[#94A3B8] mt-1">Signed Jan 15, 2024</p>
         </div>
@@ -3472,30 +3440,41 @@ function screenNotificationsList() {
 function screenAddProperty() {
     return `${topBar('Add Property', { back: true })}
     <div class="screen-content screen-enter">
+        ${uxIntro('Start with the building details. You can set each flat\'s rent and rooms later.')}
         <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full">
             <i data-lucide="image-plus" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
-            <p class="text-[12px] text-[#64748B] mt-2">Add property photos</p>
+            <p class="text-[13px] text-[#64748B] mt-2">Add a photo (optional)</p>
         </button>
-        <div><label class="form-label">Property Name <span class="form-required">*</span></label><input data-field="name" type="text" class="form-input" placeholder="e.g. 12 Park Lane"></div>
-        <div><label class="form-label">Address <span class="form-required">*</span></label><input data-field="address" type="text" class="form-input" placeholder="Street address"></div>
+        <div><label class="form-label">Property name <span class="form-required">*</span></label><input data-field="name" type="text" class="form-input" placeholder="e.g. 12 Park Lane"></div>
+        <div><label class="form-label">Address <span class="form-required">*</span></label><input data-field="address" type="text" class="form-input" placeholder="Street and town"></div>
         <div><label class="form-label">Postcode</label><input data-field="postcode" type="text" class="form-input" placeholder="e.g. SW1A 1AA"></div>
-        <div><label class="form-label">Monthly Rent (£) <span class="form-required">*</span></label><input data-field="rent" type="number" class="form-input" placeholder="2450"></div>
-        <div><label class="form-label">Bedrooms</label><input data-field="beds" type="number" class="form-input" placeholder="2"></div>
-        <div><label class="form-label">Bathrooms</label><input data-field="baths" type="number" class="form-input" placeholder="1"></div>
-        <div><label class="form-label">Square Feet</label><input data-field="sqft" type="text" class="form-input" placeholder="1200"></div>
-        <div class="grid grid-cols-2 gap-3">
-            <div><label class="form-label">Floors</label><input data-field="floors" type="number" class="form-input" placeholder="2" value="2"></div>
-            <div><label class="form-label">Flats / Floor</label><input data-field="flatsPerFloor" type="number" class="form-input" placeholder="2" value="2"></div>
+        <div><label class="form-label">How many flats? <span class="form-required">*</span></label><input data-field="flatCount" type="number" class="form-input" placeholder="1" value="1" min="1"></div>
+        <p class="form-helper">Use 1 for a whole house. Use 2 or more for a building with separate flats.</p>
+        <div class="form-section">
+            <p class="form-section-title">Starting defaults for flats</p>
+            <p class="form-helper" style="margin-top:0">You can change each flat individually after saving.</p>
+            <div><label class="form-label">Rent per flat (£) <span class="form-required">*</span></label><input data-field="rent" type="number" class="form-input" placeholder="950"></div>
+            <div class="grid grid-cols-3 gap-3">
+                <div><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" placeholder="2" value="2" min="1"></div>
+                <div><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" placeholder="1" value="1" min="1"></div>
+                <div><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" placeholder="750"></div>
+            </div>
         </div>
-        <p class="form-helper">Units are auto-generated (e.g. Flat 1A, Flat 2B) for tenancy and invites.</p>
-        <div><label class="form-label">Status</label><select data-field="status" class="form-input form-select"><option>Vacant</option><option>Occupied</option></select></div>
-        <button data-action="save" data-msg="Property added successfully" class="btn-primary w-full py-3.5 text-[14px]">Add Property</button>
+        <div class="form-section">
+            <p class="form-section-title">Floors (optional)</p>
+            <p class="form-helper" style="margin-top:0">Only needed if you want flats grouped by floor.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="form-label">Floors</label><input data-field="floors" type="number" class="form-input" placeholder="Optional" min="1"></div>
+                <div><label class="form-label">Flats per floor</label><input data-field="flatsPerFloor" type="number" class="form-input" placeholder="Optional" min="1"></div>
+            </div>
+        </div>
+        <button data-action="save" data-msg="Property added successfully" class="btn-primary w-full">Save property</button>
     </div>`;
 }
 
 function screenEditProperty() {
     const p = PROPERTIES[STATE.propertyId];
-    const rent = p.rent.replace(/[£,]/g, '');
+    const rent = (typeof propertyDefaultFlatRent === 'function' ? propertyDefaultFlatRent(STATE.propertyId) : p.rent).replace(/[£,]/g, '');
     const cover = typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(STATE.propertyId) : IMG.props[STATE.propertyId];
     const notes = typeof AppStore !== 'undefined' ? (AppStore.meta(STATE.propertyId).info?.notes || '') : '';
     return `${topBar('Edit Property', { back: true })}
@@ -3506,42 +3485,60 @@ function screenEditProperty() {
         </div>
         <div><label class="form-label">Property Name</label><input data-field="name" type="text" class="form-input" value="${p.name.replace(/"/g, '&quot;')}"></div>
         <div><label class="form-label">Address</label><input data-field="address" type="text" class="form-input" value="${p.address.replace(/"/g, '&quot;')}"></div>
-        <div><label class="form-label">Monthly Rent (£)</label><input data-field="rent" type="number" class="form-input" value="${rent}"></div>
-        <div><label class="form-label">Bedrooms</label><input data-field="beds" type="number" class="form-input" value="${p.beds}"></div>
-        <div><label class="form-label">Bathrooms</label><input data-field="baths" type="number" class="form-input" value="${p.baths}"></div>
-        <div><label class="form-label">Square Feet</label><input data-field="sqft" type="text" class="form-input" value="${p.sqft}"></div>
+        <div><label class="form-label">Default rent per flat (£)</label><input data-field="rent" type="number" class="form-input" value="${rent}"></div>
+        <p class="form-helper">Occupancy updates automatically from your flats — you don’t set it here.</p>
         ${(() => {
-            const b = typeof getPropertyBuilding === 'function' ? getPropertyBuilding(STATE.propertyId) : { floors: 1, flatsPerFloor: 1 };
-            return `<div class="grid grid-cols-2 gap-3">
-                <div><label class="form-label">Floors</label><input data-field="floors" type="number" class="form-input" value="${b.floors}"></div>
-                <div><label class="form-label">Flats / Floor</label><input data-field="flatsPerFloor" type="number" class="form-input" value="${b.flatsPerFloor}"></div>
+            const b = typeof getPropertyBuilding === 'function' ? getPropertyBuilding(STATE.propertyId) : { flatCount: 1, floors: 1, flatsPerFloor: 1, useFloors: false };
+            const flatCount = getPropertyUnits(STATE.propertyId).length || b.flatCount || 1;
+            return `<div class="card p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-[14px] font-bold text-[#0F172A]">${flatCount} flat${flatCount === 1 ? '' : 's'}</p>
+                    <p class="text-[13px] text-[#64748B] mt-0.5">Add, edit or duplicate from the Flats tab</p>
+                </div>
+                <button type="button" data-tab="units" class="header-text-link">Open Flats</button>
+            </div>
+            <div class="form-section">
+                <p class="form-section-title">Floors (optional)</p>
+                <p class="form-helper" style="margin-top:0">Leave blank unless you group flats by floor.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="form-label">Floors</label><input data-field="floors" type="number" class="form-input" value="${b.useFloors ? b.floors : ''}" placeholder="Optional" min="1"></div>
+                    <div><label class="form-label">Flats per floor</label><input data-field="flatsPerFloor" type="number" class="form-input" value="${b.useFloors ? b.flatsPerFloor : ''}" placeholder="Optional" min="1"></div>
+                </div>
             </div>`;
         })()}
-        ${formSelect('Status', p.status, ['Occupied', 'Vacant'], 'status')}
-        ${formTextarea('Notes', notes, 'Property notes, access codes, etc.', 'notes')}
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <p class="text-[14px] font-bold text-[#0F172A]">Occupancy</p>
+                <p class="text-[13px] text-[#64748B] mt-0.5">${typeof propertyStructureLabel === 'function' ? propertyStructureLabel(STATE.propertyId) : p.status}</p>
+            </div>
+            <span class="badge" style="background:${p.statusColor[0]};color:${p.statusColor[1]}">${p.status}</span>
+        </div>
+        ${formTextarea('Notes', notes, 'Building notes, floor remarks, access codes…', 'notes')}
         ${saveBtn('Save Property', 'Property updated')}
-        <button data-action="delete-property" class="btn-secondary w-full py-3.5 text-[14px] mt-3 text-[#DC2626] border border-[#FECACA]">Remove Property</button>
+        <button data-action="delete-property" class="btn-danger-outline mt-3">Remove property</button>
     </div>`;
 }
 
 function screenInviteTenant() {
     const p = PROPERTIES[STATE.propertyId];
-    const units = ['Flat 1', 'Flat 2A', 'Unit 1', 'Flat B', 'Ground Floor'];
+    const selectedUnit = STATE.selectedUnit || '';
+    const unitField = typeof unitSelectHtml === 'function'
+        ? `<div><label class="form-label">Flat <span class="form-required">*</span></label>${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit)}</div>`
+        : `<div><label class="form-label">Flat</label><input data-invite="unit" type="text" class="form-input" placeholder="e.g. Flat 1A"></div>`;
+    const defaultRent = typeof propertyDefaultFlatRent === 'function' ? propertyDefaultFlatRent(STATE.propertyId) : p.rent;
     return `${topBar('Invite Tenant', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4 flex items-center gap-3">
             <img src="${IMG.props[STATE.propertyId]}" class="w-14 h-14 rounded-xl object-cover" alt="">
-            <div><p class="text-[14px] font-bold">${p.name}</p><p class="text-[12px] text-[#64748B]">${p.address} · ${p.rent}/month</p></div>
+            <div><p class="text-[14px] font-bold">${p.name}</p><p class="text-[12px] text-[#64748B]">${p.address} · ${typeof propertyRentRangeLabel === 'function' ? propertyRentRangeLabel(STATE.propertyId) : defaultRent}</p></div>
         </div>
         <p class="text-[12px] text-[#64748B] leading-relaxed">Create a tenant profile and send a secure invitation. They must accept the invite before accessing the portal — random sign-ups are not allowed.</p>
         <div><label class="form-label">First Name</label><input data-invite="firstName" type="text" class="form-input" placeholder="Tenant first name"></div>
         <div><label class="form-label">Last Name</label><input data-invite="lastName" type="text" class="form-input" placeholder="Tenant last name"></div>
         <div><label class="form-label">Email</label><input data-invite="email" type="email" class="form-input" placeholder="tenant@email.com"></div>
         <div><label class="form-label">Phone</label><input data-invite="phone" type="tel" class="form-input" placeholder="+44 7700 900000"></div>
-        <div><label class="form-label">Unit</label>
-            <select data-invite="unit" class="form-input form-select">${units.map(u => `<option>${u}</option>`).join('')}</select>
-        </div>
-        <div><label class="form-label">Monthly Rent</label><input data-invite="rent" type="text" class="form-input" placeholder="${p.rent}" value="${p.rent}"></div>
+        ${unitField}
+        <div><label class="form-label">Flat Rent (£)</label><input data-invite="rent" type="text" class="form-input" placeholder="${defaultRent}" value="${(selectedUnit && typeof getUnitByName === 'function' ? getUnitByName(STATE.propertyId, selectedUnit)?.rent : null) || defaultRent}"></div>
         <div><label class="form-label">Lease Start</label><input data-invite="leaseStart" type="date" class="form-input"></div>
         <div><label class="form-label">Lease End</label><input data-invite="leaseEnd" type="date" class="form-input"></div>
         <div><label class="form-label">Personal Message</label><textarea data-invite="message" class="form-input" rows="3" placeholder="Add a personal message for the tenant (optional)"></textarea></div>
@@ -3553,44 +3550,50 @@ function screenTenantInviteSent() {
     const invite = tenantInviteByToken(STATE.tenantInviteToken);
     if (!invite) return `${topBar('Invitation Sent', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Invitation not found.</p></div>`;
     const p = PROPERTIES[invite.propertyId];
-    const demoLink = `${window.location.origin}${window.location.pathname}?invite=${invite.token}`;
+    const roster = typeof getFlatMemberRoster === 'function' ? getFlatMemberRoster(invite.propertyId, invite.unit) : { members: [] };
+    const nextMember = roster.members.find(m =>
+        !m.tenantId && m.accountStatus !== 'pending' && m.email && m.email !== invite.email
+    );
+    const nextParts = nextMember?.name?.trim().split(/\s+/) || [];
     return `${topBar('Invitation Sent', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-6 text-center">
             <div class="tenant-invite-icon"><i data-lucide="mail-check" class="w-8 h-8"></i></div>
-            <p class="text-[16px] font-bold text-[#0F172A] mt-4">Invitation Sent!</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation Sent!</p>
             <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join as tenant at <strong>${p.name}</strong> (${invite.unit}).</p>
         </div>
         <div class="card p-4 space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invitation Details</p>
-            ${[['Tenant', `${invite.firstName} ${invite.lastName}`], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Status', 'Pending activation']].map(([k, v]) => `
+            ${[['Tenant', `${invite.firstName} ${invite.lastName}`], ['Property', p.name], ['Flat', invite.unit], ['Rent', invite.rent], ['Status', 'Pending activation']].map(([k, v]) => `
             <div class="flex justify-between text-[13px] py-1"><span class="text-[#64748B]">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
-        <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Demo Invitation Link</p>
-            <p class="text-[12px] text-[#475569] mt-2 break-all leading-relaxed">${demoLink}</p>
-            <button type="button" data-action="open-tenant-invite" data-token="${invite.token}" class="btn-secondary w-full py-3 text-[13px] mt-3">Preview Tenant Experience</button>
-        </div>
-        <button type="button" data-go="property-detail" data-pid="${invite.propertyId}" data-tab="tenant" class="btn-primary w-full py-3.5 text-[14px]">Back to Property</button>
+        ${nextMember ? `
+        <button type="button" data-go="invite-tenant" data-pid="${invite.propertyId}" data-unit="${invite.unit}" data-invite-email="${nextMember.email || ''}" data-invite-first="${nextParts[0] || ''}" data-invite-last="${nextParts.slice(1).join(' ') || ''}" data-invite-phone="${nextMember.phone || ''}" class="btn-primary w-full py-3.5 text-[14px]">Invite Next Member</button>` : ''}
+        <button type="button" data-go="property-detail" data-pid="${invite.propertyId}" data-tab="tenant" class="btn-secondary w-full py-3.5 text-[14px] ${nextMember ? 'mt-2' : ''}">Back to Property</button>
     </div>`;
 }
 
 function screenEditTenant() {
     const t = TENANTS[STATE.tenantId] || TENANTS[0];
+    const hasNidProof = !!(t.nidProof || (typeof getTenantNidProof === 'function' && getTenantNidProof(STATE.tenantId)));
     return `${topBar('Edit Tenant', { back: true })}
     <div class="screen-content screen-enter">
-        <div class="flex justify-center mb-1">
-            <div class="relative">
-                <img src="${[IMG.avatar.sarah,IMG.avatar.david,IMG.avatar.michael][STATE.tenantId]}" class="w-20 h-20 rounded-full object-cover" alt="">
-                <button type="button" data-action="toast" data-msg="Photo updated" class="absolute bottom-0 right-0 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center border-2 border-white"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button>
-            </div>
-        </div>
+        <p class="ux-intro">Update tenant identity and contact details. Tenancy info is managed from the flat or property screen.</p>
         ${formField('First Name', t.firstName, 'text', '', 'firstName')}${formField('Last Name', t.lastName, 'text', '', 'lastName')}
+        ${formField('NID', t.idNumber || '', 'text', 'National ID number', 'idNumber')}${formField('Date of Birth', t.dob || '', 'date', '', 'dob')}
+        <div>
+            <label class="form-label">NID Document Proof</label>
+            <button type="button" data-action="upload-nid-proof" class="card border-2 border-dashed border-[#E2E8F0] p-5 text-center w-full">
+                <i data-lucide="${hasNidProof ? 'file-check' : 'upload'}" class="w-7 h-7 text-[#94A3B8] mx-auto"></i>
+                <p class="text-[13px] font-semibold text-[#0F172A] mt-2">${hasNidProof ? (t.nidProof || 'NID proof on file') : 'Upload NID scan or photo'}</p>
+                <p class="text-[11px] text-[#64748B] mt-1">Passport, national ID card, or driving licence</p>
+            </button>
+        </div>
         ${formField('Email', t.email, 'email', '', 'email')}${formField('Phone', t.phone, 'tel', '', 'phone')}
-        ${formField('Property', t.prop, 'text', '', 'prop')}${formField('Monthly Rent', t.rent, 'text', '', 'rent')}
-        ${formField('Move-in Date', t.moveIn, 'date', '', 'moveIn')}${formField('Lease End', t.leaseEnd, 'date', '', 'leaseEnd')}
         ${formField('Emergency Contact', t.emergency, 'text', '', 'emergency')}${formField('Emergency Phone', t.emergencyPhone, 'tel', '', 'emergencyPhone')}
         ${saveBtn('Save Tenant', 'Tenant details updated')}
+        ${(TENANT_LIST[STATE.tenantId] || {}).status === 'active' ? `
+        <button type="button" data-go="checkout-tenancy" data-tid="${STATE.tenantId}" class="btn-secondary w-full">Check-out tenant</button>` : ''}
     </div>`;
 }
 
@@ -3618,7 +3621,7 @@ function screenRenewCompliance() {
     <div class="screen-content screen-enter">
         <div class="card p-4 flex items-center gap-3">
             <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] flex items-center justify-center"><i data-lucide="${item[0]}" class="w-5 h-5 text-[#2563EB]"></i></div>
-            <div><p class="text-[15px] font-bold">${item[1]}</p><p class="text-[12px] text-[#64748B]">${p.name} · Current: ${item[2]}</p></div>
+            <div><p class="text-[13px] font-bold">${item[1]}</p><p class="text-[12px] text-[#64748B]">${p.name} · Current: ${item[2]}</p></div>
         </div>
         ${formField('Certificate Number', '', 'text', 'Enter certificate reference', 'certNumber')}
         ${formField('Issue Date', '', 'date', 'Select issue date', 'issueDate')}
@@ -3680,7 +3683,7 @@ function screenEditPaymentMethod() {
         ${c.type === 'Visa' ? formField('Expiry Date', c.exp, 'text', '', 'expiry') + formField('Billing Postcode', 'SW1A 1AA', 'text', '', 'postcode') : formField('Sort Code', '20-00-00', 'text', '', 'sortCode') + formField('Account Number', '****8901', 'text', '', 'accountNumber')}
         <label class="flex items-center gap-2 text-[13px] text-[#475569]"><input data-field="isDefault" type="checkbox" ${c.default?'checked':''} class="accent-[#2563EB]"> Default payment method</label>
         ${saveBtn('Save Changes', 'Payment method updated')}
-        <button type="button" data-action="remove-payment-method" class="w-full py-3 text-[14px] font-semibold text-[#DC2626]">Remove Payment Method</button>
+        <button type="button" data-action="remove-payment-method" class="btn-danger-outline">Remove payment method</button>
     </div>`;
 }
 
@@ -3707,12 +3710,13 @@ function screenLogMaintenance() {
     const propertyField = isTenant ? `
         <div class="card p-4" style="background:#F8FAFC">
             <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Your Property</p>
-            <p class="text-[15px] font-bold text-[#0F172A] mt-1">${p?.name || '—'}</p>
+            <p class="text-[13px] font-bold text-[#0F172A] mt-1">${p?.name || '—'}</p>
             <p class="text-[12px] text-[#64748B] mt-0.5">${tenant?.unit || ''}${tenant?.unit && p?.address ? ' · ' : ''}${p?.address || ''}</p>
         </div>` : `
         <div><label class="form-label">Property <span class="form-required">*</span></label>
-        <select data-field="propertyId" class="form-input form-select">${PROPERTIES.map(prop => `<option value="${prop.id}" ${prop.id === pid ? 'selected' : ''}>${prop.name}</option>`).join('')}</select></div>`;
-    return `${topBar(isTenant ? 'Report Issue' : 'Log Issue', { back: true })}
+        <select data-field="propertyId" class="form-input form-select" data-action="refresh-maint-units">${PROPERTIES.map(prop => `<option value="${prop.id}" ${prop.id === pid ? 'selected' : ''}>${prop.name}</option>`).join('')}</select></div>
+        ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Flat <span class="form-required">*</span></label>${unitSelectHtml(pid ?? 0, 'unit', false, STATE.selectedUnit || tenant?.unit || '')}</div>` : ''}`;
+    return `${topBar(isTenant ? 'Report Issue' : 'Log Issue', { back: !shouldShowBottomNav('log-maintenance') })}
     <div class="screen-content screen-enter">
         ${propertyField}
         <div><label class="form-label">Issue Title <span class="form-required">*</span></label><input data-field="title" class="form-input" placeholder="Describe the issue"></div>
@@ -3813,7 +3817,7 @@ function _renderApp() {
     const selStart = document.activeElement?.selectionStart;
     const fn = SCREEN_MAP[STATE.screen] || (STATE.userRole === 'contractor' ? screenContractorDashboard : screenDashboard);
     const isPreAuth = PRE_AUTH_SCREENS.includes(STATE.screen);
-    const showNav = !NO_NAV.includes(STATE.screen) && !isPreAuth;
+    const showNav = shouldShowBottomNav();
     const bodyClass = showNav ? 'screen-body with-nav' : (isPreAuth ? 'screen-body auth-body no-nav' : 'screen-body no-nav');
     const hideChrome = isPreAuth || STATE.screen === 'chat';
 
@@ -3885,15 +3889,24 @@ function bindEvents() {
             if (el.dataset.pref) opts.prefKey = el.dataset.pref;
             if (el.dataset.pmid !== undefined) opts.paymentId = +el.dataset.pmid;
             if (el.dataset.tab) opts.tab = el.dataset.tab;
+            if (el.dataset.unit) opts.unit = el.dataset.unit;
+            if (el.dataset.duplicateFrom) opts.duplicateFrom = el.dataset.duplicateFrom;
+            if (el.dataset.inviteToken) opts.token = el.dataset.inviteToken;
+            if (el.dataset.inviteEmail) opts.inviteEmail = el.dataset.inviteEmail;
+            if (el.dataset.inviteFirst) opts.inviteFirst = el.dataset.inviteFirst;
+            if (el.dataset.inviteLast) opts.inviteLast = el.dataset.inviteLast;
+            if (el.dataset.invitePhone) opts.invitePhone = el.dataset.invitePhone;
             if (el.dataset.job !== undefined) opts.jobId = +el.dataset.job;
             if (el.dataset.jtab) opts.jobTab = el.dataset.jtab;
             if (el.dataset.doc !== undefined) opts.docId = +el.dataset.doc;
             if (el.dataset.previewIdx !== undefined) opts.previewDocIdx = +el.dataset.previewIdx;
             if (el.dataset.previewSource) opts.previewDocSource = el.dataset.previewSource;
+            if (el.dataset.invoicePreset) opts.invoiceFilter = el.dataset.invoicePreset;
             go(screen, opts);
         };
     });
     app.querySelectorAll('[data-tab]').forEach(el => {
+        if (el.dataset.go) return;
         el.onclick = () => setTab(el.dataset.tab);
     });
     app.querySelectorAll('[data-ttab]').forEach(el => {
@@ -3952,7 +3965,7 @@ function bindEvents() {
         el.onclick = roleContinue;
     });
     app.querySelectorAll('[data-action="contractor-signup"]').forEach(el => {
-        el.onclick = () => { STATE.authRole = 'contractor'; demoLogin('contractor'); };
+        el.onclick = () => { STATE.authRole = 'contractor'; go('sign-up'); };
     });
     app.querySelectorAll('[data-action="contractor-sign-in"]').forEach(el => {
         el.onclick = () => { STATE.authRole = 'contractor'; go('sign-in'); };

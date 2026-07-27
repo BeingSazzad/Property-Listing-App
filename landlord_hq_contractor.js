@@ -3,7 +3,6 @@ const CONTRACTOR_BOTTOM_NAV = [
     ['layout-dashboard', 'Home', 'contractor-dashboard'],
     ['briefcase', 'Jobs', 'contractor-jobs'],
     ['message-square', 'Messages', 'messages'],
-    ['bell', 'Alerts', 'contractor-notifications'],
     ['user', 'Profile', 'contractor-profile'],
 ];
 
@@ -19,7 +18,7 @@ const CONTRACTOR_DRAWER_NAV = [
 const CONTRACTOR_JOBS = [
     { id: 0, maintId: 0, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Kitchen sink leaking', priority: 'High', visitDate: 'Today, 2:00 PM', status: 'assigned', assignedDate: 'Mar 10, 2025', desc: 'Water dripping from pipe under kitchen sink. Tenant reports it started this morning. Access via front door — tenant will be home after 1 PM.', tenantChatId: 0, landlordChatId: 1 },
     { id: 1, maintId: 3, propertyId: 1, property: '45 Queens Road', address: 'London, SW2 3TR', tenant: 'David Wilson', landlord: 'John Smith', issue: 'Boiler not working', priority: 'High', visitDate: 'Tomorrow, 10:00 AM', status: 'accepted', assignedDate: 'Mar 8, 2025', desc: 'No hot water or heating. Boiler showing error code E119. Parking available on street.', tenantChatId: 2, landlordChatId: 1 },
-    { id: 2, maintId: 1, propertyId: 2, property: '88 King Street', address: 'London, EC2V 8BB', tenant: '—', landlord: 'John Smith', issue: 'Window latch broken', priority: 'Medium', visitDate: 'Mar 14, 11:30 AM', status: 'scheduled', assignedDate: 'Mar 7, 2025', desc: 'Bedroom window latch broken — window cannot be secured. Property currently vacant.', tenantChatId: null, landlordChatId: 1 },
+    { id: 2, maintId: 1, propertyId: 2, property: '88 King Street', address: 'London, EC2V 8BB', tenant: '—', landlord: 'John Smith', issue: 'Window latch broken', priority: 'Medium', visitDate: 'Mar 14, 11:30 AM', status: 'scheduled', assignedDate: 'Mar 7, 2025', desc: 'Bedroom window latch broken — window cannot be secured. Main Flat currently vacant.', tenantChatId: null, landlordChatId: 1 },
     { id: 3, maintId: 4, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Radiator not heating', priority: 'Medium', visitDate: 'Mar 12, 3:00 PM', status: 'in_progress', assignedDate: 'Mar 5, 2025', desc: 'Living room radiator cold while others work. Possible air lock or valve issue.', tenantChatId: 4, landlordChatId: 1, notes: [{ text: 'Bleed radiator — still cold on return pipe', time: 'Mar 11, 2:30 PM' }], photos: { before: [IMG.maint[2]], during: [], after: [] } },
     { id: 4, maintId: 6, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Tap replacement', priority: 'Low', visitDate: 'Mar 1, 2025', status: 'waiting_approval', assignedDate: 'Feb 20, 2025', desc: 'Kitchen tap replaced. Invoice submitted awaiting landlord approval.', tenantChatId: 0, landlordChatId: 1, invoice: { amount: '£185', file: 'INV-PLB-1042.pdf', uploadedAt: 'Mar 1, 2025' } },
     { id: 5, maintId: 5, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Light flickering', priority: 'Low', visitDate: 'Feb 18, 2025', status: 'completed', assignedDate: 'Feb 10, 2025', desc: 'Living room ceiling light flickering — resolved with new fitting.', tenantChatId: 4, landlordChatId: 1 },
@@ -84,7 +83,10 @@ function saveContractorJobs() {
 function loadContractorJobs() {
     if (typeof AppStore === 'undefined' || !AppStore.contractorJobs?.length) return;
     CONTRACTOR_JOBS.splice(0, CONTRACTOR_JOBS.length, ...AppStore.contractorJobs);
-    CONTRACTOR_JOBS.forEach(ensureContractorJob);
+    CONTRACTOR_JOBS.forEach(job => {
+        ensureContractorJob(job);
+        if (typeof syncContractorJobToMaintenance === 'function') syncContractorJobToMaintenance(job);
+    });
 }
 
 function syncContractorJobToMaintenance(job) {
@@ -313,7 +315,7 @@ function screenContractorInvite() {
                 <p class="text-[12px] text-[#64748B] mt-1">Trade: Plumbing & Heating</p>
                 <p class="text-[12px] text-[#64748B]">Invited: Mar 10, 2025</p>
             </div>
-            <button type="button" data-action="contractor-signup" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Try Demo Contractor</button>
+            <button type="button" data-action="contractor-signup" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Create Account</button>
             <button type="button" data-action="contractor-sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Sign In with Email</button>
         </div>
     </div>`;
@@ -416,11 +418,9 @@ function screenTenantInvite() {
                 <p class="text-[12px] text-[#64748B] mt-1">Sign in with your email and password.</p>
             </div>
             <button type="button" data-action="tenant-sign-in" class="btn-auth btn-auth-primary" style="margin-top:20px;width:100%">Sign In</button>
-            <button type="button" data-action="demo-login" data-demo-role="tenant" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Try Demo Tenant</button>
             ` : `
             <button type="button" data-action="tenant-activate" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Accept & Set Password</button>
             <button type="button" data-action="tenant-sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Already activated? Sign In</button>
-            <button type="button" data-action="demo-login" data-demo-role="tenant" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Try Demo Tenant</button>
             `}
             <p class="auth-security-note" style="margin-top:20px"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Tenant accounts require a landlord invitation</p>
         </div>
@@ -480,13 +480,13 @@ function screenTenantWelcome() {
             </button>
             <div class="card p-4 text-left">
                 <p class="text-[13px] font-semibold text-[#0F172A]">You're all set</p>
-                <p class="text-[12px] text-[#64748B] mt-2 leading-relaxed">Your account is linked to ${p.name}. Pay rent, report maintenance issues, and message your landlord from the portal.</p>
+                <p class="text-[12px] text-[#64748B] mt-2 leading-relaxed">Your account is linked to ${p.name}. Report maintenance issues, view documents, and message your landlord from the portal.</p>
             </div>
         </div>
         <div class="welcome-nav">
             <button type="button" data-action="enter-app" class="welcome-nav-btn active"><i data-lucide="home" class="w-5 h-5"></i>Home</button>
+            <button type="button" data-go="log-maintenance" class="welcome-nav-btn"><i data-lucide="wrench" class="w-5 h-5"></i>Issues</button>
             <button type="button" data-go="messages" class="welcome-nav-btn"><i data-lucide="message-square" class="w-5 h-5"></i>Messages</button>
-            <button type="button" data-action="toast" data-msg="Rent payment coming soon" class="welcome-nav-btn"><i data-lucide="banknote" class="w-5 h-5"></i>Rent</button>
             <button type="button" data-action="logout" class="welcome-nav-btn"><i data-lucide="log-out" class="w-5 h-5"></i>Sign Out</button>
         </div>
     </div>`;
@@ -499,9 +499,8 @@ function screenTenantDashboard() {
         <div class="screen-content screen-enter">
             <div class="card p-8 text-center">
                 <i data-lucide="mail" class="w-12 h-12 text-[#16A34A] mx-auto"></i>
-                <p class="text-[16px] font-bold text-[#0F172A] mt-4">Invitation Required</p>
-                <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">Tenant accounts must be created by your landlord. Open your invitation link to activate your account.</p>
-                <button data-action="open-tenant-invite" data-token="DEMO-88KS" class="btn-primary w-full py-3 mt-6 text-[13px]">Open Demo Invitation</button>
+                <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation Required</p>
+                <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">Tenant accounts are created by your landlord. Open the invitation link from your email to activate your account.</p>
             </div>
         </div>`;
     }
@@ -518,31 +517,29 @@ function screenTenantDashboard() {
     <div class="screen-content screen-enter">
         <div class="card p-4" style="background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;border:none">
             <p class="text-[11px] font-semibold opacity-80 uppercase tracking-wide">Your Home</p>
-            <p class="text-[18px] font-bold mt-1">${p.name}</p>
+            <p class="text-[14px] font-bold mt-1">${p.name}</p>
             <p class="text-[12px] opacity-85 mt-1">${t.unit} · ${p.address}</p>
             <div class="flex gap-4 mt-4 pt-4 border-t border-white/20">
-                <div><p class="text-[10px] opacity-75">Monthly Rent</p><p class="text-[15px] font-bold">${t.rent}</p></div>
-                <div><p class="text-[10px] opacity-75">Lease Ends</p><p class="text-[15px] font-bold">${t.leaseEnd || '—'}</p></div>
-                <div><p class="text-[10px] opacity-75">Landlord</p><p class="text-[15px] font-bold">${t.landlord.split(' ')[0]}</p></div>
+                <div><p class="text-[10px] opacity-75">Monthly Rent</p><p class="text-[13px] font-bold">${t.rent}</p></div>
+                <div><p class="text-[10px] opacity-75">Lease Ends</p><p class="text-[13px] font-bold">${t.leaseEnd || '—'}</p></div>
+                <div><p class="text-[10px] opacity-75">Landlord</p><p class="text-[13px] font-bold">${t.landlord.split(' ')[0]}</p></div>
             </div>
         </div>
         <div class="dash-quick">
             ${[
-                ['banknote', 'Pay Rent', null, 'warning'],
                 ['wrench', 'Report Issue', 'log-maintenance', 'primary'],
                 ['message-square', 'Message Landlord', 'messages', 'success'],
-                ['file-text', 'Lease', null, 'indigo'],
+                ['file-text', 'Lease', 'document-preview', 'indigo'],
             ].map(([ic, label, go, tone]) => `
-            <button ${go ? `data-go="${go}"` : 'data-action="toast" data-msg="Coming soon"'} class="dash-quick-btn">
+            <button data-go="${go}" class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${label}</span>
             </button>`).join('')}
         </div>
         <div class="card p-4">
             <p class="text-[13px] font-semibold text-[#0F172A]">Next Rent Due</p>
-            <p class="text-[22px] font-bold text-[#0F172A] mt-1">${t.rent}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Due Apr 1, 2025 · Auto-pay enabled</p>
-            <button data-action="toast" data-msg="Rent payment coming soon" class="btn-primary w-full py-3 text-[13px] mt-4">Pay Now</button>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${t.rent}</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Due Apr 1, 2025 · Contact landlord to pay</p>
         </div>
         <div class="card p-4">
             <div class="flex items-center justify-between mb-2">
@@ -563,15 +560,40 @@ function screenTenantDashboard() {
             }).join('') : `<p class="text-[12px] text-[#64748B] py-2">No issues reported yet. Tap Report Issue to notify your landlord.</p>`}
         </div>
         <div class="card p-4">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-[13px] font-semibold text-[#0F172A]">Shared Documents</p>
+            </div>
+            ${(() => {
+                const docs = typeof getTenantDocuments === 'function' ? getTenantDocuments(t.id) : [];
+                return docs.length ? docs.slice(0, 3).map((doc, idx) => `
+            <button data-go="document-preview" data-preview-source="tenant" data-preview-idx="${idx}" class="flex items-center gap-3 py-2.5 border-b border-[#F1F5F9] last:border-0 w-full text-left">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#EFF6FF;color:#2563EB"><i data-lucide="file-text" class="w-4 h-4"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[13px] font-semibold text-[#0F172A] truncate">${doc[1]}</p>
+                    <p class="text-[11px] text-[#64748B]">${doc[2]}</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
+            </button>`).join('') : `<p class="text-[12px] text-[#64748B] py-2">Your landlord will share lease and compliance documents here.</p>`;
+            })()}
+        </div>
+        <div class="card p-4">
             <p class="text-[13px] font-semibold text-[#0F172A] mb-2">Recent Activity</p>
-            ${[
-                ['check-circle', '#ECFDF5', '#059669', 'Rent paid', 'Mar 1, 2025 · £' + (t.rent || '').replace(/[^\d]/g, '')],
-                ['wrench', '#EFF6FF', '#2563EB', 'Maintenance resolved', 'Kitchen tap · Jan 2025'],
-            ].map(([ic, bg, color, title, sub]) => `
+            ${(() => {
+                const rows = [];
+                const chatId = typeof getTenantChatId === 'function' ? getTenantChatId(t.id) : null;
+                const conv = chatId != null && typeof CONVERSATIONS !== 'undefined' ? CONVERSATIONS[chatId] : null;
+                if (conv?.preview) rows.push(['message-square', '#EEF2FF', '#4F46E5', 'Message from landlord', conv.preview]);
+                tenantIssues.slice(0, 2).forEach(m => {
+                    const st = maintStatusLabel(m.status);
+                    rows.push(['wrench', '#EFF6FF', '#2563EB', m.issue, `${st.label} · ${m.time}`]);
+                });
+                if (!rows.length) rows.push(['check-circle', '#ECFDF5', '#059669', 'Rent paid', `Mar 1, 2025 · ${t.rent || ''}`]);
+                return rows.map(([ic, bg, color, title, sub]) => `
             <div class="flex items-center gap-3 py-2.5 border-b border-[#F1F5F9] last:border-0">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-4 h-4"></i></div>
                 <div class="flex-1 min-w-0"><p class="text-[13px] font-semibold">${title}</p><p class="text-[11px] text-[#64748B]">${sub}</p></div>
-            </div>`).join('')}
+            </div>`).join('');
+            })()}
         </div>
         <button data-action="logout" class="btn-secondary w-full py-3 text-[13px]">Sign Out</button>
     </div>`;
@@ -677,13 +699,13 @@ function screenContractorJobDetail() {
     const actions = {
         assigned: `
             <div class="grid grid-cols-2 gap-3">
-                <button data-contractor-action="accept" data-msg="Job accepted" class="btn-primary py-4 text-[15px] font-semibold">Accept Job</button>
-                <button data-contractor-action="decline" data-msg="Job declined" class="btn-secondary py-4 text-[15px]">Decline</button>
+                <button data-contractor-action="accept" data-msg="Job accepted" class="btn-primary py-4 text-[13px] font-semibold">Accept Job</button>
+                <button data-contractor-action="decline" data-msg="Job declined" class="btn-secondary py-4 text-[13px]">Decline</button>
             </div>`,
-        accepted: `<button data-contractor-action="schedule" class="btn-primary w-full py-4 text-[15px] font-semibold">Schedule Visit</button>`,
-        scheduled: `<button data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-4 text-[15px] font-semibold">Start Work</button>`,
+        accepted: `<button data-contractor-action="schedule" class="btn-primary w-full py-4 text-[13px] font-semibold">Schedule Visit</button>`,
+        scheduled: `<button data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-4 text-[13px] font-semibold">Start Work</button>`,
         in_progress: `
-            <button data-contractor-action="work" class="btn-primary w-full py-4 text-[15px] font-semibold">Add Photos & Notes</button>
+            <button data-contractor-action="work" class="btn-primary w-full py-4 text-[13px] font-semibold">Add Photos & Notes</button>
             <button data-contractor-action="documents" class="btn-secondary w-full py-3.5 text-[14px] mt-3">Upload Invoice</button>`,
         waiting_approval: `<div class="card p-4 text-center" style="background:#F5F3FF"><p class="text-[14px] font-semibold text-[#7C3AED]">Waiting for landlord approval</p><p class="text-[13px] text-[#64748B] mt-1">Your invoice of ${job.invoice?.amount || '—'} is being reviewed</p></div>`,
         completed: `<div class="card p-4 text-center" style="background:#ECFDF5"><p class="text-[14px] font-semibold text-[#059669]">Job completed — awaiting payment</p></div>`,
@@ -692,12 +714,12 @@ function screenContractorJobDetail() {
     const overview = `
         <div class="card p-4">
             <p class="ctr-section-label">Property</p>
-            <p class="text-[16px] font-bold text-[#0F172A] mt-1">${job.property}</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.property}</p>
             <p class="text-[14px] text-[#64748B] mt-1">${job.address}</p>
         </div>
         <div class="card p-4">
             <p class="ctr-section-label">People</p>
-            <p class="text-[15px] font-semibold mt-1">Tenant: ${job.tenant}</p>
+            <p class="text-[13px] font-semibold mt-1">Tenant: ${job.tenant}</p>
             <p class="text-[14px] text-[#64748B] mt-1">Landlord: ${job.landlord}</p>
         </div>
         <div class="card p-4">
@@ -710,7 +732,7 @@ function screenContractorJobDetail() {
         </div>
         <div class="card p-4">
             <p class="ctr-section-label">Visit</p>
-            <p class="text-[16px] font-bold text-[#0F172A] mt-1">${job.visitDate}</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.visitDate}</p>
             ${job.scheduleNotes ? `<p class="text-[13px] text-[#64748B] mt-2">${job.scheduleNotes}</p>` : ''}
         </div>
         <p class="ctr-section-label" style="margin-top:4px">Progress</p>
@@ -740,14 +762,14 @@ function screenContractorJobDetail() {
             <p class="ctr-section-label">Invoice</p>
             ${job.invoice ? `
             <div class="flex items-center justify-between py-2">
-                <div><p class="text-[18px] font-bold">${job.invoice.amount}</p><p class="text-[13px] text-[#64748B]">${job.invoice.file} · ${job.invoice.uploadedAt}</p></div>
+                <div><p class="text-[14px] font-bold">${job.invoice.amount}</p><p class="text-[13px] text-[#64748B]">${job.invoice.file} · ${job.invoice.uploadedAt}</p></div>
                 <i data-lucide="check-circle" class="w-6 h-6 text-[#059669]"></i>
             </div>` : `
             ${formField('Invoice amount (£)', job.invoice?.amount?.replace('£', '') || '', 'number', '185', 'invoiceAmount')}
             <button type="button" data-contractor-upload="invoice" class="ctr-upload-btn mt-2"><i data-lucide="upload" class="w-4 h-4"></i> Upload invoice</button>`}
         </div>
         ${['in_progress', 'scheduled', 'accepted'].includes(job.status) ? `
-        <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[15px] font-semibold">Mark Job Complete</button>
+        <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[13px] font-semibold">Mark Job Complete</button>
         <p class="text-[12px] text-[#64748B] text-center mt-2">Upload invoice first, then submit for landlord approval</p>` : ''}`;
     const tabBody = { overview, work, invoice };
     return `${topBar('Job Details', { back: true, sub: job.property })}
@@ -756,7 +778,7 @@ function screenContractorJobDetail() {
             <span class="badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
             <span class="badge" style="background:${pBg};color:${pColor}">${job.priority}</span>
         </div>
-        <h2 class="text-[20px] font-bold text-[#0F172A] mt-2">${job.issue}</h2>
+        <h2 class="text-[17px] font-bold text-[#0F172A] mt-2">${job.issue}</h2>
         <div class="flex gap-2 overflow-x-auto pb-1 mt-3">
             ${tabs.map(([k, l]) => `
             <button data-jtab="${k}" class="tab-pill ${tab === k ? 'active' : ''}">${l}</button>`).join('')}
@@ -771,14 +793,14 @@ function screenContractorSchedule() {
     return `${topBar('Schedule Visit', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4">
-            <p class="text-[16px] font-semibold text-[#0F172A]">${job.issue}</p>
+            <p class="text-[14px] font-semibold text-[#0F172A]">${job.issue}</p>
             <p class="text-[14px] text-[#64748B] mt-1">${job.property} · ${job.address}</p>
             <p class="text-[13px] text-[#64748B] mt-2">Tenant: ${job.tenant}</p>
         </div>
         ${formField('Visit date', job.scheduledDate || '2025-03-14', 'date', '', 'visitDate')}
         ${formField('Visit time', job.scheduledTime || '11:30', 'time', '', 'visitTime')}
         ${formTextarea('Message for tenant', job.scheduleNotes, 'e.g. I will arrive between 11:30–12:00', 'scheduleNotes')}
-        <button type="button" data-action="confirm-contractor-schedule" class="btn-primary w-full py-4 text-[15px] font-semibold">Confirm Visit</button>
+        <button type="button" data-action="confirm-contractor-schedule" class="btn-primary w-full py-4 text-[13px] font-semibold">Confirm Visit</button>
     </div>`;
 }
 
@@ -826,7 +848,7 @@ function screenContractorProfile() {
         ${menuList([
             ['building-2', 'Company Information', 'contractor-company'],
             ['award', 'Certifications', 'contractor-company'],
-            ['bell', 'Notification Settings', 'notifications-settings'],
+            ['bell', 'Alerts & Notifications', 'contractor-notifications'],
             ['key-round', 'Change Password', 'password'],
         ])}
         <p class="section-title">Support</p>
