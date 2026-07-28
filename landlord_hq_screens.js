@@ -75,6 +75,8 @@ const STATE = {
     flatDuplicateFrom: null,
     logMaintPrefill: null,
     inspectionPhotos: [],
+    inspectionRating: 4,
+    inspectionPrefill: null,
     photoMenuIdx: null,
     actionMenuKey: null,
     inviteReturn: null,

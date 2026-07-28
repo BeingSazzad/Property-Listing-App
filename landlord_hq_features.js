@@ -773,6 +773,47 @@ function formatDisplayDate(iso) {
     return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function toDateInputValue(val) {
+    if (!val) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(val))) return String(val);
+    const d = new Date(val);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+}
+
+function getScheduledInspection(propertyId = STATE.propertyId) {
+    return AppStore.inspections.find(i => i.propertyId === propertyId && i.scheduled) || null;
+}
+
+function normalizeInspectionType(type) {
+    const raw = String(type || '').trim();
+    if (!raw) return 'Mid-term';
+    const match = ['Check-in', 'Mid-term', 'Annual', 'Check-out'].find(t => raw.toLowerCase().startsWith(t.toLowerCase()));
+    return match || raw;
+}
+
+function renderInspectionRatingPicker(value = 4) {
+    const num = Math.min(5, Math.max(1, Math.round(parseFloat(value) || 4)));
+    STATE.inspectionRating = num;
+    return `
+    <div class="form-group">
+        <label class="form-label">${requiredLabel('Overall Rating')}</label>
+        <div class="insp-rating-picker" role="radiogroup" aria-label="Overall property condition rating">
+            ${[1, 2, 3, 4, 5].map(star => `
+            <button type="button" data-action="set-insp-rating" data-rating="${star}" class="insp-rating-star ${star <= num ? 'active' : ''}" aria-label="${star} out of 5 stars" aria-pressed="${star === num}">
+                <i data-lucide="star" class="w-6 h-6"></i>
+            </button>`).join('')}
+        </div>
+        <input type="hidden" data-field="rating" value="${num}">
+        <p class="form-helper">${num}.0 / 5 — recorded by you after the visit</p>
+    </div>`;
+}
+
+function setInspectionRating(rating) {
+    STATE.inspectionRating = Math.min(5, Math.max(1, Math.round(+rating || 4)));
+    render();
+}
+
 function formatLeaseMonthYear(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -3921,7 +3962,7 @@ function screenFinancialEnhanced() {
 }
 
 function renderPropertyInspectionTab(propertyId) {
-    const upcoming = AppStore.inspections.find(i => i.propertyId === propertyId && i.scheduled);
+    const upcoming = getScheduledInspection(propertyId);
     const past = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
@@ -3930,6 +3971,7 @@ function renderPropertyInspectionTab(propertyId) {
             <p class="insp-upcoming-label">Upcoming</p>
             <p class="insp-upcoming-title">${upcoming.type || 'Inspection'}</p>
             <p class="insp-upcoming-date">${typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date}</p>
+            <p class="insp-upcoming-hint">Condition rating is added by you when you conduct the inspection.</p>
             <div class="insp-upcoming-actions">
                 <button data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-secondary py-2.5 text-[12px] flex-1">Reschedule</button>
                 <button data-go="conduct-inspection" data-pid="${propertyId}" class="btn-primary py-2.5 text-[12px] flex-1">Conduct</button>
@@ -4586,14 +4628,22 @@ function screenAssignContractor() {
 
 function screenConductInspection() {
     const p = PROPERTIES[STATE.propertyId];
+    const upcoming = getScheduledInspection(STATE.propertyId);
+    const prefill = STATE.inspectionPrefill || {};
+    const selectedType = normalizeInspectionType(prefill.type || upcoming?.type || 'Mid-term');
+    const dateVal = prefill.date || toDateInputValue(upcoming?.date) || '';
+    const types = ['Check-in', 'Mid-term', 'Annual', 'Check-out'];
     return `${topBar('Conduct Inspection', { back: true })}
     <div class="screen-content screen-enter">
-        <div class="card p-4 bg-[#EFF6FF]"><p class="text-[13px] font-semibold">${p.name}</p><p class="text-[12px] text-[#64748B]">Record a new property inspection</p></div>
+        <div class="card p-4 bg-[#EFF6FF]">
+            <p class="text-[13px] font-semibold">${p.name}</p>
+            <p class="text-[12px] text-[#64748B]">${upcoming ? `Complete scheduled ${upcoming.type || 'inspection'} and add your condition rating.` : 'Record a new property inspection'}</p>
+        </div>
         <div><label class="form-label">${requiredLabel('Inspection Type')}</label>
-        <select data-field="inspType" class="form-input form-select"><option>Check-in</option><option>Mid-term</option><option>Annual</option><option>Check-out</option></select></div>
-        ${formFieldReq('Date', 'inspDate', '', 'date')}
-        ${formFieldReq('Overall Rating', 'rating', '4.5', 'number', '1.0 – 5.0')}
-        ${formTextarea('Notes', '', 'Condition observations, issues found...', 'inspNotes')}
+        <select data-field="inspType" class="form-input form-select">${types.map(t => `<option ${t === selectedType ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        ${formFieldReq('Date', 'inspDate', dateVal, 'date')}
+        ${renderInspectionRatingPicker(STATE.inspectionRating || 4)}
+        ${formTextarea('Notes', upcoming?.notes || '', 'Condition observations, issues found...', 'inspNotes')}
         <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full">
             <i data-lucide="camera" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
             <p class="text-[12px] text-[#64748B] mt-2">Upload inspection photos${STATE.inspectionPhotos?.length ? ` (${STATE.inspectionPhotos.length})` : ''}</p>
@@ -5457,22 +5507,36 @@ function saveCheckout() {
 }
 
 function saveInspection() {
-    if (!validateFields([['inspDate','Date',v=>v],['rating','Rating',v=>v]])) return;
-    AppStore.inspections.filter(i => i.propertyId === STATE.propertyId && i.scheduled).forEach(i => { i.scheduled = false; });
+    if (!validateFields([['inspDate', 'Date', v => v], ['rating', 'Rating', v => v]])) return;
+    const rating = Math.min(5, Math.max(1, Math.round(parseFloat(fieldVal('rating')) || STATE.inspectionRating || 0)));
+    if (!rating) {
+        toast('Select an overall rating');
+        return;
+    }
     const photoCount = STATE.inspectionPhotos?.length || 0;
-    AppStore.inspections.unshift({
-        id: AppStore.nextId(AppStore.inspections),
-        propertyId: STATE.propertyId,
+    const payload = {
         type: fieldVal('inspType'),
         date: fieldVal('inspDate'),
-        rating: fieldVal('rating'),
+        rating: String(rating),
         notes: fieldVal('inspNotes') || '',
         photos: photoCount,
         photoUrls: [...(STATE.inspectionPhotos || [])],
         report: `${fieldVal('inspType') || 'Inspection'} report.pdf`,
         scheduled: false,
-    });
+    };
+    const scheduled = getScheduledInspection(STATE.propertyId);
+    if (scheduled) {
+        Object.assign(scheduled, payload);
+    } else {
+        AppStore.inspections.unshift({
+            id: AppStore.nextId(AppStore.inspections),
+            propertyId: STATE.propertyId,
+            ...payload,
+        });
+    }
     STATE.inspectionPhotos = [];
+    STATE.inspectionRating = 4;
+    STATE.inspectionPrefill = null;
     withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Inspection saved'); go('property-detail', { propertyId: STATE.propertyId, tab: 'inspection' }); });
 }
 
@@ -6407,6 +6471,9 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="upload-nid-proof"]').forEach(el => { el.onclick = uploadNidProof; });
     app.querySelectorAll('[data-action="invite-wizard-next"]').forEach(el => { el.onclick = advanceInviteWizard; });
     app.querySelectorAll('[data-action="invite-wizard-back"]').forEach(el => { el.onclick = retreatInviteWizard; });
+    app.querySelectorAll('[data-action="set-insp-rating"]').forEach(el => {
+        el.onclick = () => setInspectionRating(+el.dataset.rating);
+    });
     app.querySelectorAll('[data-action="edit-tenant-note"]').forEach(el => {
         el.onclick = () => go('tenant-edit-note', { tenantId: STATE.tenantId, noteId: +el.dataset.nid });
     });
@@ -6557,6 +6624,19 @@ function goFeature(screen, opts = {}) {
     if (screen === 'mark-rent-received') initRentReceiveSelection();
     if (screen === 'mark-rent-received' && opts.invoiceId != null) {
         STATE.rentReceiveIds = [opts.invoiceId];
+    }
+    if (screen === 'conduct-inspection') {
+        const pid = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
+        const upcoming = AppStore.inspections.find(i => i.propertyId === pid && i.scheduled);
+        STATE.inspectionPrefill = upcoming ? {
+            type: upcoming.type,
+            date: toDateInputValue(upcoming.date),
+        } : null;
+        STATE.inspectionRating = 4;
+        STATE.inspectionPhotos = [];
+    } else if (STATE.screen === 'conduct-inspection') {
+        STATE.inspectionPrefill = null;
+        STATE.inspectionRating = 4;
     }
 }
 const _origGo = go;
