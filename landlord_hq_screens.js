@@ -2599,8 +2599,10 @@ function screenProperties() {
         const cardStats = typeof propertyCardStats === 'function' ? propertyCardStats(p.id) : { total: 0, collected: 0, occupancy: 0 };
         const collectedLabel = cardStats.collected > 0 ? formatRentAmount(cardStats.collected) : '—';
         const unitLabel = `${cardStats.total} unit${cardStats.total === 1 ? '' : 's'}`;
+        const propertyMenuKey = `property:${p.id}`;
+        const propertyMenuOpen = STATE.actionMenuKey === propertyMenuKey;
         return `
-        <article class="prop-card-v2 card">
+        <article class="prop-card-v2 card${propertyMenuOpen ? ' prop-card-v2--menu-open' : ''}">
             <button type="button" data-go="property-detail" data-pid="${p.id}" data-tab="units" class="prop-card-v2-tap">
                 <div class="prop-card-v2-top">
                     <div class="prop-card-v2-media">
@@ -2634,10 +2636,12 @@ function screenProperties() {
                     </div>
                 </div>
             </button>
-            <button type="button" data-action="open-action-menu" data-menu-key="property:${p.id}" class="prop-card-v2-menu action-menu-btn" aria-label="Property options" aria-expanded="${STATE.actionMenuKey === `property:${p.id}`}">
-                <i data-lucide="more-vertical" class="w-4 h-4"></i>
-            </button>
-            ${typeof renderActionMenuPopover === 'function' ? renderActionMenuPopover(`property:${p.id}`, propertyActionMenuItems(p.id)) : ''}
+            <div class="prop-card-v2-menu-slot">
+                <button type="button" data-action="open-action-menu" data-menu-key="${propertyMenuKey}" class="prop-card-v2-menu action-menu-btn" aria-label="Property options" aria-expanded="${propertyMenuOpen}">
+                    <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                </button>
+                ${typeof renderActionMenuPopover === 'function' ? renderActionMenuPopover(propertyMenuKey, propertyActionMenuItems(p.id)) : ''}
+            </div>
         </article>`;
     };
     const filterChips = [
@@ -2815,12 +2819,13 @@ const tenantListRow = (t) => {
     const tenancyMeta = typeof tenantTenancyMetaLine === 'function' ? tenantTenancyMetaLine(t) : '';
     const metaClass = tenancy?.type === 'group' ? 'tenant-row-tenancy--group' : 'tenant-row-tenancy--solo';
     const menuKey = `tenant:${t.id}`;
+    const menuOpen = STATE.actionMenuKey === menuKey;
     const menuBtn = typeof renderActionMenuButton === 'function' ? renderActionMenuButton(menuKey, 'Tenant options') : '';
     const menuPop = typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function'
         ? renderActionMenuPopover(menuKey, tenantActionMenuItems(t, { includeView: false }))
         : '';
     return `
-<div class="tenant-row-wrap card ${tenancy ? `tenant-row--${tenancy.type}` : ''}">
+<div class="tenant-row-wrap card ${tenancy ? `tenant-row--${tenancy.type}` : ''}${menuOpen ? ' tenant-row-wrap--menu-open' : ''}">
 <button type="button" data-go="tenant-detail" data-tid="${t.id}" class="tenant-row w-full text-left">
     <img src="${t.img}" class="tenant-row-avatar" alt="">
     <div class="tenant-row-body">
@@ -2875,6 +2880,7 @@ const tenantOverview = (t, avatar) => {
     const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(listItem) : null;
     const typePill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
     const tenantMenuKey = `tenant:${listItem.id}`;
+    const tenantMenuOpen = STATE.actionMenuKey === tenantMenuKey;
     return `
     <div class="tenant-hero-card ${tenancy ? `tenant-hero-card--${tenancy.type}` : ''}">
         <div class="tenant-hero-glow tenant-hero-glow-1" aria-hidden="true"></div>
@@ -2882,7 +2888,7 @@ const tenantOverview = (t, avatar) => {
         <div class="tenant-hero-shine" aria-hidden="true"></div>
         <div class="tenant-hero-toolbar">
             <button type="button" data-action="back" class="tenant-hero-back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <div class="tenant-hero-menu-slot">
+            <div class="tenant-hero-menu-slot${tenantMenuOpen ? ' tenant-hero-menu-slot--menu-open' : ''}">
                 ${typeof renderActionMenuButton === 'function' ? renderActionMenuButton(tenantMenuKey, 'Tenant options') : ''}
                 ${typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function' ? renderActionMenuPopover(tenantMenuKey, tenantActionMenuItems(listItem)) : ''}
             </div>

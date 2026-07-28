@@ -916,78 +916,90 @@ function closeActionMenu() {
     render();
 }
 
+function handleActionMenuClick(e) {
+    const openBtn = e.target.closest('[data-action="open-action-menu"]');
+    if (openBtn) {
+        e.stopPropagation();
+        const key = openBtn.dataset.menuKey;
+        STATE.actionMenuKey = STATE.actionMenuKey === key ? null : key;
+        render();
+        return true;
+    }
+    const closeBtn = e.target.closest('[data-action="close-action-menu"]');
+    if (closeBtn) {
+        e.stopPropagation();
+        closeActionMenu();
+        return true;
+    }
+    const goItem = e.target.closest('[data-action="action-menu-go"]');
+    if (goItem) {
+        e.stopPropagation();
+        STATE.actionMenuKey = null;
+        const opts = {};
+        if (goItem.dataset.pid !== undefined) opts.propertyId = +goItem.dataset.pid;
+        if (goItem.dataset.tid !== undefined) opts.tenantId = +goItem.dataset.tid;
+        if (goItem.dataset.unit) opts.unit = goItem.dataset.unit;
+        if (goItem.dataset.duplicateFrom) opts.duplicateFrom = goItem.dataset.duplicateFrom;
+        if (goItem.dataset.tab) opts.tab = goItem.dataset.tab;
+        if (goItem.dataset.chat !== undefined) opts.chatId = +goItem.dataset.chat;
+        go(goItem.dataset.go, opts);
+        return true;
+    }
+    const deletePropertyBtn = e.target.closest('[data-action="action-menu-delete-property"]');
+    if (deletePropertyBtn) {
+        e.stopPropagation();
+        STATE.propertyId = +deletePropertyBtn.dataset.pid;
+        STATE.actionMenuKey = null;
+        deleteProperty();
+        return true;
+    }
+    const deleteFlatBtn = e.target.closest('[data-action="action-menu-delete-flat"]');
+    if (deleteFlatBtn) {
+        e.stopPropagation();
+        STATE.propertyId = +deleteFlatBtn.dataset.pid;
+        STATE.selectedUnit = deleteFlatBtn.dataset.unit;
+        STATE.actionMenuKey = null;
+        deleteFlatAction();
+        return true;
+    }
+    const uploadPhotoBtn = e.target.closest('[data-action="action-menu-upload-flat-photo"]');
+    if (uploadPhotoBtn) {
+        e.stopPropagation();
+        STATE.propertyId = +uploadPhotoBtn.dataset.pid;
+        STATE.selectedUnit = uploadPhotoBtn.dataset.unit;
+        STATE.actionMenuKey = null;
+        uploadFlatPhotoAction();
+        return true;
+    }
+    const shareDocBtn = e.target.closest('[data-action="action-menu-share-doc"]');
+    if (shareDocBtn) {
+        e.stopPropagation();
+        STATE.actionMenuKey = null;
+        go('share-document', { shareDocId: +shareDocBtn.dataset.doc });
+        return true;
+    }
+    const editDocBtn = e.target.closest('[data-action="action-menu-edit-document"]');
+    if (editDocBtn) {
+        e.stopPropagation();
+        STATE.actionMenuKey = null;
+        editDocumentAction(+editDocBtn.dataset.doc);
+        return true;
+    }
+    const deleteDocBtn = e.target.closest('[data-action="action-menu-delete-document"]');
+    if (deleteDocBtn) {
+        e.stopPropagation();
+        STATE.actionMenuKey = null;
+        deleteDocumentAction(+deleteDocBtn.dataset.doc);
+        return true;
+    }
+    return false;
+}
+
 function bindActionMenuEvents(app) {
-    app.querySelectorAll('[data-action="open-action-menu"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            const key = el.dataset.menuKey;
-            STATE.actionMenuKey = STATE.actionMenuKey === key ? null : key;
-            render();
-        };
-    });
-    app.querySelectorAll('[data-action="close-action-menu"]').forEach(el => {
-        el.onclick = (e) => { e.stopPropagation(); closeActionMenu(); };
-    });
-    app.querySelectorAll('[data-action="action-menu-go"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            STATE.actionMenuKey = null;
-            const opts = {};
-            if (el.dataset.pid !== undefined) opts.propertyId = +el.dataset.pid;
-            if (el.dataset.tid !== undefined) opts.tenantId = +el.dataset.tid;
-            if (el.dataset.unit) opts.unit = el.dataset.unit;
-            if (el.dataset.duplicateFrom) opts.duplicateFrom = el.dataset.duplicateFrom;
-            if (el.dataset.tab) opts.tab = el.dataset.tab;
-            if (el.dataset.chat !== undefined) opts.chatId = +el.dataset.chat;
-            go(el.dataset.go, opts);
-        };
-    });
-    app.querySelectorAll('[data-action="action-menu-delete-property"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            STATE.propertyId = +el.dataset.pid;
-            STATE.actionMenuKey = null;
-            deleteProperty();
-        };
-    });
-    app.querySelectorAll('[data-action="action-menu-delete-flat"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            STATE.propertyId = +el.dataset.pid;
-            STATE.selectedUnit = el.dataset.unit;
-            STATE.actionMenuKey = null;
-            deleteFlatAction();
-        };
-    });
-    app.querySelectorAll('[data-action="action-menu-upload-flat-photo"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            STATE.propertyId = +el.dataset.pid;
-            STATE.selectedUnit = el.dataset.unit;
-            STATE.actionMenuKey = null;
-            uploadFlatPhotoAction();
-        };
-    });
-    app.querySelectorAll('[data-action="action-menu-share-doc"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            STATE.actionMenuKey = null;
-            go('share-document', { shareDocId: +el.dataset.doc });
-        };
-    });
-    app.querySelectorAll('[data-action="action-menu-edit-document"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            STATE.actionMenuKey = null;
-            editDocumentAction(+el.dataset.doc);
-        };
-    });
-    app.querySelectorAll('[data-action="action-menu-delete-document"]').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            STATE.actionMenuKey = null;
-            deleteDocumentAction(+el.dataset.doc);
-        };
+    if (app._actionMenuDelegationBound) return;
+    app._actionMenuDelegationBound = true;
+    app.addEventListener('click', (e) => {
+        handleActionMenuClick(e);
     });
 }
 
@@ -2428,6 +2440,7 @@ function screenFlatDetail() {
     const statusBg = occ ? '#DCFCE7' : '#FEF3C7';
     const statusColor = occ ? '#16A34A' : '#D97706';
     const unitMenuKey = actionMenuKeyFor('unit', propertyId, unit);
+    const unitMenuOpen = isActionMenuOpen(unitMenuKey);
     return `
     <div class="flat-detail-page screen-enter">
         <div class="flat-detail-hero">
@@ -2435,7 +2448,7 @@ function screenFlatDetail() {
             <div class="absolute inset-0 hero-gradient"></div>
             <button data-action="back" class="flat-detail-fab flat-detail-fab--left" aria-label="Back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
         </div>
-        <div class="flat-detail-menu-slot">
+        <div class="flat-detail-menu-slot${unitMenuOpen ? ' flat-detail-menu-slot--menu-open' : ''}">
             ${renderActionMenuButton(unitMenuKey, 'Unit options')}
             ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, unit, { fromDetail: true }))}
         </div>
