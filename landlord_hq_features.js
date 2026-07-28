@@ -463,6 +463,94 @@ const emptyState = (icon, title, desc, btnLabel, btnAction, btnGo) => `
 
 const loadingBar = () => STATE.loading ? `<div class="app-loading-bar"></div>` : '';
 
+const SKELETON_SCREENS = new Set(['dashboard', 'financial', 'property-detail']);
+
+function showScreenSkeleton(screen) {
+    return STATE.loading || STATE.screenLoading === screen;
+}
+
+function renderDashboardSkeleton() {
+    return `${topBar('Home')}
+    <div class="screen-content skeleton-screen">
+        <div class="skel-block skel-hero"></div>
+        <div class="skel-grid-3">
+            <div class="skel-block skel-stat"></div>
+            <div class="skel-block skel-stat"></div>
+            <div class="skel-block skel-stat"></div>
+        </div>
+        <div class="skel-card" style="margin-top:14px">
+            <div class="skel-row" style="margin-bottom:12px">
+                <div class="skel-circle" style="width:40px;height:40px"></div>
+                <div style="flex:1">
+                    <div class="skel-bar" style="width:55%"></div>
+                    <div class="skel-bar skel-bar--sm" style="width:35%"></div>
+                </div>
+            </div>
+            <div class="skel-bar skel-bar--sm" style="width:80%"></div>
+            <div class="skel-bar skel-bar--sm" style="width:62%"></div>
+        </div>
+        <div class="skel-block skel-list-item" style="margin-top:14px"></div>
+        <div class="skel-block skel-list-item"></div>
+        <div class="skel-block skel-list-item"></div>
+    </div>`;
+}
+
+function renderFinancialSkeleton() {
+    return `${topBar('Finances')}
+    <div class="screen-content skeleton-screen">
+        <div class="skel-card">
+            <div class="skel-bar" style="width:42%"></div>
+            <div class="skel-row" style="justify-content:space-between;align-items:flex-end;margin-bottom:14px">
+                <div style="flex:1">
+                    <div class="skel-bar skel-bar--lg" style="width:58%"></div>
+                    <div class="skel-bar skel-bar--sm" style="width:72%"></div>
+                </div>
+                <div class="skel-block skel-donut"></div>
+            </div>
+            <div class="skel-grid-3">
+                <div class="skel-block skel-stat"></div>
+                <div class="skel-block skel-stat"></div>
+                <div class="skel-block skel-stat"></div>
+            </div>
+        </div>
+        <div class="skel-block" style="height:48px;border-radius:14px;margin:14px 0"></div>
+        <div class="skel-chip-row">
+            <div class="skel-block skel-chip"></div>
+            <div class="skel-block skel-chip"></div>
+            <div class="skel-block skel-chip"></div>
+            <div class="skel-block skel-chip"></div>
+        </div>
+        <div class="skel-block skel-list-item"></div>
+        <div class="skel-block skel-list-item"></div>
+        <div class="skel-block skel-list-item"></div>
+    </div>`;
+}
+
+function renderPropertyDetailSkeleton() {
+    const p = PROPERTIES[STATE.propertyId];
+    return `${propSectionBar('Loading', p?.name || '')}
+    <div class="screen-content skeleton-screen">
+        <div class="skel-chip-row">
+            <div class="skel-block skel-chip"></div>
+            <div class="skel-block skel-chip"></div>
+            <div class="skel-block skel-chip"></div>
+            <div class="skel-block skel-chip"></div>
+        </div>
+        <div class="skel-card">
+            <div class="skel-block" style="height:140px;border-radius:14px;margin-bottom:12px"></div>
+            <div class="skel-bar" style="width:68%"></div>
+            <div class="skel-bar skel-bar--sm" style="width:88%"></div>
+            <div class="skel-bar skel-bar--sm" style="width:52%"></div>
+        </div>
+        <div class="skel-grid-2" style="margin-top:14px">
+            <div class="skel-block skel-stat"></div>
+            <div class="skel-block skel-stat"></div>
+        </div>
+        <div class="skel-block skel-list-item" style="margin-top:14px"></div>
+        <div class="skel-block skel-list-item"></div>
+    </div>`;
+}
+
 const confirmModal = () => {
     if (!STATE.confirm) return '';
     const c = STATE.confirm;
@@ -489,6 +577,46 @@ const photoActionSheet = () => {
             ${!isCover ? `<button type="button" data-action="set-cover-photo" data-idx="${idx}" class="photo-action-item">Set as cover</button>` : ''}
             ${photos.length > 1 ? `<button type="button" data-action="delete-photo" data-idx="${idx}" class="photo-action-item danger">Remove photo</button>` : ''}
             <button type="button" data-action="close-photo-menu" class="photo-action-item cancel">Cancel</button>
+        </div>
+    </div>`;
+};
+
+const renameDocModal = () => {
+    if (STATE.renameDocId == null) return '';
+    const doc = AppStore.documents.find(d => d.id === STATE.renameDocId);
+    const value = escapeHtml(STATE.renameDocValue ?? doc?.name ?? '');
+    return `<div class="modal-overlay open" data-action="close-rename-doc">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <h3 class="modal-title">Rename document</h3>
+            <p class="modal-body">Choose a clear name tenants and contractors will recognise.</p>
+            <input type="text" data-rename-doc-input class="form-input mb-4" value="${value}" placeholder="Document name">
+            <div class="modal-actions">
+                <button type="button" data-action="close-rename-doc" class="btn-secondary flex-1 py-3 text-[14px]">Cancel</button>
+                <button type="button" data-action="confirm-rename-doc" class="btn-primary flex-1 py-3 text-[14px]">Save</button>
+            </div>
+        </div>
+    </div>`;
+};
+
+const newMessagePickerModal = () => {
+    if (!STATE.newMessagePicker) return '';
+    const convos = typeof conversationsForRole === 'function' ? conversationsForRole() : CONVERSATIONS;
+    return `<div class="modal-overlay open" data-action="close-new-message">
+        <div class="modal-sheet modal-sheet--tall" onclick="event.stopPropagation()">
+            <h3 class="modal-title">New message</h3>
+            <p class="modal-body">Choose who to message</p>
+            <div class="picker-list">
+                ${convos.length ? convos.map(c => `
+                <button type="button" data-action="pick-message-chat" data-chat="${c.id}" class="picker-row">
+                    <img src="${c.img}" class="picker-row-avatar" alt="">
+                    <span class="picker-row-body">
+                        <span class="picker-row-title">${escapeHtml(c.name)}</span>
+                        <span class="picker-row-meta">${escapeHtml(c.sub)}</span>
+                    </span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1]"></i>
+                </button>`).join('') : `<p class="text-[13px] text-[#64748B] py-4 text-center">No contacts available yet</p>`}
+            </div>
+            <button type="button" data-action="close-new-message" class="btn-secondary w-full py-3 text-[14px] mt-3">Cancel</button>
         </div>
     </div>`;
 };
@@ -1022,8 +1150,9 @@ function renderPropertyBuildingHeader(propertyId) {
 
 function renderBuildingSectionHead(title, propertyId, sectionKey, menuItems, metaHtml = '') {
     const menuKey = actionMenuKeyFor('building', propertyId, sectionKey);
+    const menuOpen = isActionMenuOpen(menuKey);
     return `
-    <div class="building-section-head">
+    <div class="building-section-head ${menuOpen ? 'building-section-head--menu-open' : ''}">
         <h3>${title}</h3>
         <div class="building-section-head-actions">
             ${metaHtml}
@@ -1261,8 +1390,9 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
     const typePill = tenancy && opts.showTypePill ? tenancyTypePill(tenancy.type) : '';
     const wrapClass = opts.inPanel ? 'unit-card-v2-wrap unit-card-v2-wrap--row' : 'unit-card-v2-wrap card';
     const unitMenuKey = actionMenuKeyFor('unit', propertyId, name);
+    const menuOpen = isActionMenuOpen(unitMenuKey);
     return `
-    <div class="${wrapClass} ${tenancy ? `unit-card-v2--${tenancy.type}` : ''}">
+    <div class="${wrapClass} ${tenancy ? `unit-card-v2--${tenancy.type}` : ''} ${menuOpen ? 'unit-card-v2-wrap--menu-open' : ''}">
     <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="unit-card-v2 unit-card-v2-tap w-full text-left">
         <div class="unit-card-v2-thumb"><img src="${thumb}" alt=""></div>
         <div class="unit-card-v2-body">
@@ -1941,6 +2071,28 @@ function propertyHubMetaLine(propertyId) {
     return `${n} unit${n === 1 ? '' : 's'} · ${occupiedFlats}/${n} occupied · ${rent}`;
 }
 
+function renderPropertySectionNav(activeTab) {
+    const items = [
+        ['units', 'Units', 'layout-grid'],
+        ['tenant', 'Tenants', 'users'],
+        ['documents', 'Docs', 'file-text'],
+        ['maintenance', 'Maint.', 'wrench'],
+        ['inspection', 'Inspect', 'clipboard-list'],
+        ['compliance', 'Comply', 'shield-check'],
+        ['inventory', 'Inventory', 'package'],
+        ['details', 'Building', 'info'],
+    ];
+    return `
+    <div class="prop-section-nav">
+        <div class="prop-section-nav-scroll">
+            ${items.map(([tab, label, icon]) => `
+            <button type="button" data-tab="${tab}" class="prop-section-chip ${activeTab === tab ? 'prop-section-chip--active' : ''}">
+                <i data-lucide="${icon}" class="w-3.5 h-3.5"></i><span>${label}</span>
+            </button>`).join('')}
+        </div>
+    </div>`;
+}
+
 function renderPropertyQuickLinks(propertyId) {
     const { docs, openMaint } = propertyHubStats(propertyId);
     const items = [
@@ -2001,8 +2153,9 @@ function renderDocumentRow(doc, propertyId) {
     const icon = DOC_TYPE_ICONS[doc.type] || 'file';
     const color = DOC_TYPE_COLORS[doc.type] || '#64748B';
     const badges = documentRowBadges(doc);
+    const menuOpen = isActionMenuOpen(menuKey);
     return `
-    <div class="doc-row card">
+    <div class="doc-row card ${menuOpen ? 'doc-row--menu-open' : ''}">
         <button type="button" data-go="document-preview" data-doc="${doc.id}" class="doc-row-main">
             <div class="doc-row-icon" style="color:${color}"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
             <div class="doc-row-text min-w-0">
@@ -2064,10 +2217,11 @@ function renderPropertyUnitsTab(propertyId) {
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
         ${renderPropertyBuildingHeader(propertyId)}
+        ${renderPropertySectionNav('units')}
         <div class="unit-list-toolbar unit-list-toolbar--end">
             <div class="unit-list-toolbar-actions">
-                <button type="button" data-go="edit-property" data-pid="${propertyId}" class="header-text-link">Edit property</button>
-                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="header-text-link">+ Add unit</button>
+                <button type="button" data-go="edit-property" data-pid="${propertyId}" class="unit-toolbar-btn">Edit property</button>
+                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="unit-toolbar-btn unit-toolbar-btn--primary">+ Add unit</button>
             </div>
         </div>
         ${flatList}
@@ -2485,6 +2639,7 @@ function getUnreadNotifCount() {
 }
 
 function screenDashboardEnhanced() {
+    if (showScreenSkeleton('dashboard')) return renderDashboardSkeleton();
     const stats = portfolioStats();
     const openMaint = MAINTENANCE_ITEMS.filter(m => m.status === 'open').length;
     const fin = financialStats();
@@ -2865,8 +3020,9 @@ function renderEditPropertyUnitsSection(propertyId) {
         const spec = [u.beds ? `${u.beds} bed` : '', u.baths ? `${u.baths} bath` : ''].filter(Boolean).join(' · ');
         const floor = flatFloorLine(u);
         const unitMenuKey = actionMenuKeyFor('unit', propertyId, name);
+        const menuOpen = isActionMenuOpen(unitMenuKey);
         return `
-        <div class="card edit-prop-unit-row">
+        <div class="card edit-prop-unit-row ${menuOpen ? 'edit-prop-unit-row--menu-open' : ''}">
             <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="edit-prop-unit-main text-left">
                 <p class="edit-prop-unit-name">${name}</p>
                 <p class="edit-prop-unit-meta">${u.rent || '—'}${spec ? ` · ${spec}` : ''}${floor ? ` · ${floor}` : ''}</p>
@@ -3633,6 +3789,7 @@ function financialInvoiceCard(inv) {
 }
 
 function screenFinancialEnhanced() {
+    if (showScreenSkeleton('financial')) return renderFinancialSkeleton();
     const f = STATE.invoiceFilter;
     const statusMap = { pending: 'Pending', paid: 'Paid', overdue: 'Overdue' };
     const filtered = f === 'all' ? INVOICES : INVOICES.filter(inv => inv.status === statusMap[f]);
@@ -3849,47 +4006,147 @@ function screenMaintenanceDetailEnhanced() {
 
 function screenInviteTenantEnhanced() {
     const p = PROPERTIES[STATE.propertyId];
-    const selectedUnit = STATE.selectedUnit || '';
-    const prefill = STATE.invitePrefill || {};
+    const step = STATE.inviteStep || 1;
+    const draft = STATE.inviteDraft || {};
+    const prefill = { ...(STATE.invitePrefill || {}), ...draft };
+    const selectedUnit = prefill.unit || STATE.selectedUnit || '';
     const unitRent = selectedUnit
         ? (getUnitByName(STATE.propertyId, selectedUnit)?.rent || propertyDefaultFlatRent(STATE.propertyId))
         : propertyDefaultFlatRent(STATE.propertyId);
     const { tenancy, members } = selectedUnit ? getFlatMemberRoster(STATE.propertyId, selectedUnit) : { tenancy: null, members: [] };
     const pendingMembers = members.filter(m => !m.tenantId && m.accountStatus !== 'pending');
-    return `${topBar('Invite Tenant', { back: true })}
-    <div class="screen-content screen-enter">
+    const stepLabels = ['Identity', 'Contact', 'Unit & lease', 'Review & send'];
+    const wizardProgress = `
+        <div class="wizard-progress">
+            <div class="wizard-steps">
+                ${[1, 2, 3, 4].map(s => `<div class="wizard-step ${s <= step ? 'active' : ''} ${s < step ? 'done' : ''}"></div>`).join('')}
+            </div>
+            <p class="wizard-step-label">Step ${step} of 4 · ${stepLabels[step - 1]}</p>
+        </div>`;
+    const propertyCard = `
         <div class="card p-4 flex items-center gap-3">
             <img src="${IMG.props[STATE.propertyId]}" class="w-14 h-14 rounded-xl object-cover" alt="">
             <div><p class="text-[14px] font-bold">${p.name}</p><p class="text-[12px] text-[#64748B]">${p.address}</p></div>
-        </div>
-        ${tenancy?.type === 'group' && pendingMembers.length ? `
+        </div>`;
+    const groupTip = tenancy?.type === 'group' && pendingMembers.length ? `
         <div class="ux-tip">
             <p class="ux-tip-title">Group tenancy</p>
             <p class="ux-tip-text">${pendingMembers.length} member${pendingMembers.length === 1 ? '' : 's'} still need portal invites on this unit.</p>
-        </div>` : ''}
-        <p class="text-[12px] text-[#64748B] leading-relaxed">Send a secure invite link. The tenant must accept before they can log in.</p>
+        </div>` : '';
+    let stepBody = '';
+    if (step === 1) {
+        stepBody = `
+        <p class="text-[12px] text-[#64748B] leading-relaxed">Start with the tenant's identity details and NID proof.</p>
         ${formFieldReq('NID', 'idNumber', prefill.idNumber || '', 'text', 'National ID number')}
         <div>
             <label class="form-label">${requiredLabel('NID Document Proof')}</label>
             <button type="button" data-action="upload-nid-proof" class="card border-2 border-dashed border-[#E2E8F0] p-5 text-center w-full">
-                <i data-lucide="${STATE.nidProofName ? 'file-check' : 'upload'}" class="w-7 h-7 text-[#94A3B8] mx-auto"></i>
-                <p class="text-[13px] font-semibold text-[#0F172A] mt-2">${STATE.nidProofName || 'Upload NID scan or photo'}</p>
+                <i data-lucide="${STATE.nidProofName || draft.nidProofName ? 'file-check' : 'upload'}" class="w-7 h-7 text-[#94A3B8] mx-auto"></i>
+                <p class="text-[13px] font-semibold text-[#0F172A] mt-2">${STATE.nidProofName || draft.nidProofName || 'Upload NID scan or photo'}</p>
                 <p class="text-[11px] text-[#64748B] mt-1">Passport, national ID card, or driving licence</p>
             </button>
         </div>
         ${formFieldReq('First / Given Name', 'firstName', prefill.firstName || '', 'text')}
         ${formFieldReq('Last / Family Name', 'lastName', prefill.lastName || '', 'text')}
-        ${formFieldReq('Date of Birth', 'dob', prefill.dob || '', 'date')}
+        ${formFieldReq('Date of Birth', 'dob', prefill.dob || '', 'date')}`;
+    } else if (step === 2) {
+        stepBody = `
+        <p class="text-[12px] text-[#64748B] leading-relaxed">We'll email a secure invite link to the tenant.</p>
         ${formFieldReq('Email Address', 'email', prefill.email || '', 'email')}
-        ${formFieldReq('Mobile Number', 'phone', prefill.phone || '', 'tel', '+44 7700 900000')}
+        ${formFieldReq('Mobile Number', 'phone', prefill.phone || '', 'tel', '+44 7700 900000')}`;
+    } else if (step === 3) {
+        stepBody = `
+        <p class="text-[12px] text-[#64748B] leading-relaxed">Choose the unit and lease dates for this invitation.</p>
         <div><label class="form-label">${requiredLabel('Unit')}</label>${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit)}</div>
-        <div><label class="form-label">Unit rent</label><input data-invite="rent" type="text" class="form-input" placeholder="${unitRent}" value="${unitRent}"></div>
+        <div><label class="form-label">Unit rent</label><input data-invite="rent" type="text" class="form-input" placeholder="${unitRent}" value="${prefill.rent || unitRent}"></div>
         <p class="form-helper">Rent is for this unit only — not combined with other units in the building.</p>
-        <div><label class="form-label">Lease Start</label><input data-invite="leaseStart" type="date" class="form-input"></div>
-        <div><label class="form-label">Lease End</label><input data-invite="leaseEnd" type="date" class="form-input"></div>
-        <div><label class="form-label">Personal Message</label><textarea data-invite="message" class="form-input" rows="3" placeholder="Add a personal message (optional)"></textarea></div>
-        <button type="button" data-action="send-tenant-invite" class="btn-primary w-full py-3.5 text-[14px]">Send Invitation</button>
+        <div><label class="form-label">Lease Start</label><input data-invite="leaseStart" type="date" class="form-input" value="${prefill.leaseStart || ''}"></div>
+        <div><label class="form-label">Lease End</label><input data-invite="leaseEnd" type="date" class="form-input" value="${prefill.leaseEnd || ''}"></div>
+        <div><label class="form-label">Personal Message</label><textarea data-invite="message" class="form-input" rows="3" placeholder="Add a personal message (optional)">${prefill.message || ''}</textarea></div>`;
+    } else {
+        const fullName = `${prefill.firstName || ''} ${prefill.lastName || ''}`.trim();
+        stepBody = `
+        <p class="text-[12px] text-[#64748B] leading-relaxed">Check everything looks right before sending the invite.</p>
+        <div class="invite-review-card">
+            <div class="invite-review-row"><span class="invite-review-label">Tenant</span><span class="invite-review-value">${fullName || '—'}</span></div>
+            <div class="invite-review-row"><span class="invite-review-label">NID</span><span class="invite-review-value">${prefill.idNumber || '—'}</span></div>
+            <div class="invite-review-row"><span class="invite-review-label">Email</span><span class="invite-review-value">${prefill.email || '—'}</span></div>
+            <div class="invite-review-row"><span class="invite-review-label">Phone</span><span class="invite-review-value">${prefill.phone || '—'}</span></div>
+            <div class="invite-review-row"><span class="invite-review-label">Unit</span><span class="invite-review-value">${selectedUnit || '—'}</span></div>
+            <div class="invite-review-row"><span class="invite-review-label">Rent</span><span class="invite-review-value">${prefill.rent || unitRent}</span></div>
+            <div class="invite-review-row"><span class="invite-review-label">Lease</span><span class="invite-review-value">${prefill.leaseStart && prefill.leaseEnd ? `${prefill.leaseStart} → ${prefill.leaseEnd}` : '—'}</span></div>
+            ${prefill.message ? `<div class="invite-review-row"><span class="invite-review-label">Message</span><span class="invite-review-value">${prefill.message}</span></div>` : ''}
+        </div>`;
+    }
+    const primaryLabel = step === 4 ? 'Send Invitation' : 'Continue';
+    return `${topBar('Invite Tenant', { back: true })}
+    <div class="screen-content screen-enter">
+        ${propertyCard}
+        ${groupTip}
+        ${wizardProgress}
+        ${stepBody}
+        <div class="wizard-actions">
+            ${step > 1 ? `<button type="button" data-action="invite-wizard-back" class="btn-secondary flex-1 py-3.5 text-[14px]">Back</button>` : ''}
+            <button type="button" data-action="invite-wizard-next" class="btn-primary flex-1 py-3.5 text-[14px]">${primaryLabel}</button>
+        </div>
     </div>`;
+}
+
+function captureInviteDraft() {
+    const draft = { ...(STATE.inviteDraft || {}) };
+    ['idNumber', 'firstName', 'lastName', 'dob', 'email', 'phone', 'unit', 'rent', 'leaseStart', 'leaseEnd', 'message'].forEach((key) => {
+        const val = inviteField(key);
+        if (val) draft[key] = val;
+    });
+    if (STATE.nidProofName) draft.nidProofName = STATE.nidProofName;
+    if (!draft.unit && STATE.selectedUnit) draft.unit = STATE.selectedUnit;
+    STATE.inviteDraft = draft;
+    return draft;
+}
+
+function validateInviteStep(step) {
+    captureInviteDraft();
+    const d = STATE.inviteDraft || {};
+    if (step === 1) {
+        if (!d.idNumber) { toast('Enter tenant NID'); return false; }
+        if (!STATE.nidProofName && !d.nidProofName) { toast('Upload NID document proof'); return false; }
+        if (!d.firstName || !d.lastName) { toast('Enter tenant first and last name'); return false; }
+        if (!d.dob) { toast('Enter date of birth'); return false; }
+        return true;
+    }
+    if (step === 2) {
+        if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) { toast('Enter a valid email address'); return false; }
+        if (!d.phone) { toast('Enter tenant phone number'); return false; }
+        return true;
+    }
+    if (step === 3) {
+        if (!d.unit) { toast('Select a unit'); return false; }
+        if (!d.leaseStart || !d.leaseEnd) { toast('Enter lease start and end dates'); return false; }
+        if (d.leaseEnd <= d.leaseStart) { toast('Lease end must be after start date'); return false; }
+        return true;
+    }
+    return true;
+}
+
+function advanceInviteWizard() {
+    if (!validateInviteStep(STATE.inviteStep || 1)) return;
+    if ((STATE.inviteStep || 1) < 4) {
+        STATE.inviteStep = (STATE.inviteStep || 1) + 1;
+        render();
+        return;
+    }
+    if (!STATE.nidProofName && STATE.inviteDraft?.nidProofName) STATE.nidProofName = STATE.inviteDraft.nidProofName;
+    sendTenantInvitation();
+}
+
+function retreatInviteWizard() {
+    captureInviteDraft();
+    if ((STATE.inviteStep || 1) > 1) {
+        STATE.inviteStep -= 1;
+        render();
+        return;
+    }
+    back();
 }
 
 function renderTenantMaintenanceSection(tenantId) {
@@ -4963,6 +5220,10 @@ function saveAddProperty() {
 function saveEditProperty() {
     const p = PROPERTIES[STATE.propertyId];
     if (!p) return;
+    if (!validateFields([
+        ['name', 'Property name', v => v],
+        ['address', 'Address', v => v],
+    ])) return;
     p.name = fieldVal('name') || p.name;
     p.address = fieldVal('address') || p.address;
     if (fieldVal('rent')) {
@@ -5395,12 +5656,20 @@ function uploadTenantDocument() {
 function uploadNidProof() {
     const fileName = 'NID Proof.jpg';
     STATE.nidProofName = fileName;
+    if (!STATE.inviteDraft) STATE.inviteDraft = {};
+    STATE.inviteDraft.nidProofName = fileName;
     if (STATE.screen === 'edit-tenant' && STATE.tenantId != null) {
         ensureTenantNidProof(STATE.tenantId, fileName);
         AppStore.save();
     }
     toast('NID proof uploaded');
     render();
+}
+
+const _screenPropertyDetailBase = SCREEN_MAP['property-detail'];
+function screenPropertyDetailWithSkeleton() {
+    if (showScreenSkeleton('property-detail')) return renderPropertyDetailSkeleton();
+    return _screenPropertyDetailBase();
 }
 
 function screenTenantAddNote() {
@@ -5787,11 +6056,21 @@ function editDocumentAction(docId) {
     const doc = AppStore.documents.find(d => d.id === docId);
     if (!doc) { toast('Document not found'); return; }
     if (doc.type !== 'Custom Document') { toast('Only uploaded documents can be renamed'); return; }
-    const next = window.prompt('Rename document', doc.name);
-    if (next == null || next.trim() === doc.name) return;
-    if (!next.trim()) { toast('Name cannot be empty'); return; }
-    doc.name = next.trim();
+    STATE.renameDocId = docId;
+    STATE.renameDocValue = doc.name;
+    render();
+}
+
+function confirmRenameDoc() {
+    const doc = AppStore.documents.find(d => d.id === STATE.renameDocId);
+    const input = document.querySelector('[data-rename-doc-input]');
+    const next = input?.value?.trim();
+    if (!doc) { STATE.renameDocId = null; render(); return; }
+    if (!next) { toast('Name cannot be empty'); return; }
+    if (next === doc.name) { STATE.renameDocId = null; render(); return; }
+    doc.name = next;
     AppStore.save();
+    STATE.renameDocId = null;
     toast('Document renamed');
     render();
 }
@@ -5913,6 +6192,7 @@ Object.assign(SCREEN_MAP, {
     'financial': screenFinancialEnhanced,
     'invite-tenant': screenInviteTenantEnhanced,
     'dashboard': screenDashboardEnhanced,
+    'property-detail': screenPropertyDetailWithSkeleton,
     'tenants': screenTenantsEnhanced,
     'select-property-invite': screenSelectPropertyInvite,
     'global-search': screenGlobalSearch,
@@ -6056,6 +6336,24 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="confirm-ok"]').forEach(el => {
         el.onclick = () => { const fn = STATE.confirm?.onOk; STATE.confirm = null; if (fn) fn(); else render(); };
     });
+    app.querySelectorAll('[data-action="new-message"]').forEach(el => {
+        el.onclick = () => { STATE.newMessagePicker = true; render(); };
+    });
+    app.querySelectorAll('[data-action="close-new-message"]').forEach(el => {
+        el.onclick = () => { STATE.newMessagePicker = false; render(); };
+    });
+    app.querySelectorAll('[data-action="pick-message-chat"]').forEach(el => {
+        el.onclick = () => {
+            STATE.newMessagePicker = false;
+            go('chat', { chatId: +el.dataset.chat });
+        };
+    });
+    app.querySelectorAll('[data-action="close-rename-doc"]').forEach(el => {
+        el.onclick = () => { STATE.renameDocId = null; render(); };
+    });
+    app.querySelectorAll('[data-action="confirm-rename-doc"]').forEach(el => {
+        el.onclick = () => confirmRenameDoc();
+    });
     app.querySelectorAll('[data-action="save-preference"]').forEach(el => {
         el.onclick = () => savePreference(el.dataset.opt);
     });
@@ -6065,6 +6363,8 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="remove-payment-method"]').forEach(el => { el.onclick = removePaymentMethod; });
     app.querySelectorAll('[data-action="upload-tenant-doc"]').forEach(el => { el.onclick = uploadTenantDocument; });
     app.querySelectorAll('[data-action="upload-nid-proof"]').forEach(el => { el.onclick = uploadNidProof; });
+    app.querySelectorAll('[data-action="invite-wizard-next"]').forEach(el => { el.onclick = advanceInviteWizard; });
+    app.querySelectorAll('[data-action="invite-wizard-back"]').forEach(el => { el.onclick = retreatInviteWizard; });
     app.querySelectorAll('[data-action="edit-tenant-note"]').forEach(el => {
         el.onclick = () => go('tenant-edit-note', { tenantId: STATE.tenantId, noteId: +el.dataset.nid });
     });
@@ -6131,6 +6431,16 @@ render = function() {
         app.insertAdjacentHTML('beforeend', confirmModal());
         lucide.createIcons();
     }
+    if (app && !app.querySelector('.modal-overlay') && STATE.renameDocId != null) {
+        app.insertAdjacentHTML('beforeend', renameDocModal());
+        lucide.createIcons();
+        const input = app.querySelector('[data-rename-doc-input]');
+        if (input) { input.focus(); input.select(); }
+    }
+    if (app && !app.querySelector('.modal-overlay') && STATE.newMessagePicker) {
+        app.insertAdjacentHTML('beforeend', newMessagePickerModal());
+        lucide.createIcons();
+    }
     if (app && !app.querySelector('.modal-overlay') && STATE.photoMenuIdx != null && STATE.screen === 'property-photos') {
         app.insertAdjacentHTML('beforeend', photoActionSheet());
         lucide.createIcons();
@@ -6162,6 +6472,12 @@ bindEvents = function() {
 
 const _origBack = back;
 back = function() {
+    if (STATE.screen === 'invite-tenant' && (STATE.inviteStep || 1) > 1) {
+        captureInviteDraft();
+        STATE.inviteStep -= 1;
+        render();
+        return;
+    }
     _origBack();
 };
 
@@ -6204,6 +6520,16 @@ function goFeature(screen, opts = {}) {
 const _origGo = go;
 go = function(screen, opts = {}) {
     goFeature(screen, opts);
+    if (SKELETON_SCREENS.has(screen)) {
+        STATE.screenLoading = screen;
+        clearTimeout(go._skelTimer);
+        go._skelTimer = setTimeout(() => {
+            if (STATE.screenLoading === screen) {
+                STATE.screenLoading = null;
+                render();
+            }
+        }, 380);
+    }
     _origGo(screen, opts);
 };
 

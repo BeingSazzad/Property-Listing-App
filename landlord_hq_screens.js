@@ -77,6 +77,13 @@ const STATE = {
     inspectionPhotos: [],
     photoMenuIdx: null,
     actionMenuKey: null,
+    inviteReturn: null,
+    inviteStep: 1,
+    inviteDraft: null,
+    renameDocId: null,
+    newMessagePicker: false,
+    screenLoading: null,
+    faqCameFromFaq: false,
     rentReceiveIds: [],
     rentReceiveDate: '',
     rentPaymentMethod: 'bank',
@@ -489,6 +496,7 @@ const TENANT_MENU = [
         ['wallet', 'Payments', 'payments'],
         ['wrench', 'Maintenance', 'maintenance'],
         ['sticky-note', 'Notes', 'notes'],
+        ['activity', 'Activity', 'activity'],
     ]},
 ];
 
@@ -723,7 +731,9 @@ function resendSignupCode() {
 
 function inviteField(name) {
     const el = document.querySelector(`[data-invite="${name}"]`) || document.querySelector(`[data-field="${name}"]`);
-    return el?.value?.trim() || '';
+    if (el?.value?.trim()) return el.value.trim();
+    const draft = STATE.inviteDraft?.[name];
+    return draft != null ? String(draft).trim() : '';
 }
 
 function sendTenantInvitation() {
@@ -1523,11 +1533,6 @@ function go(screen, opts = {}) {
         screen = 'sign-in';
         opts = {};
     }
-    if (screen === 'faq-detail') {
-        STATE.faqOpenId = opts.faqId ?? STATE.faqId ?? 0;
-        screen = 'faq';
-        opts = {};
-    }
     recordNavHistory(from, screen, opts);
     Object.assign(STATE, opts, { screen, drawer: false, fab: false, showPropFilters: false, actionMenuKey: null });
     if (screen === 'verify-otp') {
@@ -1562,7 +1567,22 @@ function go(screen, opts = {}) {
     if (screen === 'invite-tenant' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'flat-detail') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
-    if (screen === 'invite-tenant') STATE.nidProofName = null;
+    if (screen === 'invite-tenant') {
+        if (from !== 'invite-tenant') {
+            STATE.inviteStep = 1;
+            STATE.inviteDraft = null;
+        }
+        STATE.nidProofName = null;
+        if (from === 'property-detail' && (opts.tab === 'tenant' || STATE.tab === 'tenant')) {
+            STATE.inviteReturn = { screen: 'property-detail', tab: 'tenant' };
+        } else if (from === 'flat-detail' || opts.unit || STATE.selectedUnit) {
+            STATE.inviteReturn = { screen: 'flat-detail', unit: opts.unit || STATE.selectedUnit };
+        } else if (from === 'tenants' || from === 'select-property-invite') {
+            STATE.inviteReturn = { screen: 'tenants' };
+        } else {
+            STATE.inviteReturn = { screen: 'property-detail', tab: 'tenant' };
+        }
+    }
     if (screen === 'add-flat') {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
@@ -1578,7 +1598,14 @@ function go(screen, opts = {}) {
         const sectionTab = opts.tenantTab || opts.tab;
         STATE.tenantTab = sectionTab ?? (opts.tenantId !== undefined ? 'overview' : STATE.tenantTab || 'overview');
     }
-    if (screen === 'faq-detail') STATE.faqId = opts.faqId ?? 0;
+    if (screen === 'faq-detail') {
+        STATE.faqId = opts.faqId ?? STATE.faqId ?? 0;
+        if (from === 'faq') STATE.faqCameFromFaq = true;
+        else if (from !== 'faq-detail') {
+            STATE.faqCameFromFaq = false;
+            STATE.faqReturnScreen = from;
+        }
+    }
     if (opts.complianceId !== undefined) STATE.complianceId = opts.complianceId;
     if (opts.prefKey) STATE.prefKey = opts.prefKey;
     if (opts.paymentId !== undefined) STATE.paymentId = opts.paymentId;
@@ -1686,9 +1713,25 @@ function navigateBackFallback() {
     if (STATE.screen === 'flat-detail' || STATE.screen === 'tenancy-detail' || STATE.screen === 'edit-flat') {
         opts.unit = STATE.selectedUnit;
     }
-    if (STATE.screen === 'invite-tenant' && STATE.selectedUnit) {
-        go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit, noHistory: true });
-        return;
+    if (STATE.screen === 'invite-tenant') {
+        const ret = STATE.inviteReturn;
+        STATE.inviteReturn = null;
+        if (ret?.screen === 'property-detail') {
+            go('property-detail', { propertyId: STATE.propertyId, tab: ret.tab || 'tenant', noHistory: true });
+            return;
+        }
+        if (ret?.screen === 'flat-detail' && ret.unit) {
+            go('flat-detail', { propertyId: STATE.propertyId, unit: ret.unit, noHistory: true });
+            return;
+        }
+        if (ret?.screen === 'tenants') {
+            go('tenants', { noHistory: true });
+            return;
+        }
+        if (STATE.selectedUnit) {
+            go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit, noHistory: true });
+            return;
+        }
     }
     go(target, opts);
 }
@@ -1747,6 +1790,10 @@ function back() {
     }
     if (STATE.screen === 'faq') {
         go(STATE.faqReturnScreen || 'help-support', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'faq-detail') {
+        go(STATE.faqCameFromFaq ? 'faq' : (STATE.faqReturnScreen || 'help-support'), { noHistory: true });
         return;
     }
     if (STATE.screen === 'document-preview') {
@@ -1999,7 +2046,7 @@ const messagesHeader = () => `
     <div class="inbox-header-row">
         <button data-action="drawer" class="top-icon-btn"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
         <h1 class="inbox-title">Messages</h1>
-        <button data-go="chat" class="top-icon-btn"><i data-lucide="square-pen" class="w-[20px] h-[20px]"></i></button>
+        <button type="button" data-action="new-message" class="top-icon-btn" aria-label="New message"><i data-lucide="square-pen" class="w-[20px] h-[20px]"></i></button>
     </div>
     <div class="inbox-search-wrap">
         <div class="search-bar inbox-search">
@@ -2025,7 +2072,7 @@ const msgRow = (c) => `
     </div>
 </button>`;
 
-const MAIN_SCREENS = ['dashboard','properties','financial','maintenance','messages'];
+const MAIN_SCREENS = ['dashboard','properties','tenants','financial','maintenance','messages'];
 const TENANT_NAV_SCREENS = ['tenant-dashboard','log-maintenance','messages','personal-info'];
 const CONTRACTOR_NAV_SCREENS = ['contractor-dashboard','contractor-jobs','messages','contractor-profile'];
 
@@ -2039,8 +2086,9 @@ function shouldShowBottomNav(screen = STATE.screen) {
 const BOTTOM_NAV = [
     ['layout-dashboard', 'Home', 'dashboard'],
     ['building-2', 'Properties', 'properties'],
-    ['wallet', 'Financial', 'financial'],
-    ['wrench', 'Maintenance', 'maintenance'],
+    ['users', 'Tenants', 'tenants'],
+    ['wallet', 'Finance', 'financial'],
+    ['wrench', 'Maint.', 'maintenance'],
     ['message-square', 'Messages', 'messages'],
 ];
 
@@ -2132,7 +2180,7 @@ const infoRows = (rows) => `
 
 const DRAWER_NAV = [
     ['user-round', 'Profile', 'profile'],
-    ['wallet', 'Financial', 'financial'],
+    ['wallet', 'Finance', 'financial'],
     ['life-buoy', 'Help & FAQ', 'help-support'],
 ];
 
@@ -2377,14 +2425,18 @@ const propMenuList = () => {
 };
 
 const propSectionBar = (title, subtitle) => `
+<div class="prop-section-header">
 <div class="prop-section-bar">
     <div class="sub-header-left">
         <button type="button" data-action="back" class="back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
         <div class="min-w-0">
+            <p class="prop-section-crumb">Units · ${title}</p>
             <h2 class="sub-header-title">${title}</h2>
             ${subtitle ? `<p class="text-[11px] text-[#64748B] truncate leading-tight mt-0.5">${subtitle}</p>` : ''}
         </div>
     </div>
+</div>
+${typeof renderPropertySectionNav === 'function' ? renderPropertySectionNav(STATE.tab) : ''}
 </div>`;
 
 const propertyMaintenanceItems = (propertyName) =>
@@ -3430,19 +3482,13 @@ function screenFaq() {
     <div class="screen-content screen-enter">
         <p class="text-[12px] font-semibold text-[#64748B] uppercase tracking-wide mb-3">${roleLabel} FAQ</p>
         <div class="faq-list-minimal">
-            ${items.map((f) => {
-                const open = STATE.faqOpenId === f.id;
-                return `
-            <div class="faq-accordion-item${open ? ' open' : ''}">
-                <button type="button" data-faq-toggle="${f.id}" class="faq-accordion-trigger" aria-expanded="${open}">
+            ${items.map((f) => `
+            <div class="faq-accordion-item">
+                <button type="button" data-go="faq-detail" data-fid="${f.id}" class="faq-accordion-trigger">
                     <p class="faq-minimal-q">${f.q}</p>
-                    <i data-lucide="chevron-down" class="faq-accordion-icon w-4 h-4 shrink-0"></i>
+                    <i data-lucide="chevron-right" class="faq-accordion-icon w-4 h-4 shrink-0"></i>
                 </button>
-                <div class="faq-accordion-body">
-                    <p class="faq-accordion-answer">${f.a}</p>
-                </div>
-            </div>`;
-            }).join('')}
+            </div>`).join('')}
         </div>
         <p class="text-center text-[13px] text-[#64748B] mt-6">Can't find an answer?</p>
         <button data-action="toast" data-msg="support@landlordhq.com" class="btn-primary w-full py-3 text-[13px] mt-2">Contact Support</button>
@@ -3450,7 +3496,32 @@ function screenFaq() {
 }
 
 function screenFaqDetail() {
-    return screenFaq();
+    const item = faqItemById(STATE.faqId ?? 0);
+    const items = faqItemsForRole();
+    const idx = items.findIndex(f => f.id === item.id);
+    const prev = idx > 0 ? items[idx - 1] : null;
+    const next = idx < items.length - 1 ? items[idx + 1] : null;
+    return `${topBar('FAQ', { back: true })}
+    <div class="screen-content screen-enter">
+        <span class="faq-detail-cat">${item.cat}</span>
+        <h2 class="faq-detail-q">${item.q}</h2>
+        <p class="faq-detail-a">${item.a}</p>
+        ${prev || next ? `
+        <div class="faq-detail-nav">
+            ${prev ? `
+            <button type="button" data-go="faq-detail" data-fid="${prev.id}" class="faq-detail-link">
+                <div><p class="faq-detail-link-label">Previous</p><p class="faq-detail-link-q">${prev.q}</p></div>
+                <i data-lucide="chevron-up" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>` : ''}
+            ${next ? `
+            <button type="button" data-go="faq-detail" data-fid="${next.id}" class="faq-detail-link">
+                <div><p class="faq-detail-link-label">Next</p><p class="faq-detail-link-q">${next.q}</p></div>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>` : ''}
+        </div>` : ''}
+        <button type="button" data-go="faq" class="btn-secondary w-full py-3 text-[13px] mt-4">Browse all questions</button>
+        <button data-action="toast" data-msg="support@landlordhq.com" class="btn-primary w-full py-3 text-[13px] mt-2">Contact Support</button>
+    </div>`;
 }
 
 function screenPrivacy() {
@@ -4082,6 +4153,7 @@ function bindEvents() {
     }
 
     app.querySelectorAll('[data-go]').forEach(el => {
+        if (el.dataset.action) return;
         el.onclick = (e) => {
             e.stopPropagation();
             if (e.target.closest('[data-action]')) return;
