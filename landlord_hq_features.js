@@ -4088,6 +4088,13 @@ function screenMaintenanceDetailEnhanced() {
     </div>`;
 }
 
+function inviteDraftFullName(draft = {}, prefill = {}) {
+    return draft.fullName
+        || [draft.firstName, draft.lastName].filter(Boolean).join(' ').trim()
+        || [prefill.fullName, [prefill.firstName, prefill.lastName].filter(Boolean).join(' ').trim()].find(Boolean)
+        || '';
+}
+
 function screenInviteTenantEnhanced() {
     const p = PROPERTIES[STATE.propertyId];
     const step = STATE.inviteStep || 1;
@@ -4130,8 +4137,7 @@ function screenInviteTenantEnhanced() {
                 <p class="text-[11px] text-[#64748B] mt-1">Passport, national ID card, or driving licence</p>
             </button>
         </div>
-        ${formFieldReq('First / Given Name', 'firstName', prefill.firstName || '', 'text')}
-        ${formFieldReq('Last / Family Name', 'lastName', prefill.lastName || '', 'text')}
+        ${formFieldReq('Full Name', 'fullName', inviteDraftFullName(draft, prefill), 'text', 'e.g. Sarah Johnson')}
         ${formFieldReq('Date of Birth', 'dob', prefill.dob || '', 'date')}`;
     } else if (step === 2) {
         stepBody = `
@@ -4148,7 +4154,7 @@ function screenInviteTenantEnhanced() {
         <div><label class="form-label">Lease End</label><input data-invite="leaseEnd" type="date" class="form-input" value="${prefill.leaseEnd || ''}"></div>
         <div><label class="form-label">Personal Message</label><textarea data-invite="message" class="form-input" rows="3" placeholder="Add a personal message (optional)">${prefill.message || ''}</textarea></div>`;
     } else {
-        const fullName = `${prefill.firstName || ''} ${prefill.lastName || ''}`.trim();
+        const fullName = inviteDraftFullName(prefill, STATE.invitePrefill || {});
         stepBody = `
         <p class="text-[12px] text-[#64748B] leading-relaxed">Check everything looks right before sending the invite.</p>
         <div class="invite-review-card">
@@ -4178,10 +4184,16 @@ function screenInviteTenantEnhanced() {
 
 function captureInviteDraft() {
     const draft = { ...(STATE.inviteDraft || {}) };
-    ['idNumber', 'firstName', 'lastName', 'dob', 'email', 'phone', 'unit', 'rent', 'leaseStart', 'leaseEnd', 'message'].forEach((key) => {
+    ['idNumber', 'fullName', 'dob', 'email', 'phone', 'unit', 'rent', 'leaseStart', 'leaseEnd', 'message'].forEach((key) => {
         const val = inviteField(key);
         if (val) draft[key] = val;
     });
+    const fullName = draft.fullName || inviteField('fullName');
+    if (fullName && typeof splitFullName === 'function') {
+        const { firstName, lastName } = splitFullName(fullName);
+        draft.firstName = firstName;
+        draft.lastName = lastName;
+    }
     if (STATE.nidProofName) draft.nidProofName = STATE.nidProofName;
     if (!draft.unit && STATE.selectedUnit) draft.unit = STATE.selectedUnit;
     STATE.inviteDraft = draft;
@@ -4194,7 +4206,7 @@ function validateInviteStep(step) {
     if (step === 1) {
         if (!d.idNumber) { toast('Enter tenant NID'); return false; }
         if (!STATE.nidProofName && !d.nidProofName) { toast('Upload NID document proof'); return false; }
-        if (!d.firstName || !d.lastName) { toast('Enter tenant first and last name'); return false; }
+        if (!d.fullName && !d.firstName) { toast('Enter tenant full name'); return false; }
         if (!d.dob) { toast('Enter date of birth'); return false; }
         return true;
     }
@@ -6596,6 +6608,7 @@ function goFeature(screen, opts = {}) {
     if (screen === 'invite-tenant' && (opts.inviteEmail || opts.inviteFirst)) {
         STATE.invitePrefill = {
             email: opts.inviteEmail || '',
+            fullName: [opts.inviteFirst, opts.inviteLast].filter(Boolean).join(' ').trim(),
             firstName: opts.inviteFirst || '',
             lastName: opts.inviteLast || '',
             phone: opts.invitePhone || '',

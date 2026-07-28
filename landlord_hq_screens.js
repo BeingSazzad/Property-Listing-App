@@ -738,9 +738,15 @@ function inviteField(name) {
     return draft != null ? String(draft).trim() : '';
 }
 
+function splitFullName(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return { firstName: '', lastName: '' };
+    return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
 function sendTenantInvitation() {
-    const firstName = inviteField('firstName');
-    const lastName = inviteField('lastName');
+    const fullName = inviteField('fullName') || `${inviteField('firstName')} ${inviteField('lastName')}`.trim();
+    const { firstName, lastName } = splitFullName(fullName);
     const idNumber = inviteField('idNumber');
     const dob = inviteField('dob');
     const email = inviteField('email');
@@ -758,8 +764,8 @@ function sendTenantInvitation() {
         toast('Upload NID document proof');
         return;
     }
-    if (!firstName || !lastName) {
-        toast('Enter tenant first and last name');
+    if (!firstName) {
+        toast('Enter tenant full name');
         return;
     }
     if (!dob) {
@@ -3814,8 +3820,7 @@ function screenInviteTenant() {
             <div><p class="text-[14px] font-bold">${p.name}</p><p class="text-[12px] text-[#64748B]">${p.address} · ${typeof propertyRentRangeLabel === 'function' ? propertyRentRangeLabel(STATE.propertyId) : defaultRent}</p></div>
         </div>
         <p class="text-[12px] text-[#64748B] leading-relaxed">Create a tenant profile and send a secure invitation. They must accept the invite before accessing the portal — random sign-ups are not allowed.</p>
-        <div><label class="form-label">First Name</label><input data-invite="firstName" type="text" class="form-input" placeholder="Tenant first name"></div>
-        <div><label class="form-label">Last Name</label><input data-invite="lastName" type="text" class="form-input" placeholder="Tenant last name"></div>
+        <div><label class="form-label">Full Name</label><input data-invite="fullName" type="text" class="form-input" placeholder="e.g. Sarah Johnson" autocomplete="name"></div>
         <div><label class="form-label">Email</label><input data-invite="email" type="email" class="form-input" placeholder="tenant@email.com"></div>
         <div><label class="form-label">Phone</label><input data-invite="phone" type="tel" class="form-input" placeholder="+44 7700 900000"></div>
         ${unitField}
