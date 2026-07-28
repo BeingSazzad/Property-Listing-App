@@ -17,6 +17,9 @@ const IMG = {
         sarah: avatarUrl('sarah'),
         david: avatarUrl('david'),
         michael: avatarUrl('michael'),
+        emma: avatarUrl('emma'),
+        priya: avatarUrl('priya'),
+        james: avatarUrl('james'),
         plumber: avatarUrl('plumber'),
         electric: avatarUrl('electric'),
         heating: avatarUrl('heating'),
@@ -32,7 +35,7 @@ const IMG = {
         imgUrl('1616594039964-ae9021a400a0', 400),
     ],
     onboarding: {
-        propertiesHouse: 'assets/onboarding-house.png',
+        propertiesHouse: imgUrl('1600596542815-ffad4c1539a9', 600),
         shieldIcon: 'assets/onboarding-shield.png',
     },
 };
@@ -70,10 +73,14 @@ const STATE = {
     signupDraft: null,
     selectedUnit: null,
     flatDuplicateFrom: null,
+    logMaintPrefill: null,
     inspectionPhotos: [],
     photoMenuIdx: null,
+    actionMenuKey: null,
     rentReceiveIds: [],
     rentReceiveDate: '',
+    rentPaymentMethod: 'bank',
+    navStack: [],
 };
 
 let TENANT_INVITATIONS = [
@@ -187,7 +194,26 @@ function signInSubtitle() {
 }
 
 function authDemoCard() {
-    return '';
+    const role = STATE.authRole || 'landlord';
+    const labels = { landlord: 'Landlord', tenant: 'Tenant', contractor: 'Contractor' };
+    const label = labels[role] || 'Landlord';
+    return `
+    <div class="auth-demo-card">
+        <div class="auth-demo-head">
+            <span class="auth-demo-badge">Prototype</span>
+            <p class="auth-demo-title">Quick login</p>
+        </div>
+        <p class="auth-demo-creds">
+            <span>Enter as ${label}</span>
+            <span>No email or password needed — tap below to continue.</span>
+        </p>
+        <button type="button" data-action="demo-login" data-demo-role="${role}" class="auth-demo-btn">Enter as ${label}</button>
+    </div>`;
+}
+
+function roleContinueLabel() {
+    const role = AUTH_ROLES.find(r => r.id === (STATE.authRole || 'landlord'));
+    return role ? `Enter as ${role.title}` : 'Enter app';
 }
 
 function completeDemoLogin(role) {
@@ -223,6 +249,7 @@ function completeDemoLogin(role) {
             return;
         }
     }
+    clearNavStack();
     STATE.isAuthenticated = true;
     STATE.userRole = role;
     saveAuthSession();
@@ -267,8 +294,8 @@ const LANDLORD_USER = {
 };
 const FAQ_BY_ROLE = {
     landlord: [
-        { id: 0, cat: 'Getting Started', q: 'How do I add a new property?', a: 'Tap the + button (bottom right) and select Add Property, or go to Properties → Add. Enter the address and flat details — your building appears in your portfolio immediately.' },
-        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Go to Tenants → Invite Tenant, choose the property and flat, then enter their details. We\'ll email a secure invitation link. Once accepted, their profile links to the flat automatically.' },
+        { id: 0, cat: 'Getting Started', q: 'How do I add a new property?', a: 'Tap the + button (bottom right) and select Add Property, or go to Properties → Add. Enter the address and unit details — your building appears in your portfolio immediately.' },
+        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Go to Tenants → Invite Tenant, choose the property and unit, then enter their details. We\'ll email a secure invitation link. Once accepted, their profile links to the unit automatically.' },
         { id: 2, cat: 'Rent & Payments', q: 'How does rent collection work?', a: 'Landlord HQ tracks rent due dates and payment status on the Financial screen. Mark rent received when payment arrives, or create invoices for tenants. Overdue rent is highlighted on your dashboard.' },
         { id: 3, cat: 'Rent & Payments', q: 'Can I export financial reports?', a: 'Go to Financial → Payment history, or open any invoice and tap Download PDF for a record of that payment.' },
         { id: 4, cat: 'Maintenance', q: 'How do I log a maintenance issue?', a: 'Use the + FAB menu and select "Log Maintenance", or open a property → Maintenance section → "Log New Issue". Add a title, priority, description, and photos.' },
@@ -446,9 +473,9 @@ const TENANT_LIST = [
     { id: 0, propertyId: 0, chatId: 0, name: 'Sarah Johnson', prop: '12 Park Lane', unit: 'Flat 2A', lease: 'Jan 2024 – Jan 2027', leaseEnd: 'Jan 2027', img: IMG.avatar.sarah, status: 'active', rent: '£2,450/mo' },
     { id: 1, propertyId: 1, chatId: 2, name: 'David Wilson', prop: '45 Queens Road', unit: 'Flat 1A', lease: 'Jun 2023 – Jun 2027', leaseEnd: 'Jun 2027', img: IMG.avatar.david, status: 'active', rent: '£1,850/mo' },
     { id: 2, propertyId: 3, chatId: 4, name: 'Michael Lee', prop: '15 Victoria Ave', unit: 'Flat 2A', lease: 'Mar 2024 – Mar 2027', leaseEnd: 'Mar 2027', img: IMG.avatar.michael, status: 'active', rent: '£1,950/mo' },
-    { id: 3, propertyId: 2, chatId: null, name: 'Emma Roberts', prop: '88 King Street', unit: 'Main Flat', lease: 'Ended Dec 2024', leaseEnd: 'Dec 2024', img: IMG.interior[2], status: 'inactive', rent: '—' },
-    { id: 4, propertyId: 0, chatId: null, name: 'Priya Sharma', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.interior[0], status: 'active', rent: '£2,200/mo' },
-    { id: 5, propertyId: 0, chatId: null, name: 'James Chen', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.interior[1], status: 'pending', rent: '£2,200/mo' },
+    { id: 3, propertyId: 2, chatId: null, name: 'Emma Roberts', prop: '88 King Street', unit: 'Main Flat', lease: 'Ended Dec 2024', leaseEnd: 'Dec 2024', img: IMG.avatar.emma, status: 'inactive', rent: '—' },
+    { id: 4, propertyId: 0, chatId: null, name: 'Priya Sharma', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.priya, status: 'active', rent: '£2,200/mo' },
+    { id: 5, propertyId: 0, chatId: null, name: 'James Chen', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.james, status: 'pending', rent: '£2,200/mo' },
 ];
 
 const TENANT_MENU = [
@@ -491,6 +518,61 @@ const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up
 
 const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
+
+const NAV_MAIN_TABS = new Set([
+    'dashboard', 'properties', 'financial', 'maintenance', 'messages', 'tenants', 'profile',
+    'tenant-dashboard', 'contractor-dashboard', 'contractor-jobs', 'contractor-profile', 'personal-info',
+]);
+
+function snapshotNav() {
+    return {
+        screen: STATE.screen,
+        tab: STATE.tab,
+        tenantTab: STATE.tenantTab,
+        propertyId: STATE.propertyId,
+        tenantId: STATE.tenantId,
+        maintId: STATE.maintId,
+        invoiceId: STATE.invoiceId,
+        roomId: STATE.roomId,
+        chatId: STATE.chatId,
+        selectedUnit: STATE.selectedUnit,
+        contractorJobId: STATE.contractorJobId,
+        contractorJobTab: STATE.contractorJobTab,
+        shareDocId: STATE.shareDocId,
+        invoiceFilter: STATE.invoiceFilter,
+    };
+}
+
+function restoreNav(snap) {
+    Object.assign(STATE, snap, { drawer: false, fab: false, showPropFilters: false });
+    render();
+}
+
+function clearNavStack() {
+    STATE.navStack = [];
+}
+
+function shouldRecordNav(from, to) {
+    if (!from || from === to || from === 'splash') return false;
+    if (PRE_AUTH_SCREENS.includes(from) || PRE_AUTH_SCREENS.includes(to)) return false;
+    return true;
+}
+
+function recordNavHistory(from, to, opts = {}) {
+    if (opts.noHistory) return;
+    if (opts.resetNav) {
+        clearNavStack();
+        return;
+    }
+    if (NAV_MAIN_TABS.has(to) && to !== from) {
+        clearNavStack();
+        return;
+    }
+    if (shouldRecordNav(from, to)) {
+        STATE.navStack.push(snapshotNav());
+        if (STATE.navStack.length > 40) STATE.navStack.shift();
+    }
+}
 
 function loadAuthSession() {
     try {
@@ -546,81 +628,7 @@ function skipOnboarding() {
 }
 
 function signIn() {
-    const email = document.querySelector('[data-signin-email]')?.value?.trim();
-    const password = document.querySelector('[data-signin-password]')?.value || '';
-    if (!email) {
-        toast('Enter your email address');
-        return;
-    }
-    if (!isValidEmail(email)) {
-        toast('Enter a valid email address');
-        return;
-    }
-    if (password.length < 6) {
-        toast('Password must be at least 6 characters');
-        return;
-    }
-    const tenantAccount = tenantAccountByEmail(email);
-    if (STATE.authRole === 'tenant' || tenantAccount) {
-        if (!tenantAccount) {
-            toast('No tenant account found. Activate your account using the invitation link from your landlord.');
-            return;
-        }
-        if (tenantAccount.password !== password) {
-            toast('Incorrect password');
-            return;
-        }
-        STATE.isAuthenticated = true;
-        STATE.userRole = STATE.authRole = 'tenant';
-        STATE.activeTenantId = tenantAccount.id;
-        STATE.showPassword = false;
-        saveAuthSession();
-        go('tenant-dashboard');
-        setTimeout(() => toast(`Welcome back, ${tenantAccount.firstName}!`), 50);
-        return;
-    }
-    if (STATE.authRole === 'contractor') {
-        loadContractorAccounts();
-        const contractorAccount = contractorAccountByEmail(email);
-        if (!contractorAccount) {
-            toast('No contractor account found. Sign up or accept your invitation first.');
-            return;
-        }
-        if (contractorAccount.password !== password) {
-            toast('Incorrect password');
-            return;
-        }
-        STATE.isAuthenticated = true;
-        STATE.userRole = STATE.authRole = 'contractor';
-        STATE.showPassword = false;
-        saveAuthSession();
-        go('contractor-dashboard');
-        setTimeout(() => toast(`Welcome back, ${contractorAccount.firstName}!`), 50);
-        return;
-    }
-    if (STATE.authRole === 'landlord') {
-        const account = landlordAccountByEmail(email);
-        if (!account) {
-            toast('No account found for this email. Sign up first.');
-            return;
-        }
-        if (account.password !== password) {
-            toast('Incorrect password');
-            return;
-        }
-        LANDLORD_USER.firstName = account.firstName;
-        LANDLORD_USER.lastName = account.lastName;
-        LANDLORD_USER.email = account.email;
-        if (typeof AppStore !== 'undefined') AppStore.save();
-        STATE.isAuthenticated = true;
-        STATE.userRole = STATE.authRole = 'landlord';
-        STATE.showPassword = false;
-        saveAuthSession();
-        go(getRoleHome());
-        setTimeout(() => toast(`Welcome back, ${account.firstName}!`), 50);
-        return;
-    }
-    toast('Select your role and try again');
+    demoLogin(STATE.authRole || 'landlord');
 }
 
 function markMaintComplete() {
@@ -755,7 +763,7 @@ function sendTenantInvitation() {
         return;
     }
     if (!unit) {
-        toast('Select a flat');
+        toast('Select a unit');
         return;
     }
     if (!leaseStart || !leaseEnd) {
@@ -1157,7 +1165,12 @@ function screenOnboarding() {
 function screenRoleSelect() {
     return `
     <div class="auth-screen">
-        <div class="auth-content" style="padding-top:32px">
+        <div class="auth-topbar">
+            <button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+            ${appLogo()}
+            <span style="width:40px"></span>
+        </div>
+        <div class="auth-content">
             <h1 class="auth-heading">Choose Your Role</h1>
             <p class="auth-sub">Select the role that best describes you to get started.</p>
             <div class="stack" style="margin-top:28px">
@@ -1173,7 +1186,7 @@ function screenRoleSelect() {
                     <div class="role-radio"><div class="role-radio-dot"></div></div>
                 </button>`).join('')}
             </div>
-            <button type="button" data-action="role-continue" class="btn-auth btn-auth-primary" style="margin-top:32px">Continue</button>
+            <button type="button" data-action="role-continue" class="btn-auth btn-auth-primary" style="margin-top:32px">${roleContinueLabel()}</button>
             <p class="auth-footer-text" style="margin-top:20px">Tenant invited? <button type="button" data-action="open-tenant-invite">Open invitation link</button></p>
             <p class="auth-footer-text" style="margin-top:12px">Contractor invited? <button type="button" data-go="contractor-invite">Open invitation</button></p>
             <p class="auth-footer-text" style="margin-top:12px">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>
@@ -1183,11 +1196,10 @@ function screenRoleSelect() {
 
 function screenSignIn() {
     const pwType = STATE.showPassword ? 'text' : 'password';
-    const showBack = STATE.signInOrigin !== 'logout';
     return `
     <div class="auth-screen">
         <div class="auth-topbar">
-            ${showBack ? '<button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>' : '<span style="width:40px"></span>'}
+            <button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
             ${appLogo()}
             <span style="width:40px"></span>
         </div>
@@ -1488,7 +1500,7 @@ function screenWelcome() {
 }
 
 function roleContinue() {
-    go('sign-in');
+    demoLogin(STATE.authRole || 'landlord');
 }
 
 function go(screen, opts = {}) {
@@ -1516,7 +1528,8 @@ function go(screen, opts = {}) {
         screen = 'faq';
         opts = {};
     }
-    Object.assign(STATE, opts, { screen, drawer: false, fab: false, showPropFilters: false });
+    recordNavHistory(from, screen, opts);
+    Object.assign(STATE, opts, { screen, drawer: false, fab: false, showPropFilters: false, actionMenuKey: null });
     if (screen === 'verify-otp') {
         STATE.otpDigits = [];
         STATE.otpContext = 'signup';
@@ -1562,7 +1575,8 @@ function go(screen, opts = {}) {
     if (opts.jobTab) STATE.contractorJobTab = opts.jobTab;
     if (screen === 'tenant-detail') {
         STATE.tenantId = opts.tenantId ?? STATE.tenantId;
-        STATE.tenantTab = opts.tenantTab ?? (opts.tenantId !== undefined ? 'overview' : STATE.tenantTab || 'overview');
+        const sectionTab = opts.tenantTab || opts.tab;
+        STATE.tenantTab = sectionTab ?? (opts.tenantId !== undefined ? 'overview' : STATE.tenantTab || 'overview');
     }
     if (screen === 'faq-detail') STATE.faqId = opts.faqId ?? 0;
     if (opts.complianceId !== undefined) STATE.complianceId = opts.complianceId;
@@ -1590,117 +1604,169 @@ function splashContinue() {
     else go('onboarding');
 }
 
-function back() {
-    if (STATE.screen === 'invite-tenant' && STATE.selectedUnit) {
-        go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit });
-        return;
-    }
-    if (STATE.screen === 'tenancy-detail') {
-        go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit });
-        return;
-    }
-    if (STATE.screen === 'flat-detail') {
-        go('property-detail', { propertyId: STATE.propertyId, tab: 'units' });
-        return;
-    }
-    if (STATE.screen === 'property-detail' && STATE.tab !== 'units') {
-        setTab('units');
-        return;
-    }
-    if (STATE.screen === 'welcome') return;
-    if (STATE.screen === 'sign-up') {
-        go(STATE.authReturnScreen || 'sign-in');
-        return;
-    }
-    if (STATE.screen === 'sign-in') {
-        if (STATE.signInOrigin === 'logout') return;
-        go('role-select');
-        return;
-    }
-    if (STATE.screen === 'forgot-password') {
-        go(STATE.resetReturnScreen || 'sign-in');
-        return;
-    }
-    if (STATE.screen === 'help-support') {
-        go(STATE.helpReturnScreen || helpReturnHome());
-        return;
-    }
-    if (STATE.screen === 'faq') {
-        go(STATE.faqReturnScreen || 'help-support');
-        return;
-    }
-    if (STATE.screen === 'document-preview') {
-        if (STATE.docReturnScreen === 'tenant-detail') {
-            go('tenant-detail', { tenantId: STATE.tenantId, tenantTab: STATE.tenantTab || 'lease' });
-        } else {
-            go('property-detail', { propertyId: STATE.propertyId, tab: 'documents' });
-        }
-        return;
-    }
-    if (STATE.screen === 'privacy' || STATE.screen === 'terms') {
-        go(STATE.legalReturnScreen || legalReturnHome());
-        return;
-    }
-    if (STATE.screen === 'reset-success') return;
-    if (STATE.screen === 'contractor-welcome' || STATE.screen === 'tenant-welcome') return;
-    if (STATE.screen === 'tenant-detail' && STATE.tenantTab !== 'overview') {
-        setTenantTab('overview');
-        return;
-    }
+function navigateBackFallback() {
     const defaultHome = getRoleHome();
     const profileParent = profileHomeScreen();
     const map = {
-        'property-detail':'properties','tenant-detail':'tenants','chat':'messages',
-        'maintenance-detail':'maintenance','invoice-detail':'financial',
-        'inventory-room':'property-detail',
-        'personal-info': profileParent,'notifications-settings': profileParent,
-        'security': profileParent,'password': profileParent,'preferences': profileParent,
-        'payment-methods': profileParent,'subscription': profileParent,'transaction-history': profileParent,
-        'faq-detail':'faq','about': profileParent,
-        'edit-property':'property-detail','edit-flat':'property-detail','add-flat':'property-detail','invite-tenant':'property-detail','flat-detail':'property-detail','tenancy-detail':'flat-detail',
-        'edit-tenant':'tenant-detail','reschedule-inspection':'property-detail',
-        'renew-compliance':'property-detail','edit-inventory-room':'inventory-room',
-        'add-payment-method':'payment-methods','edit-payment-method':'payment-methods',
-        'edit-preference':'preferences',
-        'add-property':'properties',
-        'tenants':'dashboard',
-        'profile':'dashboard',
+        'property-detail': 'properties', 'tenant-detail': 'tenants', 'chat': 'messages',
+        'maintenance-detail': 'maintenance', 'invoice-detail': 'financial',
+        'inventory-room': 'property-detail',
+        'personal-info': profileParent, 'notifications-settings': profileParent,
+        'security': profileParent, 'password': profileParent, 'preferences': profileParent,
+        'payment-methods': profileParent, 'subscription': profileParent, 'transaction-history': profileParent,
+        'faq-detail': 'faq', 'about': profileParent,
+        'edit-property': 'property-detail', 'add-flat': 'property-detail', 'invite-tenant': 'property-detail',
+        'edit-flat': 'flat-detail', 'flat-detail': 'property-detail', 'tenancy-detail': 'flat-detail',
+        'edit-tenant': 'tenant-detail', 'reschedule-inspection': 'property-detail',
+        'renew-compliance': 'property-detail', 'edit-inventory-room': 'inventory-room',
+        'add-payment-method': 'payment-methods', 'edit-payment-method': 'payment-methods',
+        'edit-preference': 'preferences',
+        'add-property': 'properties',
+        'tenants': 'dashboard',
+        'profile': 'dashboard',
         'log-maintenance': STATE.userRole === 'tenant' ? 'tenant-dashboard' : 'maintenance',
         'notifications-list': defaultHome,
         'financial': defaultHome,
-        'sign-up-phone':'sign-up',
-        'verify-otp':'sign-up',
-        'reset-verify-code':'forgot-password','reset-password':'reset-verify-code',
-        'reset-success':'sign-in',
-        'contractor-job-detail':'contractor-jobs','contractor-schedule':'contractor-job-detail',
-        'contractor-work':'contractor-job-detail',
-        'contractor-documents':'contractor-job-detail',
-        'tenant-invite-sent':'invite-tenant',
-        'tenant-activate':'tenant-invite',
-        'contractor-company':'contractor-profile','contractor-invite':'role-select',
-        'contractor-notifications':'contractor-dashboard',
+        'sign-up-phone': 'sign-up',
+        'verify-otp': 'sign-up-phone',
+        'reset-verify-code': 'forgot-password', 'reset-password': 'reset-verify-code',
+        'reset-success': 'sign-in',
+        'contractor-job-detail': 'contractor-jobs', 'contractor-schedule': 'contractor-job-detail',
+        'contractor-work': 'contractor-job-detail',
+        'contractor-documents': 'contractor-job-detail',
+        'tenant-invite-sent': 'invite-tenant',
+        'tenant-activate': 'tenant-invite',
+        'contractor-company': 'contractor-profile', 'contractor-invite': 'role-select',
+        'contractor-notifications': 'contractor-dashboard',
+        'portfolio-overview': 'dashboard', 'compliance-dashboard': 'dashboard',
+        'reminders': 'dashboard', 'add-reminder': 'reminders',
+        'create-tenancy': 'property-detail', 'checkout-tenancy': 'tenant-detail',
+        'assign-contractor': 'maintenance-detail', 'conduct-inspection': 'property-detail',
+        'create-invoice': 'financial', 'mark-rent-received': 'financial', 'pay-contractor': 'financial',
+        'share-document': 'property-detail',
+        'property-floor-plans': 'property-detail', 'property-photos': 'property-detail',
+        'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
+        'property-utilities': 'property-detail', 'property-parking': 'property-detail',
+        'property-info': 'property-detail', 'unit-utilities': 'property-detail',
+        'maintenance-history': 'maintenance', 'select-property-invite': 'tenants',
+        'global-search': 'dashboard',
+        'tenant-add-note': 'tenant-detail', 'tenant-edit-note': 'tenant-detail',
     };
     const tabMap = {
-        'inventory-room':'inventory',
-        'edit-property':'units', 'edit-flat':'units', 'add-flat':'units', 'invite-tenant':'tenant', 'flat-detail':'units', 'tenancy-detail':'units',
-        'reschedule-inspection':'inspection', 'renew-compliance':'compliance',
-        'contractor-work':'work', 'contractor-documents':'invoice',
+        'inventory-room': 'inventory',
+        'edit-property': 'units', 'add-flat': 'units', 'invite-tenant': 'tenant',
+        'flat-detail': 'units', 'tenancy-detail': 'units',
+        'reschedule-inspection': 'inspection', 'renew-compliance': 'compliance',
+        'contractor-work': 'work', 'contractor-documents': 'invoice',
+        'create-tenancy': 'tenant', 'tenant-invite-sent': 'tenant',
+        'conduct-inspection': 'inspection', 'share-document': 'documents',
+        'property-photos': 'details', 'property-floor-plans': 'details',
+        'property-alarms': 'details', 'property-appliances': 'details',
+        'property-utilities': 'details', 'property-parking': 'details', 'property-info': 'details',
+        'unit-utilities': 'units', 'edit-flat': 'units',
     };
     const target = map[STATE.screen] || defaultHome;
-    const opts = {};
+    const opts = { noHistory: true };
     if (tabMap[STATE.screen]) {
         opts.tab = tabMap[STATE.screen];
         if (STATE.screen.startsWith('contractor-')) opts.jobTab = tabMap[STATE.screen];
         else opts.propertyId = STATE.propertyId;
     }
-    if (['contractor-job-detail','contractor-schedule','contractor-work','contractor-documents'].includes(STATE.screen)) {
+    if (['contractor-job-detail', 'contractor-schedule', 'contractor-work', 'contractor-documents'].includes(STATE.screen)) {
         opts.jobId = STATE.contractorJobId;
     }
-    if (['edit-tenant'].includes(STATE.screen)) opts.tenantId = STATE.tenantId;
+    if (['edit-tenant', 'checkout-tenancy', 'tenant-add-note', 'tenant-edit-note'].includes(STATE.screen)) {
+        opts.tenantId = STATE.tenantId;
+    }
+    if (STATE.screen === 'tenant-add-note' || STATE.screen === 'tenant-edit-note') opts.tenantTab = 'notes';
     if (['edit-inventory-room'].includes(STATE.screen)) opts.roomId = STATE.roomId;
     if (STATE.screen === 'edit-preference') opts.prefKey = STATE.prefKey;
     if (['edit-payment-method'].includes(STATE.screen)) opts.paymentId = STATE.paymentId;
+    if (STATE.screen === 'assign-contractor') opts.maintId = STATE.maintId;
+    if (STATE.screen === 'flat-detail' || STATE.screen === 'tenancy-detail' || STATE.screen === 'edit-flat') {
+        opts.unit = STATE.selectedUnit;
+    }
+    if (STATE.screen === 'invite-tenant' && STATE.selectedUnit) {
+        go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit, noHistory: true });
+        return;
+    }
     go(target, opts);
+}
+
+function back() {
+    if (STATE.screen === 'property-detail' && STATE.tab !== 'units') {
+        setTab('units');
+        return;
+    }
+    if (STATE.screen === 'tenant-detail' && STATE.tenantTab !== 'overview') {
+        setTenantTab('overview');
+        return;
+    }
+    if (STATE.screen === 'welcome') return;
+    if (STATE.screen === 'contractor-welcome' || STATE.screen === 'tenant-welcome') return;
+    if (STATE.screen === 'reset-success') return;
+    if (STATE.screen === 'onboarding') {
+        if (STATE.onboardingStep > 0) setOnboardingStep(STATE.onboardingStep - 1);
+        return;
+    }
+    if (STATE.screen === 'role-select') {
+        go('onboarding', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'sign-up') {
+        go(STATE.authReturnScreen || 'role-select', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'sign-in') {
+        go('role-select', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'sign-up-phone') {
+        go('sign-up', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'verify-otp') {
+        go('sign-up-phone', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'forgot-password') {
+        go(STATE.resetReturnScreen || 'sign-in', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'reset-verify-code') {
+        go('forgot-password', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'reset-password') {
+        go('reset-verify-code', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'help-support') {
+        go(STATE.helpReturnScreen || helpReturnHome(), { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'faq') {
+        go(STATE.faqReturnScreen || 'help-support', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'document-preview') {
+        if (STATE.docReturnScreen === 'tenant-detail') {
+            go('tenant-detail', { tenantId: STATE.tenantId, tenantTab: STATE.tenantTab || 'lease', noHistory: true });
+        } else {
+            go('property-detail', { propertyId: STATE.propertyId, tab: 'documents', noHistory: true });
+        }
+        return;
+    }
+    if (STATE.screen === 'privacy' || STATE.screen === 'terms') {
+        go(STATE.legalReturnScreen || legalReturnHome(), { noHistory: true });
+        return;
+    }
+    const prev = STATE.navStack.pop();
+    if (prev) {
+        restoreNav(prev);
+        return;
+    }
+    navigateBackFallback();
 }
 
 function setTab(tab) { STATE.tab = tab; render(); }
@@ -1763,8 +1829,9 @@ function logout() {
     STATE.fab = false;
     STATE.otpDigits = [];
     STATE.showPassword = false;
+    clearNavStack();
     saveAuthSession();
-    go('sign-in');
+    go('sign-in', { noHistory: true });
     setTimeout(() => toast('Signed out successfully'), 50);
 }
 
@@ -1821,7 +1888,7 @@ const topBar = (title, opts = {}) => {
             ${opts.compose ? `<button data-go="messages" class="top-icon-btn"><i data-lucide="square-pen" class="w-[20px] h-[20px]"></i></button>` : ''}
             ${!opts.hideBell ? `<button data-go="notifications-list" class="top-icon-btn relative">
                 <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-                ${(() => { const n = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : NOTIFICATIONS.filter(x => x.unread).length; return n ? `<span class="absolute top-0 right-0 w-4 h-4 bg-[#EF4444] text-white text-[9px] font-bold rounded-full flex items-center justify-center">${n}</span>` : ''; })()}
+                ${(() => { const n = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : NOTIFICATIONS.filter(x => x.unread).length; return n ? `<span class="notif-badge">${n}</span>` : ''; })()}
             </button>` : ''}
         </div>
     </div>
@@ -1864,7 +1931,7 @@ const dashboardHeader = () => `
         </button>
         <button data-go="notifications-list" class="top-icon-btn relative">
             <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-            ${(() => { const n = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : NOTIFICATIONS.filter(x => x.unread).length; return n ? `<span class="absolute top-0 right-0 w-4 h-4 bg-[#EF4444] text-white text-[9px] font-bold rounded-full flex items-center justify-center">${n}</span>` : ''; })()}
+            ${(() => { const n = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : NOTIFICATIONS.filter(x => x.unread).length; return n ? `<span class="notif-badge">${n}</span>` : ''; })()}
         </button>
     </div>
     <div class="dash-greeting-row">
@@ -1992,9 +2059,11 @@ const TENANT_DRAWER_NAV = [
 ];
 
 const INVOICES = [
-    { id: 0, num: 'INV-2026-1048', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', amount: '£2,450', status: 'Pending', due: 'Jul 1, 2026' },
-    { id: 1, num: 'INV-2026-1047', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', amount: '£1,850', status: 'Overdue', due: 'Jul 1, 2026' },
-    { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026' },
+    { id: 0, num: 'INV-2026-1048', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
+    { id: 1, num: 'INV-2026-1047', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Overdue', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
+    { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
+    { id: 3, num: 'INV-2026-1044', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Bank transfer' },
+    { id: 4, num: 'INV-2026-1043', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 3, 2026', paymentMethod: 'Standing order' },
 ];
 
 const invoiceStatusStyle = (status) => ({
@@ -2068,9 +2137,11 @@ const DRAWER_NAV = [
 ];
 
 const TRANSACTIONS = [
-    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Pending', date: 'Jul 1, 2026', prop: '12 Park Lane', iid: 0 },
-    { tenant: 'David Wilson', amount: '£1,850', status: 'Overdue', date: 'Jul 1, 2026', prop: '45 Queens Rd', iid: 1 },
-    { tenant: 'Michael Lee', amount: '£1,950', status: 'Pending', date: 'Jul 28, 2026', prop: '15 Victoria Ave', iid: 2 },
+    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Pending', date: 'Jul 1, 2026', prop: '12 Park Lane', unit: 'Flat 2A', iid: 0, month: 'Jul 2026', type: 'rent' },
+    { tenant: 'David Wilson', amount: '£1,850', status: 'Overdue', date: 'Jul 1, 2026', prop: '45 Queens Rd', unit: 'Flat 1A', iid: 1, month: 'Jul 2026', type: 'rent' },
+    { tenant: 'Michael Lee', amount: '£1,950', status: 'Pending', date: 'Jul 28, 2026', prop: '15 Victoria Ave', unit: 'Flat 2A', iid: 2, month: 'Jul 2026', type: 'rent' },
+    { tenant: 'Sarah Johnson', amount: '£2,450', status: 'Paid', date: 'Jun 2, 2026', prop: '12 Park Lane', unit: 'Flat 2A', iid: 3, month: 'Jun 2026', type: 'rent' },
+    { tenant: 'David Wilson', amount: '£1,850', status: 'Paid', date: 'Jun 3, 2026', prop: '45 Queens Rd', unit: 'Flat 1A', iid: 4, month: 'Jun 2026', type: 'rent' },
 ];
 
 const DRAWER_QUICK = [
@@ -2214,7 +2285,7 @@ const drawer = () => {
     } : {
         img: IMG.avatar.john,
         name: 'John Smith',
-        role: 'Property Owner',
+        role: 'Landlord',
     };
     return `
     <div class="drawer-overlay ${STATE.drawer?'open':''}" data-action="drawer-close"></div>
@@ -2264,7 +2335,7 @@ const propFilterSheet = () => {
         </div>
         <div class="filter-sheet-body">
             <div class="filter-sheet-group">
-                <p class="filter-sheet-label">Flat Rent (from)</p>
+                <p class="filter-sheet-label">Unit rent (from)</p>
                 <div class="filter-sheet-grid filter-sheet-grid-3">
                     ${opt('rent', 'all', 'All', adv.rent === 'all')}
                     ${opt('rent', 'under2k', 'Under £2k', adv.rent === 'under2k')}
@@ -2272,7 +2343,7 @@ const propFilterSheet = () => {
                 </div>
             </div>
             <div class="filter-sheet-group">
-                <p class="filter-sheet-label">Bedrooms (any flat)</p>
+                <p class="filter-sheet-label">Bedrooms (any unit)</p>
                 <div class="filter-sheet-grid filter-sheet-grid-4">
                     ${opt('beds', 'any', 'Any', adv.beds === 'any')}
                     ${opt('beds', '1', '1+', adv.beds === '1')}
@@ -2287,11 +2358,11 @@ const propFilterSheet = () => {
     </div>`;
 };
 
-const PROP_SECTIONS = { details:'Building Info', units:'Flats', tenant:'Tenants', documents:'Documents', maintenance:'Maintenance', inspection:'Inspection', compliance:'Compliance', inventory:'Inventory' };
+const PROP_SECTIONS = { details:'Building Info', units:'Units', tenant:'Tenants', documents:'Documents', maintenance:'Maintenance', inspection:'Inspection', compliance:'Compliance', inventory:'Inventory' };
 
 const propMenuList = () => {
     const items = [
-        ['layout-grid','Flats','units'],['users','Tenants','tenant'],['file-text','Documents','documents'],
+        ['layout-grid','Units','units'],['users','Tenants','tenant'],['file-text','Documents','documents'],
         ['wrench','Maintenance','maintenance'],['clipboard-list','Inspection','inspection'],
         ['shield-check','Compliance','compliance'],['package','Inventory','inventory'],['info','Building info','details'],
     ];
@@ -2406,7 +2477,7 @@ function screenDashboard() {
             })}
             ${dashStatCard({
                 go: 'properties', variant: 'vacant', icon: 'home',
-                label: 'Vacant Flats', value: vacantCount,
+                label: 'Vacant Units', value: vacantCount,
                 pill: vacantCount ? 'Fill' : null,
             })}
             ${dashStatCard({
@@ -2467,44 +2538,115 @@ function screenProperties() {
     };
     const adv = STATE.propertiesAdvanced;
     const activeAdv = adv.rent !== 'all' || adv.beds !== 'any';
+    const portfolio = typeof portfolioStats === 'function' ? portfolioStats() : {
+        buildingCount: PROPERTIES.length, totalUnits: 0, occupancy: 0,
+    };
     const coverFor = (p) => typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(p.id) : IMG.props[p.id];
     const propCard = (p) => {
         const badge = typeof propertyOccupancyBadge === 'function' ? propertyOccupancyBadge(p.id) : { label: p.status, bg: p.statusColor[0], color: p.statusColor[1] };
+        const cardStats = typeof propertyCardStats === 'function' ? propertyCardStats(p.id) : { total: 0, collected: 0, occupancy: 0 };
+        const collectedLabel = cardStats.collected > 0 ? formatRentAmount(cardStats.collected) : '—';
+        const unitLabel = `${cardStats.total} unit${cardStats.total === 1 ? '' : 's'}`;
         return `
-        <button data-go="property-detail" data-pid="${p.id}" data-tab="units" class="prop-list-card card w-full text-left">
-            <div class="prop-list-thumb">
-                <img src="${coverFor(p)}" alt="">
-            </div>
-            <div class="prop-list-body">
-                <div class="prop-list-top">
-                    <p class="prop-list-name">${p.name}</p>
-                    <span class="badge shrink-0" style="background:${badge.bg};color:${badge.color}">${badge.label}</span>
+        <article class="prop-card-v2 card">
+            <button type="button" data-go="property-detail" data-pid="${p.id}" data-tab="units" class="prop-card-v2-tap">
+                <div class="prop-card-v2-top">
+                    <div class="prop-card-v2-media">
+                        <img src="${coverFor(p)}" alt="">
+                        <span class="prop-card-v2-units-badge"><i data-lucide="image" class="w-3 h-3"></i>${unitLabel}</span>
+                    </div>
+                    <div class="prop-card-v2-info">
+                        <p class="prop-card-v2-name">${p.name}</p>
+                        <p class="prop-card-v2-addr"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${p.address}</p>
+                        <span class="prop-card-v2-badge" style="background:${badge.bg};color:${badge.color}">${badge.label}</span>
+                    </div>
                 </div>
-                <p class="prop-list-addr">${p.address}</p>
-                <p class="prop-list-rent">${typeof propertyRentListLabel === 'function' ? propertyRentListLabel(p.id) : p.rent}</p>
-            </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0 self-center mr-3"></i>
-        </button>`;
+                <div class="prop-card-v2-stats">
+                    <div class="prop-card-v2-stat">
+                        <span class="prop-card-v2-stat-label">Monthly Collected</span>
+                        <span class="prop-card-v2-stat-value prop-card-v2-stat-value--money">
+                            ${cardStats.collected > 0 ? '<i data-lucide="trending-up" class="w-3.5 h-3.5" style="color:var(--color-success-ui)"></i>' : ''}
+                            ${collectedLabel}
+                        </span>
+                    </div>
+                    <div class="prop-card-v2-stat">
+                        <span class="prop-card-v2-stat-label">Total Units</span>
+                        <span class="prop-card-v2-stat-value"><i data-lucide="building-2" class="w-3.5 h-3.5 text-[#94A3B8]"></i>${cardStats.total}</span>
+                    </div>
+                    <div class="prop-card-v2-stat">
+                        <span class="prop-card-v2-stat-label">Occupancy Rate</span>
+                        <span class="prop-card-v2-stat-value">
+                            ${typeof occupancyRing === 'function' ? occupancyRing(cardStats.occupancy) : ''}
+                            ${cardStats.occupancy}%
+                        </span>
+                    </div>
+                </div>
+            </button>
+            <button type="button" data-action="open-action-menu" data-menu-key="property:${p.id}" class="prop-card-v2-menu action-menu-btn" aria-label="Property options" aria-expanded="${STATE.actionMenuKey === `property:${p.id}`}">
+                <i data-lucide="more-vertical" class="w-4 h-4"></i>
+            </button>
+            ${typeof renderActionMenuPopover === 'function' ? renderActionMenuPopover(`property:${p.id}`, propertyActionMenuItems(p.id)) : ''}
+        </article>`;
     };
-    return `${topBar('Properties', { search: true, searchKey: 'properties' })}
-    <div class="screen-content screen-enter">
-        <div class="flex gap-2">
+    const filterChips = [
+        ['all', 'All', counts.all, 'building-2'],
+        ['occupied', 'Occupied', counts.occupied, 'users'],
+        ['vacant', 'Vacant', counts.vacant, 'home'],
+    ];
+    return `
+    <div class="screen-header properties-page-header">
+        <div class="dash-header-top">
+            <button data-action="drawer" class="top-icon-btn"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
+            <div class="flex gap-1">
+                <button type="button" data-focus-search="properties" class="top-icon-btn"><i data-lucide="search" class="w-[20px] h-[20px]"></i></button>
+                <button data-go="notifications-list" class="top-icon-btn relative">
+                    <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
+                    ${(() => { const n = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : NOTIFICATIONS.filter(x => x.unread).length; return n ? `<span class="notif-badge">${n}</span>` : ''; })()}
+                </button>
+            </div>
+        </div>
+        <div class="properties-title-row">
+            <div class="min-w-0">
+                <h1 class="page-title">Properties</h1>
+                <p class="page-subtitle">Manage your properties and units.</p>
+            </div>
+            <button type="button" data-go="add-property" class="properties-add-btn"><i data-lucide="plus" class="w-4 h-4"></i>Add Property</button>
+        </div>
+    </div>
+    <div class="screen-content screen-enter properties-page">
+        <div class="properties-search-row">
             <div class="search-bar flex-1">
                 <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-                <input data-search="properties" type="text" value="${STATE.search.properties}" placeholder="Search properties..." class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
+                <input data-search="properties" type="text" value="${STATE.search.properties}" placeholder="Search by property name, address..." class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
             </div>
-            <button type="button" data-action="toggle-prop-filters" class="filter-btn ${activeAdv ? 'filter-btn-active' : ''}">
+            <button type="button" data-action="toggle-prop-filters" class="filter-btn ${activeAdv ? 'filter-btn-active' : ''}" aria-label="Filter properties">
                 <i data-lucide="sliders-horizontal" class="w-[18px] h-[18px]"></i>
                 ${activeAdv ? '<span class="filter-btn-dot"></span>' : ''}
             </button>
         </div>
-        <div class="flex gap-2 overflow-x-auto pb-0.5">
-            ${[['all','All',counts.all],['occupied','Occupied',counts.occupied],['vacant','Vacant',counts.vacant]].map(([k,l,n])=>`
-            <button type="button" data-prop-filter="${k}" class="filter-chip ${STATE.propertiesFilter===k?'active':''}">${l} (${n})</button>`).join('')}
+        <div class="properties-filter-row">
+            ${filterChips.map(([k, l, n, ic]) => `
+            <button type="button" data-prop-filter="${k}" class="properties-filter-chip ${STATE.propertiesFilter === k ? 'active' : ''}">
+                <i data-lucide="${ic}" class="w-3.5 h-3.5"></i>${l} (${n})
+            </button>`).join('')}
         </div>
-        ${filtered.length ? `<div class="stack-sm">
-            ${filtered.map(p=>propCard(p)).join('')}
+        ${filtered.length ? `<div class="properties-card-list">
+            ${filtered.map(p => propCard(p)).join('')}
         </div>` : `<div class="card p-8 text-center"><i data-lucide="building-2" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i><p class="text-[14px] font-semibold text-[#0F172A] mt-3">No properties found</p><p class="text-[12px] text-[#64748B] mt-1">Try a different search or filter</p></div>`}
+        <div class="properties-summary-bar">
+            <div class="properties-summary-item">
+                <span class="properties-summary-icon properties-summary-icon--blue"><i data-lucide="building-2" class="w-4 h-4"></i></span>
+                <div><p class="properties-summary-val">${portfolio.buildingCount}</p><p class="properties-summary-lbl">Total Properties</p></div>
+            </div>
+            <div class="properties-summary-item">
+                <span class="properties-summary-icon properties-summary-icon--green"><i data-lucide="home" class="w-4 h-4"></i></span>
+                <div><p class="properties-summary-val">${portfolio.totalUnits}</p><p class="properties-summary-lbl">Total Units</p></div>
+            </div>
+            <div class="properties-summary-item">
+                <span class="properties-summary-icon properties-summary-icon--purple"><i data-lucide="pie-chart" class="w-4 h-4"></i></span>
+                <div><p class="properties-summary-val">${portfolio.occupancy}%</p><p class="properties-summary-lbl">Overall Occupancy</p></div>
+            </div>
+        </div>
     </div>`;
 }
 
@@ -2520,31 +2662,9 @@ function screenPropertyDetail() {
         units: typeof renderPropertyUnitsTab === 'function'
             ? renderPropertyUnitsTab(STATE.propertyId)
             : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading units…</p></div>`,
-        documents: (() => {
-            const docs = typeof AppStore !== 'undefined' ? AppStore.docsForProperty(STATE.propertyId) : [];
-            const docIcons = { 'Tenancy Agreement': 'file-text', 'Deposit Certificate': 'shield', 'Gas Certificate': 'flame', 'Electrical Certificate': 'zap', 'EPC Certificate': 'leaf', 'How to Rent Guide': 'book-open', 'Signed Document': 'file-check', 'Custom Document': 'file' };
-            const docColors = { 'Tenancy Agreement': '#2563EB', 'Deposit Certificate': '#059669', 'Gas Certificate': '#DC2626', 'Electrical Certificate': '#D97706', 'EPC Certificate': '#16A34A', 'How to Rent Guide': '#7C3AED', 'Signed Document': '#059669', 'Custom Document': '#64748B' };
-            return `
-            <div class="screen-content screen-content-sm">
-                <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#BFDBFE] bg-[#EFF6FF] p-6 text-center w-full mb-3">
-                    <i data-lucide="cloud-upload" class="w-10 h-10 text-[#2563EB] mx-auto"></i>
-                    <p class="text-[13px] font-semibold mt-2">Upload Document</p>
-                    <p class="text-[11px] text-[#64748B]">PDF, JPG, PNG up to 10MB</p>
-                </button>
-                ${docs.length ? docs.map(d => `
-                <div class="card p-3.5 flex items-center gap-3 mb-2">
-                    <div class="w-11 h-11 rounded-xl bg-[#F8FAFC] flex items-center justify-center" style="color:${docColors[d.type] || '#64748B'}"><i data-lucide="${docIcons[d.type] || 'file'}" class="w-5 h-5"></i></div>
-                    <button data-go="document-preview" data-doc="${d.id}" class="flex-1 text-left min-w-0">
-                        <p class="text-[13px] font-semibold">${d.name}</p>
-                        <p class="text-[11px] text-[#64748B]">${d.type} · ${d.date}${d.shared ? ' · Shared' : ''}${d.signed ? ' · Signed' : ''}</p>
-                    </button>
-                    <div class="row-actions">
-                        <button data-action="share-doc" data-doc="${d.id}" class="row-icon-btn row-icon-btn--primary" title="Share"><i data-lucide="share-2" class="w-4 h-4"></i></button>
-                        ${d.type === 'Custom Document' ? `<button data-action="delete-document" data-doc="${d.id}" class="row-icon-btn row-icon-btn--danger" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-                    </div>
-                </div>`).join('') : `<div class="card p-8 text-center"><i data-lucide="folder-open" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i><p class="text-[14px] font-semibold text-[#0F172A] mt-3">No documents</p><p class="text-[12px] text-[#64748B] mt-1">Upload agreements and certificates</p></div>`}
-            </div>`;
-        })(),
+        documents: typeof renderPropertyDocumentsTab === 'function'
+            ? renderPropertyDocumentsTab(STATE.propertyId)
+            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading documents…</p></div>`,
         maintenance: (() => {
             const propMaint = propertyMaintenanceItems(p.name);
             const openItems = propMaint.filter(m => m.status !== 'done');
@@ -2574,7 +2694,7 @@ function screenPropertyDetail() {
     };
 
     if (STATE.tab === 'units') {
-        return `${topBar(p.name, { back: true, more: true, pid: STATE.propertyId, sub: p.address })}
+        return `${topBar('Units', { back: true, sub: p.name })}
         <div class="screen-enter">${tabContent.units}</div>`;
     }
 
@@ -2642,8 +2762,14 @@ const tenantListRow = (t) => {
     const typePill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
     const tenancyMeta = typeof tenantTenancyMetaLine === 'function' ? tenantTenancyMetaLine(t) : '';
     const metaClass = tenancy?.type === 'group' ? 'tenant-row-tenancy--group' : 'tenant-row-tenancy--solo';
+    const menuKey = `tenant:${t.id}`;
+    const menuBtn = typeof renderActionMenuButton === 'function' ? renderActionMenuButton(menuKey, 'Tenant options') : '';
+    const menuPop = typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function'
+        ? renderActionMenuPopover(menuKey, tenantActionMenuItems(t, { includeView: false }))
+        : '';
     return `
-<button type="button" data-go="tenant-detail" data-tid="${t.id}" class="tenant-row card w-full text-left ${tenancy ? `tenant-row--${tenancy.type}` : ''}">
+<div class="tenant-row-wrap card ${tenancy ? `tenant-row--${tenancy.type}` : ''}">
+<button type="button" data-go="tenant-detail" data-tid="${t.id}" class="tenant-row w-full text-left">
     <img src="${t.img}" class="tenant-row-avatar" alt="">
     <div class="tenant-row-body">
         <div class="tenant-row-top">
@@ -2658,7 +2784,9 @@ const tenantListRow = (t) => {
         ${tenancyMeta ? `<p class="tenant-row-tenancy ${metaClass}">${tenancyMeta}</p>` : ''}
     </div>
     <i data-lucide="chevron-right" class="tenant-row-chevron w-5 h-5"></i>
-</button>`;
+</button>
+<div class="tenant-row-menu-slot">${menuBtn}${menuPop}</div>
+</div>`;
 };
 
 const tenantDetailField = (label, value) => `
@@ -2694,6 +2822,7 @@ const tenantOverview = (t, avatar) => {
     const listItem = TENANT_LIST[STATE.tenantId] || TENANT_LIST[0];
     const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(listItem) : null;
     const typePill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
+    const tenantMenuKey = `tenant:${listItem.id}`;
     return `
     <div class="tenant-hero-card ${tenancy ? `tenant-hero-card--${tenancy.type}` : ''}">
         <div class="tenant-hero-glow tenant-hero-glow-1" aria-hidden="true"></div>
@@ -2701,7 +2830,10 @@ const tenantOverview = (t, avatar) => {
         <div class="tenant-hero-shine" aria-hidden="true"></div>
         <div class="tenant-hero-toolbar">
             <button type="button" data-action="back" class="tenant-hero-back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <button type="button" data-go="edit-tenant" class="tenant-hero-more" title="Edit tenant"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+            <div class="tenant-hero-menu-slot">
+                ${typeof renderActionMenuButton === 'function' ? renderActionMenuButton(tenantMenuKey, 'Tenant options') : ''}
+                ${typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function' ? renderActionMenuPopover(tenantMenuKey, tenantActionMenuItems(listItem)) : ''}
+            </div>
         </div>
         <div class="tenant-hero-content">
             <div class="tenant-hero-avatar-wrap">
@@ -2753,9 +2885,6 @@ const tenantOverview = (t, avatar) => {
             <p class="tenant-menu-group-label">${g.group}</p>
             <div class="card tenant-menu-card">${g.items.map(([ic, lb, tab]) => tenantMenuItem(ic, lb, tab)).join('')}</div>
         </div>`).join('')}
-        <button type="button" data-go="edit-tenant" class="btn-secondary w-full py-3.5 text-[13px] tenant-edit-btn">
-            <i data-lucide="pencil" class="w-4 h-4"></i> Edit Tenant
-        </button>
     </div>`;
 };
 
@@ -2798,14 +2927,14 @@ const tenantSectionContent = (tab, t) => {
             return `
             ${tenantFieldsCard([
                 ['Property', listItem.prop],
-                ['Flat', listItem.unit || '—'],
+                ['Unit', listItem.unit || '—'],
                 ['Tenancy', tenancy ? tenancyTypeLabel(tenancy.type) : '—'],
                 ['Move-in', typeof formatDisplayDate === 'function' ? formatDisplayDate(t.moveIn) || '—' : '—'],
                 ['Lease End', typeof formatDisplayDate === 'function' ? formatDisplayDate(t.leaseEnd) || '—' : '—'],
                 ['Monthly Rent', '£' + Number(t.rent || 0).toLocaleString()],
             ])}
             <div class="grid grid-cols-2 gap-3">
-                <button type="button" data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-3 text-[13px]">View flat</button>
+                <button type="button" data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-3 text-[13px]">View unit</button>
                 ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-3 text-[13px]">View tenancy</button>` : `<button type="button" data-go="property-detail" data-pid="${listItem.propertyId}" class="btn-secondary py-3 text-[13px]">View property</button>`}
             </div>
             ${typeof renderTenancyContextCard === 'function' ? renderTenancyContextCard(STATE.tenantId) : (typeof renderTenancyMemberList === 'function' ? renderTenancyMemberList(STATE.tenantId) : '')}`;
@@ -2834,16 +2963,25 @@ const tenantSectionContent = (tab, t) => {
                 </button>
             </div>`;
         },
-        payments: () => `
-            <div class="tenant-balance-card card">
-                <p class="tenant-balance-label">Outstanding Balance</p>
+        payments: () => {
+            const unpaidInv = typeof invoicesForTenant === 'function'
+                ? invoicesForTenant(STATE.tenantId).find(i => i.status !== 'Paid')
+                : null;
+            return `
+            <div class="tenant-balance-card card ${pay?.balance !== '£0.00' ? 'tenant-balance-card--due' : ''}">
+                <p class="tenant-balance-label">${pay?.balance !== '£0.00' ? 'Outstanding balance' : 'All paid up'}</p>
                 <p class="tenant-balance-amount">${pay?.balance || '£0.00'}</p>
                 <div class="tenant-balance-grid">
-                    <div><p class="tenant-balance-mini-label">Last Payment</p><p class="tenant-balance-mini-value">${pay?.lastPayment || '—'}</p></div>
-                    <div><p class="tenant-balance-mini-label">Next Due</p><p class="tenant-balance-mini-value">${pay?.nextDue || '—'}</p></div>
+                    <div><p class="tenant-balance-mini-label">Last payment</p><p class="tenant-balance-mini-value">${pay?.lastPayment || '—'}</p></div>
+                    <div><p class="tenant-balance-mini-label">Next due</p><p class="tenant-balance-mini-value">${pay?.nextDue || '—'}</p></div>
                 </div>
             </div>
-            <button type="button" data-go="transaction-history" class="btn-secondary w-full py-3 text-[13px]">View Payment History</button>`,
+            ${unpaidInv ? `
+            <button type="button" data-go="mark-rent-received" data-iid="${unpaidInv.id}" class="btn-primary w-full py-3 text-[13px]">Record payment for this tenant</button>` : ''}
+            <div class="screen-list-header"><div><h2>Monthly history</h2><p>Per flat · ${listItem.unit || 'unit'}</p></div></div>
+            ${typeof renderTenantRentHistory === 'function' ? renderTenantRentHistory(STATE.tenantId) : ''}
+            <button type="button" data-go="transaction-history" class="btn-secondary w-full py-3 text-[13px]">All payment history</button>`;
+        },
         maintenance: () => typeof renderTenantMaintenanceSection === 'function'
             ? renderTenantMaintenanceSection(STATE.tenantId)
             : `<div class="card p-6 text-center"><p class="text-[13px] text-[#64748B]">No maintenance data</p></div>`,
@@ -3014,31 +3152,42 @@ function screenChat() {
 }
 
 function screenProfile() {
+    const accountMenus = menuList([
+        ['bell', 'Notification Settings', 'notifications-settings'],
+        ['sliders-horizontal', 'Preferences', 'preferences'],
+        ['key-round', 'Change Password', 'password'],
+        ['shield', 'Security', 'security'],
+    ]);
+    const rentMenus = menuList([
+        ['landmark', 'Rent Collection Accounts', 'payment-methods'],
+        ['receipt', 'Transaction History', 'transaction-history'],
+    ]);
+    const platformMenus = menuList([
+        ['credit-card', 'Subscription & Billing', 'subscription'],
+        ['help-circle', 'Help & Support', 'help-support'],
+        ['info', 'About Landlord HQ', 'about'],
+        ['shield', 'Privacy Policy', 'privacy'],
+        ['file-text', 'Terms & Conditions', 'terms'],
+    ]);
     return `${topBar('Profile', { back: true, hideBell: true })}
     <div class="screen-content screen-enter">
         <button data-go="personal-info" class="profile-card">
             <img src="${IMG.avatar.john}" class="profile-card-avatar" alt="">
             <div class="profile-card-body">
                 <p class="profile-card-name">${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}</p>
-                <p class="profile-card-hint">View & edit profile</p>
+                <p class="profile-card-hint">Your landlord account</p>
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
         </button>
-        ${menuList([
-            ['bell','Notification Settings','notifications-settings'],
-            ['sliders-horizontal','Preferences','preferences'],
-            ['credit-card','Payment Methods','payment-methods'],
-            ['key-round','Change Password','password'],
-            ['shield','Security','security'],
-            ['receipt','Transaction History','transaction-history'],
-        ])}
-        <p class="section-title">Support & Legal</p>
-        ${menuList([
-            ['help-circle','Help & Support','help-support'],
-            ['info','About','about'],
-            ['shield','Privacy Policy','privacy'],
-            ['file-text','Terms & Conditions','terms'],
-        ])}
+        <p class="section-title">Your account</p>
+        <p class="section-hint">Settings you control for your portfolio.</p>
+        ${accountMenus}
+        <p class="section-title">Rent & payouts</p>
+        <p class="section-hint">How you collect rent from tenants.</p>
+        ${rentMenus}
+        <p class="section-title">Landlord HQ platform</p>
+        <p class="section-hint">Billing and legal info managed by Landlord HQ — read only here.</p>
+        ${platformMenus}
         <button data-action="logout" class="w-full py-3.5 mt-4 text-[14px] font-semibold text-[#DC2626]">Log Out</button>
     </div>`;
 }
@@ -3062,7 +3211,7 @@ function screenPersonalInfo() {
             ${formField('First Name', t.firstName, 'text', '', 'firstName')}${formField('Last Name', t.lastName, 'text', '', 'lastName')}
             ${formField('Email', t.email, 'email', '', 'email')}${formField('Phone', t.phone || '—', 'tel', '', 'phone')}
             <div><label class="form-label">Property</label><input class="form-input" value="${p?.name || '—'}" readonly></div>
-            <div><label class="form-label">Flat</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
+            <div><label class="form-label">Unit</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
             <p class="section-title">Support & Legal</p>
             ${menuList([
                 ['help-circle', 'Help & Support', 'help-support'],
@@ -3165,8 +3314,9 @@ function screenPaymentMethods() {
         { id: 0, type:'Visa', last4:'4242', exp:'08/27', name:'John Smith', default:true },
         { id: 1, type:'Barclays', last4:'8901', exp:'—', name:'Rent Collection', default:false },
     ];
-    return `${topBar('Payment Methods', { back: true })}
+    return `${topBar('Rent Collection Accounts', { back: true })}
     <div class="screen-content screen-content-sm screen-enter">
+        <p class="ux-intro">Bank accounts and cards where tenants pay rent. This is your money — not your Landlord HQ subscription.</p>
         ${cards.map(c => `
         <button data-go="edit-payment-method" data-pmid="${c.id}" class="card p-4 flex items-center gap-3 w-full text-left ${c.default ? '' : 'opacity-80'}">
             <div class="w-10 h-10 rounded-xl ${c.type === 'Visa' ? 'bg-[#EFF6FF]' : 'bg-[#F8FAFC]'} flex items-center justify-center"><i data-lucide="${c.type === 'Visa' ? 'credit-card' : 'landmark'}" class="w-5 h-5 ${c.type === 'Visa' ? 'text-[#2563EB]' : 'text-[#64748B]'}"></i></div>
@@ -3178,8 +3328,12 @@ function screenPaymentMethods() {
 }
 
 function screenSubscription() {
-    return `${topBar('Subscription', { back: true })}
+    return `${topBar('Subscription & Billing', { back: true })}
     <div class="screen-content screen-enter">
+        <div class="ux-tip mb-3">
+            <p class="ux-tip-title">Managed by Landlord HQ</p>
+            <p class="ux-tip-text">Your subscription is billed by the platform. Contact support to upgrade, downgrade, or cancel — landlords cannot change billing here.</p>
+        </div>
         <div class="card p-5 border-l-4 border-l-[#2563EB]">
             <p class="text-[11px] font-bold text-[#2563EB] uppercase tracking-wide">Current Plan</p>
             <p class="text-[17px] font-bold text-[#0F172A] mt-1">Pro Landlord</p>
@@ -3189,28 +3343,40 @@ function screenSubscription() {
             ${['Up to 20 properties','Unlimited tenants','Compliance tracking','Priority support'].map(f=>`
             <div class="px-4 py-3 flex items-center gap-2 text-[13px]"><i data-lucide="check" class="w-4 h-4 text-[#22C55E]"></i>${f}</div>`).join('')}
         </div>
+        <button type="button" data-action="toast" data-msg="Opening support — billing changes are handled by Landlord HQ" class="btn-secondary w-full py-3.5 text-[14px] mt-3">Contact support about billing</button>
     </div>`;
 }
 
 function screenTransactionHistory() {
-    return `${topBar('Transaction History', { back: true, sub: 'Payments processed via Stripe' })}
-    <div class="screen-content screen-enter">
-        <div class="txn-list">
-            ${TRANSACTIONS.map(t => `
+    const paid = TRANSACTIONS.filter(t => t.status === 'Paid');
+    const due = TRANSACTIONS.filter(t => t.status !== 'Paid');
+    const renderTxn = (t) => `
             <button data-go="invoice-detail" data-iid="${t.iid}" class="txn-row">
-                <div class="txn-icon ${t.status === 'Paid' ? 'txn-icon-paid' : 'txn-icon-overdue'}">
-                    <i data-lucide="${t.status === 'Paid' ? 'check' : 'alert-circle'}" class="w-4 h-4"></i>
+                <div class="txn-icon ${t.status === 'Paid' ? 'txn-icon-paid' : t.status === 'Overdue' ? 'txn-icon-overdue' : 'txn-icon-pending'}">
+                    <i data-lucide="${t.status === 'Paid' ? 'check' : t.status === 'Overdue' ? 'alert-circle' : 'clock'}" class="w-4 h-4"></i>
                 </div>
                 <div class="txn-body">
                     <p class="txn-title">${t.tenant}</p>
-                    <p class="txn-sub">${t.prop} · ${t.date}</p>
+                    <p class="txn-sub">${t.unit ? `${t.unit} · ` : ''}${t.prop}${t.month ? ` · ${t.month}` : ''}</p>
+                    <p class="txn-sub">${t.status === 'Paid' && t.paymentMethod ? t.paymentMethod + ' · ' : ''}${t.date}</p>
                 </div>
                 <div class="txn-meta">
                     <p class="txn-amount">${t.amount}</p>
-                    <span class="txn-badge ${t.status === 'Paid' ? 'txn-badge-paid' : 'txn-badge-overdue'}">${t.status}</span>
+                    <span class="txn-badge ${t.status === 'Paid' ? 'txn-badge-paid' : t.status === 'Overdue' ? 'txn-badge-overdue' : 'txn-badge-pending'}">${t.status}</span>
                 </div>
-            </button>`).join('')}
-        </div>
+            </button>`;
+    return `${topBar('Payment history', { back: true, sub: 'Rent & bills per flat' })}
+    <div class="screen-content screen-enter">
+        ${due.length ? `
+        <p class="screen-section-title">Outstanding</p>
+        <div class="txn-list">${due.map(renderTxn).join('')}</div>` : ''}
+        ${paid.length ? `
+        <p class="screen-section-title ${due.length ? 'mt-4' : ''}">Paid</p>
+        <div class="txn-list">${paid.map(renderTxn).join('')}</div>` : `
+        <div class="card p-8 text-center">
+            <p class="text-[14px] font-semibold text-[#0F172A]">No payments yet</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Record rent when a tenant pays you.</p>
+        </div>`}
     </div>`;
 }
 
@@ -3364,31 +3530,40 @@ function screenMaintenanceDetail() {
 
 function screenInvoiceDetail() {
     const inv = INVOICES.find(i => i.id === STATE.invoiceId) || INVOICES[0];
+    const paid = inv.status === 'Paid';
     const detailRows = [
         ['Tenant', inv.tenant || tenantNameForInvoice(inv)],
         ['Property', inv.prop.split(',')[0]],
-        ...(inv.unit ? [['Flat', inv.unit]] : []),
-        ['Due Date', inv.due],
+        ...(inv.unit ? [['Unit', inv.unit]] : []),
+        ['Type', inv.type === 'bill' ? (inv.desc || 'Bill') : 'Monthly rent'],
+        ['Due date', inv.due],
         ['Invoice #', inv.num],
     ];
-    if (inv.status === 'Paid') detailRows.push(['Paid Date', inv.due]);
-    const sc = inv.status === 'Paid' ? '#22C55E' : inv.status === 'Overdue' ? '#EF4444' : '#D97706';
-    return `${topBar('Invoice', { back: true })}
+    if (paid) {
+        detailRows.push(['Paid on', inv.paidOn || '—']);
+        detailRows.push(['Payment method', inv.paymentMethod || '—']);
+    }
+    const sc = paid ? '#22C55E' : inv.status === 'Overdue' ? '#EF4444' : '#D97706';
+    const tenantItem = TENANT_LIST.find(t => t.id === inv.tenantId || (t.name === inv.tenant && inv.prop.includes(t.prop)));
+    return `${topBar(paid ? 'Payment record' : 'Rent due', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-5 text-center">
-            <p class="text-[13px] text-[#64748B]">Amount Due</p>
+            <p class="text-[13px] text-[#64748B]">${paid ? 'Amount received' : 'Amount due'}</p>
             <p class="text-3xl font-bold text-[#0F172A] mt-1">${inv.amount}</p>
             <span class="badge mt-3" style="background:${sc}18;color:${sc}">${inv.status}</span>
+            ${inv.month ? `<p class="text-[12px] text-[#64748B] mt-2">${inv.month}</p>` : ''}
         </div>
         <div class="card divide-y divide-[#F1F5F9]">
             ${detailRows.map(([k,v])=>`
-            <div class="p-4 flex justify-between text-[13px]"><span class="text-[#64748B]">${k}</span><span class="font-semibold">${v}</span></div>`).join('')}
+            <div class="p-4 flex justify-between text-[13px] gap-4"><span class="text-[#64748B] shrink-0">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
+        ${tenantItem ? `
+        <button type="button" data-go="tenant-detail" data-tid="${tenantItem.id}" data-tab="payments" class="btn-secondary w-full py-3 text-[13px]">View tenant payment history</button>` : ''}
         <div class="grid grid-cols-2 gap-4">
-            <button data-action="toast" data-msg="Invoice downloaded" class="btn-secondary py-3 text-[13px]">Download PDF</button>
-            ${inv.status !== 'Paid' ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Mark Received</button>` : `<button data-action="toast" data-msg="Receipt downloaded" class="btn-primary py-3 text-[13px]">Download Receipt</button>`}
+            <button data-action="toast" data-msg="Receipt downloaded" class="btn-secondary py-3 text-[13px]">Download PDF</button>
+            ${!paid ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Record payment</button>` : `<button data-action="toast" data-msg="Receipt downloaded" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
         </div>
-        ${inv.status !== 'Paid' ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel invoice</button>` : ''}
+        ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}
     </div>`;
 }
 
@@ -3464,22 +3639,28 @@ function screenNotificationsList() {
 }
 
 function screenAddProperty() {
+    const pending = STATE.pendingPropertyPhotos || [];
     return `${topBar('Add Property', { back: true })}
     <div class="screen-content screen-enter">
-        ${uxIntro('Start with the building details. You can set each flat\'s rent and rooms later.')}
+        ${uxIntro('Start with the building details. You can set each unit\'s rent and rooms later.')}
+        ${pending.length ? `
+        <div class="relative h-[120px] rounded-xl overflow-hidden mb-2">
+            <img src="${pending[0]}" class="img-cover" alt="">
+            ${pending.length > 1 ? `<span class="absolute top-2 left-2 bg-[#0F172A]/75 text-white text-[10px] font-bold px-2 py-1 rounded-full">${pending.length} photos</span>` : ''}
+        </div>` : ''}
         <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full">
             <i data-lucide="image-plus" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
-            <p class="text-[13px] text-[#64748B] mt-2">Add a photo (optional)</p>
+            <p class="text-[13px] text-[#64748B] mt-2">${pending.length ? 'Add another photo' : 'Add a photo (optional)'}</p>
         </button>
         <div><label class="form-label">Property name <span class="form-required">*</span></label><input data-field="name" type="text" class="form-input" placeholder="e.g. 12 Park Lane"></div>
         <div><label class="form-label">Address <span class="form-required">*</span></label><input data-field="address" type="text" class="form-input" placeholder="Street and town"></div>
         <div><label class="form-label">Postcode</label><input data-field="postcode" type="text" class="form-input" placeholder="e.g. SW1A 1AA"></div>
-        <div><label class="form-label">How many flats? <span class="form-required">*</span></label><input data-field="flatCount" type="number" class="form-input" placeholder="1" value="1" min="1"></div>
-        <p class="form-helper">Use 1 for a whole house. Use 2 or more for a building with separate flats.</p>
+        <div><label class="form-label">How many units? <span class="form-required">*</span></label><input data-field="flatCount" type="number" class="form-input" placeholder="1" value="1" min="1"></div>
+        <p class="form-helper">Use 1 for a whole house. Use 2 or more for a building with separate units.</p>
         <div class="form-section">
-            <p class="form-section-title">Starting defaults for flats</p>
-            <p class="form-helper" style="margin-top:0">You can change each flat individually after saving.</p>
-            <div><label class="form-label">Rent per flat (£) <span class="form-required">*</span></label><input data-field="rent" type="number" class="form-input" placeholder="950"></div>
+            <p class="form-section-title">Starting defaults for units</p>
+            <p class="form-helper" style="margin-top:0">You can change each unit individually after saving.</p>
+            <div><label class="form-label">Rent per unit (£) <span class="form-required">*</span></label><input data-field="rent" type="number" class="form-input" placeholder="950"></div>
             <div class="grid grid-cols-3 gap-3">
                 <div><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" placeholder="2" value="2" min="1"></div>
                 <div><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" placeholder="1" value="1" min="1"></div>
@@ -3488,10 +3669,10 @@ function screenAddProperty() {
         </div>
         <div class="form-section">
             <p class="form-section-title">Floors (optional)</p>
-            <p class="form-helper" style="margin-top:0">Only needed if you want flats grouped by floor.</p>
+            <p class="form-helper" style="margin-top:0">Only needed if you want units grouped by floor.</p>
             <div class="grid grid-cols-2 gap-3">
                 <div><label class="form-label">Floors</label><input data-field="floors" type="number" class="form-input" placeholder="Optional" min="1"></div>
-                <div><label class="form-label">Flats per floor</label><input data-field="flatsPerFloor" type="number" class="form-input" placeholder="Optional" min="1"></div>
+                <div><label class="form-label">Units per floor</label><input data-field="flatsPerFloor" type="number" class="form-input" placeholder="Optional" min="1"></div>
             </div>
         </div>
         <button data-action="save" data-msg="Property added successfully" class="btn-primary w-full">Save property</button>
@@ -3511,24 +3692,17 @@ function screenEditProperty() {
         </div>
         <div><label class="form-label">Property Name</label><input data-field="name" type="text" class="form-input" value="${p.name.replace(/"/g, '&quot;')}"></div>
         <div><label class="form-label">Address</label><input data-field="address" type="text" class="form-input" value="${p.address.replace(/"/g, '&quot;')}"></div>
-        <div><label class="form-label">Default rent per flat (£)</label><input data-field="rent" type="number" class="form-input" value="${rent}"></div>
-        <p class="form-helper">Occupancy updates automatically from your flats — you don’t set it here.</p>
+        <div><label class="form-label">Default rent per unit (£)</label><input data-field="rent" type="number" class="form-input" value="${rent}"></div>
+        <p class="form-helper">Occupancy updates automatically from your units — you don’t set it here.</p>
+        ${typeof renderEditPropertyUnitsSection === 'function' ? renderEditPropertyUnitsSection(STATE.propertyId) : ''}
         ${(() => {
             const b = typeof getPropertyBuilding === 'function' ? getPropertyBuilding(STATE.propertyId) : { flatCount: 1, floors: 1, flatsPerFloor: 1, useFloors: false };
-            const flatCount = getPropertyUnits(STATE.propertyId).length || b.flatCount || 1;
-            return `<div class="card p-4 flex items-center justify-between">
-                <div>
-                    <p class="text-[14px] font-bold text-[#0F172A]">${flatCount} flat${flatCount === 1 ? '' : 's'}</p>
-                    <p class="text-[13px] text-[#64748B] mt-0.5">Add, edit or duplicate from the Flats tab</p>
-                </div>
-                <button type="button" data-tab="units" class="header-text-link">Open Flats</button>
-            </div>
-            <div class="form-section">
+            return `<div class="form-section">
                 <p class="form-section-title">Floors (optional)</p>
-                <p class="form-helper" style="margin-top:0">Leave blank unless you group flats by floor.</p>
+                <p class="form-helper" style="margin-top:0">Leave blank unless you group units by floor.</p>
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="form-label">Floors</label><input data-field="floors" type="number" class="form-input" value="${b.useFloors ? b.floors : ''}" placeholder="Optional" min="1"></div>
-                    <div><label class="form-label">Flats per floor</label><input data-field="flatsPerFloor" type="number" class="form-input" value="${b.useFloors ? b.flatsPerFloor : ''}" placeholder="Optional" min="1"></div>
+                    <div><label class="form-label">Units per floor</label><input data-field="flatsPerFloor" type="number" class="form-input" value="${b.useFloors ? b.flatsPerFloor : ''}" placeholder="Optional" min="1"></div>
                 </div>
             </div>`;
         })()}
@@ -3549,8 +3723,8 @@ function screenInviteTenant() {
     const p = PROPERTIES[STATE.propertyId];
     const selectedUnit = STATE.selectedUnit || '';
     const unitField = typeof unitSelectHtml === 'function'
-        ? `<div><label class="form-label">Flat <span class="form-required">*</span></label>${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit)}</div>`
-        : `<div><label class="form-label">Flat</label><input data-invite="unit" type="text" class="form-input" placeholder="e.g. Flat 1A"></div>`;
+        ? `<div><label class="form-label">Unit <span class="form-required">*</span></label>${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit)}</div>`
+        : `<div><label class="form-label">Unit</label><input data-invite="unit" type="text" class="form-input" placeholder="e.g. Flat 1A"></div>`;
     const defaultRent = typeof propertyDefaultFlatRent === 'function' ? propertyDefaultFlatRent(STATE.propertyId) : p.rent;
     return `${topBar('Invite Tenant', { back: true })}
     <div class="screen-content screen-enter">
@@ -3564,7 +3738,7 @@ function screenInviteTenant() {
         <div><label class="form-label">Email</label><input data-invite="email" type="email" class="form-input" placeholder="tenant@email.com"></div>
         <div><label class="form-label">Phone</label><input data-invite="phone" type="tel" class="form-input" placeholder="+44 7700 900000"></div>
         ${unitField}
-        <div><label class="form-label">Flat Rent (£)</label><input data-invite="rent" type="text" class="form-input" placeholder="${defaultRent}" value="${(selectedUnit && typeof getUnitByName === 'function' ? getUnitByName(STATE.propertyId, selectedUnit)?.rent : null) || defaultRent}"></div>
+        <div><label class="form-label">Unit rent (£)</label><input data-invite="rent" type="text" class="form-input" placeholder="${defaultRent}" value="${(selectedUnit && typeof getUnitByName === 'function' ? getUnitByName(STATE.propertyId, selectedUnit)?.rent : null) || defaultRent}"></div>
         <div><label class="form-label">Lease Start</label><input data-invite="leaseStart" type="date" class="form-input"></div>
         <div><label class="form-label">Lease End</label><input data-invite="leaseEnd" type="date" class="form-input"></div>
         <div><label class="form-label">Personal Message</label><textarea data-invite="message" class="form-input" rows="3" placeholder="Add a personal message for the tenant (optional)"></textarea></div>
@@ -3590,7 +3764,7 @@ function screenTenantInviteSent() {
         </div>
         <div class="card p-4 space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invitation Details</p>
-            ${[['Tenant', `${invite.firstName} ${invite.lastName}`], ['Property', p.name], ['Flat', invite.unit], ['Rent', invite.rent], ['Status', 'Pending activation']].map(([k, v]) => `
+            ${[['Tenant', `${invite.firstName} ${invite.lastName}`], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Status', 'Pending activation']].map(([k, v]) => `
             <div class="flex justify-between text-[13px] py-1"><span class="text-[#64748B]">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
         ${nextMember ? `
@@ -3604,7 +3778,7 @@ function screenEditTenant() {
     const hasNidProof = !!(t.nidProof || (typeof getTenantNidProof === 'function' && getTenantNidProof(STATE.tenantId)));
     return `${topBar('Edit Tenant', { back: true })}
     <div class="screen-content screen-enter">
-        <p class="ux-intro">Update tenant identity and contact details. Tenancy info is managed from the flat or property screen.</p>
+        <p class="ux-intro">Update tenant identity and contact details. Tenancy info is managed from the unit or property screen.</p>
         ${formField('First Name', t.firstName, 'text', '', 'firstName')}${formField('Last Name', t.lastName, 'text', '', 'lastName')}
         ${formField('NID', t.idNumber || '', 'text', 'National ID number', 'idNumber')}${formField('Date of Birth', t.dob || '', 'date', '', 'dob')}
         <div>
@@ -3731,21 +3905,31 @@ function screenEditPreference() {
 function screenLogMaintenance() {
     const isTenant = STATE.userRole === 'tenant';
     const tenant = isTenant ? getActiveTenant() : null;
-    const pid = isTenant ? tenant?.propertyId : STATE.propertyId;
+    const maintCtx = !isTenant && STATE.logMaintPrefill;
+    const pid = isTenant ? tenant?.propertyId : (maintCtx?.propertyId ?? STATE.propertyId);
     const p = pid != null ? PROPERTIES[pid] : null;
+    const selectedUnit = STATE.selectedUnit || tenant?.unit || maintCtx?.unit || '';
+    const titlePrefill = maintCtx?.unit ? `${maintCtx.unit} — ` : '';
     const propertyField = isTenant ? `
         <div class="card p-4" style="background:#F8FAFC">
             <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Your Property</p>
             <p class="text-[13px] font-bold text-[#0F172A] mt-1">${p?.name || '—'}</p>
             <p class="text-[12px] text-[#64748B] mt-0.5">${tenant?.unit || ''}${tenant?.unit && p?.address ? ' · ' : ''}${p?.address || ''}</p>
-        </div>` : `
+        </div>` : maintCtx ? `
+        <div class="card p-4" style="background:#F8FAFC">
+            <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Reporting for</p>
+            <p class="text-[13px] font-bold text-[#0F172A] mt-1">${maintCtx.unit}</p>
+            <p class="text-[12px] text-[#64748B] mt-0.5">${p?.name || '—'}${p?.address ? ` · ${p.address}` : ''}</p>
+        </div>
+        <input type="hidden" data-field="propertyId" value="${pid}">
+        <input type="hidden" data-field="unit" value="${selectedUnit}">` : `
         <div><label class="form-label">Property <span class="form-required">*</span></label>
         <select data-field="propertyId" class="form-input form-select" data-action="refresh-maint-units">${PROPERTIES.map(prop => `<option value="${prop.id}" ${prop.id === pid ? 'selected' : ''}>${prop.name}</option>`).join('')}</select></div>
-        ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Flat <span class="form-required">*</span></label>${unitSelectHtml(pid ?? 0, 'unit', false, STATE.selectedUnit || tenant?.unit || '')}</div>` : ''}`;
+        ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Unit <span class="form-required">*</span></label>${unitSelectHtml(pid ?? 0, 'unit', false, selectedUnit)}</div>` : ''}`;
     return `${topBar(isTenant ? 'Report Issue' : 'Log Issue', { back: !shouldShowBottomNav('log-maintenance') })}
     <div class="screen-content screen-enter">
         ${propertyField}
-        <div><label class="form-label">Issue Title <span class="form-required">*</span></label><input data-field="title" class="form-input" placeholder="Describe the issue"></div>
+        <div><label class="form-label">Issue Title <span class="form-required">*</span></label><input data-field="title" class="form-input" value="${titlePrefill.replace(/"/g, '&quot;')}" placeholder="Describe the issue"></div>
         <div><label class="form-label">Priority</label>
         <div class="flex gap-2">${['Low','Medium','High'].map(pr=>`
         <button data-log-priority="${pr}" class="tab-pill ${STATE.logPriority===pr?'active':''}">${pr}</button>`).join('')}</div></div>

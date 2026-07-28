@@ -352,7 +352,7 @@ function screenContractorWelcome() {
             <div class="card p-4" style="background:#FFFBEB;border-color:#FDE68A">
                 <p class="text-[14px] font-semibold text-[#92400E]">${newJobs} new job waiting</p>
                 <p class="text-[13px] text-[#B45309] mt-1">Accept the job, schedule your visit, then complete the work.</p>
-                <button type="button" data-go="contractor-jobs" data-contractor-filter="assigned" class="btn-primary w-full py-3 text-[13px] mt-3" style="background:#EA580C">View New Jobs</button>
+                <button type="button" data-go="contractor-jobs" data-contractor-filter="assigned" class="btn-primary btn-accent w-full py-3 text-[13px] mt-3">View New Jobs</button>
             </div>` : `
             <div class="card p-4">
                 <p class="text-[14px] font-semibold text-[#0F172A]">You're all set</p>
@@ -659,7 +659,7 @@ function contractorDashboardHeader(name, sub) {
         <button data-action="drawer" class="top-icon-btn"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
         <button data-go="contractor-notifications" class="top-icon-btn relative">
             <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-            <span class="absolute top-0 right-0 w-4 h-4 bg-[#EF4444] text-white text-[9px] font-bold rounded-full flex items-center justify-center">2</span>
+            <span class="notif-badge">2</span>
         </button>
     </div>
     <div class="dash-greeting-row">
