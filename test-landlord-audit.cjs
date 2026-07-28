@@ -63,8 +63,8 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
     log('PASS', 'Filter', `Maintenance ${f}: ${n} items`);
   }
 
-  // Invoice filters
-  await page.evaluate(() => go('financial'));
+  // Invoice filters (transaction history page)
+  await page.evaluate(() => go('transaction-history'));
   await new Promise((r) => setTimeout(r, 400));
   for (const f of ['pending', 'paid', 'overdue', 'all']) {
     await page.evaluate((filter) => setInvoiceFilter(filter), f);
@@ -115,6 +115,39 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
     if (!res.hasContent) log('FAIL', 'Detail', `Tenant tab "${tab}" empty`);
     else log('PASS', 'Detail', `Tenant tab "${tab}" OK`);
   }
+
+  // Property detail tab headers — never show tab label when section nav is visible
+  const tabLabels = { maintenance: 'Maintenance', inspection: 'Inspection', documents: 'Documents', compliance: 'Compliance', inventory: 'Inventory' };
+  for (const tab of ['maintenance', 'inspection', 'documents', 'compliance', 'inventory']) {
+    await page.evaluate((t) => go('property-detail', { propertyId: 0, tab: t }), tab);
+    await new Promise((r) => setTimeout(r, 350));
+    const res = await page.evaluate((tabLabel) => {
+      const title = document.querySelector('.sub-header-title')?.textContent?.trim();
+      const p = PROPERTIES[STATE.propertyId];
+      return { title, propertyName: p?.name, tabLabel, matchesProperty: title === p?.name };
+    }, tabLabels[tab]);
+    if (res.title === res.tabLabel) log('FAIL', 'Header', `Property tab "${tab}" shows tab name "${res.tabLabel}"`);
+    else if (!res.matchesProperty) log('FAIL', 'Header', `Property tab "${tab}" title "${res.title}" ≠ "${res.propertyName}"`);
+    else log('PASS', 'Header', `Property tab "${tab}" shows "${res.title}"`);
+  }
+
+  // Flat-scoped maintenance from unit quick action
+  await page.evaluate(() => go('flat-detail', { propertyId: 0, unit: 'Flat 2A' }));
+  await new Promise((r) => setTimeout(r, 350));
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('[data-go="property-detail"][data-tab="maintenance"]')].find((el) => el.dataset.unit === 'Flat 2A');
+    if (btn) btn.click();
+  });
+  await new Promise((r) => setTimeout(r, 400));
+  const flatMaint = await page.evaluate(() => ({
+    title: document.querySelector('.sub-header-title')?.textContent?.trim(),
+    sub: document.querySelector('.prop-section-sub')?.textContent?.trim(),
+    unit: STATE.propertyMaintUnit,
+    tab: STATE.tab,
+  }));
+  if (flatMaint.title !== 'Flat 2A') log('FAIL', 'Header', `Flat maintenance title "${flatMaint.title}" ≠ Flat 2A`);
+  else if (flatMaint.tab !== 'maintenance') log('FAIL', 'Header', `Flat maintenance tab is "${flatMaint.tab}"`);
+  else log('PASS', 'Header', `Flat maintenance shows "${flatMaint.title}" · ${flatMaint.sub}`);
 
   // Detail pages from list items
   const detailScreens = [

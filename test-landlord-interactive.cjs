@@ -38,9 +38,6 @@ function setField(page, key, value, invite = false) {
   await run(page, () => go('add-property'));
   await setField(page, 'name', 'E2E Test Building');
   await setField(page, 'address', '1 Test Street');
-  await setField(page, 'rent', '1200');
-  await setField(page, 'floors', '2');
-  await setField(page, 'flatsPerFloor', '2');
   const beforeProps = await page.evaluate(() => PROPERTIES.length);
   await run(page, () => saveAddProperty());
   const afterAdd = await page.evaluate(() => ({
@@ -66,8 +63,19 @@ function setField(page, key, value, invite = false) {
   await setField(page, 'leaseStart', '2026-02-01', true);
   await setField(page, 'leaseEnd', '2027-01-31', true);
   await page.evaluate(() => {
-    const unit = document.querySelector('[data-invite="unit"], [data-field="unit"]');
-    if (unit && unit.options.length) unit.value = unit.options[0].value;
+    const unitEl = document.querySelector('[data-invite="unit"], [data-field="unit"]');
+    const unit = unitEl?.value || (typeof getAvailableUnits === 'function' ? unitName(getAvailableUnits(0)[0]) : 'Flat 2B');
+    STATE.inviteDraft = {
+      ...(STATE.inviteDraft || {}),
+      idNumber: '4859217360',
+      fullName: 'Test Tenant',
+      dob: '1990-01-15',
+      email: 'e2e.tenant@test.com',
+      phone: '07700900123',
+      unit,
+      leaseStart: '2026-02-01',
+      leaseEnd: '2027-01-31',
+    };
     STATE.nidProofName = 'NID Proof.jpg';
   });
   const invitesBefore = await page.evaluate(() => TENANT_INVITATIONS.length);

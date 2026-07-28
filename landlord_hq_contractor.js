@@ -492,6 +492,22 @@ function screenTenantWelcome() {
     </div>`;
 }
 
+function tenantDashboardHeader(t, p) {
+    return `
+<div class="screen-header dash-header">
+    <div class="dash-header-top">
+        <button data-action="drawer" class="top-icon-btn"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
+    </div>
+    <div class="dash-greeting-row">
+        <img src="${IMG.avatar.sarah}" class="dash-avatar" alt="">
+        <div>
+            <p class="dash-greeting">${dashGreeting()}, ${t.firstName}</p>
+            <p class="dash-date">${p?.name || 'Your home'}${t.unit ? ` · ${t.unit}` : ''}</p>
+        </div>
+    </div>
+</div>`;
+}
+
 function screenTenantDashboard() {
     const t = getActiveTenant();
     if (!t) {
@@ -511,12 +527,7 @@ function screenTenantDashboard() {
             (!t.unit || !m.unit || m.unit === '—' || m.unit === t.unit)
         ).slice(0, 4)
         : [];
-    const maintStatusLabel = (status) => ({
-        open: { label: 'Reported', bg: '#FEF3C7', color: '#D97706' },
-        progress: { label: 'In Progress', bg: '#DBEAFE', color: '#2563EB' },
-        done: { label: 'Resolved', bg: '#DCFCE7', color: '#16A34A' },
-    }[status] || { label: status, bg: '#F1F5F9', color: '#64748B' });
-    return `${topBar('Tenant Portal', { hideBell: true })}
+    return `${tenantDashboardHeader(t, p)}
     <div class="screen-content screen-enter">
         <div class="card p-4" style="background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;border:none">
             <p class="text-[11px] font-semibold opacity-80 uppercase tracking-wide">Your Home</p>
@@ -549,21 +560,7 @@ function screenTenantDashboard() {
                 <p class="text-[13px] font-semibold text-[#0F172A]">Your Maintenance Requests</p>
                 <button data-go="log-maintenance" class="text-[12px] font-semibold text-[#2563EB]">Report new</button>
             </div>
-            ${tenantIssues.length ? tenantIssues.map(m => {
-                const st = maintStatusLabel(m.status);
-                const contractorNote = m.contractor && m.contractor !== '—'
-                    ? `${m.contractor} assigned`
-                    : 'Waiting for contractor';
-                return `
-            <button data-go="maintenance-detail" data-mid="${m.id}" class="flex items-center gap-3 py-2.5 border-b border-[#F1F5F9] last:border-0 w-full text-left">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#EFF6FF;color:#2563EB"><i data-lucide="wrench" class="w-4 h-4"></i></div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-[13px] font-semibold text-[#0F172A] truncate">${m.issue}</p>
-                    <p class="text-[11px] text-[#64748B]">${m.time} · ${contractorNote}</p>
-                </div>
-                <span class="badge shrink-0" style="background:${st.bg};color:${st.color}">${st.label}</span>
-            </button>`;
-            }).join('') : `<p class="text-[12px] text-[#64748B] py-2">No issues reported yet. Tap Report Issue to notify your landlord.</p>`}
+            ${tenantIssues.length ? `<div class="maint-list">${tenantIssues.map(m => maintCard(m, { hideProperty: true })).join('')}</div>` : `<p class="text-[12px] text-[#64748B] py-2">No issues reported yet. Tap Report Issue to notify your landlord.</p>`}
         </div>
         <div class="card p-4">
             <div class="flex items-center justify-between mb-2">
@@ -590,8 +587,8 @@ function screenTenantDashboard() {
                 const conv = chatId != null && typeof CONVERSATIONS !== 'undefined' ? CONVERSATIONS[chatId] : null;
                 if (conv?.preview) rows.push(['message-square', '#EEF2FF', '#4F46E5', 'Message from landlord', conv.preview]);
                 tenantIssues.slice(0, 2).forEach(m => {
-                    const st = maintStatusLabel(m.status);
-                    rows.push(['wrench', '#EFF6FF', '#2563EB', m.issue, `${st.label} · ${m.time}`]);
+                    const label = typeof maintStatusLabel !== 'undefined' ? (maintStatusLabel[m.status] || m.status) : m.status;
+                    rows.push(['wrench', '#EFF6FF', '#2563EB', m.issue, `${label} · ${m.time}`]);
                 });
                 if (!rows.length) rows.push(['check-circle', '#ECFDF5', '#059669', 'Rent paid', `Mar 1, 2025 · ${t.rent || ''}`]);
                 return rows.map(([ic, bg, color, title, sub]) => `
@@ -778,13 +775,13 @@ function screenContractorJobDetail() {
         <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[13px] font-semibold">Mark Job Complete</button>
         <p class="text-[12px] text-[#64748B] text-center mt-2">Upload invoice first, then submit for landlord approval</p>` : ''}`;
     const tabBody = { overview, work, invoice };
-    return `${topBar('Job Details', { back: true, sub: job.property })}
+    return `${topBar(job.issue, { back: true, sub: `${job.property}${job.unit ? ` · ${job.unit}` : ''}` })}
     <div class="screen-content screen-enter">
         <div class="flex gap-2 flex-wrap">
             <span class="badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
             <span class="badge" style="background:${pBg};color:${pColor}">${job.priority}</span>
         </div>
-        <h2 class="text-[17px] font-bold text-[#0F172A] mt-2">${job.issue}</h2>
+        <p class="text-[12px] text-[#64748B] mt-2">${job.address}</p>
         <div class="flex gap-2 overflow-x-auto pb-1 mt-3">
             ${tabs.map(([k, l]) => `
             <button data-jtab="${k}" class="tab-pill ${tab === k ? 'active' : ''}">${l}</button>`).join('')}
@@ -796,11 +793,10 @@ function screenContractorJobDetail() {
 
 function screenContractorSchedule() {
     const job = contractorJob(STATE.contractorJobId);
-    return `${topBar('Schedule Visit', { back: true })}
+    return `${topBar(job.property, { back: true, sub: job.issue })}
     <div class="screen-content screen-enter">
         <div class="card p-4">
-            <p class="text-[14px] font-semibold text-[#0F172A]">${job.issue}</p>
-            <p class="text-[14px] text-[#64748B] mt-1">${job.property} · ${job.address}</p>
+            <p class="text-[14px] text-[#64748B] mt-1">${job.address}</p>
             <p class="text-[13px] text-[#64748B] mt-2">Tenant: ${job.tenant}</p>
         </div>
         ${formField('Visit date', job.scheduledDate || '2025-03-14', 'date', '', 'visitDate')}
