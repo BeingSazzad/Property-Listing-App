@@ -52,7 +52,7 @@ const STATE = {
     propertyId: 0, tenantId: 0, maintId: 0, invoiceId: 0, roomId: 0, chatId: 0,
     propertiesView: 'grid', propertiesFilter: 'all', showPropFilters: false,
     propertiesAdvanced: { rent: 'all', beds: 'any' },
-    search: { properties: '', tenants: '', messages: '', global: '' },
+    search: { properties: '', tenants: '', messages: '', contractors: '', global: '' },
     maintFilter: 'open', invoiceFilter: 'pending', logPriority: 'Medium',
     onboardingStep: 0, authRole: 'landlord', userRole: 'landlord', otpDigits: [], otpContext: 'signup',
     showPassword: false, showConfirmPassword: false, resetEmail: '',
@@ -77,6 +77,7 @@ const STATE = {
     inspectionPhotos: [],
     inspectionRating: 4,
     inspectionPrefill: null,
+    inspectionId: 0,
     photoMenuIdx: null,
     actionMenuKey: null,
     inviteReturn: null,
@@ -1658,6 +1659,10 @@ function go(screen, opts = {}) {
         else if (from === 'financial' || from === 'profile') STATE.invoiceFilter = 'all';
     }
     if (screen === 'maintenance-detail') STATE.maintId = opts.maintId ?? STATE.maintId ?? 0;
+    if (screen === 'inspection-detail') {
+        STATE.inspectionId = opts.inspectionId ?? STATE.inspectionId ?? 0;
+        if (opts.propertyId != null) STATE.propertyId = opts.propertyId;
+    }
     if (screen === 'chat') STATE.chatId = opts.chatId ?? STATE.chatId ?? 0;
     if (screen === 'tenant-invite' || screen === 'tenant-activate') {
         STATE.tenantInviteToken = opts.token ?? STATE.tenantInviteToken;
@@ -1752,6 +1757,7 @@ function navigateBackFallback() {
         'edit-property': 'property-detail', 'add-flat': 'property-detail', 'invite-tenant': 'property-detail',
         'edit-flat': 'flat-detail', 'flat-detail': 'property-detail', 'flat-members': 'flat-detail', 'flat-rent-history': 'flat-detail', 'tenancy-detail': 'flat-detail',
         'edit-tenant': 'tenant-detail', 'reschedule-inspection': 'property-detail',
+        'inspection-detail': 'property-detail',
         'renew-compliance': 'property-detail', 'edit-inventory-room': 'inventory-room',
         'add-payment-method': 'payment-methods', 'edit-payment-method': 'payment-methods',
         'edit-preference': 'preferences',
@@ -1784,6 +1790,7 @@ function navigateBackFallback() {
         'property-info': 'property-detail', 'unit-utilities': 'property-detail',
         'maintenance-history': 'maintenance', 'select-property-invite': 'tenants',
         'global-search': 'dashboard',
+        'contractors': 'dashboard',
         'tenant-add-note': 'tenant-detail', 'tenant-edit-note': 'tenant-detail',
     };
     const tabMap = {
@@ -1794,6 +1801,7 @@ function navigateBackFallback() {
         'contractor-work': 'work', 'contractor-documents': 'invoice',
         'create-tenancy': 'tenant', 'tenant-invite-sent': 'tenant',
         'conduct-inspection': 'inspection', 'share-document': 'documents',
+        'inspection-detail': 'inspection',
         'property-photos': 'details', 'property-floor-plans': 'details',
         'property-alarms': 'details', 'property-appliances': 'details',
         'property-utilities': 'details', 'property-parking': 'details', 'property-info': 'details',
@@ -2224,6 +2232,7 @@ const BOTTOM_NAV = [
 const LANDLORD_DRAWER_NAV = [
     ['wallet', 'Finance', 'financial'],
     ['wrench', 'Maintenance', 'maintenance'],
+    ['hard-hat', 'Contractors', 'contractors'],
     ['user-round', 'Profile', 'profile'],
     ['life-buoy', 'Help & FAQ', 'help-support'],
 ];
@@ -2882,8 +2891,8 @@ function screenPropertyDetail() {
             return `
             <div class="screen-content screen-content-sm prop-hub-page">
                 <div class="maint-toolbar maint-toolbar--inline">
-                    <p class="maint-toolbar-label">${openItems.length ? `${openItems.length} open issue${openItems.length === 1 ? '' : 's'}` : 'All clear'}</p>
-                    <button type="button" data-go="log-maintenance" class="maint-log-btn" title="Log new issue" aria-label="Log new issue">
+                    <p class="maint-section-label maint-toolbar-label">${openItems.length ? `${openItems.length} open issue${openItems.length === 1 ? '' : 's'}` : 'All clear — no open issues'}</p>
+                    <button type="button" data-go="log-maintenance" data-pid="${STATE.propertyId}" class="maint-log-btn" title="Log new issue" aria-label="Log new issue">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -2910,12 +2919,9 @@ function screenPropertyDetail() {
     };
 
     const { title: sectionTitle, subtitle: sectionSubtitle } = propertySectionHeader(STATE.propertyId);
-    const hubStats = STATE.tab !== 'details' && STATE.tab !== 'units' && typeof renderPropertyHubStatsBar === 'function'
-        ? renderPropertyHubStatsBar(STATE.propertyId)
-        : '';
     return `
     ${propSectionBar(sectionTitle, sectionSubtitle)}
-    <div class="screen-enter">${hubStats}${tabContent[STATE.tab] || tabContent.details}</div>`;
+    <div class="screen-enter">${tabContent[STATE.tab] || tabContent.details}</div>`;
 }
 
 function screenTenants() {
@@ -4297,6 +4303,7 @@ function collectGoOptions(el) {
     if (el.dataset.tid !== undefined) opts.tenantId = +el.dataset.tid;
     if (el.dataset.mid !== undefined) opts.maintId = +el.dataset.mid;
     if (el.dataset.chat !== undefined) opts.chatId = +el.dataset.chat;
+    if (el.dataset.insp !== undefined) opts.inspectionId = +el.dataset.insp;
     if (el.dataset.iid !== undefined) opts.invoiceId = +el.dataset.iid;
     if (el.dataset.room !== undefined) opts.roomId = +el.dataset.room;
     if (el.dataset.fid !== undefined) opts.faqId = +el.dataset.fid;

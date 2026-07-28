@@ -1271,25 +1271,30 @@ function renderBuildingMetricsGrid(propertyId) {
         </div>`;
 }
 
-function renderPropertyHubStatsBar(propertyId) {
+function renderPropertyHubStatsBar(propertyId, options = {}) {
     const { units, occupiedFlats } = propertyHubStats(propertyId);
     const vacantFlats = units.length - occupiedFlats;
     const occPct = units.length ? Math.round((occupiedFlats / units.length) * 100) : 0;
+    const actionHtml = options.actionHtml || '';
     return `
-    <div class="properties-summary-bar properties-summary-bar--hub">
-        <div class="properties-summary-item">
-            <span class="properties-summary-icon properties-summary-icon--blue"><i data-lucide="home" class="w-4 h-4"></i></span>
-            <div><p class="properties-summary-val">${units.length}</p><p class="properties-summary-lbl">Total Units</p></div>
+    <div class="prop-hub-stats-wrap${actionHtml ? ' prop-hub-stats-wrap--action' : ''}">
+        <div class="properties-summary-bar properties-summary-bar--hub">
+            <div class="properties-summary-item">
+                <span class="properties-summary-icon properties-summary-icon--blue"><i data-lucide="home" class="w-4 h-4"></i></span>
+                <div><p class="properties-summary-val">${units.length}</p><p class="properties-summary-lbl">Units</p></div>
+            </div>
+            <div class="properties-summary-item">
+                <span class="properties-summary-icon properties-summary-icon--green"><i data-lucide="users" class="w-4 h-4"></i></span>
+                <div><p class="properties-summary-val">${occupiedFlats}</p><p class="properties-summary-lbl">Let</p></div>
+            </div>
+            <div class="properties-summary-item">
+                <span class="properties-summary-icon properties-summary-icon--purple"><i data-lucide="pie-chart" class="w-4 h-4"></i></span>
+                <div><p class="properties-summary-val">${occPct}%</p><p class="properties-summary-lbl">Occupancy</p></div>
+            </div>
         </div>
-        <div class="properties-summary-item">
-            <span class="properties-summary-icon properties-summary-icon--green"><i data-lucide="users" class="w-4 h-4"></i></span>
-            <div><p class="properties-summary-val">${occupiedFlats}</p><p class="properties-summary-lbl">Occupied</p></div>
-        </div>
-        <div class="properties-summary-item">
-            <span class="properties-summary-icon properties-summary-icon--purple"><i data-lucide="pie-chart" class="w-4 h-4"></i></span>
-            <div><p class="properties-summary-val">${occPct}%</p><p class="properties-summary-lbl">Occupancy</p></div>
-        </div>
-    </div>`;
+        ${actionHtml}
+    </div>
+    <p class="prop-hub-stats-hint">${occupiedFlats} let · ${vacantFlats} vacant</p>`;
 }
 
 function renderPropertyBuildingSummaryCard(propertyId, options = {}) {
@@ -2079,6 +2084,65 @@ function getContractorChatId(name) {
     return idx >= 0 ? idx : null;
 }
 
+function ensureContractorConversation(contractor) {
+    const existing = getContractorChatId(contractor.name);
+    if (existing != null) return existing;
+    const id = CONVERSATIONS.length ? Math.max(...CONVERSATIONS.map(c => c.id)) + 1 : 0;
+    CONVERSATIONS.push({
+        id, img: contractor.img, name: contractor.name, sub: contractor.trade,
+        preview: 'Start a conversation', time: 'Just now', unread: 0, online: false, messages: [],
+    });
+    CONTRACTOR_CHAT_MAP[contractor.name] = id;
+    syncConversationsToStore();
+    return id;
+}
+
+function contractorOpenJobs(name) {
+    return MAINTENANCE_ITEMS.filter(m => m.contractor === name && m.status !== 'done').length;
+}
+
+function contractorRow(c) {
+    const chatId = ensureContractorConversation(c);
+    const convo = CONVERSATIONS.find(x => x.id === chatId);
+    const jobs = contractorOpenJobs(c.name);
+    const preview = convo?.preview || 'Send a message';
+    const unread = convo?.unread || 0;
+    return `
+    <button type="button" data-go="chat" data-chat="${chatId}" class="contractor-row card w-full text-left">
+        <img src="${c.img}" class="contractor-row-avatar" alt="">
+        <div class="contractor-row-body">
+            <div class="contractor-row-top">
+                <p class="contractor-row-name">${c.name}</p>
+                ${unread ? `<span class="contractor-row-unread">${unread}</span>` : ''}
+            </div>
+            <p class="contractor-row-trade">${c.trade}</p>
+            <p class="contractor-row-meta">${jobs ? `${jobs} open job${jobs === 1 ? '' : 's'}` : 'No active jobs'} · ${preview}</p>
+        </div>
+        <span class="contractor-row-msg" aria-hidden="true"><i data-lucide="message-square" class="w-4 h-4"></i></span>
+    </button>`;
+}
+
+function screenContractors() {
+    const q = (STATE.search.contractors || '').toLowerCase();
+    const list = CONTRACTORS.filter(c =>
+        !q || c.name.toLowerCase().includes(q) || c.trade.toLowerCase().includes(q)
+    );
+    return `${topBar('Contractors')}
+    <div class="screen-content screen-content-sm screen-enter">
+        <div class="search-bar">
+            <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+            <input data-search="contractors" type="text" value="${STATE.search.contractors || ''}" placeholder="Search contractors..." class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
+        </div>
+        <p class="form-helper contractors-list-hint">${list.length} contractor${list.length === 1 ? '' : 's'} · tap to message</p>
+        ${list.length ? `<div class="contractors-list stack-sm">${list.map(contractorRow).join('')}</div>` : `
+        <div class="card p-8 text-center">
+            <i data-lucide="hard-hat" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
+            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No contractors found</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Try a different search term</p>
+        </div>`}
+    </div>`;
+}
+
 function pendingTenantInviteCount() {
     return TENANT_INVITATIONS.filter(i => i.status === 'pending').length;
 }
@@ -2518,7 +2582,9 @@ function renderPropertyUnitsTab(propertyId) {
             <i data-lucide="home" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
             <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No ${unitFilter === 'all' ? '' : unitFilter} units</p>
             <p class="text-[12px] text-[#64748B] mt-1">${unitFilter === 'all' ? 'Add your first unit to get started' : 'Try another filter'}</p>
-            ${unitFilter !== 'all' ? `<button type="button" data-unit-filter="all" class="btn-secondary py-2.5 px-5 text-[13px] mt-3">Show all units</button>` : ''}
+            ${unitFilter === 'all'
+                ? `<button type="button" data-go="add-flat" data-pid="${propertyId}" class="btn-primary py-2.5 px-5 text-[13px] mt-3">+ Add unit</button>`
+                : `<button type="button" data-unit-filter="all" class="btn-secondary py-2.5 px-5 text-[13px] mt-3">Show all units</button>`}
         </div>`
         : groupFloors
         ? [...new Set(units.map(u => u.floor || 1))].sort((a, b) => a - b).map(floor => {
@@ -2544,10 +2610,15 @@ function renderPropertyUnitsTab(propertyId) {
                 <p class="unit-list-title">${units.length} unit${units.length === 1 ? '' : 's'}${filterActive ? ` · ${unitFilterLabel(unitFilter).toLowerCase()}` : ''}</p>
                 <p class="unit-list-sub">${filterActive ? `Showing ${units.length} of ${allUnits.length}` : `${occupiedCount} occupied · ${vacantCount} vacant`}</p>
             </div>
-            <button type="button" data-action="toggle-unit-filters" class="filter-btn ${filterActive ? 'filter-btn-active' : ''}" aria-label="Filter units">
-                <i data-lucide="sliders-horizontal" class="w-[18px] h-[18px]"></i>
-                ${filterActive ? '<span class="filter-btn-dot"></span>' : ''}
-            </button>
+            <div class="unit-list-toolbar-actions">
+                <button type="button" data-action="toggle-unit-filters" class="filter-btn ${filterActive ? 'filter-btn-active' : ''}" aria-label="Filter units">
+                    <i data-lucide="sliders-horizontal" class="w-[18px] h-[18px]"></i>
+                    ${filterActive ? '<span class="filter-btn-dot"></span>' : ''}
+                </button>
+                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="unit-add-btn" title="Add unit" aria-label="Add unit">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
         ${flatList}
     </div>`;
@@ -4393,13 +4464,66 @@ function inspReportRow(report) {
     const title = `${report.type || 'Inspection'} · ${dateLabel}`;
     const meta = report.rating ? `★ ${report.rating} condition` : '';
     return `
-    <button type="button" data-action="download-doc" class="insp-row card w-full text-left">
+    <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="insp-row card w-full text-left">
         <div class="insp-row-body">
             <p class="insp-row-title">${title}</p>
             ${meta ? `<p class="insp-row-meta">${meta}</p>` : ''}
         </div>
         <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
     </button>`;
+}
+
+function inspectionById(id) {
+    return AppStore.inspections.find(i => i.id === id) || AppStore.inspections.find(i => !i.scheduled) || null;
+}
+
+function screenInspectionDetail() {
+    const report = inspectionById(STATE.inspectionId);
+    if (!report) {
+        return `${topBar('Inspection report', { back: true })}
+        <div class="screen-content"><p class="text-[13px] text-[#64748B]">Report not found.</p></div>`;
+    }
+    const p = PROPERTIES[report.propertyId ?? STATE.propertyId];
+    const dateLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(report.date) || report.date : report.date;
+    const photos = report.photoUrls?.length ? report.photoUrls : (report.photos ? IMG.interior.slice(0, Math.min(report.photos, 4)) : []);
+    const rating = report.rating ? String(report.rating) : null;
+    return `${topBar(report.type || 'Inspection', { back: true, sub: p?.name || '' })}
+    <div class="screen-content screen-content-sm screen-enter">
+        <div class="card insp-detail-summary">
+            <div class="insp-detail-top">
+                <div>
+                    <p class="insp-detail-date">${dateLabel}</p>
+                    <p class="insp-detail-property">${p?.address || p?.name || ''}</p>
+                </div>
+                ${rating ? `<span class="insp-detail-rating">★ ${rating}</span>` : ''}
+            </div>
+            ${report.notes?.trim() ? `
+            <div class="insp-detail-notes">
+                <p class="insp-detail-label">Notes</p>
+                <p class="insp-detail-text">${report.notes}</p>
+            </div>` : ''}
+        </div>
+        ${photos.length ? `
+        <div class="insp-detail-photos">
+            <p class="insp-detail-label">Photos (${photos.length})</p>
+            <div class="insp-detail-photo-grid">
+                ${photos.map(src => `<img src="${src}" class="insp-detail-photo" alt="">`).join('')}
+            </div>
+        </div>` : ''}
+        ${report.report ? `
+        <div class="card insp-detail-report">
+            <div class="insp-detail-report-row">
+                <div class="insp-detail-report-icon"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                <div class="min-w-0">
+                    <p class="insp-detail-report-name">${report.report}</p>
+                    <p class="insp-detail-report-sub">PDF report</p>
+                </div>
+            </div>
+            <button type="button" data-action="download-inspection-report" class="btn-secondary w-full py-2.5 text-[13px] mt-3 flex items-center justify-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>Download report
+            </button>
+        </div>` : ''}
+    </div>`;
 }
 
 function renderPropertyInspectionTab(propertyId) {
@@ -4760,17 +4884,27 @@ function renderTenantMaintenanceSection(tenantId) {
     </div>`;
 }
 
+function tenantActivitySortKey(raw) {
+    if (!raw) return 0;
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
 function renderTenantActivitySection(tenantId, t) {
     const events = [];
     const listItem = TENANT_LIST[tenantId];
-    getTenantNotes(tenantId).slice(0, 3).forEach(n => {
+    const tenantName = listItem?.name || `${t.firstName} ${t.lastName}`;
+
+    getTenantNotes(tenantId).forEach((n, idx) => {
         events.push({
             ic: 'sticky-note', bg: n.bg, color: n.color,
             title: 'Note',
-            sub: truncateNote(n.text, 72),
+            sub: `${truncateNote(n.text, 72)}${n.meta ? ` · ${n.meta.split('·')[0].trim()}` : ''}`,
             go: 'tenant-detail', opts: { tenantId, tenantTab: 'notes' },
+            sortAt: tenantActivitySortKey(n.meta) || (Date.now() - idx),
         });
     });
+
     const checkoutRec = AppStore.checkoutRecords?.find(r => r.tenantId === tenantId && r.notes?.trim());
     if (checkoutRec) {
         events.push({
@@ -4778,22 +4912,35 @@ function renderTenantActivitySection(tenantId, t) {
             title: 'Check-out note',
             sub: truncateNote(checkoutRec.notes, 72),
             go: 'tenant-detail', opts: { tenantId, tenantTab: 'property' },
+            sortAt: tenantActivitySortKey(checkoutRec.date) || 0,
         });
     }
-    INVOICES.filter(i => i.prop.includes(listItem?.prop?.split(',')[0] || t.prop?.split(',')[0] || '')).slice(0, 2).forEach(i => {
-        events.push({ ic: 'banknote', bg: '#ECFDF5', color: '#059669', title: i.status === 'Paid' ? 'Rent payment received' : `Invoice ${i.status.toLowerCase()}`, sub: `${i.amount} · ${i.due}` });
+
+    INVOICES.filter(i =>
+        i.tenantId === tenantId || i.tenant === tenantName
+    ).forEach(i => {
+        events.push({
+            ic: 'banknote', bg: '#ECFDF5', color: '#059669',
+            title: i.status === 'Paid' ? 'Rent payment received' : `Invoice ${i.status.toLowerCase()}`,
+            sub: `${i.amount} · ${i.status === 'Paid' ? (i.paidOn || i.due) : i.due}`,
+            go: 'invoice-detail', opts: { iid: i.id },
+            sortAt: tenantActivitySortKey(i.status === 'Paid' ? (i.paidOn || i.due) : i.due),
+        });
     });
+
     MAINTENANCE_ITEMS.filter(m =>
         m.propertyId === listItem?.propertyId &&
         (!listItem?.unit || m.unit === listItem.unit || m.unit === '—')
-    ).slice(0, 3).forEach(m => {
+    ).forEach((m, idx) => {
         events.push({
             ic: 'wrench', bg: '#EFF6FF', color: '#2563EB',
             title: m.status === 'done' ? 'Maintenance resolved' : 'Maintenance update',
             sub: `${m.issue} · ${m.time}`,
             go: 'maintenance-detail', opts: { mid: m.id },
+            sortAt: Date.now() - idx * 3600000,
         });
     });
+
     const chatId = getTenantChatId(tenantId);
     const conv = CONVERSATIONS[chatId];
     if (conv?.messages?.length) {
@@ -4803,22 +4950,36 @@ function renderTenantActivitySection(tenantId, t) {
             title: last.type === 'out' ? 'Message sent' : 'Message received',
             sub: last.text.slice(0, 60),
             go: 'chat', opts: { chatId },
+            sortAt: Date.now(),
         });
     }
-    getTenantDocuments(tenantId).slice(0, 2).forEach((doc, idx) => {
+
+    getTenantDocuments(tenantId).forEach((doc, idx) => {
         events.push({
             ic: 'file-text', bg: '#F0FDF4', color: '#16A34A',
             title: 'Document shared',
             sub: doc[1],
-            go: 'document-preview', opts: { previewSource: 'tenant', previewDocIdx: idx },
+            go: 'document-preview', opts: { previewSource: 'tenant', previewDocIdx: idx, tenantId },
+            sortAt: tenantActivitySortKey(doc[2]) || (Date.now() - idx * 86400000),
         });
     });
-    if (t.moveIn) events.push({ ic: 'user-plus', bg: '#FFFBEB', color: '#D97706', title: 'Tenant moved in', sub: typeof formatDisplayDate === 'function' ? formatDisplayDate(t.moveIn) : t.moveIn });
+
+    if (t.moveIn) {
+        events.push({
+            ic: 'user-plus', bg: '#FFFBEB', color: '#D97706',
+            title: 'Tenant moved in',
+            sub: typeof formatDisplayDate === 'function' ? formatDisplayDate(t.moveIn) : t.moveIn,
+            sortAt: tenantActivitySortKey(t.moveIn),
+        });
+    }
+
+    events.sort((a, b) => (b.sortAt || 0) - (a.sortAt || 0));
+
     if (!events.length) return `<div class="card p-6 text-center"><p class="text-[13px] text-[#64748B]">No activity yet</p></div>`;
     return `
     <div class="tenant-timeline">
         ${events.map(e => `
-        <button type="button" ${e.go ? `data-go="${e.go}" ${e.opts?.tenantId != null ? `data-tid="${e.opts.tenantId}"` : ''} ${e.opts?.tenantTab ? `data-tenant-tab="${e.opts.tenantTab}"` : ''} ${e.opts?.mid != null ? `data-mid="${e.opts.mid}"` : ''} ${e.opts?.chatId != null ? `data-chat="${e.opts.chatId}"` : ''} ${e.opts?.previewSource ? `data-preview-source="${e.opts.previewSource}" data-preview-idx="${e.opts.previewDocIdx ?? 0}"` : ''}` : ''} class="tenant-timeline-item w-full text-left ${e.go ? 'card-hover' : ''}">
+        <button type="button" ${e.go ? `data-go="${e.go}" ${e.opts?.tenantId != null ? `data-tid="${e.opts.tenantId}"` : ''} ${e.opts?.tenantTab ? `data-tenant-tab="${e.opts.tenantTab}"` : ''} ${e.opts?.mid != null ? `data-mid="${e.opts.mid}"` : ''} ${e.opts?.iid != null ? `data-iid="${e.opts.iid}"` : ''} ${e.opts?.chatId != null ? `data-chat="${e.opts.chatId}"` : ''} ${e.opts?.previewSource ? `data-preview-source="${e.opts.previewSource}" data-preview-idx="${e.opts.previewDocIdx ?? 0}" ${e.opts.tenantId != null ? `data-tid="${e.opts.tenantId}"` : ''}` : ''}` : ''} class="tenant-timeline-item w-full text-left ${e.go ? 'card-hover' : ''}">
             <div class="tenant-timeline-icon" style="background:${e.bg};color:${e.color}"><i data-lucide="${e.ic}" class="w-4 h-4"></i></div>
             <div class="tenant-timeline-body">
                 <p class="tenant-timeline-title">${e.title}</p>
@@ -6234,6 +6395,12 @@ function downloadDocument() {
     toast('Downloading Lease Agreement.pdf…');
 }
 
+function downloadInspectionReport() {
+    const report = inspectionById(STATE.inspectionId);
+    const name = report?.report || 'Inspection report.pdf';
+    toast(`Downloading ${name}…`);
+}
+
 function shareDocumentPreview() {
     if (navigator.share) {
         navigator.share({ title: 'Lease Agreement', text: 'Shared from Landlord HQ' }).catch(() => toast('Document shared'));
@@ -6823,7 +6990,7 @@ const FEATURE_SCREENS = [
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
     'property-floor-plans', 'property-photos', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'tenancy-detail',
-    'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'global-search',
+    'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'global-search', 'contractors', 'inspection-detail',
 ];
 
 Object.assign(SCREEN_MAP, {
@@ -6866,6 +7033,8 @@ Object.assign(SCREEN_MAP, {
     'select-property-invite': screenSelectPropertyInvite,
     'global-search': screenGlobalSearch,
     'document-preview': screenDocumentPreviewEnhanced,
+    'contractors': screenContractors,
+    'inspection-detail': screenInspectionDetail,
 });
 
 NO_NAV.push(...FEATURE_SCREENS);
@@ -6902,6 +7071,8 @@ const FEATURE_BACK_MAP = {
     'maintenance-history': 'maintenance',
     'select-property-invite': 'tenants',
     'global-search': 'dashboard',
+    'contractors': 'dashboard',
+    'inspection-detail': 'property-detail',
     'tenant-invite-sent': 'property-detail',
     'tenants': 'dashboard',
     'profile': 'dashboard',
@@ -7009,6 +7180,7 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="mark-all-read"]').forEach(el => { el.onclick = markAllNotificationsRead; });
     app.querySelectorAll('[data-action="download-doc"]').forEach(el => { el.onclick = downloadDocument; });
+    app.querySelectorAll('[data-action="download-inspection-report"]').forEach(el => { el.onclick = downloadInspectionReport; });
     app.querySelectorAll('[data-action="share-doc-preview"]').forEach(el => { el.onclick = shareDocumentPreview; });
     app.querySelectorAll('[data-action="remove-payment-method"]').forEach(el => { el.onclick = removePaymentMethod; });
     app.querySelectorAll('[data-action="upload-tenant-doc"]').forEach(el => { el.onclick = uploadTenantDocument; });

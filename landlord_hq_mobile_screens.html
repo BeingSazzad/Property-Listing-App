@@ -861,7 +861,23 @@
             margin-top: 0; margin-bottom: 14px;
         }
         .properties-summary-bar--hub {
-            margin: 0 var(--gutter) 12px;
+            margin: 0;
+        }
+        .prop-hub-stats-wrap {
+            display: flex; align-items: stretch; gap: 8px;
+            margin: 0 var(--gutter) 4px;
+        }
+        .prop-hub-stats-wrap .properties-summary-bar--hub { flex: 1; min-width: 0; }
+        .prop-hub-stats-hint {
+            margin: 0 var(--gutter) 10px; padding: 0 2px;
+            font-size: 11px; color: #94A3B8; font-weight: 500;
+        }
+        .maint-log-btn--hub {
+            width: 52px; align-self: stretch; border-radius: 16px;
+        }
+        .maint-section-label {
+            font-size: 13px; font-weight: 600; color: #64748B;
+            margin: 0 0 10px; padding: 0 2px;
         }
         .properties-summary-item {
             display: flex; align-items: center; gap: 8px; min-width: 0;
@@ -1019,8 +1035,15 @@
         .unit-list-sub { font-size: 12px; color: #64748B; margin-top: 2px; }
         .unit-list-sub--solo { margin-top: 0; font-size: 13px; color: #64748B; }
         .unit-list-toolbar-actions {
-            display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
         }
+        .unit-add-btn {
+            width: 40px; height: 40px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid #E2E8F0; border-radius: 12px;
+            background: #2563EB; color: #fff; cursor: pointer;
+        }
+        .unit-add-btn:active { background: #1D4ED8; }
         .unit-floor-group { margin-bottom: 20px; }
         .unit-floor-head {
             display: flex; align-items: center; justify-content: space-between;
@@ -1629,6 +1652,38 @@
         .insp-empty-text { font-size: 13px; color: #64748B; text-align: center; margin: 0 0 10px; }
         .insp-footer-link { display: flex; justify-content: center; padding: 2px 0 4px; }
         .insp-photos-link { display: inline-flex; align-items: center; gap: 6px; }
+        .insp-detail-summary { padding: 16px; }
+        .insp-detail-top {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+        }
+        .insp-detail-date { font-size: 15px; font-weight: 700; color: #0F172A; margin: 0; }
+        .insp-detail-property { font-size: 12px; color: #64748B; margin: 4px 0 0; }
+        .insp-detail-rating {
+            font-size: 14px; font-weight: 700; color: #D97706;
+            background: #FEF3C7; padding: 6px 10px; border-radius: 999px; flex-shrink: 0;
+        }
+        .insp-detail-label {
+            font-size: 11px; font-weight: 700; color: #64748B;
+            text-transform: uppercase; letter-spacing: .04em; margin: 0 0 6px;
+        }
+        .insp-detail-notes { margin-top: 14px; padding-top: 14px; border-top: 1px solid #F1F5F9; }
+        .insp-detail-text { font-size: 14px; color: #0F172A; line-height: 1.5; margin: 0; }
+        .insp-detail-photos { margin-top: 4px; }
+        .insp-detail-photo-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+        }
+        .insp-detail-photo {
+            width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 12px;
+        }
+        .insp-detail-report { padding: 14px 16px; }
+        .insp-detail-report-row { display: flex; align-items: center; gap: 12px; }
+        .insp-detail-report-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: #EFF6FF; color: #2563EB;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .insp-detail-report-name { font-size: 14px; font-weight: 600; color: #0F172A; margin: 0; }
+        .insp-detail-report-sub { font-size: 12px; color: #94A3B8; margin: 2px 0 0; }
         .insp-rating-picker {
             display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
         }
@@ -2879,6 +2934,45 @@
         .tenant-row-prop { font-size: var(--text-caption); color: var(--color-text-secondary); margin: 3px 0 0; }
         .tenant-row-meta { font-size: 11px; color: var(--color-text-muted); margin: 2px 0 0; }
         .tenant-row-chevron { color: var(--color-text-muted); flex-shrink: 0; }
+
+        /* Contractors directory */
+        .contractors-list-hint { margin: 0 0 4px; }
+        .contractors-list { margin-top: 4px; }
+        .contractor-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; border: none; cursor: pointer;
+        }
+        .contractor-row:active { opacity: 0.92; }
+        .contractor-row-avatar {
+            width: 48px; height: 48px; border-radius: 12px;
+            object-fit: cover; flex-shrink: 0;
+        }
+        .contractor-row-body { flex: 1; min-width: 0; }
+        .contractor-row-top {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .contractor-row-name {
+            font-size: var(--text-body); font-weight: var(--font-bold);
+            color: var(--color-text); margin: 0;
+        }
+        .contractor-row-trade {
+            font-size: var(--text-caption); color: var(--color-primary);
+            font-weight: var(--font-semibold); margin: 2px 0 0;
+        }
+        .contractor-row-meta {
+            font-size: 11px; color: var(--color-text-muted);
+            margin: 4px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .contractor-row-unread {
+            min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+            background: #2563EB; color: #fff; font-size: 10px; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .contractor-row-msg {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--color-primary-light); color: var(--color-primary);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
         .tenant-status-pill {
             font-size: 10px; font-weight: var(--font-bold); padding: 4px 10px;
             border-radius: var(--radius-full); white-space: nowrap; flex-shrink: 0;
