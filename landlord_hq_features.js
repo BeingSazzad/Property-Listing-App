@@ -1337,26 +1337,34 @@ function flatRowSubline(tenancy, count, flatPending, occ, u, opts = {}) {
     if (occ && tenancy) {
         if (tenancy.type === 'group') {
             const n = count || tenancy.occupants || 0;
-            return n ? `${n} people` : 'Group lease';
+            return n ? `${n} tenant${n === 1 ? '' : 's'} · Group tenancy` : 'Group tenancy';
         }
         const lead = opts.members?.find(m => m.isLead) || opts.members?.[0];
-        if (lead?.name) return lead.name.split(' ')[0];
-        return 'Occupied';
+        if (lead?.name) return `${lead.name} · Solo tenancy`;
+        return 'Solo tenancy';
     }
     if (occ) return 'Occupied';
     const spec = [];
     if (u.beds) spec.push(`${u.beds} bed`);
     if (u.baths) spec.push(`${u.baths} bath`);
-    const base = spec.length ? spec.join(' · ') : 'Available';
-    if (opts.hideFloor) return base;
+    const base = spec.length ? spec.join(' · ') : 'Ready to let';
+    if (opts.hideFloor) return `${base} · Available`;
     const floor = flatFloorLine(u);
-    return floor ? `${base} · ${floor}` : base;
+    return floor ? `${base} · Available` : `${base} · Available`;
 }
 
 function flatRowRentLabel(tenancy, u, occ) {
     const raw = (occ && tenancy?.rent) ? tenancy.rent : u.rent;
     if (!raw || raw === '—') return '—';
-    return String(raw).replace(/\s*\/month/i, '/mo').trim();
+    const cleaned = String(raw).replace(/\s*\/\s*mo(?:nth)?/gi, '').trim();
+    return cleaned ? `${cleaned}/mo` : '—';
+}
+
+function filterPropertyUnits(units) {
+    const f = STATE.unitFilter || 'all';
+    if (f === 'occupied') return units.filter(u => u.status === 'occupied');
+    if (f === 'vacant') return units.filter(u => u.status !== 'occupied');
+    return units;
 }
 
 function tenancyHintClass(type) {
@@ -1403,8 +1411,12 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
     const wrapClass = opts.inPanel ? 'unit-card-v2-wrap unit-card-v2-wrap--row' : 'unit-card-v2-wrap card';
     const unitMenuKey = actionMenuKeyFor('unit', propertyId, name);
     const menuOpen = isActionMenuOpen(unitMenuKey);
+    const tenancyClass = tenancy ? `unit-card-v2--${tenancy.type}` : (!occ ? 'unit-card-v2--vacant' : '');
+    const showVacantCta = !occ && !flatPending.length;
+    const pendingInvite = flatPending[0];
     return `
-    <div class="${wrapClass} ${tenancy ? `unit-card-v2--${tenancy.type}` : ''} ${menuOpen ? 'unit-card-v2-wrap--menu-open' : ''}">
+    <div class="${wrapClass} ${tenancyClass} ${menuOpen ? 'unit-card-v2-wrap--menu-open' : ''} ${showVacantCta ? 'unit-card-v2-wrap--has-cta' : ''}">
+    <div class="unit-card-v2-main">
     <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="unit-card-v2 unit-card-v2-tap w-full text-left">
         <div class="unit-card-v2-thumb"><img src="${thumb}" alt=""></div>
         <div class="unit-card-v2-body">
@@ -1423,6 +1435,9 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
         ${renderActionMenuButton(unitMenuKey, 'Unit options')}
         ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, name))}
     </div>
+    </div>
+    ${showVacantCta ? `<button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${name}" class="unit-vacant-cta"><i data-lucide="user-plus" class="w-4 h-4"></i> Invite tenant</button>` : ''}
+    ${flatPending.length && pendingInvite ? `<button type="button" data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="unit-vacant-cta unit-vacant-cta--pending"><i data-lucide="mail" class="w-4 h-4"></i> Invite pending — view status</button>` : ''}
     </div>`;
 }
 
@@ -2207,10 +2222,21 @@ function renderPropertyDocumentsTab(propertyId) {
 function renderPropertyUnitsTab(propertyId) {
     syncPropertyStatus(propertyId);
     ensureFlatPhotos(propertyId);
-    const units = getPropertyUnits(propertyId);
+    const allUnits = getPropertyUnits(propertyId);
+    const units = filterPropertyUnits(allUnits);
+    const unitFilter = STATE.unitFilter || 'all';
+    const vacantCount = allUnits.filter(u => u.status !== 'occupied').length;
+    const occupiedCount = allUnits.length - vacantCount;
     const groupFloors = shouldGroupFlatsByFloor(propertyId);
     const renderFlatRow = (u, inPanel = false) => renderPropertyFlatRow(propertyId, u, { inPanel });
-    const flatList = groupFloors
+    const flatList = !units.length ? `
+        <div class="card p-8 text-center unit-list-empty">
+            <i data-lucide="home" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
+            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No ${unitFilter === 'all' ? '' : unitFilter} units</p>
+            <p class="text-[12px] text-[#64748B] mt-1">${unitFilter === 'all' ? 'Add your first unit to get started' : 'Try another filter'}</p>
+            ${unitFilter !== 'all' ? `<button type="button" data-unit-filter="all" class="btn-secondary py-2.5 px-5 text-[13px] mt-3">Show all units</button>` : ''}
+        </div>`
+        : groupFloors
         ? [...new Set(units.map(u => u.floor || 1))].sort((a, b) => a - b).map(floor => {
             const floorUnits = units.filter(u => (u.floor || 1) === floor);
             const note = floorUnits[0]?.floorNote;
@@ -2229,15 +2255,18 @@ function renderPropertyUnitsTab(propertyId) {
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
         ${renderPropertyBuildingHeader(propertyId)}
-        ${renderPropertySectionNav('units')}
-        <div class="unit-list-toolbar unit-list-toolbar--end">
-            <div class="unit-list-toolbar-actions">
-                <button type="button" data-go="edit-property" data-pid="${propertyId}" class="unit-toolbar-btn">Edit property</button>
-                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="unit-toolbar-btn unit-toolbar-btn--primary">+ Add unit</button>
-            </div>
+        <div class="unit-filter-tabs">
+            <button type="button" data-unit-filter="all" class="unit-filter-chip ${unitFilter === 'all' ? 'active' : ''}">All (${allUnits.length})</button>
+            <button type="button" data-unit-filter="occupied" class="unit-filter-chip ${unitFilter === 'occupied' ? 'active' : ''}">Occupied (${occupiedCount})</button>
+            <button type="button" data-unit-filter="vacant" class="unit-filter-chip ${unitFilter === 'vacant' ? 'active' : ''}">Vacant (${vacantCount})</button>
+        </div>
+        <button type="button" data-go="add-flat" data-pid="${propertyId}" class="unit-add-btn">
+            <i data-lucide="plus" class="w-5 h-5"></i> Add unit
+        </button>
+        <div class="unit-list-toolbar unit-list-toolbar--secondary">
+            <button type="button" data-go="edit-property" data-pid="${propertyId}" class="unit-edit-link">Edit property</button>
         </div>
         ${flatList}
-        ${renderPropertyQuickLinks(propertyId)}
     </div>`;
 }
 

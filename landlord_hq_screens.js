@@ -66,7 +66,7 @@ const STATE = {
     helpReturnScreen: 'dashboard', faqReturnScreen: 'help-support',
     docReturnScreen: 'property-detail', legalReturnScreen: 'profile',
     contractorJobId: 0, contractorJobFilter: 'all', contractorJobTab: 'overview',
-    tenantFilter: 'all',
+    tenantFilter: 'all', unitFilter: 'all',
     tenantInviteToken: null,
     activeTenantId: 0,
     signupEmail: '',
@@ -1543,6 +1543,7 @@ function go(screen, opts = {}) {
     if (screen === 'property-detail') {
         const legacyTabs = { photos: 'details', 'floor-plans': 'details', timeline: 'details' };
         STATE.tab = legacyTabs[opts.tab] ?? opts.tab ?? 'units';
+        if (opts.propertyId !== undefined && opts.propertyId !== STATE.propertyId) STATE.unitFilter = 'all';
     }
     if (screen === 'flat-detail') {
         STATE.propertyId = opts.propertyId ?? STATE.propertyId;
@@ -1819,6 +1820,7 @@ function back() {
 function setTab(tab) { STATE.tab = tab; render(); }
 function setTenantTab(tab) { STATE.tenantTab = tab; render(); }
 function setTenantFilter(f) { STATE.tenantFilter = f; render(); }
+function setUnitFilter(f) { STATE.unitFilter = f; render(); }
 function setPropertiesView(v) { STATE.propertiesView = v; render(); }
 function setPropFilter(f) { STATE.propertiesFilter = f; render(); }
 function setPropAdvanced(key, val) { STATE.propertiesAdvanced[key] = val; render(); }
@@ -2424,15 +2426,15 @@ const propMenuList = () => {
     </div>`;
 };
 
-const propSectionBar = (title, subtitle) => `
+const propSectionBar = (title, subtitle, detail = '') => `
 <div class="prop-section-header">
 <div class="prop-section-bar">
     <div class="sub-header-left">
         <button type="button" data-action="back" class="back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
         <div class="min-w-0">
-            <p class="prop-section-crumb">Units · ${title}</p>
+            <p class="prop-section-crumb">${title === 'Units' ? subtitle : `Units · ${title}`}</p>
             <h2 class="sub-header-title">${title}</h2>
-            ${subtitle ? `<p class="text-[11px] text-[#64748B] truncate leading-tight mt-0.5">${subtitle}</p>` : ''}
+            ${detail ? `<p class="text-[11px] text-[#64748B] truncate leading-tight mt-0.5">${detail}</p>` : (subtitle && title !== 'Units' ? `<p class="text-[11px] text-[#64748B] truncate leading-tight mt-0.5">${subtitle}</p>` : '')}
         </div>
     </div>
 </div>
@@ -2749,15 +2751,15 @@ function screenPropertyDetail() {
         timeline: `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Activity is shown on the dashboard and in each section (maintenance, compliance, inspections).</p></div>`,
     };
 
-    if (STATE.tab === 'units') {
-        return `${topBar('Units', { back: true, sub: p.name })}
-        <div class="screen-enter">${tabContent.units}</div>`;
-    }
-
     const sectionTitle = PROP_SECTIONS[STATE.tab] || 'Section';
     const sectionSubtitle = STATE.tab === 'maintenance' ? '' : p.name;
+    let sectionDetail = '';
+    if (STATE.tab === 'units' && typeof propertyHubStats === 'function') {
+        const hub = propertyHubStats(STATE.propertyId);
+        sectionDetail = `${hub.occupiedFlats} of ${hub.units.length} occupied`;
+    }
     return `
-    ${propSectionBar(sectionTitle, sectionSubtitle)}
+    ${propSectionBar(sectionTitle, sectionSubtitle, sectionDetail)}
     <div class="screen-enter">${tabContent[STATE.tab] || tabContent.details}</div>`;
 }
 
@@ -4146,6 +4148,9 @@ function handleAppClick(e) {
 
     const invoiceFilter = e.target.closest('[data-invoice-filter]');
     if (invoiceFilter) { e.preventDefault(); setInvoiceFilter(invoiceFilter.dataset.invoiceFilter); return; }
+
+    const unitFilter = e.target.closest('[data-unit-filter]');
+    if (unitFilter) { e.preventDefault(); setUnitFilter(unitFilter.dataset.unitFilter); return; }
 
     const faqToggle = e.target.closest('[data-faq-toggle]');
     if (faqToggle) { e.preventDefault(); toggleFaqItem(+faqToggle.dataset.faqToggle); return; }
