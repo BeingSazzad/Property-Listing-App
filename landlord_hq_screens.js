@@ -1629,7 +1629,7 @@ function go(screen, opts = {}) {
     }
     if (screen === 'reset-verify-code') STATE.otpDigits = [];
     if (screen === 'property-detail') {
-        const legacyTabs = { photos: 'details', 'floor-plans': 'details', timeline: 'details' };
+        const legacyTabs = { details: 'info' };
         const tab = legacyTabs[opts.tab] ?? opts.tab ?? 'units';
         STATE.tab = tab;
         if (opts.propertyId !== undefined && opts.propertyId !== STATE.propertyId) STATE.unitFilter = 'all';
@@ -1812,9 +1812,9 @@ function navigateBackFallback() {
         'create-tenancy': 'tenant', 'tenant-invite-sent': 'tenant',
         'conduct-inspection': 'inspection', 'share-document': 'documents',
         'inspection-detail': 'inspection',
-        'property-photos': 'details', 'property-floor-plans': 'details',
-        'property-alarms': 'details', 'property-appliances': 'details',
-        'property-utilities': 'details', 'property-parking': 'details', 'property-info': 'details',
+        'property-photos': 'info', 'property-floor-plans': 'info',
+        'property-alarms': 'info', 'property-appliances': 'info',
+        'property-utilities': 'info', 'property-parking': 'info', 'property-info': 'info',
         'unit-utilities': 'units', 'edit-flat': 'units',
     };
     const target = map[STATE.screen] || defaultHome;
@@ -1866,9 +1866,21 @@ function navigateBackFallback() {
 }
 
 function back() {
-    if (restoreFlatDetailNav()) return;
-    if (STATE.screen === 'property-detail' && STATE.tab !== 'units' && !STATE.flatReturn) {
-        setTab('units');
+    if (STATE.screen === 'property-detail') {
+        if (typeof isPropertyMoreSection === 'function' && isPropertyMoreSection(STATE.tab)) {
+            setTab('more');
+            return;
+        }
+        if (typeof isPropertyBuildingSection === 'function' && isPropertyBuildingSection(STATE.tab)) {
+            setTab('info');
+            return;
+        }
+        if (STATE.tab !== 'units') {
+            setTab('units');
+            return;
+        }
+        if (restoreFlatDetailNav()) return;
+    } else if (restoreFlatDetailNav()) {
         return;
     }
     if (STATE.screen === 'tenant-detail' && STATE.tenantTab !== 'overview') {
@@ -1957,7 +1969,11 @@ function back() {
 }
 
 function setTab(tab) {
-    if (tab === 'info' && typeof isPropertyInfoSection === 'function' && isPropertyInfoSection(STATE.tab)) {
+    if (tab === 'info' && typeof isPropertyBuildingSection === 'function' && isPropertyBuildingSection(STATE.tab)) {
+        STATE.tab = 'info';
+    } else if (tab === 'more' && typeof isPropertyMoreSection === 'function' && isPropertyMoreSection(STATE.tab)) {
+        STATE.tab = 'more';
+    } else if (tab === 'info' && STATE.tab === 'details') {
         STATE.tab = 'info';
     } else {
         STATE.tab = tab;
@@ -2950,14 +2966,15 @@ function screenPropertyDetail() {
         inventory: typeof renderPropertyInventoryTab === 'function'
             ? renderPropertyInventoryTab(STATE.propertyId)
             : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading inventory…</p></div>`,
-        'floor-plans': `<div class="screen-content"><button data-tab="details" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
-        photos: `<div class="screen-content"><button data-tab="details" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
+        'floor-plans': `<div class="screen-content"><button data-tab="info" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
+        photos: `<div class="screen-content"><button data-tab="info" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
         timeline: `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Activity is shown on the dashboard and in each section (maintenance, compliance, inspections).</p></div>`,
-        info: typeof renderPropertyMoreHub === 'function'
+        info: typeof renderPropertyOverviewDetails === 'function'
+            ? renderPropertyOverviewDetails(STATE.propertyId)
+            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading building details…</p></div>`,
+        more: typeof renderPropertyMoreHub === 'function'
             ? renderPropertyMoreHub(STATE.propertyId)
-            : (typeof renderPropertyInfoHub === 'function'
-                ? renderPropertyInfoHub(STATE.propertyId)
-                : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading…</p></div>`),
+            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading…</p></div>`,
     };
 
     const infoBack = typeof propertyInfoSectionBackBar === 'function' ? propertyInfoSectionBackBar(STATE.tab) : '';
@@ -3020,20 +3037,24 @@ const tenantStatusPill = (status) => {
 };
 
 const tenantListRow = (t, opts = {}) => {
+    const compact = !!opts.compact;
     const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(t) : null;
-    const typePill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
+    const typePill = !compact && tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
     const groupMeta = typeof tenantTenancyMetaLine === 'function' ? tenantTenancyMetaLine(t) : '';
     const locationLine = opts.hideProperty
         ? (t.unit || '—')
         : `${t.prop}${t.unit ? ` · ${t.unit}` : ''}`;
+    const detailLine = compact
+        ? `${locationLine} · ${t.rent}${groupMeta ? ` · ${groupMeta}` : ''}`
+        : locationLine;
     const menuKey = `tenant:${t.id}`;
     const menuOpen = STATE.actionMenuKey === menuKey;
-    const menuBtn = typeof renderActionMenuButton === 'function' ? renderActionMenuButton(menuKey, 'Tenant options') : '';
-    const menuPop = typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function'
+    const menuBtn = !compact && typeof renderActionMenuButton === 'function' ? renderActionMenuButton(menuKey, 'Tenant options') : '';
+    const menuPop = !compact && typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function'
         ? renderActionMenuPopover(menuKey, tenantActionMenuItems(t, { includeView: false }))
         : '';
     return `
-<div class="tenant-row-wrap card ${tenancy ? `tenant-row--${tenancy.type}` : ''}${menuOpen ? ' tenant-row-wrap--menu-open' : ''}">
+<div class="tenant-row-wrap card ${tenancy ? `tenant-row--${tenancy.type}` : ''}${compact ? ' tenant-row-wrap--compact' : ''}${menuOpen ? ' tenant-row-wrap--menu-open' : ''}">
 <div class="tenant-row-content">
 <button type="button" data-go="tenant-detail" data-tid="${t.id}" class="tenant-row w-full text-left">
     <img src="${t.img}" class="tenant-row-avatar" alt="">
@@ -3045,14 +3066,14 @@ const tenantListRow = (t, opts = {}) => {
                 ${tenantStatusPill(t.status)}
             </div>
         </div>
-        <p class="tenant-row-prop">${locationLine}</p>
-        <p class="tenant-row-meta">${t.rent}${groupMeta ? ` · ${groupMeta}` : ''}</p>
+        <p class="tenant-row-prop">${detailLine}</p>
+        ${compact ? '' : `<p class="tenant-row-meta">${t.rent}${groupMeta ? ` · ${groupMeta}` : ''}</p>`}
     </div>
     <i data-lucide="chevron-right" class="tenant-row-chevron w-5 h-5"></i>
 </button>
-${typeof tenantListQuickActions === 'function' ? tenantListQuickActions(t) : ''}
+${!compact && typeof tenantListQuickActions === 'function' ? tenantListQuickActions(t) : ''}
 </div>
-<div class="tenant-row-menu-slot">${menuBtn}${menuPop}</div>
+${compact ? '' : `<div class="tenant-row-menu-slot">${menuBtn}${menuPop}</div>`}
 </div>`;
 };
 
@@ -4129,18 +4150,33 @@ function screenEditTenant() {
 
 function screenRescheduleInspection() {
     const p = PROPERTIES[STATE.propertyId];
-    return `${topBar('Reschedule Inspection', { back: true })}
+    const upcoming = typeof getScheduledInspection === 'function' ? getScheduledInspection(STATE.propertyId) : null;
+    const title = upcoming ? 'Reschedule Inspection' : 'Schedule Inspection';
+    const currentLine = upcoming
+        ? `${upcoming.type || 'Inspection'} · Currently ${typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date}`
+        : 'Pick a date for your next visit';
+    const dateVal = upcoming && typeof toDateInputValue === 'function' ? toDateInputValue(upcoming.date) : '';
+    const types = ['Check-in', 'Mid-term', 'Annual', 'Check-out'];
+    const selectedType = typeof normalizeInspectionType === 'function'
+        ? normalizeInspectionType(upcoming?.type || 'Mid-term')
+        : (upcoming?.type || 'Mid-term');
+    const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM'];
+    const selectedSlot = upcoming?.timeSlot || '10:00 AM';
+    const activeTenant = TENANT_LIST.find(t => t.propertyId === STATE.propertyId && t.status === 'active');
+    const tenantEmail = activeTenant && TENANTS[activeTenant.id]?.email ? TENANTS[activeTenant.id].email : '';
+    return `${topBar(title, { back: true })}
     <div class="screen-content screen-enter">
+        ${uxTip('You (the landlord) conduct the visit and record the rating afterwards. A reminder is added to your Dashboard and Notifications.', 'How it works')}
         <div class="card p-4 bg-[#EFF6FF]">
             <p class="text-[13px] font-semibold text-[#0F172A]">${p.name}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Mid-term Inspection · Currently Feb 28, 2025</p>
+            <p class="text-[12px] text-[#64748B] mt-1">${currentLine}</p>
         </div>
-        ${formField('Inspection Date', '', 'date', 'Select inspection date', 'inspDate')}
-        ${formSelect('Time Slot', '10:00 AM', ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM'], 'timeSlot')}
-        ${formSelect('Type', 'Mid-term Inspection', ['Check-in', 'Mid-term Inspection', 'Check-out', 'Annual'], 'inspType')}
-        ${formTextarea('Notes for Inspector', '', 'Access instructions, parking, tenant availability...', 'inspNotes')}
-        ${formField('Notify Tenant', '', 'email', 'Enter tenant email', 'notifyEmail')}
-        ${saveBtn('Confirm Reschedule', 'Inspection rescheduled')}
+        ${formField('Inspection Date', dateVal, 'date', 'Select inspection date', 'inspDate')}
+        ${formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
+        ${formSelect('Type', selectedType, types, 'inspType')}
+        ${formTextarea('Access notes', upcoming?.notes || '', 'Parking, keys, tenant availability...', 'inspNotes')}
+        ${formField('Notify tenant (optional)', tenantEmail, 'email', 'Tenant email — for your records', 'notifyEmail')}
+        ${saveBtn(upcoming ? 'Confirm reschedule' : 'Schedule inspection', 'Inspection rescheduled')}
     </div>`;
 }
 

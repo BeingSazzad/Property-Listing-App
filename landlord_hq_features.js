@@ -1873,7 +1873,7 @@ function renderPropertyBuildingSummaryCard(propertyId, options = {}) {
                 <p class="prop-building-stat-val">${vacantFlats}</p>
                 <p class="prop-building-stat-lbl">Vacant</p>
             </div>
-            ${showDetailsBtn ? `<button type="button" data-tab="details" class="prop-building-details-btn">View Details <i data-lucide="chevron-right" class="w-4 h-4"></i></button>` : ''}
+            ${showDetailsBtn ? `<button type="button" data-tab="info" class="prop-building-details-btn">View Details <i data-lucide="chevron-right" class="w-4 h-4"></i></button>` : ''}
         </div>`}
     </div>`;
 }
@@ -1931,6 +1931,16 @@ function renderPropertyOverviewDetails(propertyId) {
     const floors = b.useFloors && b.floors > 1 ? b.floors : Math.max(1, new Set(units.map(u => u.floor || 1)).size);
     return `
     <div class="screen-content screen-content-sm building-info-page">
+        <div class="building-location card">
+            <span class="building-location-icon" aria-hidden="true"><i data-lucide="map-pin" class="w-5 h-5"></i></span>
+            <div class="building-location-body">
+                <p class="building-location-label">Location</p>
+                <p class="building-location-addr">${escapeHtml(p.address) || '—'}</p>
+            </div>
+            <button type="button" data-go="edit-property" data-pid="${propertyId}" class="building-location-edit" aria-label="Edit property address">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+        </div>
         <div class="building-section card">
             ${renderBuildingSectionHead('Property Photos', propertyId, 'photos', [
                 buildingSectionGoItem('Manage photos', 'image', 'property-photos', propertyId),
@@ -2956,37 +2966,56 @@ function propertyHubMetaLine(propertyId) {
     return `${n} unit${n === 1 ? '' : 's'} · ${occupiedFlats}/${n} occupied · ${rent}`;
 }
 
-const PROPERTY_INFO_SECTIONS = new Set(['documents', 'inspection', 'compliance', 'inventory', 'details', 'photos', 'floor-plans', 'timeline']);
+const PROPERTY_BUILDING_SECTIONS = new Set(['photos', 'floor-plans']);
+const PROPERTY_MORE_SECTIONS = new Set(['documents', 'inspection', 'compliance', 'inventory', 'timeline']);
+
+function isPropertyBuildingSection(tab) {
+    return PROPERTY_BUILDING_SECTIONS.has(tab);
+}
+
+function isPropertyMoreSection(tab) {
+    return PROPERTY_MORE_SECTIONS.has(tab);
+}
 
 function isPropertyInfoSection(tab) {
-    return PROPERTY_INFO_SECTIONS.has(tab);
+    return isPropertyBuildingSection(tab) || isPropertyMoreSection(tab);
 }
 
 function propertyPrimaryNavTab(tab) {
     if (tab === 'tenant') return 'tenant';
     if (tab === 'maintenance') return 'maintenance';
-    if (tab === 'info' || isPropertyInfoSection(tab)) return 'info';
+    if (tab === 'more' || isPropertyMoreSection(tab)) return 'more';
+    if (tab === 'info' || tab === 'details' || isPropertyBuildingSection(tab)) return 'info';
     return 'units';
 }
 
-const PROPERTY_INFO_SECTION_LABELS = {
+const PROPERTY_SECTION_LABELS = {
     documents: 'Documents',
     inspection: 'Inspections',
     compliance: 'Compliance',
     inventory: 'Inventory',
-    details: 'Building details',
     photos: 'Building details',
     'floor-plans': 'Building details',
     timeline: 'Activity',
 };
 
 function propertyInfoSectionBackBar(tab) {
-    if (!isPropertyInfoSection(tab)) return '';
-    const label = PROPERTY_INFO_SECTION_LABELS[tab] || 'Section';
+    let parentTab;
+    let parentLabel;
+    if (isPropertyMoreSection(tab)) {
+        parentTab = 'more';
+        parentLabel = 'More';
+    } else if (isPropertyBuildingSection(tab)) {
+        parentTab = 'info';
+        parentLabel = 'Info';
+    } else {
+        return '';
+    }
+    const label = PROPERTY_SECTION_LABELS[tab] || 'Section';
     return `
     <div class="prop-info-backbar">
-        <button type="button" data-tab="info" class="prop-info-back">
-            <i data-lucide="chevron-left" class="w-4 h-4"></i> Info
+        <button type="button" data-tab="${parentTab}" class="prop-info-back">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i> ${parentLabel}
         </button>
         <span class="prop-info-back-label">${label}</span>
     </div>`;
@@ -3000,13 +3029,12 @@ function renderPropertyMoreHub(propertyId) {
         ['clipboard-list', 'Inspections', 'inspection', inspLabel, '#EFF6FF', '#2563EB'],
         ['shield-check', 'Compliance', 'compliance', propertyComplianceHubLabel(propertyId), '#FFF7ED', '#EA580C'],
         ['package', 'Inventory', 'inventory', rooms.length ? `${rooms.length} room${rooms.length === 1 ? '' : 's'}` : 'Room checklists', '#F5F3FF', '#7C3AED'],
-        ['home', 'Building details', 'details', 'Photos, utilities & specs', '#F1F5F9', '#475569'],
     ];
     return `
     <div class="screen-content screen-content-sm prop-more-hub">
         <div class="prop-info-hub-intro">
-            <p class="prop-info-hub-eyebrow">Property records</p>
-            <p class="prop-info-hub-desc">Documents, compliance, inspections and building details.</p>
+            <p class="prop-info-hub-eyebrow">Records & compliance</p>
+            <p class="prop-info-hub-desc">Documents, inspections, compliance and inventory for this property.</p>
         </div>
         <div class="card overflow-hidden prop-info-hub-list">
             ${items.map(([ic, label, tab, status, bg, color]) => `
@@ -3033,7 +3061,8 @@ function renderPropertySectionNav(activeTab) {
         ['units', 'Overview', 'layout-dashboard'],
         ['tenant', 'Tenants', 'users'],
         ['maintenance', 'Maintenance', 'wrench'],
-        ['info', 'Info', 'info'],
+        ['info', 'Info', 'building-2'],
+        ['more', 'More', 'ellipsis'],
     ];
     return `
     <div class="prop-section-nav">
@@ -3874,39 +3903,46 @@ function propertyTenantEntries(propertyId) {
     return entries;
 }
 
-function renderPropertyMemberRow(propertyId, unit, member) {
+function renderPropertyMemberRow(propertyId, unit, member, opts = {}) {
+    const compact = !!opts.compact;
     const [bg, color] = memberAccountStyle(member.accountStatus);
+    const roleMeta = member.isLead ? 'Lead tenant' : 'Group member';
+    const detailLine = compact
+        ? `${unit} · ${roleMeta}${member.accountStatus === 'pending' ? ' · invite sent' : ''}`
+        : unit;
     const attrs = member.listId != null && TENANT_LIST[member.listId]?.status === 'active'
         ? `data-go="tenant-detail" data-tid="${member.listId}"`
         : member.inviteToken
             ? `data-go="tenant-invite-sent" data-invite-token="${member.inviteToken}"`
             : `data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}"`;
     return `
-    <button type="button" ${attrs} class="tenant-row card w-full text-left">
-        ${renderMemberAvatar(member, 'md')}
+    <button type="button" ${attrs} class="tenant-row card w-full text-left${compact ? ' tenant-row--compact' : ''}">
+        ${renderMemberAvatar(member, compact ? 'sm' : 'md')}
         <div class="tenant-row-body">
             <div class="tenant-row-top">
                 <p class="tenant-row-name">${member.name}</p>
                 <span class="tenant-status-pill" style="background:${bg};color:${color}">${member.accountStatus === 'active' ? 'Active' : member.accountStatus === 'pending' ? 'Pending' : 'No account'}</span>
             </div>
-            <p class="tenant-row-prop">${unit}</p>
-            <p class="tenant-row-meta">${member.isLead ? 'Lead tenant' : 'Group member'}${member.accountStatus === 'pending' ? ' · invite sent' : ''}</p>
+            <p class="tenant-row-prop">${detailLine}</p>
+            ${compact ? '' : `<p class="tenant-row-meta">${roleMeta}${member.accountStatus === 'pending' ? ' · invite sent' : ''}</p>`}
         </div>
         <i data-lucide="chevron-right" class="tenant-row-chevron w-5 h-5"></i>
     </button>`;
 }
 
-function renderPropertyInviteRow(invite) {
+function renderPropertyInviteRow(invite, opts = {}) {
+    const compact = !!opts.compact;
+    const detailLine = compact && invite.rent ? `${invite.unit} · ${invite.rent}` : invite.unit;
     return `
-    <button type="button" data-go="tenant-invite-sent" data-invite-token="${invite.token}" class="tenant-row card w-full text-left">
-        <span class="person-avatar person-avatar--md" style="background:#FEF3C7;color:#D97706" aria-hidden="true">${personInitials(`${invite.firstName} ${invite.lastName}`)}</span>
+    <button type="button" data-go="tenant-invite-sent" data-invite-token="${invite.token}" class="tenant-row card w-full text-left${compact ? ' tenant-row--compact' : ''}">
+        <span class="person-avatar person-avatar--${compact ? 'sm' : 'md'}" style="background:#FEF3C7;color:#D97706" aria-hidden="true">${personInitials(`${invite.firstName} ${invite.lastName}`)}</span>
         <div class="tenant-row-body">
             <div class="tenant-row-top">
                 <p class="tenant-row-name">${invite.firstName} ${invite.lastName}</p>
                 <span class="tenant-status-pill" style="background:#FEF3C7;color:#D97706">Invite sent</span>
             </div>
-            <p class="tenant-row-prop">${invite.unit}</p>
-            <p class="tenant-row-meta">${invite.rent || ''}</p>
+            <p class="tenant-row-prop">${detailLine}</p>
+            ${compact ? '' : `<p class="tenant-row-meta">${invite.rent || ''}</p>`}
         </div>
         <i data-lucide="chevron-right" class="tenant-row-chevron w-5 h-5"></i>
     </button>`;
@@ -3931,26 +3967,24 @@ function renderPropertyTenantTab(propertyId) {
         </div>`;
     }
 
+    const rowOpts = { hideProperty: true, compact: true };
     const rows = entries.map(entry => {
         if (entry.kind === 'tenant' && typeof tenantListRow === 'function') {
-            return tenantListRow(entry.tenant, { hideProperty: true });
+            return tenantListRow(entry.tenant, rowOpts);
         }
         if (entry.kind === 'member') {
-            return renderPropertyMemberRow(propertyId, entry.unit, entry.member);
+            return renderPropertyMemberRow(propertyId, entry.unit, entry.member, rowOpts);
         }
-        return renderPropertyInviteRow(entry.invite);
+        return renderPropertyInviteRow(entry.invite, rowOpts);
     }).join('');
 
     return `
-    <div class="screen-content screen-content-sm prop-hub-page">
-        <div class="screen-list-header">
-            <div>
-                <h2>Tenants</h2>
-                <p>${activeCount} active${pendingInvites.length ? ` · ${pendingInvites.length} pending` : ''}</p>
-            </div>
-            <button data-go="invite-tenant" data-pid="${propertyId}" class="header-text-link">+ Invite</button>
+    <div class="screen-content screen-content-sm prop-hub-page prop-tenant-page">
+        <div class="prop-tenant-bar">
+            <p class="prop-tenant-bar-meta">${activeCount} active${pendingInvites.length ? ` · ${pendingInvites.length} pending` : ''}</p>
+            <button type="button" data-go="invite-tenant" data-pid="${propertyId}" class="header-text-link">+ Invite</button>
         </div>
-        <div class="stack-sm">${rows}</div>
+        <div class="prop-tenant-list">${rows}</div>
     </div>`;
 }
 
@@ -5620,14 +5654,22 @@ function screenInspectionDetail() {
 function renderPropertyInspectionTab(propertyId) {
     const upcoming = getScheduledInspection(propertyId);
     const past = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
+    const nextDateLabel = upcoming
+        ? (typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date)
+        : null;
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
+        <div class="ux-tip insp-tab-intro">
+            <p class="ux-tip-title">You conduct &amp; rate</p>
+            <p class="ux-tip-text">Visit the property, then tap <strong>Conduct</strong> to save photos, notes and your 1–5 condition rating after the visit.</p>
+        </div>
         ${upcoming ? `
         <div class="card insp-upcoming">
-            <p class="insp-upcoming-label">Upcoming</p>
+            <p class="insp-upcoming-label">Next inspection</p>
             <p class="insp-upcoming-title">${upcoming.type || 'Inspection'}</p>
-            <p class="insp-upcoming-date">${typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date}</p>
+            <p class="insp-upcoming-date">${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}</p>
             ${upcoming.notes?.trim() ? `<p class="insp-upcoming-notes">${truncateNote(upcoming.notes, 90)}</p>` : ''}
+            <p class="insp-upcoming-reminder"><i data-lucide="bell" class="w-3.5 h-3.5"></i>Reminder on Dashboard &amp; Notifications</p>
             <div class="insp-upcoming-actions">
                 <button data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-secondary py-2 text-[12px] flex-1">Reschedule</button>
                 <button data-go="conduct-inspection" data-pid="${propertyId}" class="btn-primary py-2 text-[12px] flex-1">Conduct</button>
@@ -5635,6 +5677,7 @@ function renderPropertyInspectionTab(propertyId) {
         </div>` : `
         <div class="card insp-empty">
             <p class="insp-empty-text">No inspection scheduled</p>
+            <p class="insp-empty-sub">Book a date to see your next inspection here and on the Dashboard.</p>
             <button data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-primary w-full py-2 text-[12px]">Schedule inspection</button>
         </div>`}
         <div class="screen-list-header screen-list-header--compact">
@@ -6417,8 +6460,9 @@ function screenConductInspection() {
     <div class="screen-content screen-enter">
         <div class="card p-4 bg-[#EFF6FF]">
             <p class="text-[13px] font-semibold">${p.name}</p>
-            <p class="text-[12px] text-[#64748B]">${upcoming ? `Complete scheduled ${upcoming.type || 'inspection'} and add your condition rating.` : 'Record a new property inspection'}</p>
+            <p class="text-[12px] text-[#64748B]">${upcoming ? `Complete scheduled ${upcoming.type || 'inspection'} and add your condition rating.` : 'Record a property visit — you assign the overall condition rating (1–5 stars).'}</p>
         </div>
+        ${uxTip('Rating reflects property condition as you see it after the visit. Tenants do not rate in this app.', 'Who rates?')}
         <div><label class="form-label">${requiredLabel('Inspection Type')}</label>
         <select data-field="inspType" class="form-input form-select">${types.map(t => `<option ${t === selectedType ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         ${formFieldReq('Date', 'inspDate', dateVal, 'date')}
@@ -7429,7 +7473,7 @@ function saveRescheduleInspection() {
             timeSlot: fieldVal('timeSlot'),
         });
     }
-    withLoading(() => { AppStore.save(); toast('Inspection rescheduled'); go('property-detail', { propertyId: pid, tab: 'inspection' }); });
+    withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Inspection rescheduled'); go('property-detail', { propertyId: pid, tab: 'inspection' }); });
 }
 
 function saveAddPaymentMethod() {
