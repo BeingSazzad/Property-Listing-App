@@ -359,7 +359,7 @@ const FAQ_BY_ROLE = {
         { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Go to Tenants → Invite Tenant, choose the property and unit, then enter their details. We\'ll email a secure invitation link. Once accepted, their profile links to the unit automatically.' },
         { id: 2, cat: 'Rent & Payments', q: 'How does rent collection work?', a: 'Landlord HQ tracks rent due dates and payment status on the Financial screen. Mark rent received when payment arrives, or create invoices for tenants. Overdue rent is highlighted on your dashboard.' },
         { id: 3, cat: 'Rent & Payments', q: 'Can I export financial reports?', a: 'Go to Financial → Payment history, or open any invoice and tap Download PDF for a record of that payment.' },
-        { id: 4, cat: 'Maintenance', q: 'How do I log a maintenance issue?', a: 'Use the + FAB menu and select "Log Maintenance", or open a property → Maintenance section → "Log New Issue". Add a title, priority, description, and photos.' },
+        { id: 4, cat: 'Maintenance', q: 'How do I log a maintenance issue?', a: 'Open a property → Overview tab for units, or go to Maintenance → + to log an issue. Pick the property first, then choose a unit or communal area (hallway, roof, etc.) within that building.' },
         { id: 5, cat: 'Maintenance', q: 'How are contractors assigned?', a: 'Assign contractors from the maintenance detail screen. The job is sent to their contractor app, and you\'ll be notified when work is submitted or invoiced.' },
         { id: 6, cat: 'Compliance', q: 'What compliance documents should I track?', a: 'We recommend tracking Gas Safety Certificate, Electrical Installation Condition Report (EICR), EPC rating, smoke/CO alarms, landlord insurance, and Right to Rent checks. Reminders appear on your dashboard.' },
         { id: 7, cat: 'Account', q: 'How do I change my password?', a: 'Go to Profile → Change Password. Enter your current password, then your new password twice.' },
@@ -370,7 +370,7 @@ const FAQ_BY_ROLE = {
         { id: 1, cat: 'Getting Started', q: 'What can I see on my dashboard?', a: 'Your home details, next rent due date, maintenance request status, and quick actions to report issues or message your landlord.' },
         { id: 2, cat: 'Rent & Payments', q: 'How do I pay rent?', a: 'Your rent due date appears on your dashboard. Pay using the method agreed with your landlord (bank transfer, standing order, etc.). Payment status updates when your landlord records it.' },
         { id: 3, cat: 'Rent & Payments', q: 'Who receives my rent payment?', a: 'Rent is paid directly to your landlord through their configured payment method. Landlord HQ tracks status but does not hold tenant funds.' },
-        { id: 4, cat: 'Maintenance', q: 'How do I report a maintenance issue?', a: 'Tap Report Issue on your dashboard or Issues tab. Your property is pre-selected. Add a title, priority, description, and photos — your landlord is notified immediately.' },
+        { id: 4, cat: 'Maintenance', q: 'How do I report a maintenance issue?', a: 'Tap Report Issue on your dashboard or Issues tab. Your property and unit are pre-filled — you report issues inside your flat only. Communal building problems (hallway, roof, garden) are logged by your landlord.' },
         { id: 5, cat: 'Maintenance', q: 'Who handles repairs in my home?', a: 'Your landlord manages repairs and may assign a contractor. You can track progress on your dashboard and message your landlord for updates.' },
         { id: 6, cat: 'Messages', q: 'How do I contact my landlord?', a: 'Go to Messages to chat with your landlord. You can also reach them about urgent issues after reporting a maintenance request.' },
         { id: 7, cat: 'Account', q: 'Can I update my contact details?', a: 'View your details under Account. Contact your landlord if any tenancy-related information needs updating on your lease record.' },
@@ -383,9 +383,10 @@ const FAQ_BY_ROLE = {
         { id: 3, cat: 'Jobs', q: 'How do I submit an invoice?', a: 'After completing work, go to the Invoice tab, enter the amount, upload your invoice PDF, and mark the job complete. The landlord reviews and pays from their Financial screen.' },
         { id: 4, cat: 'Payments', q: 'When do I get paid?', a: 'After the landlord approves your invoice, payment is recorded in the app. Bank transfer timing depends on your agreement with the landlord.' },
         { id: 5, cat: 'Messages', q: 'Can I message the tenant or landlord?', a: 'Yes. Each job links to the relevant chats. Use Message Tenant for access arrangements and Message Landlord for approvals or scope changes.' },
-        { id: 6, cat: 'Compliance', q: 'What certifications should I keep updated?', a: 'Keep Gas Safe, public liability insurance, and trade certifications current. Upload certificates on the job or in Company Information.' },
-        { id: 7, cat: 'Account', q: 'How do I update company details?', a: 'Go to Profile → Company Information to update your business name, trade category, VAT number, and contact details.' },
-        { id: 8, cat: 'Account', q: 'How do I change my password?', a: 'Go to Profile → Change Password. Use a strong password to protect your contractor account and job history.' },
+        { id: 6, cat: 'Jobs', q: 'What if the job is in a communal area?', a: 'Some jobs are in shared parts of the building (hallway, roof, boiler room) rather than a tenant flat. The job will show the property and communal area — contact the landlord for access.' },
+        { id: 7, cat: 'Compliance', q: 'What certifications should I keep updated?', a: 'Keep Gas Safe, public liability insurance, and trade certifications current. Upload certificates on the job or in Company Information.' },
+        { id: 8, cat: 'Account', q: 'How do I update company details?', a: 'Go to Profile → Company Information to update your business name, trade category, VAT number, and contact details.' },
+        { id: 9, cat: 'Account', q: 'How do I change my password?', a: 'Go to Profile → Change Password. Use a strong password to protect your contractor account and job history.' },
     ],
 };
 
@@ -2596,10 +2597,6 @@ const propSectionBar = (title, subtitle, detail = '') => {
     const pid = STATE.propertyId;
     const propertyMenuKey = `property:${pid}`;
     const propertyMenuOpen = STATE.actionMenuKey === propertyMenuKey;
-    const showSummary = STATE.tab === 'units';
-    const summary = showSummary && typeof renderPropertyHubSummaryCard === 'function'
-        ? renderPropertyHubSummaryCard(pid)
-        : '';
     return `
 <div class="prop-section-header">
 <div class="prop-section-bar">
@@ -2617,7 +2614,6 @@ const propSectionBar = (title, subtitle, detail = '') => {
         ${typeof renderActionMenuPopover === 'function' ? renderActionMenuPopover(propertyMenuKey, propertyActionMenuItems(pid)) : ''}
     </div>
 </div>
-${summary ? `<div class="prop-section-summary-wrap">${summary}</div>` : ''}
 ${typeof renderPropertySectionNav === 'function' ? renderPropertySectionNav(STATE.tab) : ''}
 </div>`;
 };
@@ -3528,7 +3524,7 @@ function screenPersonalInfo() {
             ${formField('First Name', t.firstName, 'text', '', 'firstName')}${formField('Last Name', t.lastName, 'text', '', 'lastName')}
             ${formField('Email', t.email, 'email', '', 'email')}${formField('Phone', t.phone || '—', 'tel', '', 'phone')}
             <div><label class="form-label">Property</label><input class="form-input" value="${p?.name || '—'}" readonly></div>
-            <div><label class="form-label">Unit</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
+            <div><label class="form-label">Unit within property</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
             <p class="section-title">Support & Legal</p>
             ${menuList([
                 ['help-circle', 'Help & Support', 'help-support'],
@@ -4248,27 +4244,33 @@ function screenLogMaintenance() {
     const communalArea = STATE.logMaintCommunalArea || COMMUNAL_AREAS[0];
     const propertyField = isTenant ? `
         <div class="card p-4" style="background:#F8FAFC">
-            <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Your Property</p>
+            <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Property</p>
             <p class="text-[13px] font-bold text-[#0F172A] mt-1">${p?.name || '—'}</p>
-            <p class="text-[12px] text-[#64748B] mt-0.5">${tenant?.unit || ''}${tenant?.unit && p?.address ? ' · ' : ''}${p?.address || ''}</p>
+            <p class="text-[12px] text-[#64748B] mt-0.5">${p?.address || ''}</p>
+            <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide mt-3">Your unit within property</p>
+            <p class="text-[13px] font-bold text-[#0F172A] mt-1">${tenant?.unit || '—'}</p>
+            <p class="text-[11px] text-[#64748B] mt-2">Issues here are inside your flat — communal areas are handled by your landlord.</p>
         </div>` : maintCtx ? `
         <div class="card p-4" style="background:#F8FAFC">
-            <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Reporting for</p>
+            <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Property</p>
+            <p class="text-[13px] font-bold text-[#0F172A] mt-1">${p?.name || '—'}</p>
+            <p class="text-[12px] text-[#64748B] mt-0.5">${p?.address || ''}</p>
+            <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide mt-3">Unit within property</p>
             <p class="text-[13px] font-bold text-[#0F172A] mt-1">${maintCtx.unit}</p>
-            <p class="text-[12px] text-[#64748B] mt-0.5">${p?.name || '—'}${p?.address ? ` · ${p.address}` : ''}</p>
         </div>
         <input type="hidden" data-field="propertyId" value="${pid}">
         <input type="hidden" data-field="unit" value="${selectedUnit}">` : `
-        <div>
-            <label class="form-label">Where is the issue?</label>
-            <div class="flex gap-2">
-                <button type="button" data-log-maint-scope="unit" class="tab-pill flex-1 ${scope === 'unit' ? 'active' : ''}">In a unit</button>
-                <button type="button" data-log-maint-scope="communal" class="tab-pill flex-1 ${scope === 'communal' ? 'active' : ''}">Communal</button>
-            </div>
-            <p class="text-[11px] text-[#64748B] mt-1">${scope === 'communal' ? 'Shared areas — hallway, roof, garden, boiler room, etc.' : 'Inside a specific flat or unit.'}</p>
-        </div>
         <div><label class="form-label">Property <span class="form-required">*</span></label>
-        <select data-field="propertyId" class="form-input form-select" data-action="refresh-maint-units">${PROPERTIES.map(prop => `<option value="${prop.id}" ${prop.id === pid ? 'selected' : ''}>${prop.name}</option>`).join('')}</select></div>
+        <select data-field="propertyId" class="form-input form-select" data-action="refresh-maint-units">${PROPERTIES.map(prop => `<option value="${prop.id}" ${prop.id === pid ? 'selected' : ''}>${prop.name}</option>`).join('')}</select>
+        <p class="text-[11px] text-[#64748B] mt-1">Flats and units belong to this property — choose where the issue is below.</p></div>
+        <div>
+            <label class="form-label">Location within property</label>
+            <div class="flex gap-2">
+                <button type="button" data-log-maint-scope="unit" class="tab-pill flex-1 ${scope === 'unit' ? 'active' : ''}">A unit</button>
+                <button type="button" data-log-maint-scope="communal" class="tab-pill flex-1 ${scope === 'communal' ? 'active' : ''}">Communal area</button>
+            </div>
+            <p class="text-[11px] text-[#64748B] mt-1">${scope === 'communal' ? 'Shared parts of this building — hallway, roof, garden, etc.' : 'Inside one flat or unit in this property.'}</p>
+        </div>
         ${scope === 'communal' ? `
         <div><label class="form-label">Communal area <span class="form-required">*</span></label>
         <select data-field="communalArea" class="form-input form-select">${COMMUNAL_AREAS.map(area => `<option value="${area}" ${communalArea === area ? 'selected' : ''}>${area}</option>`).join('')}</select></div>`

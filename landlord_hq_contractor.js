@@ -23,6 +23,7 @@ const CONTRACTOR_JOBS = [
     { id: 4, maintId: 6, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Tap replacement', priority: 'Low', visitDate: 'Mar 1, 2025', status: 'waiting_approval', assignedDate: 'Feb 20, 2025', desc: 'Kitchen tap replaced. Invoice submitted awaiting landlord approval.', tenantChatId: 0, landlordChatId: 1, invoice: { amount: '£185', file: 'INV-PLB-1042.pdf', uploadedAt: 'Mar 1, 2025' } },
     { id: 5, maintId: 5, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Light flickering', priority: 'Low', visitDate: 'Feb 18, 2025', status: 'completed', assignedDate: 'Feb 10, 2025', desc: 'Living room ceiling light flickering — resolved with new fitting.', tenantChatId: 4, landlordChatId: 1 },
     { id: 6, maintId: null, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Annual gas check', priority: 'Low', visitDate: 'Jan 30, 2025', status: 'paid', assignedDate: 'Jan 15, 2025', desc: 'Annual gas safety inspection completed. Certificate uploaded.', tenantChatId: 4, landlordChatId: 1, certificates: [{ name: 'Gas Safety Certificate', uploadedAt: 'Jan 30, 2025' }] },
+    { id: 7, maintId: 7, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', unit: 'Communal', scope: 'communal', communalArea: 'Hallway', tenant: '—', landlord: 'John Smith', issue: 'Hallway light out', priority: 'Medium', visitDate: 'Today, 4:30 PM', status: 'assigned', assignedDate: 'Mar 10, 2025', desc: 'Main entrance hallway ceiling light not working. Landlord reports it affects all residents. Access via front entrance — no tenant visit required.', tenantChatId: null, landlordChatId: 1 },
 ];
 
 const CONTRACTOR_NOTIFS = [
@@ -52,6 +53,21 @@ const contractorPriorityStyle = (priority) => ({
 }[priority] || ['#F1F5F9', '#64748B']);
 
 const contractorJob = (id) => ensureContractorJob(CONTRACTOR_JOBS.find(j => j.id === id) || CONTRACTOR_JOBS[0]);
+
+function contractorJobLocation(job) {
+    if (job.scope === 'communal' || job.communalArea) {
+        return `${job.property} · Communal · ${job.communalArea || 'Shared area'}`;
+    }
+    if (job.maintId != null && typeof MAINTENANCE_ITEMS !== 'undefined' && typeof formatMaintLocation === 'function') {
+        const item = MAINTENANCE_ITEMS.find(m => m.id === job.maintId);
+        if (item) return formatMaintLocation(item);
+    }
+    return `${job.property}${job.unit ? ` · ${job.unit}` : ''}`;
+}
+
+function contractorJobIsCommunal(job) {
+    return job.scope === 'communal' || job.unit === 'Communal' || !!job.communalArea;
+}
 
 function ensureContractorJob(job) {
     if (!job.photos) job.photos = { before: [], during: [], after: [] };
@@ -145,14 +161,17 @@ const contractorNotesList = (notes) => notes.length ? `
 const contractorJobCard = (job) => {
     const st = contractorStatusStyle(job.status);
     const [pBg, pColor] = contractorPriorityStyle(job.priority);
+    const location = contractorJobLocation(job);
+    const communal = contractorJobIsCommunal(job);
     return `
     <button data-go="contractor-job-detail" data-job="${job.id}" class="ctr-job-card card w-full text-left">
         <div class="ctr-job-card-top">
             <span class="badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
             <span class="badge" style="background:${pBg};color:${pColor}">${job.priority}</span>
+            ${communal ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal</span>' : ''}
         </div>
         <p class="ctr-job-title">${job.issue}</p>
-        <p class="ctr-job-prop">${job.property}</p>
+        <p class="ctr-job-prop">${location}</p>
         <p class="ctr-job-addr">${job.address}</p>
         <div class="ctr-job-meta">
             <span><i data-lucide="user" class="w-3.5 h-3.5"></i>${job.tenant}</span>
@@ -502,7 +521,7 @@ function tenantDashboardHeader(t, p) {
         <img src="${IMG.avatar.sarah}" class="dash-avatar" alt="">
         <div>
             <p class="dash-greeting">${dashGreeting()}, ${t.firstName}</p>
-            <p class="dash-date">${p?.name || 'Your home'}${t.unit ? ` · ${t.unit}` : ''}</p>
+            <p class="dash-date">${p?.name || 'Your property'}${t.unit ? ` · ${t.unit}` : ''}</p>
         </div>
     </div>
 </div>`;
@@ -531,9 +550,11 @@ function screenTenantDashboard() {
     return `${tenantDashboardHeader(t, p)}
     <div class="screen-content screen-enter">
         <div class="card p-4" style="background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;border:none">
-            <p class="text-[11px] font-semibold opacity-80 uppercase tracking-wide">Your Home</p>
+            <p class="text-[11px] font-semibold opacity-80 uppercase tracking-wide">Property</p>
             <p class="text-[14px] font-bold mt-1">${p.name}</p>
-            <p class="text-[12px] opacity-85 mt-1">${t.unit} · ${p.address}</p>
+            <p class="text-[12px] opacity-85 mt-1">${p.address}</p>
+            <p class="text-[11px] font-semibold opacity-80 uppercase tracking-wide mt-3">Your unit</p>
+            <p class="text-[13px] font-bold mt-1">${t.unit}</p>
             <div class="flex gap-4 mt-4 pt-4 border-t border-white/20">
                 <div><p class="text-[10px] opacity-75">Monthly Rent</p><p class="text-[13px] font-bold">${t.rent}</p></div>
                 <div><p class="text-[10px] opacity-75">Lease Ends</p><p class="text-[13px] font-bold">${t.leaseEnd || '—'}</p></div>
@@ -700,6 +721,8 @@ function screenContractorJobDetail() {
     const tab = STATE.contractorJobTab || 'overview';
     const tabs = [['overview', 'Overview'], ['work', 'Work & Photos'], ['invoice', 'Invoice']];
     const canMessageTenant = job.tenant && job.tenant !== '—' && job.tenantChatId != null;
+    const communal = contractorJobIsCommunal(job);
+    const locationSub = contractorJobLocation(job);
     const actions = {
         assigned: `
             <div class="grid grid-cols-2 gap-3">
@@ -718,14 +741,22 @@ function screenContractorJobDetail() {
     const overview = `
         <div class="card p-4">
             <p class="ctr-section-label">Property</p>
-            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.property}${job.unit ? ` · ${job.unit}` : ''}</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.property}</p>
             <p class="text-[14px] text-[#64748B] mt-1">${job.address}</p>
+            ${communal ? `
+            <p class="ctr-section-label" style="margin-top:12px">Communal area</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.communalArea || 'Shared area'}</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Shared part of this building — not inside a tenant flat.</p>` : job.unit ? `
+            <p class="ctr-section-label" style="margin-top:12px">Unit within property</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.unit}</p>` : ''}
         </div>
         <div class="card p-4">
-            <p class="ctr-section-label">Tenant complaint</p>
+            <p class="ctr-section-label">${communal ? 'Issue details' : 'Tenant complaint'}</p>
             <p class="text-[14px] text-[#475569] mt-2 leading-relaxed">${job.desc}</p>
             <div class="flex gap-2 mt-3 flex-wrap">
-                <span class="badge bg-[#FEF3C7] text-[#B45309]">From tenant</span>
+                ${communal
+                    ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal job</span>'
+                    : '<span class="badge bg-[#FEF3C7] text-[#B45309]">From tenant</span>'}
                 <span class="badge" style="background:${pBg};color:${pColor}">${job.priority} priority</span>
             </div>
         </div>
@@ -776,16 +807,16 @@ function screenContractorJobDetail() {
         <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[13px] font-semibold">Mark Job Complete</button>
         <p class="text-[12px] text-[#64748B] text-center mt-2">Upload invoice first, then submit for landlord approval</p>` : ''}`;
     const tabBody = { overview, work, invoice };
-    return `${topBar(job.issue, { back: true, sub: `${job.property}${job.unit ? ` · ${job.unit}` : ''}` })}
+    return `${topBar(job.issue, { back: true, sub: locationSub })}
     <div class="screen-content screen-enter">
-        <div class="flex gap-2 flex-wrap">
-            <span class="badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
-            <span class="badge" style="background:${pBg};color:${pColor}">${job.priority}</span>
-        </div>
-        <p class="text-[12px] text-[#64748B] mt-2">${job.address}</p>
-        <div class="flex gap-2 overflow-x-auto pb-1 mt-3">
+        <div class="flex gap-2 overflow-x-auto pb-1">
             ${tabs.map(([k, l]) => `
             <button data-jtab="${k}" class="tab-pill ${tab === k ? 'active' : ''}">${l}</button>`).join('')}
+        </div>
+        <div class="flex gap-2 flex-wrap mt-3">
+            <span class="badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
+            <span class="badge" style="background:${pBg};color:${pColor}">${job.priority}</span>
+            ${communal ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal</span>' : ''}
         </div>
         <div class="stack-sm" style="margin-top:12px">${tabBody[tab] || overview}</div>
         ${tab === 'overview' ? `<div style="margin-top:16px">${actions[job.status] || ''}</div>` : ''}

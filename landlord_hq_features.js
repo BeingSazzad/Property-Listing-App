@@ -3030,7 +3030,7 @@ function renderPropertyInfoHub(propertyId) {
 function renderPropertySectionNav(activeTab) {
     const navTab = propertyPrimaryNavTab(activeTab);
     const tabs = [
-        ['units', 'Units', 'layout-grid'],
+        ['units', 'Overview', 'layout-dashboard'],
         ['tenant', 'Tenants', 'users'],
         ['maintenance', 'Maintenance', 'wrench'],
         ['info', 'More', 'ellipsis'],
@@ -3205,8 +3205,12 @@ function renderPropertyUnitsTab(propertyId) {
         }).join('')
         : `<div class="unit-floor-block card"><div class="unit-floor-panel unit-floor-panel--solo">${units.map(u => renderFlatRow(u, false)).join('')}</div></div>`;
     const filterActive = unitFilter !== 'all';
+    const summary = typeof renderPropertyHubSummaryCard === 'function'
+        ? renderPropertyHubSummaryCard(propertyId)
+        : '';
     return `
-    <div class="screen-content screen-content-sm prop-hub-page prop-units-page">
+    <div class="screen-content screen-content-sm prop-hub-page prop-units-page prop-overview-page">
+        ${summary ? `<div class="prop-overview-summary-wrap">${summary}</div>` : ''}
         <div class="unit-list-toolbar">
             <h2 class="unit-section-title">Units</h2>
             <div class="unit-list-toolbar-actions">
@@ -5710,6 +5714,12 @@ function screenMaintenanceDetailEnhanced() {
             : 'Waiting for landlord to assign a contractor';
         return `${topBar(item.issue, { back: true, sub: location })}
         <div class="screen-content screen-content-sm screen-enter prop-hub-page">
+            <div class="card p-4" style="background:#F8FAFC;margin-bottom:12px">
+                <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Property</p>
+                <p class="text-[13px] font-bold text-[#0F172A] mt-1">${item.prop.split(',')[0]}</p>
+                <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide mt-3">Your unit</p>
+                <p class="text-[13px] font-bold text-[#0F172A] mt-1">${item.unit && item.unit !== '—' ? item.unit : '—'}</p>
+            </div>
             <div class="maint-detail-summary card">
                 <div class="maint-detail-top">
                     <p class="maint-detail-title">Your report</p>
@@ -7638,6 +7648,8 @@ function createContractorJobFromMaintenance(item, contractor, tenantOverride) {
         property: p?.name || item.prop,
         address: p?.address || '',
         unit: item.unit && item.unit !== '—' ? item.unit : '',
+        scope: item.scope || (item.unit === 'Communal' ? 'communal' : 'unit'),
+        communalArea: item.communalArea || null,
         tenant: tenantName,
         landlord: `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`,
         issue: item.issue,

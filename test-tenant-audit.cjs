@@ -36,7 +36,7 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
   const report = await page.evaluate(() => ({
     screen: STATE.screen,
     title: (document.querySelector('.sub-header-title') || document.querySelector('.page-title'))?.textContent?.trim(),
-    hasProperty: (document.getElementById('app')?.innerHTML || '').includes('Your Property'),
+    hasProperty: (document.getElementById('app')?.innerHTML || '').includes('Property') && (document.getElementById('app')?.innerHTML || '').includes('unit within property'),
   }));
   log(report.screen === 'log-maintenance' ? 'PASS' : 'FAIL', 'Screen', `Report issue: ${report.screen}`);
   log(report.title === 'Report Issue' ? 'PASS' : 'FAIL', 'Header', `Title: ${report.title}`);
@@ -66,7 +66,7 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
     html: document.getElementById('app')?.innerHTML || '',
   }));
   log(account.screen === 'personal-info' ? 'PASS' : 'FAIL', 'Screen', `Account: ${account.screen}`);
-  log(account.html.includes('Property') && account.html.includes('Unit') ? 'PASS' : 'FAIL', 'Profile', 'Shows property and unit');
+  log(account.html.includes('Property') && account.html.includes('Unit within property') ? 'PASS' : 'FAIL', 'Profile', 'Shows property and unit');
 
   await page.evaluate(() => go('messages'));
   await new Promise((r) => setTimeout(r, 400));
