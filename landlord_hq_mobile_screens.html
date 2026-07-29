@@ -2369,6 +2369,9 @@
         }
         .insp-rating-star:active { transform: scale(0.96); }
         .maint-detail-summary { padding: var(--card-pad); }
+        .maint-detail-badges-row {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;
+        }
         .maint-detail-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
         .maint-detail-title { font-size: var(--text-title-sm); font-weight: var(--font-bold); color: #0F172A; line-height: 1.3; margin: 0; flex: 1; min-width: 0; }
         .maint-detail-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
@@ -5452,9 +5455,9 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=13"></script>
-    <script src="landlord_hq_contractor.js?v=13"></script>
-    <script src="landlord_hq_features.js?v=13"></script>
+    <script src="landlord_hq_screens.js?v=14"></script>
+    <script src="landlord_hq_contractor.js?v=14"></script>
+    <script src="landlord_hq_features.js?v=14"></script>
     <script>
     (function () {
         function showBootError(msg) {

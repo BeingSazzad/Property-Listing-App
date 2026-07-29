@@ -4957,7 +4957,7 @@ function renderMaintTenantComplaint(item) {
                 <p class="maint-tenant-complaint-label">Tenant complaint</p>
                 <p class="maint-tenant-complaint-who">${tenantName || 'Tenant'}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}</p>
             </div>
-            ${chatId != null ? `<button data-go="chat" data-chat="${chatId}" class="maint-tenant-complaint-chat">Message</button>` : ''}
+            ${chatId != null ? `<button data-go="chat" data-chat="${chatId}" class="maint-tenant-complaint-chat">Message tenant</button>` : ''}
         </div>
         <p class="maint-tenant-complaint-text">"${item.desc || item.issue}"</p>
         <p class="maint-tenant-complaint-meta">Reported ${reportedWhen}</p>
@@ -4980,10 +4980,24 @@ function contractorTradeVisual(contractorName) {
 
 function renderMaintAssignmentStatus(item, contractorJob) {
     const assigned = item.contractor && item.contractor !== '—';
+    const inProgress = item.status === 'progress';
+    const resolved = item.status === 'done';
+    const visit = contractorJob?.visitDate || '';
+    let thirdLabel = 'Work in progress';
+    let thirdDetail = 'Pending';
+    if (resolved) {
+        thirdLabel = 'Resolved';
+        thirdDetail = item.resolvedAt || 'Completed';
+    } else if (inProgress) {
+        thirdDetail = visit || 'On site';
+    } else if (assigned) {
+        thirdLabel = 'Awaiting work';
+        thirdDetail = visit || 'Ready to start';
+    }
     const steps = [
-        { label: 'Tenant reported', done: true, detail: isTenantMaintReport(item) ? (item.tenantName || 'Tenant') : 'Logged', icon: 'user' },
-        { label: 'Contractor assigned', done: assigned, detail: assigned ? item.contractor : 'Waiting', icon: 'hard-hat' },
-        { label: item.status === 'done' ? 'Resolved' : 'Work in progress', done: item.status === 'done', detail: contractorJob?.visitDate || (item.status === 'progress' ? 'On site' : 'Pending'), icon: item.status === 'done' ? 'check-circle' : 'wrench' },
+        { label: 'Tenant reported', done: true, detail: item.reportedAt || item.time || '', icon: 'user' },
+        { label: 'Contractor assigned', done: assigned, detail: assigned ? 'Confirmed' : 'Pending', icon: 'hard-hat' },
+        { label: thirdLabel, done: resolved, detail: thirdDetail, icon: resolved ? 'check-circle' : 'wrench' },
     ];
     const currentIdx = steps.findIndex(s => !s.done);
     return `
@@ -5008,13 +5022,13 @@ function renderMaintAssignmentStatus(item, contractorJob) {
     </div>`;
 }
 
-function renderMaintContractorCard(item, contractorJob, chatId, tenantChatId) {
+function renderMaintContractorCard(item, contractorJob, chatId) {
     const visual = contractorTradeVisual(item.contractor);
     const contractor = getContractorForItem(item);
     const trade = contractor?.trade || 'Contractor';
-    const statusText = contractorJob
-        ? contractorJob.status.replace(/_/g, ' ')
-        : 'Job sent to their app';
+    const statusText = contractorJob?.visitDate
+        ? `Visit ${contractorJob.visitDate}`
+        : (contractorJob ? 'Job sent to their app' : 'Awaiting confirmation');
     return `
     <div class="maint-contractor-card card">
         <div class="maint-contractor-card-top">
@@ -5034,7 +5048,6 @@ function renderMaintContractorCard(item, contractorJob, chatId, tenantChatId) {
             ${contractor?.phone ? `<button type="button" data-action="call-contractor" data-phone="${contractor.phone.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
             ${contractor?.email ? `<button type="button" data-action="email-contractor" data-email="${contractor.email.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
             ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
-            ${tenantChatId != null ? `<button type="button" data-go="chat" data-chat="${tenantChatId}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="user" class="w-4 h-4"></i><span>Tenant</span></button>` : ''}
         </div>
     </div>`;
 }
@@ -5657,8 +5670,6 @@ function screenMaintenanceDetailEnhanced() {
         });
     }
     const chatId = getContractorChatId(item.contractor);
-    const tenant = getMaintTenantForItem(item);
-    const tenantChatId = contractorJob?.tenantChatId ?? (tenant ? getTenantChatId(tenant.id) : null);
     const location = `${item.prop.split(',')[0]}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}`;
     const isTenantView = STATE.userRole === 'tenant';
 
@@ -5721,24 +5732,30 @@ function screenMaintenanceDetailEnhanced() {
     const primaryAction = actions.find(a => a.type === 'primary');
     const secondaryActions = actions.filter(a => a.type === 'secondary');
     const { title: headerTitle, subtitle: headerSub } = maintDetailHeader(item);
+    const tenantReport = isTenantMaintReport(item);
     return `${topBar(headerTitle, { back: true, sub: headerSub })}
     <div class="screen-content screen-content-sm screen-enter prop-hub-page">
+        ${tenantReport ? `
+        <div class="maint-detail-badges-row">
+            <span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span>
+            <span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span>
+            <span class="badge" style="background:#FEF3C7;color:#B45309">Tenant report</span>
+        </div>` : `
         <div class="maint-detail-summary card">
             <div class="maint-detail-top">
                 <p class="maint-detail-title">${item.issue}</p>
                 <div class="maint-detail-badges">
                     <span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span>
                     <span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span>
-                    ${isTenantMaintReport(item) ? `<span class="badge" style="background:#FEF3C7;color:#B45309">Tenant report</span>` : ''}
                 </div>
             </div>
             <p class="maint-detail-meta"><i data-lucide="map-pin" class="w-3.5 h-3.5 inline-block -mt-px"></i> ${location} · ${item.time}</p>
-            ${!isTenantMaintReport(item) ? `<p class="maint-detail-desc">${item.desc}</p>` : ''}
-        </div>
+            <p class="maint-detail-desc">${item.desc}</p>
+        </div>`}
         ${renderMaintTenantComplaint(item)}
         ${renderMaintAssignmentStatus(item, contractorJob)}
         ${item.contractor !== '—'
-            ? renderMaintContractorCard(item, contractorJob, chatId, tenantChatId)
+            ? renderMaintContractorCard(item, contractorJob, chatId)
             : `
         <div class="maint-assign-prompt card">
             <div class="maint-assign-prompt-icon"><i data-lucide="hard-hat" class="w-5 h-5"></i></div>
@@ -5754,7 +5771,7 @@ function screenMaintenanceDetailEnhanced() {
         ${item.status !== 'done' ? `
         <button type="button" data-action="cancel-maintenance" data-mid="${item.id}" class="maint-cancel-link">Cancel issue</button>` : `<p class="maint-resolved-note"><i data-lucide="check-circle" class="w-4 h-4"></i> Issue resolved</p>`}
         ${renderMaintWorkNotes(item, contractorJob)}
-        ${renderMaintTimeline(timeline)}
+        ${item.status === 'done' ? renderMaintTimeline(timeline) : ''}
     </div>`;
 }
 
