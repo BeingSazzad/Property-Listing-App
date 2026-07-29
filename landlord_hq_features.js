@@ -2986,7 +2986,7 @@ function propertyInfoSectionBackBar(tab) {
     return `
     <div class="prop-info-backbar">
         <button type="button" data-tab="info" class="prop-info-back">
-            <i data-lucide="chevron-left" class="w-4 h-4"></i> More
+            <i data-lucide="chevron-left" class="w-4 h-4"></i> Info
         </button>
         <span class="prop-info-back-label">${label}</span>
     </div>`;
@@ -3033,7 +3033,7 @@ function renderPropertySectionNav(activeTab) {
         ['units', 'Overview', 'layout-dashboard'],
         ['tenant', 'Tenants', 'users'],
         ['maintenance', 'Maintenance', 'wrench'],
-        ['info', 'More', 'ellipsis'],
+        ['info', 'Info', 'info'],
     ];
     return `
     <div class="prop-section-nav">
