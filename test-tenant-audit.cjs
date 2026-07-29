@@ -67,15 +67,38 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
   }));
   log(account.screen === 'personal-info' ? 'PASS' : 'FAIL', 'Screen', `Account: ${account.screen}`);
   log(account.html.includes('Property') && account.html.includes('Unit within property') ? 'PASS' : 'FAIL', 'Profile', 'Shows property and unit');
+  log(account.html.includes('Your landlord') ? 'PASS' : 'FAIL', 'Profile', 'Landlord contact card on account');
+
+  await page.evaluate(() => go('tenant-dashboard'));
+  await new Promise((r) => setTimeout(r, 300));
+  const dash = await page.evaluate(() => ({
+    html: document.getElementById('app')?.innerHTML || '',
+    hasCall: !!document.querySelector('[data-action="call-landlord"]'),
+  }));
+  log(dash.hasCall ? 'PASS' : 'FAIL', 'Contact', 'Tenant dashboard call landlord action');
+  log(dash.html.includes('Your landlord') ? 'PASS' : 'FAIL', 'Contact', 'Landlord contact card on dashboard');
+
+  await page.evaluate(() => go('help-support'));
+  await new Promise((r) => setTimeout(r, 400));
+  const help = await page.evaluate(() => ({
+    screen: STATE.screen,
+    html: document.getElementById('app')?.innerHTML || '',
+    hasLandlordSupport: !!document.querySelector('[data-action="tenant-support-chat"]'),
+  }));
+  log(help.screen === 'help-support' ? 'PASS' : 'FAIL', 'Screen', `Help & Support: ${help.screen}`);
+  log(help.hasLandlordSupport ? 'PASS' : 'FAIL', 'Help', 'Support routes to landlord message');
+  log(!help.html.includes('support@landlordhq.com') ? 'PASS' : 'FAIL', 'Help', 'No platform email for tenant help');
 
   await page.evaluate(() => go('messages'));
   await new Promise((r) => setTimeout(r, 400));
   const msgs = await page.evaluate(() => ({
     screen: STATE.screen,
     count: document.querySelectorAll('[data-go="chat"]').length,
+    landlordName: document.querySelector('.inbox-name')?.textContent?.trim(),
   }));
   log(msgs.screen === 'messages' ? 'PASS' : 'FAIL', 'Screen', `Messages: ${msgs.screen}`);
   log(msgs.count >= 1 ? 'PASS' : 'FAIL', 'Messages', `${msgs.count} conversation(s)`);
+  log(msgs.landlordName === 'John Smith' ? 'PASS' : 'FAIL', 'Messages', `Landlord thread: ${msgs.landlordName}`);
 
   await browser.close();
 

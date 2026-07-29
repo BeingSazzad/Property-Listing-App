@@ -456,9 +456,9 @@ const HELP_BY_ROLE = {
     },
     tenant: {
         intro: 'Help using your tenant portal — rent, maintenance, and messaging your landlord.',
-        faqSub: 'Tenant portal questions answered',
-        supportTitle: 'Contact Support',
-        supportSub: 'Email our team for account help',
+        faqSub: 'Common questions about the tenant portal',
+        supportTitle: 'Message Landlord',
+        supportSub: 'Support questions go directly to your landlord',
     },
     contractor: {
         intro: 'Help with jobs, invoicing, and working with landlords on the platform.',
@@ -556,12 +556,12 @@ const TENANT_MENU = [
 ];
 
 const TENANTS = [
-    { id:0, propertyId:0, firstName:'Sarah', lastName:'Johnson', email:'sarah.j@email.com', phone:'+44 7700 900456', prop:'12 Park Lane', unit:'Flat 2A', idNumber:'4859217360', nidProof:'NID Proof.jpg', dob:'1992-04-18', rent:'2450', moveIn:'2024-01-15', leaseEnd:'2027-01-14', emergency:'James Johnson', emergencyPhone:'+44 7700 900789' },
-    { id:1, propertyId:1, firstName:'David', lastName:'Wilson', email:'david.w@email.com', phone:'+44 7700 900457', prop:'45 Queens Road', unit:'Flat 1A', idNumber:'7391045826', nidProof:'NID Proof.jpg', dob:'1988-11-02', rent:'1850', moveIn:'2023-06-01', leaseEnd:'2027-05-31', emergency:'Lisa Wilson', emergencyPhone:'+44 7700 900790' },
-    { id:2, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2A', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1950', moveIn:'2024-03-10', leaseEnd:'2027-03-09', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
-    { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', unit:'Main Flat', idNumber:'9183746502', nidProof:'NID Proof.jpg', dob:'1995-01-22', rent:'2100', moveIn:'2022-01-01', leaseEnd:'2024-12-01', emergency:'—', emergencyPhone:'—' },
-    { id:4, propertyId:0, firstName:'Priya', lastName:'Sharma', email:'priya.sh@email.com', phone:'+44 7700 900501', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'3849201756', nidProof:'NID Proof.jpg', dob:'1993-08-14', rent:'2200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Raj Sharma', emergencyPhone:'+44 7700 900502' },
-    { id:5, propertyId:0, firstName:'James', lastName:'Chen', email:'james.chen@email.com', phone:'+44 7700 900503', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'5928173046', nidProof:'', dob:'1994-02-03', rent:'2200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'—', emergencyPhone:'—' },
+    { id:0, propertyId:0, firstName:'Sarah', lastName:'Johnson', email:'sarah.j@email.com', phone:'+44 7700 900456', prop:'12 Park Lane', unit:'Flat 2A', idNumber:'4859217360', nidProof:'NID Proof.jpg', dob:'1992-04-18', rent:'2450', deposit:'£2,450', advancePaid:'£2,450', moveIn:'2024-01-15', leaseEnd:'2027-01-14', emergency:'James Johnson', emergencyPhone:'+44 7700 900789' },
+    { id:1, propertyId:1, firstName:'David', lastName:'Wilson', email:'david.w@email.com', phone:'+44 7700 900457', prop:'45 Queens Road', unit:'Flat 1A', idNumber:'7391045826', nidProof:'NID Proof.jpg', dob:'1988-11-02', rent:'1850', deposit:'£1,850', advancePaid:'£1,850', moveIn:'2023-06-01', leaseEnd:'2027-05-31', emergency:'Lisa Wilson', emergencyPhone:'+44 7700 900790' },
+    { id:2, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2A', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1950', deposit:'£1,950', advancePaid:'£1,950', moveIn:'2024-03-10', leaseEnd:'2027-03-09', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
+    { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', unit:'Main Flat', idNumber:'9183746502', nidProof:'NID Proof.jpg', dob:'1995-01-22', rent:'2100', deposit:'£2,100', advancePaid:'£2,100', moveIn:'2022-01-01', leaseEnd:'2024-12-01', emergency:'—', emergencyPhone:'—' },
+    { id:4, propertyId:0, firstName:'Priya', lastName:'Sharma', email:'priya.sh@email.com', phone:'+44 7700 900501', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'3849201756', nidProof:'NID Proof.jpg', dob:'1993-08-14', rent:'2200', deposit:'£2,200', advancePaid:'£2,200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Raj Sharma', emergencyPhone:'+44 7700 900502' },
+    { id:5, propertyId:0, firstName:'James', lastName:'Chen', email:'james.chen@email.com', phone:'+44 7700 900503', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'5928173046', nidProof:'', dob:'1994-02-03', rent:'2200', deposit:'£2,200', advancePaid:'—', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'—', emergencyPhone:'—' },
 ];
 
 const COMPLIANCE_ITEMS = [
@@ -686,7 +686,7 @@ const AUTH_ROLES = [
     { id: 'contractor', title: 'Contractor', desc: 'Receive & complete jobs', icon: 'wrench', color: '#EA580C', bg: '#FFEDD5' },
 ];
 
-const SELECTABLE_ROLES = AUTH_ROLES.filter(r => r.id !== 'tenant');
+const SELECTABLE_ROLES = AUTH_ROLES;
 
 const getRoleHome = () => ({
     landlord: 'dashboard',
@@ -1282,6 +1282,7 @@ function screenRoleSelect() {
                 </button>`).join('')}
             </div>
             <button type="button" data-action="role-continue" class="btn-auth btn-auth-primary" style="margin-top:32px">${roleContinueLabel()}</button>
+            <button type="button" data-go="sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px">Sign in with email</button>
             <p class="auth-footer-text" style="margin-top:20px">Tenant invited? <button type="button" data-action="open-tenant-invite">Open invitation link</button></p>
             <p class="auth-footer-text" style="margin-top:12px">Contractor invited? <button type="button" data-go="contractor-invite">Open invitation</button></p>
             <p class="auth-footer-text" style="margin-top:12px">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>
@@ -2050,8 +2051,8 @@ function logout() {
     STATE.showPassword = false;
     clearNavStack();
     saveAuthSession();
-    go('sign-in', { noHistory: true });
-    setTimeout(() => toast('Signed out successfully'), 50);
+    go('role-select', { noHistory: true });
+    setTimeout(() => toast('Signed out — choose your role to sign in again'), 50);
 }
 
 function toast(msg) {
@@ -2194,10 +2195,11 @@ const conversation = (id) => CONVERSATIONS.find(c => c.id === id) || CONVERSATIO
 
 function conversationsForRole() {
     if (STATE.userRole === 'tenant') {
-        const t = getActiveTenant();
-        if (!t) return [];
-        const landlordName = t.landlord || `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`;
-        return CONVERSATIONS.filter(c => c.name === landlordName || c.sub === 'Your landlord');
+        if (!getActiveTenant()) return [];
+        const chatId = typeof getActiveTenantLandlordChatId === 'function' ? getActiveTenantLandlordChatId() : null;
+        const conv = chatId != null ? CONVERSATIONS.find(c => c.id === chatId) : null;
+        if (!conv) return [];
+        return typeof tenantChatView === 'function' ? [tenantChatView(conv)] : [conv];
     }
     if (STATE.userRole === 'contractor') {
         const chatIds = new Set();
@@ -2281,6 +2283,7 @@ const TENANT_DRAWER_NAV = [
     ['home', 'Home', 'tenant-dashboard'],
     ['wrench', 'Report Issue', 'log-maintenance'],
     ['message-square', 'Messages', 'messages'],
+    ['circle-help', 'FAQ', 'faq'],
     ['life-buoy', 'Help & Support', 'help-support'],
 ];
 
@@ -2450,15 +2453,21 @@ const saveBtn = (label = 'Save Changes', msg = 'Changes saved') => `
 <button type="button" data-action="save" data-msg="${msg}" class="btn-primary w-full">${label}</button>`;
 
 const menuList = (items) => `
-<div class="card overflow-hidden shadow-sm">
-    ${items.map(([icon, label, target], i) => `
+<div class="card overflow-hidden shadow-sm menu-list-card">
+    ${items.map((item, i) => {
+        const [icon, label, target, meta] = item;
+        return `
     <button data-go="${target}" class="menu-row menu-row-item ${i < items.length - 1 ? 'border-b border-[#F1F5F9]' : ''}">
-        <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
             <i data-lucide="${icon}" class="w-5 h-5 text-[#374151] shrink-0"></i>
-            <span class="text-[13px] font-medium text-[#1F2937]">${label}</span>
+            <div class="menu-row-label-wrap min-w-0">
+                <span class="text-[13px] font-medium text-[#1F2937]">${label}</span>
+                ${meta ? `<span class="menu-row-meta">${meta}</span>` : ''}
+            </div>
         </div>
         <i data-lucide="chevron-right" class="w-5 h-5 text-[#9CA3AF] shrink-0"></i>
-    </button>`).join('')}
+    </button>`;
+    }).join('')}
 </div>`;
 
 const bottomNav = () => {
@@ -3159,6 +3168,8 @@ const tenantOverview = (t, avatar) => {
             </div>
         </div>
     </div>
+    ${typeof renderTenantContactQuickActions === 'function' ? renderTenantContactQuickActions(STATE.tenantId) : ''}
+    ${typeof renderTenantOverviewSummary === 'function' ? renderTenantOverviewSummary(STATE.tenantId) : ''}
     ${typeof renderTenantNotesPreview === 'function' ? renderTenantNotesPreview(STATE.tenantId) : ''}
     <div class="tenant-menu-wrap">
         ${TENANT_MENU.map(g => `
@@ -3197,9 +3208,15 @@ const tenantSectionContent = (tab, t) => {
                 </div>
             </div>`;
         },
-        contact: () => `
+        contact: () => {
+            const chatId = typeof getTenantChatId === 'function' ? getTenantChatId(STATE.tenantId) : null;
+            const msgAttrs = chatId != null && chatId !== 0
+                ? `data-go="chat" data-chat="${chatId}"`
+                : `data-go="messages"`;
+            return `
             ${typeof renderContactOutlineRow === 'function' ? renderContactOutlineRow([
                 ['phone', 'Call', `data-action="call-tenant" data-tid="${STATE.tenantId}"`],
+                ['message-square', 'Message', msgAttrs],
                 ['mail', 'Email', `data-action="email-tenant" data-tid="${STATE.tenantId}"`],
             ]) : ''}
             ${tenantFieldsCard([
@@ -3207,19 +3224,28 @@ const tenantSectionContent = (tab, t) => {
             ['Email', t.email || '—'],
             ['Emergency Contact', t.emergency || '—'],
             ['Emergency Phone', t.emergencyPhone || '—'],
-        ])}`,
+        ])}`;
+        },
         property: () => {
             const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(listItem.propertyId, listItem.unit) : null;
+            const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(STATE.tenantId) : null;
             const checkoutRec = typeof AppStore !== 'undefined'
                 ? AppStore.checkoutRecords?.find(r => r.tenantId === STATE.tenantId)
                 : null;
             const checkoutNotes = checkoutRec?.notes?.trim() || tenancy?.checkout?.notes?.trim() || '';
+            const leaseEndLabel = fin?.leaseEnd && typeof formatDisplayDate === 'function'
+                ? formatDisplayDate(fin.leaseEnd) || fin.leaseEnd
+                : (t.leaseEnd || '—');
             return `
             ${typeof renderTenantLivingCard === 'function' ? renderTenantLivingCard(listItem) : ''}
-            ${tenancy ? tenantFieldsCard([
-                ['Tenancy', tenancy.type === 'group' ? 'Group' : 'Solo'],
-                ['Move-in', typeof formatDisplayDate === 'function' ? formatDisplayDate(t.moveIn) || '—' : '—'],
-            ]) : ''}
+            ${tenancy || fin ? tenantFieldsCard([
+                ['Tenancy', tenancy ? (tenancy.type === 'group' ? 'Group' : 'Solo') : '—'],
+                ['Monthly rent', typeof formatTenantRent === 'function' ? formatTenantRent(t.rent) : listItem.rent],
+                ['Move-in', fin?.moveIn && typeof formatDisplayDate === 'function' ? formatDisplayDate(fin.moveIn) || '—' : '—'],
+                ['Lease ends', leaseEndLabel],
+                ['Deposit held', fin?.deposit || '—'],
+                ['Advance paid', fin?.advancePaid || '—'],
+            ].filter((row) => row[1] !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held', 'Advance paid'].includes(row[0]))) : ''}
             ${checkoutNotes ? `
             <div class="card p-4 note-block-item">
                 <p class="note-block-label">Check-out note</p>
@@ -3269,6 +3295,10 @@ const tenantSectionContent = (tab, t) => {
                     <div><p class="tenant-balance-mini-label">Next due</p><p class="tenant-balance-mini-value">${pay?.nextDue || '—'}</p></div>
                 </div>
             </div>
+            ${tenantFieldsCard([
+                ['Deposit held', pay?.deposit || '—'],
+                ['Advance paid', pay?.advancePaid || '—'],
+            ])}
             ${unpaidInv ? `
             <button type="button" data-go="mark-rent-received" data-iid="${unpaidInv.id}" class="btn-primary w-full py-3 text-[13px]">Record payment for this tenant</button>` : ''}
             <div class="screen-list-header"><div><h2>Monthly history</h2><p>Per flat · ${listItem.unit || 'unit'}</p></div></div>
@@ -3454,10 +3484,17 @@ function screenChat() {
     if (STATE.userRole !== 'landlord' && allowed.length && !allowed.includes(STATE.chatId)) {
         STATE.chatId = allowed[0];
     }
-    const c = conversation(STATE.chatId);
+    const raw = conversation(STATE.chatId);
+    const c = STATE.userRole === 'tenant' && typeof tenantChatView === 'function' ? tenantChatView(raw) : raw;
     const statusLine = c.online
         ? `<p class="text-[11px] text-[#22C55E] font-medium flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#22C55E]"></span>Online · ${c.sub}</p>`
         : `<p class="text-[11px] text-[#64748B] font-medium">${c.sub}</p>`;
+    const headerCallAction = STATE.userRole === 'tenant'
+        ? 'call-landlord'
+        : 'toast';
+    const headerCallMsg = STATE.userRole === 'tenant'
+        ? ''
+        : `data-msg="Calling ${c.name}"`;
     return `
     <div class="screen-full chat-screen">
         <div class="chat-header">
@@ -3469,7 +3506,7 @@ function screenChat() {
                     ${statusLine}
                 </div>
             </div>
-            <button data-action="toast" data-msg="Calling ${c.name}" class="chat-header-action"><i data-lucide="phone" class="w-[18px] h-[18px]"></i></button>
+            <button data-action="${headerCallAction}" ${headerCallMsg} class="chat-header-action"><i data-lucide="phone" class="w-[18px] h-[18px]"></i></button>
         </div>
         <div class="screen-body-inner gutter-x chat-messages stack-sm" style="padding-top:var(--stack-gap);padding-bottom:var(--stack-gap)">
             <p class="chat-date-label">Today</p>
@@ -3488,43 +3525,54 @@ function screenChat() {
 }
 
 function screenProfile() {
+    const plan = SUBSCRIPTION_PLANS.find(p => p.id === LANDLORD_USER.subscriptionPlanId) || SUBSCRIPTION_PLANS[1];
+    const paymentCount = typeof AppStore !== 'undefined' ? (AppStore.paymentMethods?.length || 0) : 0;
+    const txnCount = TRANSACTIONS.length;
     const accountMenus = menuList([
         ['bell', 'Notification Settings', 'notifications-settings'],
         ['sliders-horizontal', 'Preferences', 'preferences'],
         ['key-round', 'Change Password', 'password'],
-        ['shield', 'Security', 'security'],
+        ['shield-check', 'Security', 'security'],
     ]);
     const rentMenus = menuList([
-        ['landmark', 'Rent Collection Accounts', 'payment-methods'],
-        ['receipt', 'Transaction History', 'transaction-history'],
+        ['landmark', 'Rent Collection Accounts', 'payment-methods', paymentCount ? `${paymentCount} linked` : 'Add account'],
+        ['receipt', 'Transaction History', 'transaction-history', txnCount ? `${txnCount} records` : ''],
     ]);
     const platformMenus = menuList([
-        ['credit-card', 'Subscription & Billing', 'subscription'],
+        ['credit-card', 'Subscription & Billing', 'subscription', `${plan.name} · Active`],
         ['help-circle', 'Help & Support', 'help-support'],
         ['info', 'About Landlord HQ', 'about'],
         ['shield', 'Privacy Policy', 'privacy'],
         ['file-text', 'Terms & Conditions', 'terms'],
     ]);
     return `${topBar('Profile', { back: true, hideBell: true })}
-    <div class="screen-content screen-enter">
+    <div class="screen-content screen-content-sm screen-enter profile-page">
         <button data-go="personal-info" class="profile-card">
             <img src="${IMG.avatar.john}" class="profile-card-avatar" alt="">
             <div class="profile-card-body">
                 <p class="profile-card-name">${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}</p>
-                <p class="profile-card-hint">Your landlord account</p>
+                <p class="profile-card-email">${LANDLORD_USER.email}</p>
             </div>
+            <span class="profile-card-plan">${plan.name}</span>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
         </button>
-        <p class="section-title">Your account</p>
-        <p class="section-hint">Settings you control for your portfolio.</p>
-        ${accountMenus}
-        <p class="section-title">Rent & payouts</p>
-        <p class="section-hint">How you collect rent from tenants.</p>
-        ${rentMenus}
-        <p class="section-title">Landlord HQ platform</p>
-        <p class="section-hint">Billing and legal info managed by Landlord HQ — read only here.</p>
-        ${platformMenus}
-        <button data-action="logout" class="w-full py-3.5 mt-4 text-[14px] font-semibold text-[#DC2626]">Log Out</button>
+        <div class="profile-section">
+            <p class="section-title">Your account</p>
+            <p class="section-hint">Settings you control for your portfolio.</p>
+            ${accountMenus}
+        </div>
+        <div class="profile-section">
+            <p class="section-title">Rent & payouts</p>
+            <p class="section-hint">How you collect rent from tenants.</p>
+            ${rentMenus}
+        </div>
+        <div class="profile-section">
+            <p class="section-title">Landlord HQ platform</p>
+            <p class="section-hint">Billing and legal info managed by Landlord HQ.</p>
+            ${platformMenus}
+        </div>
+        <button data-action="logout" class="profile-logout">Log Out</button>
+        <p class="profile-version">Landlord HQ · Demo build</p>
     </div>`;
 }
 
@@ -3548,8 +3596,10 @@ function screenPersonalInfo() {
             ${formField('Email', t.email, 'email', '', 'email')}${formField('Phone', t.phone || '—', 'tel', '', 'phone')}
             <div><label class="form-label">Property</label><input class="form-input" value="${p?.name || '—'}" readonly></div>
             <div><label class="form-label">Unit within property</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
+            ${typeof renderLandlordContactCard === 'function' ? renderLandlordContactCard() : ''}
             <p class="section-title">Support & Legal</p>
             ${menuList([
+                ['circle-help', 'FAQ', 'faq'],
                 ['help-circle', 'Help & Support', 'help-support'],
                 ['shield', 'Privacy Policy', 'privacy'],
                 ['file-text', 'Terms & Conditions', 'terms'],
@@ -3745,9 +3795,28 @@ function screenTransactionHistory() {
     </div>`;
 }
 
+function supportContactBtn(label, opts = {}) {
+    const cls = opts.className || 'btn-primary w-full py-3 text-[13px] mt-2';
+    if (STATE.userRole === 'tenant') {
+        const topic = opts.topic || 'general';
+        return `<button type="button" data-action="tenant-support-chat" data-support-topic="${topic}" class="${cls}">${label}</button>`;
+    }
+    return `<button type="button" data-action="toast" data-msg="support@landlordhq.com" class="${cls}">${label}</button>`;
+}
+
 function screenHelpSupport() {
     const help = HELP_BY_ROLE[STATE.userRole] || HELP_BY_ROLE.landlord;
-    const supportAction = STATE.userRole === 'landlord'
+    const landlordName = `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`;
+    const supportAction = STATE.userRole === 'tenant'
+        ? `<button type="button" data-action="tenant-support-chat" data-support-topic="general" class="help-card">
+            <div class="help-card-icon"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
+            <div class="help-card-body">
+                <p class="help-card-title">${help.supportTitle}</p>
+                <p class="help-card-sub">${help.supportSub}</p>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
+        </button>`
+        : STATE.userRole === 'landlord'
         ? `<button data-go="chat" class="help-card">
             <div class="help-card-icon"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
             <div class="help-card-body">
@@ -3764,6 +3833,15 @@ function screenHelpSupport() {
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
         </button>`;
+    const footerContact = STATE.userRole === 'tenant'
+        ? `<button type="button" data-action="tenant-support-chat" data-support-topic="general" class="help-email">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+            <span>Message ${landlordName}</span>
+        </button>`
+        : `<button data-action="toast" data-msg="support@landlordhq.com" class="help-email">
+            <i data-lucide="mail" class="w-4 h-4"></i>
+            <span>support@landlordhq.com</span>
+        </button>`;
     return `${topBar('Help & Support', { back: true })}
     <div class="screen-content screen-content-sm screen-enter">
         <p class="text-[14px] text-[#64748B] leading-relaxed">${help.intro}</p>
@@ -3776,10 +3854,7 @@ function screenHelpSupport() {
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
         </button>
         ${supportAction}
-        <button data-action="toast" data-msg="support@landlordhq.com" class="help-email">
-            <i data-lucide="mail" class="w-4 h-4"></i>
-            <span>support@landlordhq.com</span>
-        </button>
+        ${footerContact}
     </div>`;
 }
 
@@ -3804,7 +3879,7 @@ function screenFaq() {
             </div>`).join('')}
         </div>
         <p class="text-center text-[13px] text-[#64748B] mt-6">Can't find an answer?</p>
-        <button data-action="toast" data-msg="support@landlordhq.com" class="btn-primary w-full py-3 text-[13px] mt-2">Contact Support</button>
+        ${supportContactBtn(STATE.userRole === 'tenant' ? 'Message Landlord' : 'Contact Support', { topic: 'faq' })}
     </div>`;
 }
 
@@ -3833,7 +3908,7 @@ function screenFaqDetail() {
             </button>` : ''}
         </div>` : ''}
         <button type="button" data-go="faq" class="btn-secondary w-full py-3 text-[13px] mt-4">Browse all questions</button>
-        <button data-action="toast" data-msg="support@landlordhq.com" class="btn-primary w-full py-3 text-[13px] mt-2">Contact Support</button>
+        ${supportContactBtn(STATE.userRole === 'tenant' ? 'Message Landlord' : 'Contact Support', { topic: 'faq' })}
     </div>`;
 }
 

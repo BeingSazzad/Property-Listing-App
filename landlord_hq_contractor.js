@@ -561,13 +561,14 @@ function screenTenantDashboard() {
                 <div><p class="text-[10px] opacity-75">Landlord</p><p class="text-[13px] font-bold">${t.landlord.split(' ')[0]}</p></div>
             </div>
         </div>
+        ${typeof renderLandlordContactCard === 'function' ? renderLandlordContactCard() : ''}
         <div class="dash-quick">
             ${[
                 ['wrench', 'Report Issue', 'log-maintenance', 'primary'],
-                ['message-square', 'Message Landlord', 'messages', 'success'],
-                ['file-text', 'Lease', 'document-preview', 'indigo'],
+                ['phone', 'Call Landlord', 'call-landlord-action', 'indigo'],
+                ['message-square', 'Message', 'messages', 'success'],
             ].map(([ic, label, go, tone]) => `
-            <button data-go="${go}" class="dash-quick-btn">
+            <button ${go === 'call-landlord-action' ? 'type="button" data-action="call-landlord"' : `data-go="${go}"`} class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${label}</span>
             </button>`).join('')}

@@ -510,6 +510,152 @@ function renderContactOutlineRow(items) {
     </div>`;
 }
 
+function formatMoneyField(val) {
+    if (!val && val !== 0) return '—';
+    if (typeof val === 'string' && val.trim().startsWith('£')) return val.trim();
+    const n = typeof val === 'number' ? val : parseRentAmount(val);
+    return n ? formatRentAmount(n) : '—';
+}
+
+function getTenantFinancials(tenantId) {
+    const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST[tenantId];
+    const tenancy = listItem && typeof getTenancyForTenantListItem === 'function'
+        ? getTenancyForTenantListItem(listItem)
+        : null;
+    const deposit = t?.deposit ?? tenancy?.deposit;
+    const advancePaid = t?.advancePaid ?? tenancy?.advancePaid;
+    const moveIn = t?.moveIn || tenancy?.start || null;
+    const leaseEnd = t?.leaseEnd || tenancy?.end || null;
+    return {
+        deposit: formatMoneyField(deposit),
+        advancePaid: formatMoneyField(advancePaid),
+        moveIn,
+        leaseEnd,
+    };
+}
+
+function tenantNidStatus(tenantId) {
+    const t = TENANTS[tenantId];
+    if (!t?.idNumber) return 'Not provided';
+    const hasDoc = t.nidProof || (typeof getTenantNidProof === 'function' && getTenantNidProof(tenantId));
+    return hasDoc ? 'Document on file' : 'Number only — no scan';
+}
+
+function renderTenantContactQuickActions(tenantId) {
+    const t = TENANTS[tenantId];
+    if (!t) return '';
+    const chatId = typeof getTenantChatId === 'function' ? getTenantChatId(tenantId) : null;
+    const msgAttrs = chatId != null && chatId !== 0
+        ? `data-go="chat" data-chat="${chatId}"`
+        : `data-go="messages"`;
+    const actions = [
+        ['phone', 'Call', `data-action="call-tenant" data-tid="${tenantId}"`],
+        ['message-square', 'Message', msgAttrs],
+        ['mail', 'Email', `data-action="email-tenant" data-tid="${tenantId}"`],
+    ];
+    return `
+    <div class="tenant-contact-row">
+        <div class="tenant-quick-actions">
+            ${actions.map(([ic, label, attrs]) => `
+            <button type="button" ${attrs} class="tenant-quick-btn">
+                <span class="tenant-quick-icon"><i data-lucide="${ic}" class="w-5 h-5"></i></span>
+                <span>${label}</span>
+            </button>`).join('')}
+        </div>
+    </div>`;
+}
+
+function renderTenantOverviewSummary(tenantId) {
+    const t = TENANTS[tenantId];
+    if (!t) return '';
+    const fin = getTenantFinancials(tenantId);
+    const moveInLabel = fin.moveIn && typeof formatDisplayDate === 'function'
+        ? formatDisplayDate(fin.moveIn) || fin.moveIn
+        : (fin.moveIn || '—');
+    const rows = [
+        ['Phone', t.phone || '—'],
+        ['Email', t.email || '—'],
+        ['NID', t.idNumber || '—'],
+        ['ID document', tenantNidStatus(tenantId)],
+        ['Deposit held', fin.deposit],
+        ['Advance paid', fin.advancePaid],
+        ['Move-in', moveInLabel],
+    ];
+    return `
+    <div class="card tenant-fields-card tenant-overview-summary" style="margin:0 var(--gutter) 16px">
+        ${rows.map(([label, value]) => `
+        <div class="tenant-field">
+            <p class="tenant-field-label">${label}</p>
+            <p class="tenant-field-value">${escapeHtml(String(value))}</p>
+        </div>`).join('')}
+    </div>`;
+}
+
+const TENANT_SUPPORT_PREFILLS = {
+    general: 'Hi, I need help with my tenancy.',
+    faq: 'Hi, I still need help after reading the FAQ:',
+};
+
+function resolveTenantRecordId() {
+    const account = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    if (!account) return null;
+    const match = TENANTS.find(t => t.email?.toLowerCase() === account.email?.toLowerCase());
+    return match?.id ?? account.id ?? null;
+}
+
+function getActiveTenantLandlordChatId() {
+    const tid = resolveTenantRecordId();
+    if (tid != null && typeof getTenantChatId === 'function') {
+        const chatId = getTenantChatId(tid);
+        if (chatId != null) return chatId;
+    }
+    return typeof getLandlordChatId === 'function' ? getLandlordChatId() : 0;
+}
+
+function tenantChatView(conv) {
+    if (!conv) return null;
+    const landlordName = `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`;
+    return {
+        ...conv,
+        name: landlordName,
+        img: IMG.avatar.john,
+        sub: 'Your landlord',
+        messages: (conv.messages || []).map(m => ({
+            ...m,
+            type: m.type === 'in' ? 'out' : 'in',
+        })),
+    };
+}
+
+function openTenantSupportChat(topic = 'general') {
+    if (STATE.userRole !== 'tenant') return;
+    const chatId = getActiveTenantLandlordChatId();
+    STATE.chatId = chatId;
+    STATE.chatDraft = TENANT_SUPPORT_PREFILLS[topic] || TENANT_SUPPORT_PREFILLS.general || '';
+    go('chat', { chatId });
+}
+
+function renderLandlordContactCard() {
+    const name = `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`;
+    const chatId = getActiveTenantLandlordChatId();
+    const msgAttrs = chatId != null ? `data-go="chat" data-chat="${chatId}"` : `data-go="messages"`;
+    return `
+    <div class="card p-4">
+        <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Your landlord</p>
+        <p class="text-[14px] font-bold text-[#0F172A] mt-1">${escapeHtml(name)}</p>
+        <p class="text-[12px] text-[#64748B] mt-1">${escapeHtml(LANDLORD_USER.phone || '—')}</p>
+        <p class="text-[12px] text-[#64748B] mt-0.5">${escapeHtml(LANDLORD_USER.email || '—')}</p>
+        <div class="mt-3">
+            ${renderContactOutlineRow([
+                ['phone', 'Call', `data-action="call-landlord"`],
+                ['message-square', 'Message', msgAttrs],
+                ['mail', 'Email', `data-action="email-landlord"`],
+            ])}
+        </div>
+    </div>`;
+}
+
 function renderPhotoPreviewStrip(photos, opts = {}) {
     if (!photos?.length) return '';
     const removeAction = opts.removeAction || 'remove-pending-photo';
@@ -2757,7 +2903,7 @@ function pendingTenantInviteCount() {
 function tenantPaymentSummary(tenantId) {
     const listItem = TENANT_LIST[tenantId];
     const t = TENANTS[tenantId];
-    if (!listItem || !t) return { balance: '£0.00', lastPayment: '—', nextDue: '—', deposit: '—' };
+    if (!listItem || !t) return { balance: '£0.00', lastPayment: '—', nextDue: '—', deposit: '—', advancePaid: '—' };
     const invs = INVOICES.filter(i =>
         i.tenant === listItem.name ||
         (i.prop.includes(listItem.prop) && (!i.unit || i.unit === listItem.unit))
@@ -2767,13 +2913,14 @@ function tenantPaymentSummary(tenantId) {
     const lastPaid = invs.filter(i => i.status === 'Paid').sort((a, b) => (b.paidOn || b.due).localeCompare(a.paidOn || a.due))[0];
     const nextDue = invs.find(i => i.status === 'Pending' || i.status === 'Overdue');
     const overdue = invs.filter(i => i.status === 'Overdue');
-    const depositAmt = parseRentAmount(t.rent);
+    const fin = getTenantFinancials(tenantId);
     return {
         balance: balance ? formatRentAmount(balance) : '£0.00',
         lastPayment: lastPaid ? `${lastPaid.amount} · ${lastPaid.paidOn || lastPaid.due}` : '—',
         nextDue: nextDue ? `${nextDue.amount} · ${nextDue.due}` : '—',
         overdueCount: overdue.length,
-        deposit: depositAmt ? formatRentAmount(depositAmt) : '—',
+        deposit: fin.deposit,
+        advancePaid: fin.advancePaid,
     };
 }
 
@@ -2799,10 +2946,10 @@ function normalizeDemoPortfolio() {
         INVOICES.splice(0, INVOICES.length, ...canonicalInvoices);
     }
     const canonicalTenancies = [
-        { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active' },
-        { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', start: '2023-06-01', end: '2027-05-31', status: 'active' },
-        { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active' },
-        { id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
+        { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', deposit: '£2,450', advancePaid: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active' },
+        { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', deposit: '£1,850', advancePaid: '£1,850', start: '2023-06-01', end: '2027-05-31', status: 'active' },
+        { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', deposit: '£1,950', advancePaid: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active' },
+        { id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', deposit: '£2,200', advancePaid: '£2,200', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
             { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
             { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
             { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
@@ -2815,9 +2962,19 @@ function normalizeDemoPortfolio() {
         AppStore.save();
     }
     const canonicalNids = ['4859217360', '7391045826', '6028471935', '9183746502', '3849201756', '5928173046'];
+    const canonicalDeposits = ['£2,450', '£1,850', '£1,950', '£2,100', '£2,200', '£2,200'];
+    const canonicalAdvances = ['£2,450', '£1,850', '£1,950', '£2,100', '£2,200', '—'];
     TENANTS.forEach((t, i) => {
         if (!t.idNumber || String(t.idNumber).startsWith('TN-')) t.idNumber = canonicalNids[i] || t.idNumber;
         if (!t.nidProof && t.id !== 5) t.nidProof = 'NID Proof.jpg';
+        if (!t.deposit) t.deposit = canonicalDeposits[i] || t.deposit;
+        if (t.advancePaid == null || t.advancePaid === '') t.advancePaid = canonicalAdvances[i] || t.advancePaid;
+    });
+    AppStore.tenancies?.forEach((ten, i) => {
+        const canon = canonicalTenancies[i];
+        if (!canon || ten.unit !== canon.unit) return;
+        if (!ten.deposit) ten.deposit = canon.deposit;
+        if (!ten.advancePaid) ten.advancePaid = canon.advancePaid;
     });
     syncInspectionDates();
 }
@@ -4277,6 +4434,7 @@ function tenantListQuickActions(t) {
         ? `data-go="chat" data-chat="${chatId}"`
         : `data-go="messages"`;
     const btns = [
+        `<button type="button" data-action="call-tenant" data-tid="${t.id}" class="tenant-list-quick-btn"><i data-lucide="phone" class="w-3.5 h-3.5"></i>Call</button>`,
         `<button type="button" ${msgAttrs} class="tenant-list-quick-btn"><i data-lucide="message-square" class="w-3.5 h-3.5"></i>Message</button>`,
     ];
     if (unpaid) {
@@ -5239,10 +5397,15 @@ function sendChatMessage() {
     if (!text) return;
     const c = conversation(STATE.chatId);
     const time = formatEventTime();
-    c.messages.push({ type: 'out', text, time: `${time} · Sent` });
+    const isTenant = STATE.userRole === 'tenant';
+    c.messages.push({
+        type: isTenant ? 'in' : 'out',
+        text,
+        time: `${time} · Sent`,
+    });
     c.preview = text.length > 48 ? `${text.slice(0, 48)}…` : text;
     c.time = time;
-    c.unread = 0;
+    c.unread = isTenant ? (c.unread || 0) + 1 : 0;
     STATE.chatDraft = '';
     AppStore.save();
     render();
@@ -8546,6 +8709,28 @@ function bindFeatureEvents() {
             const t = TENANTS[tid];
             if (t?.email) { window.location.href = `mailto:${t.email}`; }
             else toast('No email on file');
+        };
+    });
+    app.querySelectorAll('[data-action="call-landlord"]').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            if (LANDLORD_USER.phone) window.location.href = `tel:${LANDLORD_USER.phone.replace(/\s/g, '')}`;
+            else toast('No landlord phone on file');
+        };
+    });
+    app.querySelectorAll('[data-action="email-landlord"]').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            if (LANDLORD_USER.email) window.location.href = `mailto:${LANDLORD_USER.email}`;
+            else toast('No landlord email on file');
+        };
+    });
+    app.querySelectorAll('[data-action="tenant-support-chat"]').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            if (typeof openTenantSupportChat === 'function') {
+                openTenantSupportChat(el.dataset.supportTopic || 'general');
+            }
         };
     });
     app.querySelectorAll('[data-action="call-contractor"]').forEach(el => {
