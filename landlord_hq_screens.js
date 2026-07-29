@@ -54,6 +54,8 @@ const STATE = {
     propertiesAdvanced: { rent: 'all', beds: 'any' },
     search: { properties: '', tenants: '', messages: '', contractors: '', global: '', maintenance: '' },
     maintFilter: 'open', invoiceFilter: 'pending', logPriority: 'Medium',
+    maintScopeFilter: 'all',
+    logMaintScope: 'unit', logMaintCommunalArea: 'Hallway',
     onboardingStep: 0, authRole: 'landlord', userRole: 'landlord', otpDigits: [], otpContext: 'signup',
     showPassword: false, showConfirmPassword: false, resetEmail: '',
     isAuthenticated: false, onboardingComplete: false, authReturnScreen: 'sign-in',
@@ -299,8 +301,11 @@ const MAINTENANCE_ITEMS = [
     { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, photos: [IMG.maint[2]], desc:'No hot water or heating. Boiler showing error code E119.', reportedBy:'tenant', tenantName:'David Wilson', reportedAt:'3d ago' },
     { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, photos: [IMG.maint[1]], desc:'Living room radiator cold while others work. Possible air lock or valve issue.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'4d ago' },
     { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2B', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, photos: [IMG.maint[2]], desc:'Living room ceiling light flickering — resolved with new fitting.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'5d ago' },
-    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, photos: [IMG.maint[0]], desc:'Kitchen tap replaced. No further issues reported.', reportedBy:'landlord' },
+    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, photos: [IMG.maint[0]], desc:'Kitchen tap replaced. No further issues reported.', reportedBy:'landlord', scope:'unit' },
+    { id: 7, issue:'Hallway light out', prop:'12 Park Lane', unit:'Communal', scope:'communal', communalArea:'Hallway', time:'6h ago', priority:'Medium', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[1]], desc:'Main entrance hallway ceiling light not working. Affects all residents.', reportedBy:'landlord' },
 ];
+
+const COMMUNAL_AREAS = ['Hallway', 'Stairwell', 'Roof', 'Garden', 'Boiler room', 'Other'];
 
 const maintItem = (id) => MAINTENANCE_ITEMS.find(m => m.id === id) || MAINTENANCE_ITEMS[0];
 
@@ -2006,8 +2011,10 @@ function filterProperties() {
     });
 }
 function setMaintFilter(f) { STATE.maintFilter = f; render(); }
+function setMaintScopeFilter(f) { STATE.maintScopeFilter = f; render(); }
 function setInvoiceFilter(f) { STATE.invoiceFilter = f; render(); }
 function setLogPriority(p) { STATE.logPriority = p; render(); }
+function setLogMaintScope(scope) { STATE.logMaintScope = scope; render(); }
 function setSearch(key, val) { STATE.search[key] = val; render(); }
 function toggleSwitch(key) { STATE.toggles[key] = !STATE.toggles[key]; render(); }
 
@@ -2283,9 +2290,11 @@ const maintCard = (m, opts = {}) => {
     const priority = typeof maintPriorityTone === 'function' ? maintPriorityTone(m.priority) : { label: m.priority, cls: 'maint-priority-pill--low' };
     const photo = typeof maintIssuePhoto === 'function' ? maintIssuePhoto(m) : IMG.maint[m.id % IMG.maint.length];
     const propName = m.prop.split(',')[0];
-    const location = opts.hideProperty
-        ? (m.unit && m.unit !== '—' ? m.unit : propName)
-        : `${propName}${m.unit && m.unit !== '—' ? ` · ${m.unit}` : ''}`;
+    const location = typeof formatMaintLocation === 'function'
+        ? formatMaintLocation(m, { hideProperty: opts.hideProperty, propName })
+        : (opts.hideProperty
+            ? (m.unit && m.unit !== '—' ? m.unit : propName)
+            : `${propName}${m.unit && m.unit !== '—' ? ` · ${m.unit}` : ''}`);
     const when = m.reportedAt || m.time || '—';
     const statusLabel = maintStatusShort[m.status] || maintStatusLabel[m.status];
     return `
@@ -2924,7 +2933,7 @@ function screenPropertyDetail() {
             <div class="screen-content screen-content-sm prop-hub-page">
                 <div class="maint-toolbar maint-toolbar--inline">
                     <p class="maint-section-label maint-toolbar-label">${openItems.length ? `${openItems.length} open issue${openItems.length === 1 ? '' : 's'}` : 'All clear — no open issues'}</p>
-                    <button type="button" data-go="log-maintenance" data-pid="${STATE.propertyId}" class="maint-log-btn" title="Log new issue" aria-label="Log new issue">
+                    <button type="button" data-go="log-maintenance" data-pid="${STATE.propertyId}"${unitScope ? ` data-unit="${unitScope}"` : ''} class="maint-log-btn" title="Log new issue" aria-label="Log new issue">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -3288,7 +3297,9 @@ function screenTenantDetail() {
 
 function screenMaintenance() {
     const f = STATE.maintFilter || 'all';
+    const scopeF = STATE.maintScopeFilter || 'all';
     const q = (STATE.search.maintenance || '').toLowerCase();
+    const isCommunal = typeof isCommunalMaint === 'function' ? isCommunalMaint : () => false;
     const counts = {
         all: MAINTENANCE_ITEMS.length,
         open: MAINTENANCE_ITEMS.filter(m => m.status === 'open').length,
@@ -3297,11 +3308,14 @@ function screenMaintenance() {
     };
     const activeCount = counts.open + counts.progress;
     let items = f === 'all' ? MAINTENANCE_ITEMS : MAINTENANCE_ITEMS.filter(m => m.status === f);
+    if (scopeF === 'unit') items = items.filter(m => !isCommunal(m));
+    else if (scopeF === 'communal') items = items.filter(m => isCommunal(m));
     if (q) {
         items = items.filter(m =>
             m.issue.toLowerCase().includes(q)
             || m.prop.toLowerCase().includes(q)
             || (m.unit || '').toLowerCase().includes(q)
+            || (m.communalArea || '').toLowerCase().includes(q)
             || (m.tenantName || '').toLowerCase().includes(q)
         );
     }
@@ -3343,6 +3357,14 @@ function screenMaintenance() {
                 <span class="maint-summary-val">${n}</span>
                 <span class="maint-summary-lbl">${label}</span>
             </button>`).join('')}
+        </div>
+        <div class="filter-tabs" style="margin-bottom:12px">
+            ${[
+                ['all', 'All locations'],
+                ['unit', 'Units'],
+                ['communal', 'Communal'],
+            ].map(([key, label]) => `
+            <button type="button" data-maint-scope-filter="${key}" class="filter-chip ${scopeF === key ? 'active' : ''}">${label}</button>`).join('')}
         </div>
         ${items.length ? `<div class="maint-list">${items.map(m => maintCard(m)).join('')}</div>` : `
         <div class="card p-8 text-center">
@@ -4218,10 +4240,12 @@ function screenLogMaintenance() {
     const isTenant = STATE.userRole === 'tenant';
     const tenant = isTenant ? getActiveTenant() : null;
     const maintCtx = !isTenant && STATE.logMaintPrefill;
+    const scope = maintCtx || isTenant ? 'unit' : (STATE.logMaintScope || 'unit');
     const pid = isTenant ? tenant?.propertyId : (maintCtx?.propertyId ?? STATE.propertyId);
     const p = pid != null ? PROPERTIES[pid] : null;
     const selectedUnit = STATE.selectedUnit || tenant?.unit || maintCtx?.unit || '';
     const titlePrefill = maintCtx?.unit ? `${maintCtx.unit} — ` : '';
+    const communalArea = STATE.logMaintCommunalArea || COMMUNAL_AREAS[0];
     const propertyField = isTenant ? `
         <div class="card p-4" style="background:#F8FAFC">
             <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wide">Your Property</p>
@@ -4235,9 +4259,20 @@ function screenLogMaintenance() {
         </div>
         <input type="hidden" data-field="propertyId" value="${pid}">
         <input type="hidden" data-field="unit" value="${selectedUnit}">` : `
+        <div>
+            <label class="form-label">Where is the issue?</label>
+            <div class="flex gap-2">
+                <button type="button" data-log-maint-scope="unit" class="tab-pill flex-1 ${scope === 'unit' ? 'active' : ''}">In a unit</button>
+                <button type="button" data-log-maint-scope="communal" class="tab-pill flex-1 ${scope === 'communal' ? 'active' : ''}">Communal</button>
+            </div>
+            <p class="text-[11px] text-[#64748B] mt-1">${scope === 'communal' ? 'Shared areas — hallway, roof, garden, boiler room, etc.' : 'Inside a specific flat or unit.'}</p>
+        </div>
         <div><label class="form-label">Property <span class="form-required">*</span></label>
         <select data-field="propertyId" class="form-input form-select" data-action="refresh-maint-units">${PROPERTIES.map(prop => `<option value="${prop.id}" ${prop.id === pid ? 'selected' : ''}>${prop.name}</option>`).join('')}</select></div>
-        ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Unit <span class="form-required">*</span></label>${unitSelectHtml(pid ?? 0, 'unit', false, selectedUnit)}</div>` : ''}`;
+        ${scope === 'communal' ? `
+        <div><label class="form-label">Communal area <span class="form-required">*</span></label>
+        <select data-field="communalArea" class="form-input form-select">${COMMUNAL_AREAS.map(area => `<option value="${area}" ${communalArea === area ? 'selected' : ''}>${area}</option>`).join('')}</select></div>`
+        : (typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Unit <span class="form-required">*</span></label>${unitSelectHtml(pid ?? 0, 'unit', false, selectedUnit)}</div>` : '')}`;
     return `${topBar(isTenant ? 'Report Issue' : 'Log Issue', { back: !shouldShowBottomNav('log-maintenance') })}
     <div class="screen-content screen-enter">
         ${propertyField}
@@ -4467,6 +4502,9 @@ function handleAppClick(e) {
     const maintFilter = e.target.closest('[data-maint-filter]');
     if (maintFilter) { e.preventDefault(); setMaintFilter(maintFilter.dataset.maintFilter); return; }
 
+    const maintScopeFilter = e.target.closest('[data-maint-scope-filter]');
+    if (maintScopeFilter) { e.preventDefault(); setMaintScopeFilter(maintScopeFilter.dataset.maintScopeFilter); return; }
+
     const invoiceFilter = e.target.closest('[data-invoice-filter]');
     if (invoiceFilter) { e.preventDefault(); setInvoiceFilter(invoiceFilter.dataset.invoiceFilter); return; }
 
@@ -4534,6 +4572,9 @@ function bindEvents() {
 
     app.querySelectorAll('[data-action="tenant-back"]').forEach(el => {
         el.onclick = () => setTenantTab('overview');
+    });
+    app.querySelectorAll('[data-log-maint-scope]').forEach(el => {
+        el.onclick = () => setLogMaintScope(el.dataset.logMaintScope);
     });
     app.querySelectorAll('[data-log-priority]').forEach(el => {
         el.onclick = () => setLogPriority(el.dataset.logPriority);

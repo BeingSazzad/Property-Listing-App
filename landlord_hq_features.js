@@ -3234,10 +3234,30 @@ function renderPropertyUnitsTab(propertyId) {
     </div>`;
 }
 
+function isCommunalMaint(item) {
+    return item?.scope === 'communal' || item?.unit === 'Communal';
+}
+
+function formatMaintLocation(m, opts = {}) {
+    const propName = opts.propName || m.prop?.split(',')[0] || '';
+    if (isCommunalMaint(m)) {
+        const area = m.communalArea || 'Communal area';
+        return opts.hideProperty ? `Communal · ${area}` : `${propName} · Communal · ${area}`;
+    }
+    const unit = m.unit && m.unit !== '—' ? m.unit : '';
+    return opts.hideProperty
+        ? (unit || propName)
+        : `${propName}${unit ? ` · ${unit}` : ''}`;
+}
+
 function maintenanceForUnit(propertyId, unit) {
     return MAINTENANCE_ITEMS.filter(m =>
-        m.propertyId === propertyId && (m.unit === unit || m.unit === '—')
+        m.propertyId === propertyId && !isCommunalMaint(m) && m.unit === unit
     );
+}
+
+function maintenanceForProperty(propertyId) {
+    return MAINTENANCE_ITEMS.filter(m => m.propertyId === propertyId);
 }
 
 function invoicesForUnit(propertyId, unit) {
@@ -5633,6 +5653,10 @@ function renderPropertyInspectionTab(propertyId) {
 
 function maintDetailHeader(item) {
     const p = PROPERTIES[item.propertyId ?? STATE.propertyId];
+    if (isCommunalMaint(item)) {
+        const area = item.communalArea || 'Communal';
+        return { title: 'Communal', subtitle: `${area} · ${p?.name || item.prop}` };
+    }
     const unit = item.unit && item.unit !== '—' ? item.unit : '';
     const fromFlat = unit && (STATE.flatReturn?.unit === unit || STATE.selectedUnit === unit);
     if (fromFlat) {
@@ -5670,7 +5694,9 @@ function screenMaintenanceDetailEnhanced() {
         });
     }
     const chatId = getContractorChatId(item.contractor);
-    const location = `${item.prop.split(',')[0]}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}`;
+    const location = typeof formatMaintLocation === 'function'
+        ? formatMaintLocation(item)
+        : `${item.prop.split(',')[0]}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}`;
     const isTenantView = STATE.userRole === 'tenant';
 
     if (isTenantView) {
@@ -5747,6 +5773,7 @@ function screenMaintenanceDetailEnhanced() {
                 <div class="maint-detail-badges">
                     <span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span>
                     <span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span>
+                    ${isCommunalMaint(item) ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal</span>' : ''}
                 </div>
             </div>
             <p class="maint-detail-meta"><i data-lucide="map-pin" class="w-3.5 h-3.5 inline-block -mt-px"></i> ${location} · ${item.time}</p>
@@ -5937,7 +5964,8 @@ function renderTenantMaintenanceSection(tenantId) {
     const f = STATE.tenantMaintFilter || 'all';
     const tenantMaint = MAINTENANCE_ITEMS.filter(m =>
         m.propertyId === listItem?.propertyId &&
-        (m.unit === listItem?.unit || m.unit === '—')
+        !isCommunalMaint(m) &&
+        m.unit === listItem?.unit
     );
     const filtered = f === 'all' ? tenantMaint
         : f === 'open' ? tenantMaint.filter(m => m.status === 'open' || m.status === 'progress')
@@ -7097,7 +7125,25 @@ function saveLogMaintenance() {
         toast('Tenant account not linked to a property');
         return;
     }
-    const unit = isTenant ? tenant?.unit : (fieldVal('unit') || STATE.selectedUnit || '');
+    const hasPrefill = !isTenant && STATE.logMaintPrefill;
+    const scope = isTenant ? 'unit' : (hasPrefill ? 'unit' : (STATE.logMaintScope || 'unit'));
+    let unit = '';
+    let communalArea = null;
+    if (scope === 'communal') {
+        communalArea = fieldVal('communalArea') || STATE.logMaintCommunalArea;
+        if (!communalArea) {
+            toast('Select a communal area');
+            return;
+        }
+        unit = 'Communal';
+        STATE.logMaintCommunalArea = communalArea;
+    } else {
+        unit = isTenant ? tenant?.unit : (fieldVal('unit') || STATE.selectedUnit || '');
+        if (!isTenant && !unit) {
+            toast('Select a unit');
+            return;
+        }
+    }
     const p = PROPERTIES[pid];
     const id = AppStore.nextId(MAINTENANCE_ITEMS);
     const entry = {
@@ -7105,8 +7151,10 @@ function saveLogMaintenance() {
         priority: STATE.logPriority, contractor: '—', status: 'open', propertyId: pid,
         desc: fieldVal('desc'),
         photos: STATE.logMaintPhotos || [],
+        scope,
         history: [{ event: 'Issue reported', detail: fieldVal('desc'), time: 'Just now' }],
     };
+    if (scope === 'communal') entry.communalArea = communalArea;
     if (isTenant) {
         entry.reportedBy = 'tenant';
         entry.tenantName = `${tenant.firstName} ${tenant.lastName}`;
@@ -7118,6 +7166,7 @@ function saveLogMaintenance() {
     MAINTENANCE_ITEMS.unshift(entry);
     STATE.logMaintPhotos = [];
     STATE.logMaintPrefill = null;
+    STATE.logMaintScope = 'unit';
     if (isTenant) {
         pushNotification({
             icon: 'wrench', color: ['#FEE2E2', '#DC2626'],
@@ -8489,8 +8538,10 @@ function goFeature(screen, opts = {}) {
                 propertyId: opts.propertyId != null ? opts.propertyId : STATE.propertyId,
             };
             STATE.selectedUnit = opts.unit;
+            STATE.logMaintScope = 'unit';
         } else {
             STATE.logMaintPrefill = null;
+            if (from !== 'log-maintenance') STATE.logMaintScope = 'unit';
         }
         STATE.logMaintPhotos = [];
     }

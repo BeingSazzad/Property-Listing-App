@@ -524,7 +524,8 @@ function screenTenantDashboard() {
     const tenantIssues = typeof MAINTENANCE_ITEMS !== 'undefined'
         ? MAINTENANCE_ITEMS.filter(m =>
             m.propertyId === t.propertyId &&
-            (!t.unit || !m.unit || m.unit === '—' || m.unit === t.unit)
+            !(typeof isCommunalMaint === 'function' && isCommunalMaint(m)) &&
+            m.unit === t.unit
         ).slice(0, 4)
         : [];
     return `${tenantDashboardHeader(t, p)}
