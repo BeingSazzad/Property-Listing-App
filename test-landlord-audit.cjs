@@ -87,7 +87,7 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
   }
 
   // Property detail tabs
-  const propTabs = ['info', 'more', 'details', 'units', 'tenant', 'documents', 'maintenance', 'inspection', 'compliance', 'inventory'];
+  const propTabs = ['info', 'records', 'details', 'units', 'tenant', 'documents', 'maintenance', 'inspection', 'compliance', 'inventory'];
   for (const tab of propTabs) {
     await page.evaluate((t) => go('property-detail', { propertyId: 0, tab: t }), tab);
     await new Promise((r) => setTimeout(r, 350));
@@ -168,6 +168,8 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
     ['property-parking', { propertyId: 0 }],
     ['property-appliances', { propertyId: 0 }],
     ['property-alarms', { propertyId: 0 }],
+    ['property-photos', { propertyId: 0 }],
+    ['property-floor-plans', { propertyId: 0 }],
     ['share-document', { shareDocId: 0 }],
     ['tenant-add-note', { tenantId: 0 }],
     ['maintenance-history', {}],

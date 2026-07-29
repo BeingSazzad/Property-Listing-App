@@ -224,6 +224,8 @@ const AppStore = {
         if (!this.propertyMeta[pid].alarms) this.propertyMeta[pid].alarms = {};
         if (!this.propertyMeta[pid].utilities) this.propertyMeta[pid].utilities = {};
         if (!this.propertyMeta[pid].parking) this.propertyMeta[pid].parking = {};
+        if (!Array.isArray(this.propertyMeta[pid].floorPlans)) this.propertyMeta[pid].floorPlans = [];
+        if (!Array.isArray(this.propertyMeta[pid].photos)) this.propertyMeta[pid].photos = [IMG.props[pid]];
         return this.propertyMeta[pid];
     },
     docsForProperty(pid) { return this.documents.filter(d => d.propertyId === pid); },
@@ -613,6 +615,49 @@ function alarmIcon(key) {
 
 function utilityCatalogItem(key) {
     return UTILITY_CATALOG.find(u => u.key === key);
+}
+
+function propertyHasParking(meta) {
+    const p = meta?.parking || {};
+    return (p.spaces > 0)
+        || (p.type && p.type !== 'None')
+        || !!(p.notes?.trim())
+        || !!(p.permit?.trim());
+}
+
+function propertyParkingSummary(meta) {
+    const p = meta?.parking || {};
+    return [p.type, p.spaces ? `${p.spaces} space${p.spaces === 1 ? '' : 's'}` : '', p.permit ? `Permit ${p.permit}` : '']
+        .filter(Boolean)
+        .join(' · ');
+}
+
+function alarmHasData(alarm) {
+    return !!(alarm && (alarm.location || alarm.expiry || alarm.lastCheck));
+}
+
+function propertyUtilityDisplayItems(meta) {
+    const items = UTILITY_CATALOG
+        .filter(u => meta.utilities?.[u.key])
+        .map(u => ({
+            icon: u.icon,
+            label: u.label,
+            sub: meta.utilities[u.key] || '',
+        }));
+    if (propertyHasParking(meta)) {
+        items.push({ icon: 'car', label: 'Parking', sub: propertyParkingSummary(meta) });
+    }
+    return items;
+}
+
+function renderBuildingIconItem({ icon, label, sub = '' }) {
+    return `<div class="building-icon-item">
+        <i data-lucide="${icon}" class="w-4 h-4"></i>
+        <span class="building-icon-item-copy">
+            <span class="building-icon-label">${escapeHtml(label)}</span>
+            ${sub ? `<span class="building-icon-sub">${escapeHtml(sub)}</span>` : ''}
+        </span>
+    </div>`;
 }
 
 function renderFeaturePickGrid(items, { isActive, action, valueKey = 'name', labelKey = 'name', iconKey = 'icon' }) {
@@ -1909,14 +1954,15 @@ function renderPropertyOverviewDetails(propertyId) {
     const cover = getPropertyCoverPhoto(propertyId);
     const photoCount = meta.photos?.length || 0;
     const photos = meta.photos?.length ? meta.photos : [IMG.props[propertyId]];
-    const utilItems = UTILITY_CATALOG
-        .map(u => [u.icon, u.label, meta.utilities?.[u.key]])
-        .concat([['car', 'Parking', meta.parking?.spaces ? `Parking (${meta.parking.spaces})` : null]])
-        .filter(([, , v]) => v);
-    const applianceItems = (meta.appliances || []).map(a => [applianceIcon(a.name), a.name]);
+    const utilItems = propertyUtilityDisplayItems(meta);
+    const applianceItems = (meta.appliances || []).map(a => ({
+        icon: applianceIcon(a.name),
+        label: a.name,
+        sub: [a.brand, a.condition && a.condition !== 'Good' ? a.condition : ''].filter(Boolean).join(' · '),
+    }));
     const alarmItems = ALARM_CATALOG
-        .filter(a => meta.alarms?.[a.key])
-        .map(a => [a.icon, `${a.label} Alarm`]);
+        .filter(a => alarmHasData(meta.alarms?.[a.key]))
+        .map(a => ({ icon: a.icon, label: `${a.label} Alarm`, sub: meta.alarms[a.key].location || '' }));
     const featureItems = [...applianceItems, ...alarmItems];
     const infoRows = [
         ['home', 'Type', info.type || '—'],
@@ -1980,11 +2026,7 @@ function renderPropertyOverviewDetails(propertyId) {
             ])}
             ${utilItems.length ? `
             <div class="building-icon-grid cols-3">
-                ${utilItems.map(([icon, label]) => `
-                <div class="building-icon-item">
-                    <i data-lucide="${icon}" class="w-4 h-4"></i>
-                    <span>${label}</span>
-                </div>`).join('')}
+                ${utilItems.map(item => renderBuildingIconItem(item)).join('')}
             </div>` : `<p class="building-empty-copy">No utilities set yet.</p>`}
             ${meta.parking?.notes ? `
             <div class="building-notes-block building-notes-block--compact">
@@ -1999,13 +2041,17 @@ function renderPropertyOverviewDetails(propertyId) {
             ])}
             ${featureItems.length ? `
             <div class="building-icon-grid cols-2">
-                ${featureItems.map(([icon, label]) => `
-                <div class="building-icon-item">
-                    <i data-lucide="${icon}" class="w-4 h-4"></i>
-                    <span>${label}</span>
-                </div>`).join('')}
+                ${featureItems.map(item => renderBuildingIconItem(item)).join('')}
             </div>` : `<p class="building-empty-copy">No appliances or alarms added yet.</p>`}
         </div>
+        <button type="button" data-tab="records" class="building-records-link card w-full text-left">
+            <span class="building-records-link-icon" aria-hidden="true"><i data-lucide="folder-open" class="w-5 h-5"></i></span>
+            <span class="building-records-link-body">
+                <span class="building-records-link-label">Property records</span>
+                <span class="building-records-link-meta">${propertyRecordsSummaryLine(propertyId)}</span>
+            </span>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+        </button>
         <button data-go="property-floor-plans" class="btn-secondary w-full py-3 text-[13px]">View Floor Plans</button>
     </div>`;
 }
@@ -2967,24 +3013,29 @@ function propertyHubMetaLine(propertyId) {
 }
 
 const PROPERTY_BUILDING_SECTIONS = new Set(['photos', 'floor-plans']);
-const PROPERTY_MORE_SECTIONS = new Set(['documents', 'inspection', 'compliance', 'inventory', 'timeline']);
+const PROPERTY_RECORDS_SECTIONS = new Set(['documents', 'inspection', 'compliance', 'inventory', 'timeline']);
 
 function isPropertyBuildingSection(tab) {
     return PROPERTY_BUILDING_SECTIONS.has(tab);
 }
 
+function isPropertyRecordsSection(tab) {
+    return PROPERTY_RECORDS_SECTIONS.has(tab);
+}
+
+/** @deprecated use isPropertyRecordsSection */
 function isPropertyMoreSection(tab) {
-    return PROPERTY_MORE_SECTIONS.has(tab);
+    return isPropertyRecordsSection(tab);
 }
 
 function isPropertyInfoSection(tab) {
-    return isPropertyBuildingSection(tab) || isPropertyMoreSection(tab);
+    return isPropertyBuildingSection(tab) || isPropertyRecordsSection(tab);
 }
 
 function propertyPrimaryNavTab(tab) {
     if (tab === 'tenant') return 'tenant';
     if (tab === 'maintenance') return 'maintenance';
-    if (tab === 'more' || isPropertyMoreSection(tab)) return 'more';
+    if (tab === 'records' || tab === 'more' || isPropertyRecordsSection(tab)) return 'records';
     if (tab === 'info' || tab === 'details' || isPropertyBuildingSection(tab)) return 'info';
     return 'units';
 }
@@ -3002,9 +3053,9 @@ const PROPERTY_SECTION_LABELS = {
 function propertyInfoSectionBackBar(tab) {
     let parentTab;
     let parentLabel;
-    if (isPropertyMoreSection(tab)) {
-        parentTab = 'more';
-        parentLabel = 'More';
+    if (isPropertyRecordsSection(tab)) {
+        parentTab = 'records';
+        parentLabel = 'Records';
     } else if (isPropertyBuildingSection(tab)) {
         parentTab = 'info';
         parentLabel = 'Info';
@@ -3021,7 +3072,19 @@ function propertyInfoSectionBackBar(tab) {
     </div>`;
 }
 
-function renderPropertyMoreHub(propertyId) {
+function propertyRecordsSummaryLine(propertyId) {
+    const { docs, upcoming } = propertyHubStats(propertyId);
+    const docPart = docs.length ? `${docs.length} doc${docs.length === 1 ? '' : 's'}` : 'No docs';
+    const compliancePart = propertyComplianceHubLabel(propertyId);
+    let inspPart = 'No inspection scheduled';
+    if (upcoming?.date) {
+        const d = typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date;
+        inspPart = `Inspection ${d}`;
+    }
+    return `${docPart} · ${compliancePart} · ${inspPart}`;
+}
+
+function renderPropertyRecordsHub(propertyId) {
     const { docs, upcoming, rooms } = propertyHubStats(propertyId);
     const inspLabel = upcoming ? 'Inspection scheduled' : 'Reports & schedule';
     const items = [
@@ -3031,9 +3094,9 @@ function renderPropertyMoreHub(propertyId) {
         ['package', 'Inventory', 'inventory', rooms.length ? `${rooms.length} room${rooms.length === 1 ? '' : 's'}` : 'Room checklists', '#F5F3FF', '#7C3AED'],
     ];
     return `
-    <div class="screen-content screen-content-sm prop-more-hub">
+    <div class="screen-content screen-content-sm prop-records-hub">
         <div class="prop-info-hub-intro">
-            <p class="prop-info-hub-eyebrow">Records & compliance</p>
+            <p class="prop-info-hub-eyebrow">Property records</p>
             <p class="prop-info-hub-desc">Documents, inspections, compliance and inventory for this property.</p>
         </div>
         <div class="card overflow-hidden prop-info-hub-list">
@@ -3050,9 +3113,14 @@ function renderPropertyMoreHub(propertyId) {
     </div>`;
 }
 
-/** @deprecated use renderPropertyMoreHub */
+/** @deprecated use renderPropertyRecordsHub */
+function renderPropertyMoreHub(propertyId) {
+    return renderPropertyRecordsHub(propertyId);
+}
+
+/** @deprecated use renderPropertyRecordsHub */
 function renderPropertyInfoHub(propertyId) {
-    return renderPropertyMoreHub(propertyId);
+    return renderPropertyRecordsHub(propertyId);
 }
 
 function renderPropertySectionNav(activeTab) {
@@ -3062,7 +3130,7 @@ function renderPropertySectionNav(activeTab) {
         ['tenant', 'Tenants', 'users'],
         ['maintenance', 'Maintenance', 'wrench'],
         ['info', 'Info', 'building-2'],
-        ['more', 'More', 'ellipsis'],
+        ['records', 'Records', 'folder-open'],
     ];
     return `
     <div class="prop-section-nav">
@@ -6942,9 +7010,10 @@ function screenPropertyPhotos() {
 
 function screenPropertyFloorPlans() {
     const meta = AppStore.meta(STATE.propertyId);
-    return `${topBar('Floor Plans', { back: true })}
+    const plans = meta.floorPlans || [];
+    return `${topBar('Floor Plans', { back: true, sub: PROPERTIES[STATE.propertyId]?.name || '' })}
     <div class="screen-content screen-enter">
-        ${meta.floorPlans.length ? meta.floorPlans.map((fp, i) => `
+        ${plans.length ? plans.map((fp, i) => `
         <div class="card overflow-hidden mb-3">
             <div class="aspect-video"><img src="${fp.url}" class="img-cover" alt=""></div>
             <div class="p-3 flex justify-between items-center">
@@ -6986,6 +7055,7 @@ function renderApplianceEditCard(a, i) {
 
 function screenPropertyDetailsEdit(section) {
     const meta = AppStore.meta(STATE.propertyId);
+    const p = PROPERTIES[STATE.propertyId];
     const titles = { alarms: 'Alarm Information', appliances: 'Appliances', utilities: 'Utilities', parking: 'Parking', info: 'Property Information' };
     let body = '';
     if (section === 'info') {
@@ -7025,14 +7095,20 @@ function screenPropertyDetailsEdit(section) {
         <button type="button" data-action="add-appliance" class="btn-secondary w-full py-3 text-[13px] mb-2">+ Add custom appliance</button>`;
     } else if (section === 'utilities') {
         body = `${renderUtilityQuickPick(meta)}
-        ${renderUtilityProviderFields(meta) || `<p class="building-empty-copy">Select utility types above to set providers.</p>`}`;
+        ${renderUtilityProviderFields(meta) || `<p class="building-empty-copy">Select utility types above, then enter provider names.</p>`}
+        <div class="ux-tip mt-3">
+            <p class="ux-tip-title">Parking</p>
+            <p class="ux-tip-text">Parking spaces and permit details are edited separately.</p>
+            <button type="button" data-go="property-parking" data-pid="${STATE.propertyId}" class="header-text-link mt-2">Edit parking</button>
+        </div>`;
     } else if (section === 'parking') {
-        body = `<div><label class="form-label">Spaces</label><input data-field="park_spaces" type="number" class="form-input" value="${meta.parking.spaces || ''}"></div>
-        <div><label class="form-label">Type</label><select data-field="park_type" class="form-input form-select">${['Off-street','On-street','Garage','None'].map(o => `<option ${o===(meta.parking.type||'')?'selected':''}>${o}</option>`).join('')}</select></div>
-        <div><label class="form-label">Permit Number</label><input data-field="park_permit" class="form-input" value="${meta.parking.permit || ''}"></div>
-        <div><label class="form-label">Notes</label><textarea data-field="park_notes" class="form-input min-h-[80px]">${meta.parking.notes || ''}</textarea></div>`;
+        const parking = meta.parking || {};
+        body = `<div><label class="form-label">Spaces</label><input data-field="park_spaces" type="number" class="form-input" value="${parking.spaces || ''}" min="0"></div>
+        <div><label class="form-label">Type</label><select data-field="park_type" class="form-input form-select">${['Off-street','On-street','Garage','None'].map(o => `<option ${o===(parking.type||'')?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div><label class="form-label">Permit Number</label><input data-field="park_permit" class="form-input" value="${escapeHtml(parking.permit || '')}"></div>
+        <div><label class="form-label">Notes</label><textarea data-field="park_notes" class="form-input min-h-[80px]">${escapeHtml(parking.notes || '')}</textarea></div>`;
     }
-    return `${topBar(titles[section] || 'Details', { back: true })}
+    return `${topBar(titles[section] || 'Details', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-enter">${body}
         <button data-action="save-property-meta" data-section="${section}" class="btn-primary w-full py-3.5 text-[14px]">Save Changes</button>
     </div>`;
@@ -7087,7 +7163,11 @@ function savePropertyMeta(section) {
             notes: fieldVal('park_notes'),
         };
     }
-    withLoading(() => { AppStore.save(); toast('Saved'); back(); });
+    withLoading(() => {
+        AppStore.save();
+        toast('Saved');
+        go('property-detail', { propertyId: STATE.propertyId, tab: 'info', noHistory: true });
+    });
 }
 
 function handleFeatureSave(el) {

@@ -1629,7 +1629,7 @@ function go(screen, opts = {}) {
     }
     if (screen === 'reset-verify-code') STATE.otpDigits = [];
     if (screen === 'property-detail') {
-        const legacyTabs = { details: 'info' };
+        const legacyTabs = { details: 'info', more: 'records' };
         const tab = legacyTabs[opts.tab] ?? opts.tab ?? 'units';
         STATE.tab = tab;
         if (opts.propertyId !== undefined && opts.propertyId !== STATE.propertyId) STATE.unitFilter = 'all';
@@ -1867,8 +1867,8 @@ function navigateBackFallback() {
 
 function back() {
     if (STATE.screen === 'property-detail') {
-        if (typeof isPropertyMoreSection === 'function' && isPropertyMoreSection(STATE.tab)) {
-            setTab('more');
+        if (typeof isPropertyRecordsSection === 'function' && isPropertyRecordsSection(STATE.tab)) {
+            setTab('records');
             return;
         }
         if (typeof isPropertyBuildingSection === 'function' && isPropertyBuildingSection(STATE.tab)) {
@@ -1971,8 +1971,8 @@ function back() {
 function setTab(tab) {
     if (tab === 'info' && typeof isPropertyBuildingSection === 'function' && isPropertyBuildingSection(STATE.tab)) {
         STATE.tab = 'info';
-    } else if (tab === 'more' && typeof isPropertyMoreSection === 'function' && isPropertyMoreSection(STATE.tab)) {
-        STATE.tab = 'more';
+    } else if ((tab === 'records' || tab === 'more') && typeof isPropertyRecordsSection === 'function' && isPropertyRecordsSection(STATE.tab)) {
+        STATE.tab = 'records';
     } else if (tab === 'info' && STATE.tab === 'details') {
         STATE.tab = 'info';
     } else {
@@ -2972,9 +2972,11 @@ function screenPropertyDetail() {
         info: typeof renderPropertyOverviewDetails === 'function'
             ? renderPropertyOverviewDetails(STATE.propertyId)
             : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading building details…</p></div>`,
-        more: typeof renderPropertyMoreHub === 'function'
-            ? renderPropertyMoreHub(STATE.propertyId)
-            : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading…</p></div>`,
+        records: typeof renderPropertyRecordsHub === 'function'
+            ? renderPropertyRecordsHub(STATE.propertyId)
+            : (typeof renderPropertyMoreHub === 'function'
+                ? renderPropertyMoreHub(STATE.propertyId)
+                : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading…</p></div>`),
     };
 
     const infoBack = typeof propertyInfoSectionBackBar === 'function' ? propertyInfoSectionBackBar(STATE.tab) : '';
