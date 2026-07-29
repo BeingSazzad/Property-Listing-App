@@ -87,7 +87,7 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
   }
 
   // Property detail tabs
-  const propTabs = ['details', 'units', 'tenant', 'documents', 'maintenance', 'inspection', 'compliance', 'inventory'];
+  const propTabs = ['info', 'details', 'units', 'tenant', 'documents', 'maintenance', 'inspection', 'compliance', 'inventory'];
   for (const tab of propTabs) {
     await page.evaluate((t) => go('property-detail', { propertyId: 0, tab: t }), tab);
     await new Promise((r) => setTimeout(r, 350));

@@ -1,9 +1,9 @@
 /* Landlord HQ — Feature completion layer (persistence, new screens, workflows) */
 
 const CONTRACTORS = [
-    { id: 0, name: 'Plumber Pro', trade: 'Plumbing', img: IMG.avatar.plumber },
-    { id: 1, name: 'Heating Co.', trade: 'Heating', img: IMG.avatar.heating },
-    { id: 2, name: 'Electric Fix', trade: 'Electrical', img: IMG.avatar.electric },
+    { id: 0, name: 'Plumber Pro', trade: 'Plumbing', img: IMG.avatar.plumber, phone: '+44 7700 900201', email: 'jobs@plumberpro.co.uk' },
+    { id: 1, name: 'Heating Co.', trade: 'Heating', img: IMG.avatar.heating, phone: '+44 7700 900202', email: 'service@heatingco.co.uk' },
+    { id: 2, name: 'Electric Fix', trade: 'Electrical', img: IMG.avatar.electric, phone: '+44 7700 900203', email: 'bookings@electricfix.co.uk' },
 ];
 
 const REMINDER_TYPES = [
@@ -247,7 +247,14 @@ Object.assign(STATE, {
     inspectionPhotos: [],
     invitePrefill: null,
     pendingPropertyPhotos: [],
-    pendingFlatPhoto: null,
+    pendingFlatPhotos: [],
+    pendingFlatCover: 0,
+    addDocumentOpen: false,
+    addDocumentStep: 'type',
+    addDocumentType: null,
+    addDocumentFile: null,
+    addDocumentDisplayName: '',
+    addDocumentShare: false,
 });
 
 function pickImageFiles({ multiple = true, accept = 'image/*' } = {}) {
@@ -315,7 +322,7 @@ function formatDocUploadDate(date = new Date()) {
 }
 
 function isUserUploadedDoc(doc) {
-    return doc?.userUpload || doc?.type === 'Custom Document';
+    return !!doc?.userUpload;
 }
 
 function docIconForName(name) {
@@ -323,6 +330,182 @@ function docIconForName(name) {
     if (ext === 'pdf') return 'file-text';
     if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return 'image';
     return 'file';
+}
+
+/** Upload rows: typed uploads use category icon; other uploads use file-type icon. */
+function documentRowVisual(doc) {
+    if (isUserUploadedDoc(doc) && doc.type && doc.type !== 'Custom Document') {
+        const type = doc.type;
+        return {
+            icon: DOC_TYPE_ICONS[type] || 'file',
+            color: DOC_TYPE_COLORS[type] || '#64748B',
+            bg: docTypeIconBg(type),
+        };
+    }
+    if (isUserUploadedDoc(doc)) {
+        if (isDocImage(doc)) return { icon: 'image', color: '#2563EB', bg: '#EFF6FF' };
+        if (docFileKindLabel(doc) === 'PDF') return { icon: 'file-text', color: '#DC2626', bg: '#FEE2E2' };
+        return { icon: 'file', color: '#64748B', bg: '#F1F5F9' };
+    }
+    const type = doc.type || 'Custom Document';
+    return {
+        icon: DOC_TYPE_ICONS[type] || 'file',
+        color: DOC_TYPE_COLORS[type] || '#64748B',
+        bg: docTypeIconBg(type),
+    };
+}
+
+function docTypeIconBg(type) {
+    const map = {
+        'Tenancy Agreement': '#EFF6FF', 'Deposit Certificate': '#DCFCE7', 'Gas Certificate': '#FEE2E2',
+        'Electrical Certificate': '#FEF3C7', 'EPC Certificate': '#ECFDF5', 'How to Rent Guide': '#F3E8FF',
+        'Signed Document': '#DCFCE7', 'Custom Document': '#F1F5F9',
+    };
+    return map[type] || '#F8FAFC';
+}
+
+function docFileKindLabel(doc) {
+    if (!doc) return 'File';
+    if (doc.mime?.includes('pdf')) return 'PDF';
+    if (doc.mime?.startsWith('image/')) return 'Image';
+    const ext = String(doc.name || '').split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'PDF';
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return 'Image';
+    return 'File';
+}
+
+function isDocImage(doc) {
+    if (doc?.mime?.startsWith('image/')) return true;
+    const ext = String(doc.name || '').split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+}
+
+function formatDocDisplayDate(doc) {
+    if (doc?.uploadedAt) {
+        const ms = Date.now() - doc.uploadedAt;
+        if (ms < 60000) return 'Just now';
+        const mins = Math.floor(ms / 60000);
+        if (mins < 60) return mins === 1 ? '1 min ago' : `${mins} min ago`;
+        const hrs = Math.floor(ms / 3600000);
+        if (hrs < 24) return hrs === 1 ? '1 hour ago' : `${hrs} hours ago`;
+        const days = Math.floor(ms / 86400000);
+        if (days < 7) return days === 1 ? 'Yesterday' : `${days} days ago`;
+        return doc.date || formatDocUploadDate(new Date(doc.uploadedAt));
+    }
+    return doc?.date || '—';
+}
+
+/** Upload: type · date. Seed: type · date (+ shared). */
+function documentRowSubtitle(doc) {
+    if (isUserUploadedDoc(doc)) {
+        const label = doc.type === 'Custom Document' ? docFileKindLabel(doc) : (doc.type || 'Document');
+        let sub = `${label} · ${formatDocDisplayDate(doc)}`;
+        if (doc.shared) sub += ' · Shared with tenant';
+        return sub;
+    }
+    let sub = `${doc.type || 'Document'} · ${doc.date || '—'}`;
+    if (doc.shared) sub += ' · Shared with tenant';
+    return sub;
+}
+
+function sortPropertyDocuments(docs) {
+    return docs.slice().sort((a, b) => {
+        const aUpload = isUserUploadedDoc(a);
+        const bUpload = isUserUploadedDoc(b);
+        if (aUpload && bUpload) return (b.uploadedAt || 0) - (a.uploadedAt || 0);
+        if (aUpload !== bUpload) return aUpload ? -1 : 1;
+        const ta = DOC_TYPE_SORT[a.type] ?? 99;
+        const tb = DOC_TYPE_SORT[b.type] ?? 99;
+        if (ta !== tb) return ta - tb;
+        return (a.name || '').localeCompare(b.name || '');
+    });
+}
+
+function maintRefId(id) {
+    return `#MNT-${String(id).padStart(5, '0')}`;
+}
+
+function maintPriorityTone(priority) {
+    const p = String(priority || '').toLowerCase();
+    if (p === 'high') return { label: 'Urgent', cls: 'maint-priority-pill--urgent' };
+    if (p === 'medium') return { label: 'Medium', cls: 'maint-priority-pill--medium' };
+    return { label: priority || 'Low', cls: 'maint-priority-pill--low' };
+}
+
+function maintIssuePhoto(m) {
+    if (m?.photos?.length) return m.photos[0];
+    if (m?.propertyId != null && typeof getPropertyCoverPhoto === 'function') return getPropertyCoverPhoto(m.propertyId);
+    if (typeof IMG !== 'undefined' && IMG.maint?.length) return IMG.maint[m.id % IMG.maint.length];
+    return IMG.interior?.[0] || IMG.fallback;
+}
+
+function propertyPrimaryTenant(propertyId) {
+    const entries = propertyTenantEntries(propertyId);
+    const active = entries.find(e => e.kind === 'tenant' && e.tenant.status === 'active');
+    if (active) return { name: active.tenant.name, unit: active.tenant.unit, tid: active.tenant.id, img: active.tenant.img };
+    const member = entries.find(e => e.kind === 'member' && e.member.accountStatus === 'active');
+    if (member) return { name: member.member.name, unit: member.unit, tid: member.member.listId, img: null };
+    const pending = entries.find(e => e.kind === 'tenant' && e.tenant.status === 'pending');
+    if (pending) return { name: pending.tenant.name, unit: pending.tenant.unit, tid: pending.tenant.id, img: pending.tenant.img, pending: true };
+    return null;
+}
+
+function renderTenantLivingCard(listItem) {
+    const pid = listItem.propertyId;
+    const p = PROPERTIES[pid];
+    if (!p || !listItem.unit) return '';
+    const cover = typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(pid) : IMG.props[pid];
+    const unit = getPropertyUnits(pid).find(u => unitName(u) === listItem.unit);
+    const specs = unit ? [
+        unit.sqft ? `${unit.sqft} sq ft` : null,
+        unit.beds ? `${unit.beds} bed${unit.beds > 1 ? 's' : ''}` : null,
+        unit.baths ? `${unit.baths} bath${unit.baths > 1 ? 's' : ''}` : null,
+    ].filter(Boolean) : [];
+    return `
+    <div class="tenant-living-card card">
+        <div class="tenant-living-head">
+            <p class="tenant-living-label">Currently living in</p>
+            <button type="button" data-go="flat-detail" data-pid="${pid}" data-unit="${listItem.unit}" class="tenant-living-link">View unit</button>
+        </div>
+        <button type="button" data-go="flat-detail" data-pid="${pid}" data-unit="${listItem.unit}" class="tenant-living-main w-full text-left">
+            <img src="${cover}" alt="" class="tenant-living-thumb">
+            <div class="tenant-living-body min-w-0">
+                <p class="tenant-living-name">${escapeHtml(p.name)}</p>
+                <p class="tenant-living-unit">Unit: ${escapeHtml(listItem.unit)}</p>
+                <p class="tenant-living-addr">${escapeHtml(p.address)}</p>
+            </div>
+        </button>
+        ${specs.length ? `
+        <div class="tenant-living-specs">
+            ${specs.map((s, i) => `
+            ${i ? '<span class="tenant-living-spec-divider"></span>' : ''}
+            <span class="tenant-living-spec">${escapeHtml(s)}</span>`).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+function renderTenantDocThumbGrid(docs, tenantId) {
+    if (!docs.length) return '';
+    return `
+    <div class="tenant-doc-grid">
+        ${docs.map(([ic, name, date, color], idx) => `
+        <button type="button" data-go="document-preview" data-preview-source="tenant" data-preview-idx="${idx}" data-tid="${tenantId}" class="tenant-doc-thumb">
+            <span class="tenant-doc-thumb-preview" style="color:${color};background:${color}14">
+                <i data-lucide="${ic}" class="w-6 h-6"></i>
+                <span class="tenant-doc-thumb-view"><i data-lucide="eye" class="w-3.5 h-3.5"></i></span>
+            </span>
+            <span class="tenant-doc-thumb-label">${escapeHtml(name.replace(/\.[^.]+$/, ''))}</span>
+            <span class="tenant-doc-thumb-date">${escapeHtml(date)}</span>
+        </button>`).join('')}
+    </div>`;
+}
+
+function renderContactOutlineRow(items) {
+    return `<div class="contact-outline-row">${items.map(([ic, label, attrs]) => `
+        <button type="button" ${attrs} class="contact-outline-btn">
+            <i data-lucide="${ic}" class="w-4 h-4"></i><span>${label}</span>
+        </button>`).join('')}
+    </div>`;
 }
 
 function renderPhotoPreviewStrip(photos, opts = {}) {
@@ -338,8 +521,40 @@ function renderPhotoPreviewStrip(photos, opts = {}) {
     </div>`;
 }
 
+function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
+    const list = photos?.length ? photos : [];
+    const cover = list.length ? Math.min(Math.max(0, coverIdx ?? 0), list.length - 1) : 0;
+    const hero = list.length ? list[cover] : (opts.placeholder || IMG.interior[0]);
+    const coverAction = opts.coverAction || 'set-pending-flat-cover';
+    const removeAction = opts.removeAction || 'remove-pending-flat-photo';
+    const uploadAction = opts.uploadAction || 'upload-pending-flat-photo';
+    const uploadLabel = opts.uploadLabel || (list.length ? 'Add more photos' : 'Add unit photos (optional)');
+    const hint = opts.hint || 'Add multiple photos and tap ★ to choose which shows on the home screen.';
+    return `
+    <div class="flat-unit-photo-picker card overflow-hidden">
+        <div class="flat-unit-photo-hero">
+            <img src="${hero}" alt="" class="img-cover">
+            ${list.length ? '<span class="flat-unit-photo-cover-tag">Cover photo</span>' : ''}
+        </div>
+        ${list.length ? `
+        <div class="flat-unit-photo-thumbs">
+            ${list.map((src, i) => `
+            <div class="flat-unit-photo-thumb${i === cover ? ' is-cover' : ''}">
+                <img src="${src}" alt="">
+                ${i === cover
+                    ? '<span class="flat-unit-photo-badge">Cover</span>'
+                    : `<button type="button" data-action="${coverAction}" data-photo-idx="${i}" class="flat-unit-photo-set-cover" aria-label="Set as cover"><i data-lucide="star" class="w-3.5 h-3.5"></i></button>`}
+                <button type="button" data-action="${removeAction}" data-photo-idx="${i}" class="photo-preview-remove" aria-label="Remove photo"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </div>`).join('')}
+        </div>` : ''}
+        <button type="button" data-action="${uploadAction}" class="flat-edit-photo-btn">${uploadLabel}</button>
+        <p class="flat-unit-photo-hint">${hint}</p>
+    </div>`;
+}
+
 /* ─── Form option lists (structured fields → dropdowns) ─── */
 const PROPERTY_TYPE_OPTIONS = ['Detached', 'Semi-detached', 'Terraced', 'Flat / Apartment', 'Bungalow', 'HMO', 'Maisonette', 'Studio', 'Other'];
+const FURNISHED_OPTIONS = ['Furnished', 'Unfurnished', 'Part-furnished'];
 const EPC_RATING_OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'Not rated', 'Exempt'];
 const COUNCIL_TAX_BAND_OPTIONS = ['Band A', 'Band B', 'Band C', 'Band D', 'Band E', 'Band F', 'Band G', 'Band H', 'Not applicable'];
 const APPLIANCE_NAME_OPTIONS = ['Boiler', 'Oven', 'Fridge', 'Freezer', 'Washing machine', 'Dishwasher', 'Microwave', 'Extractor fan', 'Other'];
@@ -680,6 +895,167 @@ const renameDocModal = () => {
     </div>`;
 };
 
+const ADD_DOC_TYPE_OPTIONS = [
+    { type: 'Tenancy Agreement', label: 'Tenancy agreement', icon: 'file-text', color: '#2563EB', bg: '#EFF6FF' },
+    { type: 'Gas Certificate', label: 'Gas safety (CP12)', icon: 'flame', color: '#DC2626', bg: '#FEE2E2' },
+    { type: 'Electrical Certificate', label: 'Electrical (EICR)', icon: 'zap', color: '#D97706', bg: '#FEF3C7' },
+    { type: 'EPC Certificate', label: 'EPC certificate', icon: 'leaf', color: '#16A34A', bg: '#ECFDF5' },
+    { type: 'Deposit Certificate', label: 'Deposit protection', icon: 'shield', color: '#059669', bg: '#DCFCE7' },
+    { type: 'How to Rent Guide', label: 'How to Rent guide', icon: 'book-open', color: '#7C3AED', bg: '#F3E8FF' },
+    { type: 'Custom Document', label: 'Other file', icon: 'file', color: '#64748B', bg: '#F1F5F9' },
+];
+
+function addDocumentTypeOption(type) {
+    return ADD_DOC_TYPE_OPTIONS.find(o => o.type === type) || ADD_DOC_TYPE_OPTIONS[ADD_DOC_TYPE_OPTIONS.length - 1];
+}
+
+function closeAddDocumentFlow() {
+    STATE.addDocumentOpen = false;
+    STATE.addDocumentStep = 'type';
+    STATE.addDocumentType = null;
+    STATE.addDocumentFile = null;
+    STATE.addDocumentDisplayName = '';
+    STATE.addDocumentShare = false;
+    render();
+}
+
+function openAddDocumentFlow() {
+    STATE.addDocumentOpen = true;
+    STATE.addDocumentStep = 'type';
+    STATE.addDocumentType = null;
+    STATE.addDocumentFile = null;
+    STATE.addDocumentDisplayName = '';
+    STATE.addDocumentShare = false;
+    STATE.actionMenuKey = null;
+    render();
+}
+
+function selectAddDocumentType(type) {
+    STATE.addDocumentType = type;
+    STATE.addDocumentStep = 'file';
+    render();
+}
+
+function addDocumentBackStep() {
+    if (STATE.addDocumentStep === 'review') {
+        STATE.addDocumentStep = 'file';
+        STATE.addDocumentFile = null;
+        STATE.addDocumentDisplayName = '';
+    } else if (STATE.addDocumentStep === 'file') {
+        STATE.addDocumentStep = 'type';
+        STATE.addDocumentType = null;
+    } else {
+        closeAddDocumentFlow();
+        return;
+    }
+    render();
+}
+
+async function pickAddDocumentFileAction() {
+    const files = await pickDocumentFiles({ multiple: false });
+    if (!files.length) return;
+    STATE.addDocumentFile = files[0];
+    STATE.addDocumentDisplayName = files[0].name;
+    STATE.addDocumentStep = 'review';
+    render();
+}
+
+function saveAddDocumentAction() {
+    if (!STATE.addDocumentFile || !STATE.addDocumentType) {
+        toast('Choose a file to save');
+        return;
+    }
+    const input = document.querySelector('[data-add-doc-name]');
+    const name = (input?.value?.trim() || STATE.addDocumentDisplayName || STATE.addDocumentFile.name).trim();
+    if (!name) {
+        toast('Enter a document name');
+        return;
+    }
+    const shareNow = !!document.querySelector('[data-add-doc-share]')?.checked;
+    const now = Date.now();
+    const id = AppStore.nextId(AppStore.documents);
+    const doc = {
+        id,
+        propertyId: STATE.propertyId,
+        type: STATE.addDocumentType,
+        name,
+        date: formatDocUploadDate(),
+        uploadedAt: now,
+        shared: shareNow,
+        signed: false,
+        userUpload: true,
+        fileUrl: STATE.addDocumentFile.url,
+        mime: STATE.addDocumentFile.mime,
+    };
+    AppStore.documents.push(doc);
+    if (shareNow && typeof syncSharedDocToTenants === 'function') {
+        const targets = getDocumentShareTargets(doc.propertyId).map(t => t.id);
+        syncSharedDocToTenants(doc, targets);
+    }
+    AppStore.save();
+    STATE.addDocumentOpen = false;
+    STATE.addDocumentStep = 'type';
+    STATE.addDocumentType = null;
+    STATE.addDocumentFile = null;
+    STATE.addDocumentDisplayName = '';
+    STATE.addDocumentShare = false;
+    toast(shareNow ? 'Document saved and shared' : 'Document saved');
+    render();
+}
+
+const addDocumentModal = () => {
+    if (!STATE.addDocumentOpen) return '';
+    const step = STATE.addDocumentStep || 'type';
+    const typeOpt = STATE.addDocumentType ? addDocumentTypeOption(STATE.addDocumentType) : null;
+    const stepTitle = step === 'type' ? 'Add document' : step === 'file' ? 'Upload file' : 'Review & save';
+    const stepBody = step === 'type'
+        ? `<p class="modal-body">What type of document is this?</p>
+            <div class="add-doc-type-list">
+                ${ADD_DOC_TYPE_OPTIONS.map(o => `
+                <button type="button" data-action="select-doc-type" data-doc-type="${o.type}" class="add-doc-type-row">
+                    <span class="add-doc-type-icon" style="color:${o.color};background:${o.bg}"><i data-lucide="${o.icon}" class="w-5 h-5"></i></span>
+                    <span class="add-doc-type-label">${o.label}</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1]"></i>
+                </button>`).join('')}
+            </div>`
+        : step === 'file'
+            ? `<p class="modal-body">Upload a PDF or image for <strong>${escapeHtml(typeOpt?.label || 'this document')}</strong>.</p>
+                <button type="button" data-action="pick-add-document-file" class="doc-upload-zone doc-upload-zone--modal">
+                    <i data-lucide="upload" class="w-5 h-5"></i>
+                    <span class="doc-upload-label">Choose file</span>
+                    <span class="doc-upload-hint">PDF, JPG or PNG</span>
+                </button>`
+            : `<p class="modal-body">Check the details before saving.</p>
+                <div class="add-doc-review card p-4">
+                    <div class="add-doc-review-type">
+                        <span class="add-doc-type-icon" style="color:${typeOpt.color};background:${typeOpt.bg}"><i data-lucide="${typeOpt.icon}" class="w-5 h-5"></i></span>
+                        <div class="min-w-0">
+                            <p class="add-doc-review-kind">${escapeHtml(typeOpt.label)}</p>
+                            <p class="add-doc-review-file">${escapeHtml(STATE.addDocumentFile?.name || '')}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-field mt-3">
+                    <label class="form-label">Display name</label>
+                    <input type="text" data-add-doc-name class="form-input" value="${escapeHtml(STATE.addDocumentDisplayName || '')}" placeholder="Document name">
+                </div>
+                <label class="add-doc-share-row">
+                    <input type="checkbox" data-add-doc-share class="accent-[#2563EB]" ${STATE.addDocumentShare ? 'checked' : ''}>
+                    <span>Share with tenant after saving</span>
+                </label>
+                <button type="button" data-action="save-add-document" class="btn-primary w-full py-3.5 text-[14px] mt-4">Save document</button>`;
+    return `<div class="modal-overlay open" data-action="close-add-document">
+        <div class="modal-sheet modal-sheet--tall" onclick="event.stopPropagation()">
+            <div class="add-doc-modal-head">
+                ${step !== 'type' ? `<button type="button" data-action="add-document-back" class="add-doc-back-btn" aria-label="Back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>` : '<span class="add-doc-back-spacer"></span>'}
+                <h3 class="modal-title add-doc-modal-title">${stepTitle}</h3>
+                <button type="button" data-action="close-add-document" class="add-doc-close-btn" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            ${stepBody}
+        </div>
+    </div>`;
+};
+
 const newMessagePickerModal = () => {
     if (!STATE.newMessagePicker) return '';
     const convos = typeof conversationsForRole === 'function' ? conversationsForRole() : CONVERSATIONS;
@@ -957,35 +1333,118 @@ function getPropertyCoverPhoto(pid) {
     return meta.photos?.[0] || IMG.props[pid] || IMG.fallback;
 }
 
-function getFlatCoverPhoto(propertyId, unitName) {
+function migrateFlatPhotoGallery(propertyId, unitName) {
     const meta = AppStore.meta(propertyId);
+    if (!meta.unitPhotoGalleries) meta.unitPhotoGalleries = {};
+    if (meta.unitPhotoGalleries[unitName]) return meta.unitPhotoGalleries[unitName];
+    const legacy = meta.unitPhotos?.[unitName];
+    if (legacy) {
+        meta.unitPhotoGalleries[unitName] = { photos: [legacy], cover: 0 };
+        return meta.unitPhotoGalleries[unitName];
+    }
+    return null;
+}
+
+function getFlatPhotoGallery(propertyId, unitName) {
+    const migrated = migrateFlatPhotoGallery(propertyId, unitName);
+    if (migrated) return migrated;
+    const meta = AppStore.meta(propertyId);
+    return meta.unitPhotoGalleries?.[unitName] || null;
+}
+
+function setFlatPhotoGallery(propertyId, unitName, photos, cover = 0) {
+    const meta = AppStore.meta(propertyId);
+    if (!meta.unitPhotoGalleries) meta.unitPhotoGalleries = {};
+    const clean = (photos || []).filter(Boolean);
+    if (!clean.length) {
+        delete meta.unitPhotoGalleries[unitName];
+        if (meta.unitPhotos?.[unitName]) delete meta.unitPhotos[unitName];
+        return;
+    }
+    const coverIdx = Math.min(Math.max(0, cover), clean.length - 1);
+    meta.unitPhotoGalleries[unitName] = { photos: clean, cover: coverIdx };
     if (!meta.unitPhotos) meta.unitPhotos = {};
-    if (meta.unitPhotos[unitName]) return meta.unitPhotos[unitName];
+    meta.unitPhotos[unitName] = clean[coverIdx];
+}
+
+function getFlatCoverPhoto(propertyId, unitName) {
+    const gal = getFlatPhotoGallery(propertyId, unitName);
+    if (gal?.photos?.length) {
+        const idx = gal.cover ?? 0;
+        return gal.photos[idx] ?? gal.photos[0];
+    }
+    const meta = AppStore.meta(propertyId);
+    if (meta.unitPhotos?.[unitName]) return meta.unitPhotos[unitName];
     const unit = getUnitByName(propertyId, unitName);
     const idx = ((unit?.id ?? 0) + (propertyId * 3)) % IMG.interior.length;
     return IMG.interior[idx];
 }
 
 function setFlatCoverPhoto(propertyId, unitName, url) {
-    const meta = AppStore.meta(propertyId);
-    if (!meta.unitPhotos) meta.unitPhotos = {};
-    meta.unitPhotos[unitName] = url;
+    const gal = getFlatPhotoGallery(propertyId, unitName);
+    const photos = gal?.photos?.length ? [...gal.photos] : [];
+    let cover = photos.indexOf(url);
+    if (cover < 0) {
+        photos.unshift(url);
+        cover = 0;
+    }
+    setFlatPhotoGallery(propertyId, unitName, photos, cover);
+}
+
+function appendFlatPhotos(propertyId, unitName, urls) {
+    const gal = getFlatPhotoGallery(propertyId, unitName);
+    const photos = gal?.photos?.length ? [...gal.photos] : [];
+    const cover = gal?.cover ?? 0;
+    const added = (urls || []).filter(Boolean);
+    added.forEach(u => { if (!photos.includes(u)) photos.push(u); });
+    const nextCover = !gal?.photos?.length && added.length ? 0 : cover;
+    setFlatPhotoGallery(propertyId, unitName, photos, nextCover);
+}
+
+function setFlatCoverIndex(propertyId, unitName, idx) {
+    const gal = getFlatPhotoGallery(propertyId, unitName);
+    if (!gal?.photos?.length || idx < 0 || idx >= gal.photos.length) return;
+    setFlatPhotoGallery(propertyId, unitName, gal.photos, idx);
+}
+
+function removeFlatPhotoAt(propertyId, unitName, idx) {
+    const gal = getFlatPhotoGallery(propertyId, unitName);
+    if (!gal?.photos?.length || idx < 0 || idx >= gal.photos.length) return;
+    const photos = [...gal.photos];
+    photos.splice(idx, 1);
+    let cover = gal.cover ?? 0;
+    if (idx < cover) cover -= 1;
+    else if (idx === cover) cover = Math.min(cover, Math.max(0, photos.length - 1));
+    setFlatPhotoGallery(propertyId, unitName, photos, photos.length ? Math.max(0, cover) : 0);
+}
+
+function copyFlatPhotoGallery(propertyId, fromUnit, toUnit) {
+    const gal = getFlatPhotoGallery(propertyId, fromUnit);
+    if (!gal?.photos?.length) return;
+    setFlatPhotoGallery(propertyId, toUnit, [...gal.photos], gal.cover ?? 0);
 }
 
 function renameFlatPhoto(propertyId, oldName, newName) {
+    if (oldName === newName) return;
     const meta = AppStore.meta(propertyId);
-    if (!meta.unitPhotos?.[oldName] || oldName === newName) return;
-    meta.unitPhotos[newName] = meta.unitPhotos[oldName];
-    delete meta.unitPhotos[oldName];
+    if (meta.unitPhotoGalleries?.[oldName]) {
+        if (!meta.unitPhotoGalleries) meta.unitPhotoGalleries = {};
+        meta.unitPhotoGalleries[newName] = meta.unitPhotoGalleries[oldName];
+        delete meta.unitPhotoGalleries[oldName];
+    }
+    if (meta.unitPhotos?.[oldName]) {
+        if (!meta.unitPhotos) meta.unitPhotos = {};
+        meta.unitPhotos[newName] = meta.unitPhotos[oldName];
+        delete meta.unitPhotos[oldName];
+    }
 }
 
 function ensureFlatPhotos(propertyId) {
-    const meta = AppStore.meta(propertyId);
-    if (!meta.unitPhotos) meta.unitPhotos = {};
     getPropertyUnits(propertyId).forEach(u => {
         const name = unitName(u);
-        if (!meta.unitPhotos[name]) {
-            meta.unitPhotos[name] = IMG.interior[((u.id ?? 0) + propertyId * 3) % IMG.interior.length];
+        if (!getFlatPhotoGallery(propertyId, name)) {
+            const url = IMG.interior[((u.id ?? 0) + propertyId * 3) % IMG.interior.length];
+            setFlatPhotoGallery(propertyId, name, [url], 0);
         }
     });
 }
@@ -1040,7 +1499,7 @@ function unitActionMenuItems(propertyId, unitName, opts = {}) {
     ];
     if (opts.fromDetail) {
         items.push(
-            { label: 'Change photo', icon: 'camera', action: 'action-menu-upload-flat-photo', attrs: `data-pid="${propertyId}" data-unit="${unitName}"` },
+            { label: 'Manage photos', icon: 'images', action: 'action-menu-go', attrs: `data-go="flat-detail" data-pid="${propertyId}" data-unit="${unitName}" data-flat-tab="gallery"` },
             { label: 'Report issue', icon: 'wrench', action: 'action-menu-go', attrs: `data-go="log-maintenance" data-pid="${propertyId}" data-unit="${unitName}"` },
         );
     }
@@ -1098,6 +1557,7 @@ function handleActionMenuClick(e) {
         if (goItem.dataset.unit) opts.unit = goItem.dataset.unit;
         if (goItem.dataset.duplicateFrom) opts.duplicateFrom = goItem.dataset.duplicateFrom;
         if (goItem.dataset.tab) opts.tab = goItem.dataset.tab;
+        if (goItem.dataset.flatTab) opts.flatTab = goItem.dataset.flatTab;
         if (goItem.dataset.chat !== undefined) opts.chatId = +goItem.dataset.chat;
         go(goItem.dataset.go, opts);
         return true;
@@ -1194,6 +1654,7 @@ function removeFlatFromProperty(propertyId, flatName) {
         return false;
     }
     meta.units = (meta.units || units).filter(x => unitName(x) !== flatName);
+    if (meta.unitPhotoGalleries?.[flatName]) delete meta.unitPhotoGalleries[flatName];
     if (meta.unitPhotos?.[flatName]) delete meta.unitPhotos[flatName];
     if (meta.unitUtilities?.[flatName]) delete meta.unitUtilities[flatName];
     const building = getPropertyBuilding(propertyId);
@@ -1271,30 +1732,99 @@ function renderBuildingMetricsGrid(propertyId) {
         </div>`;
 }
 
-function renderPropertyHubStatsBar(propertyId, options = {}) {
-    const { units, occupiedFlats } = propertyHubStats(propertyId);
+function propertyHubStatusBadge(propertyId) {
+    const p = PROPERTIES[propertyId];
+    syncPropertyStatus(propertyId);
+    if (!p?.compliance) return { label: 'Action needed', bg: '#FEF3C7', color: '#D97706' };
+    const units = getPropertyUnits(propertyId);
+    if (!units.length || units.every(u => u.status !== 'occupied')) {
+        return { label: 'Vacant', bg: '#FEF3C7', color: '#D97706' };
+    }
+    return { label: 'Active', bg: '#DCFCE7', color: '#16A34A' };
+}
+
+function flatRowSpecLine(u) {
+    const parts = [];
+    if (u.beds) parts.push(`${u.beds} Bed${u.beds === 1 ? '' : 's'}`);
+    if (u.baths) parts.push(`${u.baths} Bath${u.baths === 1 ? '' : 's'}`);
+    return parts.join(' - ');
+}
+
+function floorGroupKey(propertyId, floor) {
+    return `${propertyId}:${floor}`;
+}
+
+function isFloorGroupCollapsed(propertyId, floor) {
+    return !!(STATE.collapsedFloors && STATE.collapsedFloors[floorGroupKey(propertyId, floor)]);
+}
+
+function toggleFloorGroup(propertyId, floor) {
+    if (!STATE.collapsedFloors) STATE.collapsedFloors = {};
+    const key = floorGroupKey(propertyId, floor);
+    STATE.collapsedFloors[key] = !STATE.collapsedFloors[key];
+    render();
+}
+
+function flatRowTenantLine(tenancy, members, occ) {
+    if (!occ) return '';
+    const lead = members?.find(m => m.isLead) || members?.[0];
+    if (lead?.name) return lead.name;
+    return tenancy ? 'Occupied' : '';
+}
+
+function renderPropertyHubSummaryCard(propertyId) {
+    const p = PROPERTIES[propertyId];
+    if (!p) return '';
+    const { units, occupiedFlats, floors } = propertyHubStats(propertyId);
     const vacantFlats = units.length - occupiedFlats;
-    const occPct = units.length ? Math.round((occupiedFlats / units.length) * 100) : 0;
-    const actionHtml = options.actionHtml || '';
+    const cover = getPropertyCoverPhoto(propertyId);
+    const status = propertyHubStatusBadge(propertyId);
+    const unitWord = units.length === 1 ? 'Unit' : 'Units';
+    const floorWord = floors === 1 ? 'Floor' : 'Floors';
+    const { monthlyRent } = typeof propertyCardStats === 'function'
+        ? propertyCardStats(propertyId)
+        : { monthlyRent: getPropertyRentSummary(propertyId).potential };
+    const incomeLabel = monthlyRent > 0 ? `${formatRentAmount(monthlyRent)}/mo` : '—';
     return `
-    <div class="prop-hub-stats-wrap${actionHtml ? ' prop-hub-stats-wrap--action' : ''}">
-        <div class="properties-summary-bar properties-summary-bar--hub">
-            <div class="properties-summary-item">
-                <span class="properties-summary-icon properties-summary-icon--blue"><i data-lucide="home" class="w-4 h-4"></i></span>
-                <div><p class="properties-summary-val">${units.length}</p><p class="properties-summary-lbl">Units</p></div>
+    <div class="prop-hub-summary card">
+        <div class="prop-hub-summary-top">
+            <div class="prop-hub-summary-media">
+                <img src="${cover}" alt="">
+                <span class="prop-hub-summary-badge" style="background:${status.bg};color:${status.color}">${status.label}</span>
             </div>
-            <div class="properties-summary-item">
-                <span class="properties-summary-icon properties-summary-icon--green"><i data-lucide="users" class="w-4 h-4"></i></span>
-                <div><p class="properties-summary-val">${occupiedFlats}</p><p class="properties-summary-lbl">Let</p></div>
-            </div>
-            <div class="properties-summary-item">
-                <span class="properties-summary-icon properties-summary-icon--purple"><i data-lucide="pie-chart" class="w-4 h-4"></i></span>
-                <div><p class="properties-summary-val">${occPct}%</p><p class="properties-summary-lbl">Occupancy</p></div>
+            <div class="prop-hub-summary-stats">
+                <div class="prop-hub-stat">
+                    <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+                    <span class="prop-hub-stat-val">${units.length}</span>
+                    <span class="prop-hub-stat-lbl">${unitWord}</span>
+                </div>
+                <div class="prop-hub-stat">
+                    <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                    <span class="prop-hub-stat-val">${floors}</span>
+                    <span class="prop-hub-stat-lbl">${floorWord}</span>
+                </div>
+                <div class="prop-hub-stat">
+                    <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                    <span class="prop-hub-stat-val">${occupiedFlats}</span>
+                    <span class="prop-hub-stat-lbl">Occupied</span>
+                </div>
+                <div class="prop-hub-stat">
+                    <i data-lucide="door-open" class="w-3.5 h-3.5"></i>
+                    <span class="prop-hub-stat-val">${vacantFlats}</span>
+                    <span class="prop-hub-stat-lbl">Vacant</span>
+                </div>
             </div>
         </div>
-        ${actionHtml}
-    </div>
-    <p class="prop-hub-stats-hint">${occupiedFlats} let · ${vacantFlats} vacant</p>`;
+        <div class="prop-hub-summary-foot">
+            <div class="prop-hub-income">
+                <span class="prop-hub-income-lbl">Monthly Income</span>
+                <span class="prop-hub-income-val"><i data-lucide="wallet" class="w-4 h-4"></i>${incomeLabel}</span>
+            </div>
+            <button type="button" data-go="edit-property" data-pid="${propertyId}" class="prop-hub-edit-btn">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit Property
+            </button>
+        </div>
+    </div>`;
 }
 
 function renderPropertyBuildingSummaryCard(propertyId, options = {}) {
@@ -1346,14 +1876,6 @@ function renderPropertyBuildingSummaryCard(propertyId, options = {}) {
             ${showDetailsBtn ? `<button type="button" data-tab="details" class="prop-building-details-btn">View Details <i data-lucide="chevron-right" class="w-4 h-4"></i></button>` : ''}
         </div>`}
     </div>`;
-}
-
-function renderBuildingStatsCard(propertyId) {
-    return renderPropertyBuildingSummaryCard(propertyId);
-}
-
-function renderPropertyBuildingHeader(propertyId) {
-    return renderPropertyBuildingSummaryCard(propertyId, { compact: true });
 }
 
 function renderBuildingSectionHead(title, propertyId, sectionKey, menuItems, metaHtml = '') {
@@ -1409,7 +1931,6 @@ function renderPropertyOverviewDetails(propertyId) {
     const floors = b.useFloors && b.floors > 1 ? b.floors : Math.max(1, new Set(units.map(u => u.floor || 1)).size);
     return `
     <div class="screen-content screen-content-sm building-info-page">
-        ${renderPropertyBuildingSummaryCard(propertyId)}
         <div class="building-section card">
             ${renderBuildingSectionHead('Property Photos', propertyId, 'photos', [
                 buildingSectionGoItem('Manage photos', 'image', 'property-photos', propertyId),
@@ -1605,6 +2126,29 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
     const unitMenuKey = actionMenuKeyFor('unit', propertyId, name);
     const menuOpen = isActionMenuOpen(unitMenuKey);
     const tenancyClass = tenancy ? `unit-card-v2--${tenancy.type}` : (!occ ? 'unit-card-v2--vacant' : '');
+    if (opts.hubList) {
+        const spec = flatRowSpecLine(u);
+        const tenant = flatRowTenantLine(tenancy, members, occ);
+        const statusBadge = occ
+            ? '<span class="unit-hub-badge unit-hub-badge--occupied">Occupied</span>'
+            : '<span class="unit-hub-badge unit-hub-badge--vacant">Vacant</span>';
+        return `
+        <div class="unit-hub-row-wrap">
+            <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="unit-hub-row">
+                <div class="unit-hub-thumb"><img src="${thumb}" alt=""></div>
+                <div class="unit-hub-body">
+                    <p class="unit-hub-name">${name}</p>
+                    ${tenant ? `<p class="unit-hub-tenant">${escapeHtml(tenant)}</p>` : ''}
+                    ${spec ? `<p class="unit-hub-spec">${spec}</p>` : ''}
+                </div>
+                <div class="unit-hub-meta">
+                    ${statusBadge}
+                    <p class="unit-hub-rent">${rentLabel}</p>
+                </div>
+                <i data-lucide="chevron-right" class="unit-hub-chevron w-4 h-4"></i>
+            </button>
+        </div>`;
+    }
     return `
     <div class="${wrapClass} ${tenancyClass} ${menuOpen ? 'unit-card-v2-wrap--menu-open' : ''}">
     <div class="unit-card-v2-main">
@@ -2108,18 +2652,25 @@ function contractorRow(c) {
     const preview = convo?.preview || 'Send a message';
     const unread = convo?.unread || 0;
     return `
-    <button type="button" data-go="chat" data-chat="${chatId}" class="contractor-row card w-full text-left">
-        <img src="${c.img}" class="contractor-row-avatar" alt="">
-        <div class="contractor-row-body">
-            <div class="contractor-row-top">
-                <p class="contractor-row-name">${c.name}</p>
-                ${unread ? `<span class="contractor-row-unread">${unread}</span>` : ''}
+    <div class="contractor-card card">
+        <button type="button" data-go="chat" data-chat="${chatId}" class="contractor-card-main w-full text-left">
+            <img src="${c.img}" class="contractor-card-avatar" alt="">
+            <div class="contractor-card-body min-w-0">
+                <div class="contractor-card-top">
+                    <p class="contractor-card-name">${escapeHtml(c.name)}</p>
+                    ${unread ? `<span class="contractor-row-unread">${unread}</span>` : ''}
+                </div>
+                <p class="contractor-card-trade">${escapeHtml(c.trade)}</p>
+                <p class="contractor-card-meta">${jobs ? `${jobs} open job${jobs === 1 ? '' : 's'}` : 'No active jobs'} · ${escapeHtml(preview)}</p>
             </div>
-            <p class="contractor-row-trade">${c.trade}</p>
-            <p class="contractor-row-meta">${jobs ? `${jobs} open job${jobs === 1 ? '' : 's'}` : 'No active jobs'} · ${preview}</p>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+        </button>
+        <div class="contractor-card-actions">
+            ${c.phone ? `<button type="button" data-action="call-contractor" data-phone="${c.phone.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
+            ${c.email ? `<button type="button" data-action="email-contractor" data-email="${c.email.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
+            <button type="button" data-go="chat" data-chat="${chatId}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>
         </div>
-        <span class="contractor-row-msg" aria-hidden="true"><i data-lucide="message-square" class="w-4 h-4"></i></span>
-    </button>`;
+    </div>`;
 }
 
 function screenContractors() {
@@ -2405,25 +2956,94 @@ function propertyHubMetaLine(propertyId) {
     return `${n} unit${n === 1 ? '' : 's'} · ${occupiedFlats}/${n} occupied · ${rent}`;
 }
 
+const PROPERTY_INFO_SECTIONS = new Set(['documents', 'inspection', 'compliance', 'inventory', 'details', 'photos', 'floor-plans', 'timeline']);
+
+function isPropertyInfoSection(tab) {
+    return PROPERTY_INFO_SECTIONS.has(tab);
+}
+
+function propertyPrimaryNavTab(tab) {
+    if (tab === 'tenant') return 'tenant';
+    if (tab === 'maintenance') return 'maintenance';
+    if (tab === 'info' || isPropertyInfoSection(tab)) return 'info';
+    return 'units';
+}
+
+const PROPERTY_INFO_SECTION_LABELS = {
+    documents: 'Documents',
+    inspection: 'Inspections',
+    compliance: 'Compliance',
+    inventory: 'Inventory',
+    details: 'Building details',
+    photos: 'Building details',
+    'floor-plans': 'Building details',
+    timeline: 'Activity',
+};
+
+function propertyInfoSectionBackBar(tab) {
+    if (!isPropertyInfoSection(tab)) return '';
+    const label = PROPERTY_INFO_SECTION_LABELS[tab] || 'Section';
+    return `
+    <div class="prop-info-backbar">
+        <button type="button" data-tab="info" class="prop-info-back">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i> More
+        </button>
+        <span class="prop-info-back-label">${label}</span>
+    </div>`;
+}
+
+function renderPropertyMoreHub(propertyId) {
+    const { docs, upcoming, rooms } = propertyHubStats(propertyId);
+    const inspLabel = upcoming ? 'Inspection scheduled' : 'Reports & schedule';
+    const items = [
+        ['file-text', 'Documents', 'documents', docs.length ? `${docs.length} file${docs.length === 1 ? '' : 's'}` : 'Leases & certificates', '#ECFDF5', '#059669'],
+        ['clipboard-list', 'Inspections', 'inspection', inspLabel, '#EFF6FF', '#2563EB'],
+        ['shield-check', 'Compliance', 'compliance', propertyComplianceHubLabel(propertyId), '#FFF7ED', '#EA580C'],
+        ['package', 'Inventory', 'inventory', rooms.length ? `${rooms.length} room${rooms.length === 1 ? '' : 's'}` : 'Room checklists', '#F5F3FF', '#7C3AED'],
+        ['home', 'Building details', 'details', 'Photos, utilities & specs', '#F1F5F9', '#475569'],
+    ];
+    return `
+    <div class="screen-content screen-content-sm prop-more-hub">
+        <div class="prop-info-hub-intro">
+            <p class="prop-info-hub-eyebrow">Property records</p>
+            <p class="prop-info-hub-desc">Documents, compliance, inspections and building details.</p>
+        </div>
+        <div class="card overflow-hidden prop-info-hub-list">
+            ${items.map(([ic, label, tab, status, bg, color]) => `
+            <button type="button" data-tab="${tab}" class="prop-info-hub-row">
+                <span class="prop-info-hub-icon" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></span>
+                <span class="prop-info-hub-copy">
+                    <span class="prop-info-hub-title">${label}</span>
+                    <span class="prop-info-hub-meta">${status}</span>
+                </span>
+                <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+            </button>`).join('')}
+        </div>
+    </div>`;
+}
+
+/** @deprecated use renderPropertyMoreHub */
+function renderPropertyInfoHub(propertyId) {
+    return renderPropertyMoreHub(propertyId);
+}
+
 function renderPropertySectionNav(activeTab) {
+    const navTab = propertyPrimaryNavTab(activeTab);
     const tabs = [
         ['units', 'Units', 'layout-grid'],
         ['tenant', 'Tenants', 'users'],
-        ['maintenance', 'Maint.', 'wrench'],
-        ['documents', 'Docs', 'file-text'],
-        ['inspection', 'Inspect.', 'clipboard-list'],
-        ['compliance', 'Comply', 'shield-check'],
-        ['inventory', 'Stock', 'package'],
-        ['details', 'Info', 'info'],
+        ['maintenance', 'Maintenance', 'wrench'],
+        ['info', 'More', 'ellipsis'],
     ];
     return `
     <div class="prop-section-nav">
-        <div class="prop-section-nav-scroll">
+        <div class="prop-section-nav-tabs" role="tablist" aria-label="Property sections">
             ${tabs.map(([tab, label, icon]) => {
-                const active = activeTab === tab;
+                const active = navTab === tab;
                 return `
-            <button type="button" data-tab="${tab}" class="prop-section-chip ${active ? 'prop-section-chip--active' : ''}" aria-label="${label}" title="${label}">
-                <i data-lucide="${icon}" class="w-3.5 h-3.5"></i><span>${label}</span>
+            <button type="button" data-tab="${tab}" role="tab" aria-selected="${active}" class="prop-section-tab-item ${active ? 'prop-section-tab-item--active' : ''}">
+                <span class="prop-section-tab-icon"><i data-lucide="${icon}" class="w-[20px] h-[20px]"></i></span>
+                <span class="prop-section-tab-label">${label}</span>
             </button>`;
             }).join('')}
         </div>
@@ -2470,28 +3090,6 @@ function unitFilterSheet() {
     </div>`;
 }
 
-function renderPropertyQuickLinks(propertyId) {
-    const { docs, openMaint } = propertyHubStats(propertyId);
-    const items = [
-        ['shield', 'Building info', 'details', 'Photos, utilities & certificates', '#F3E8FF', '#7C3AED'],
-        ['file-text', 'Documents', 'documents', docs.length ? `${docs.length} file${docs.length === 1 ? '' : 's'}` : 'Property files', '#ECFDF5', '#059669'],
-        ['wrench', 'Maintenance', 'maintenance', openMaint ? `${openMaint} open` : 'No open issues', '#FFF7ED', '#EA580C'],
-        ['shield-check', 'Compliance', 'compliance', propertyComplianceHubLabel(propertyId), '#ECFDF5', '#16A34A'],
-    ];
-    return `
-    <div class="card overflow-hidden">
-        ${items.map(([ic, label, tab, status, bg, color]) => `
-        <button data-tab="${tab}" class="prop-menu-item">
-            <div class="prop-menu-icon" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></div>
-            <div class="flex-1 min-w-0">
-                <p class="text-[13px] font-semibold text-[#0F172A]">${label}</p>
-                ${status ? `<p class="text-[11px] text-[#64748B] mt-0.5">${status}</p>` : ''}
-            </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
-        </button>`).join('')}
-    </div>`;
-}
-
 const DOC_TYPE_ICONS = {
     'Tenancy Agreement': 'file-text', 'Deposit Certificate': 'shield', 'Gas Certificate': 'flame',
     'Electrical Certificate': 'zap', 'EPC Certificate': 'leaf', 'How to Rent Guide': 'book-open',
@@ -2502,19 +3100,16 @@ const DOC_TYPE_COLORS = {
     'Electrical Certificate': '#D97706', 'EPC Certificate': '#16A34A', 'How to Rent Guide': '#7C3AED',
     'Signed Document': '#059669', 'Custom Document': '#64748B',
 };
-
-function documentRowBadges(doc) {
-    const badges = [];
-    if (doc.shared) badges.push({ label: 'Shared', cls: 'doc-badge--shared' });
-    if (doc.signed) badges.push({ label: 'Signed', cls: 'doc-badge--signed' });
-    return badges;
-}
+const DOC_TYPE_SORT = {
+    'Tenancy Agreement': 0, 'Deposit Certificate': 1, 'Gas Certificate': 2, 'Electrical Certificate': 3,
+    'EPC Certificate': 4, 'How to Rent Guide': 5, 'Signed Document': 6, 'Custom Document': 7,
+};
 
 function documentActionMenuItems(docId) {
     const doc = AppStore.documents.find(d => d.id === docId);
     if (!doc) return [];
     const items = [
-        { label: 'Share', icon: 'share-2', action: 'action-menu-share-doc', attrs: `data-doc="${docId}"` },
+        { label: 'Share with tenant', icon: 'share-2', action: 'action-menu-share-doc', attrs: `data-doc="${docId}"` },
     ];
     if (isUserUploadedDoc(doc)) {
         items.push(
@@ -2526,43 +3121,45 @@ function documentActionMenuItems(docId) {
 }
 
 function renderDocumentRow(doc, propertyId) {
+    const upload = isUserUploadedDoc(doc);
     const menuKey = actionMenuKeyFor('doc', propertyId, doc.id);
-    const icon = isUserUploadedDoc(doc) ? docIconForName(doc.name) : (DOC_TYPE_ICONS[doc.type] || 'file');
-    const color = isUserUploadedDoc(doc) ? '#64748B' : (DOC_TYPE_COLORS[doc.type] || '#64748B');
+    const { icon, color, bg } = documentRowVisual(doc);
     const menuOpen = isActionMenuOpen(menuKey);
     const menuItems = documentActionMenuItems(doc.id);
     return `
     <div class="doc-row card ${menuOpen ? 'doc-row--menu-open' : ''}">
         <button type="button" data-go="document-preview" data-doc="${doc.id}" class="doc-row-main">
-            <div class="doc-row-icon" style="color:${color}"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
+            <div class="doc-row-icon" style="color:${color};background:${bg}"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
             <div class="doc-row-text min-w-0">
-                <p class="doc-row-name">${escapeHtml(doc.name)}</p>
-                <p class="doc-row-sub">${escapeHtml(doc.date || '')}</p>
+                <p class="doc-row-name${upload ? ' doc-row-name--upload' : ''}">${escapeHtml(doc.name)}</p>
+                <p class="doc-row-sub">${escapeHtml(documentRowSubtitle(doc))}</p>
             </div>
             <i data-lucide="chevron-right" class="doc-row-chevron w-4 h-4"></i>
         </button>
-        ${isUserUploadedDoc(doc) ? `
         <div class="doc-row-menu">
             ${renderActionMenuButton(menuKey, 'Document options')}
             ${renderActionMenuPopover(menuKey, menuItems)}
-        </div>` : ''}
+        </div>
     </div>`;
 }
 
 function renderPropertyDocumentsTab(propertyId) {
-    const docs = AppStore.docsForProperty(propertyId);
+    const docs = sortPropertyDocuments(AppStore.docsForProperty(propertyId));
     return `
     <div class="screen-content screen-content-sm">
-        <button type="button" data-action="upload-document" class="doc-upload-zone">
-            <i data-lucide="upload" class="w-5 h-5"></i>
-            <span class="doc-upload-label">Upload files</span>
-            <span class="doc-upload-hint">PDF, JPG, PNG · select multiple</span>
-        </button>
+        <div class="doc-page-head">
+            <p class="doc-page-count">${docs.length} file${docs.length === 1 ? '' : 's'}</p>
+            <button type="button" data-action="open-add-document" class="doc-add-btn">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add document</span>
+            </button>
+        </div>
         ${docs.length ? `<div class="doc-list">${docs.map(d => renderDocumentRow(d, propertyId)).join('')}</div>` : `
         <div class="card p-8 text-center">
             <i data-lucide="folder-open" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
-            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No documents</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Upload agreements and certificates</p>
+            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No documents yet</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Add a lease, certificate or other file</p>
+            <button type="button" data-action="open-add-document" class="btn-primary py-2.5 px-5 text-[13px] mt-4">+ Add document</button>
         </div>`}
     </div>`;
 }
@@ -2573,10 +3170,8 @@ function renderPropertyUnitsTab(propertyId) {
     const allUnits = getPropertyUnits(propertyId);
     const units = filterPropertyUnits(allUnits);
     const unitFilter = STATE.unitFilter || 'all';
-    const vacantCount = allUnits.filter(u => u.status !== 'occupied').length;
-    const occupiedCount = allUnits.length - vacantCount;
     const groupFloors = shouldGroupFlatsByFloor(propertyId);
-    const renderFlatRow = (u, inPanel = false) => renderPropertyFlatRow(propertyId, u, { inPanel });
+    const renderFlatRow = (u, inPanel = false) => renderPropertyFlatRow(propertyId, u, { inPanel, hubList: true });
     const flatList = !units.length ? `
         <div class="card p-8 text-center unit-list-empty">
             <i data-lucide="home" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
@@ -2590,64 +3185,53 @@ function renderPropertyUnitsTab(propertyId) {
         ? [...new Set(units.map(u => u.floor || 1))].sort((a, b) => a - b).map(floor => {
             const floorUnits = units.filter(u => (u.floor || 1) === floor);
             const note = floorUnits[0]?.floorNote;
+            const collapsed = isFloorGroupCollapsed(propertyId, floor);
             return `
-            <div class="unit-floor-group">
-                <div class="unit-floor-head">
-                    <h3 class="unit-floor-title">${formatFloorLabel(floor)}${note ? ` · ${note}` : ''}</h3>
-                    <span class="unit-floor-count">${floorUnits.length} unit${floorUnits.length === 1 ? '' : 's'}</span>
-                </div>
-                <div class="unit-floor-panel card">
+            <div class="unit-floor-block card${collapsed ? ' unit-floor-block--collapsed' : ''}">
+                <button type="button" data-action="toggle-floor-group" data-pid="${propertyId}" data-floor="${floor}" class="unit-floor-toggle" aria-expanded="${!collapsed}">
+                    <div class="unit-floor-head-left">
+                        <span class="unit-floor-icon"><i data-lucide="layers" class="w-4 h-4"></i></span>
+                        <h3 class="unit-floor-title">${formatFloorLabel(floor)}${note ? ` · ${note}` : ''}</h3>
+                    </div>
+                    <div class="unit-floor-head-right">
+                        <span class="unit-floor-count">${floorUnits.length} Unit${floorUnits.length === 1 ? '' : 's'}</span>
+                        <i data-lucide="chevron-down" class="unit-floor-chevron w-4 h-4"></i>
+                    </div>
+                </button>
+                <div class="unit-floor-panel"${collapsed ? ' hidden' : ''}>
                     ${floorUnits.map(u => renderFlatRow(u, true)).join('')}
                 </div>
             </div>`;
         }).join('')
-        : `<div class="unit-card-list unit-card-list--loose">${units.map(u => renderFlatRow(u, false)).join('')}</div>`;
+        : `<div class="unit-floor-block card"><div class="unit-floor-panel unit-floor-panel--solo">${units.map(u => renderFlatRow(u, false)).join('')}</div></div>`;
     const filterActive = unitFilter !== 'all';
     return `
     <div class="screen-content screen-content-sm prop-hub-page prop-units-page">
         <div class="unit-list-toolbar">
-            <div class="unit-list-summary">
-                <p class="unit-list-title">${units.length} unit${units.length === 1 ? '' : 's'}${filterActive ? ` · ${unitFilterLabel(unitFilter).toLowerCase()}` : ''}</p>
-                <p class="unit-list-sub">${filterActive ? `Showing ${units.length} of ${allUnits.length}` : `${occupiedCount} occupied · ${vacantCount} vacant`}</p>
-            </div>
+            <h2 class="unit-section-title">Units</h2>
             <div class="unit-list-toolbar-actions">
-                <button type="button" data-action="toggle-unit-filters" class="filter-btn ${filterActive ? 'filter-btn-active' : ''}" aria-label="Filter units">
-                    <i data-lucide="sliders-horizontal" class="w-[18px] h-[18px]"></i>
-                    ${filterActive ? '<span class="filter-btn-dot"></span>' : ''}
+                <button type="button" data-action="toggle-unit-filters" class="unit-filter-btn ${filterActive ? 'unit-filter-btn--active' : ''}" aria-label="Filter units">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                    <span>Filter</span>
                 </button>
-                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="unit-add-btn" title="Add unit" aria-label="Add unit">
+                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="unit-add-btn unit-add-btn--round" title="Add unit" aria-label="Add unit">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>
-        ${flatList}
-    </div>`;
-}
-
-function renderFlatDetailStatGrid(u, tenancy) {
-    const rentRaw = String(tenancy?.rent || u.rent || '').replace(/\s*\/month/i, '').trim();
-    const floor = flatFloorLine(u);
-    const specs = [];
-    if (u.beds) specs.push({ icon: 'bed-double', text: `${u.beds} bed${u.beds === 1 ? '' : 's'}` });
-    if (u.baths) specs.push({ icon: 'bath', text: `${u.baths} bath${u.baths === 1 ? '' : 's'}` });
-    if (u.sqft) specs.push({ icon: 'ruler', text: `${u.sqft} sqft` });
-    if (floor) specs.push({ icon: 'layers', text: floor });
-    if (!rentRaw && !specs.length) return '';
-    return `
-    ${rentRaw ? `
-    <div class="flat-detail-rent-band">
-        <span class="flat-detail-rent-label">Monthly rent</span>
-        <div class="flat-detail-rent-row">
-            <span class="flat-detail-rent-amount">${escapeHtml(rentRaw)}</span>
-            <span class="flat-detail-rent-period">/ mo</span>
+        <div class="unit-status-chips">
+            <button type="button" data-unit-filter="all" class="unit-status-chip unit-status-chip--total ${unitFilter === 'all' ? 'active' : ''}">
+                <i data-lucide="building-2" class="w-3.5 h-3.5"></i><span>All</span>
+            </button>
+            <button type="button" data-unit-filter="occupied" class="unit-status-chip unit-status-chip--occ ${unitFilter === 'occupied' ? 'active' : ''}">
+                <i data-lucide="users" class="w-3.5 h-3.5"></i><span>Occupied</span>
+            </button>
+            <button type="button" data-unit-filter="vacant" class="unit-status-chip unit-status-chip--vac ${unitFilter === 'vacant' ? 'active' : ''}">
+                <i data-lucide="door-open" class="w-3.5 h-3.5"></i><span>Vacant</span>
+            </button>
         </div>
-    </div>` : ''}
-    ${specs.length ? `
-    <div class="flat-detail-spec-row">
-        ${specs.map((s, i) => `
-        ${i ? '<span class="flat-detail-spec-dot" aria-hidden="true">·</span>' : ''}
-        <span class="flat-detail-spec"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${escapeHtml(s.text)}</span>`).join('')}
-    </div>` : ''}`;
+        <div class="unit-floor-list">${flatList}</div>
+    </div>`;
 }
 
 function maintenanceForUnit(propertyId, unit) {
@@ -2676,16 +3260,15 @@ function renderFlatHubSectionHead(title, sub, linkHtml = '') {
 }
 
 function renderFlatRentAlert(propertyId, unit) {
-    const unpaid = invoicesForUnit(propertyId, unit).filter(i => i.status !== 'Paid');
+    const unpaid = invoicesForUnit(propertyId, unit).filter(i => i.status === 'Overdue');
     if (!unpaid.length) return '';
     const inv = unpaid[0];
-    const [bg, color] = invoiceStatusStyle(inv.status);
     return `
     <button type="button" data-go="mark-rent-received" data-iid="${inv.id}" class="flat-rent-alert card w-full text-left">
-        <span class="flat-rent-alert-icon" style="background:${bg};color:${color}"><i data-lucide="banknote" class="w-4 h-4"></i></span>
+        <span class="flat-rent-alert-icon"><i data-lucide="alert-circle" class="w-4 h-4"></i></span>
         <span class="flat-rent-alert-body">
-            <span class="flat-rent-alert-title">Rent ${inv.status.toLowerCase()} · ${inv.amount}</span>
-            <span class="flat-rent-alert-meta">Due ${inv.due}${unpaid.length > 1 ? ` · +${unpaid.length - 1} more` : ''}</span>
+            <span class="flat-rent-alert-title">Rent overdue · ${inv.amount}</span>
+            <span class="flat-rent-alert-meta">Due ${inv.due}</span>
         </span>
         <span class="flat-rent-alert-cta">Record</span>
     </button>`;
@@ -2722,27 +3305,29 @@ function renderFlatPeopleSection(propertyId, unit, { occ, tenancy, members, coun
     const membersLabel = isGroup ? 'Members' : 'Tenant';
     const previewMembers = members.slice(0, 3);
     return `
-    <section class="card flat-people-section ${isGroup ? 'flat-people-section--group' : 'flat-people-section--solo'}">
-        <div class="flat-people-head">
+    <section class="card flat-hub-section flat-hub-section--compact">
+        <div class="flat-hub-section-head">
             <div class="min-w-0">
-                <p class="flat-people-label">${membersLabel}</p>
-                <p class="flat-people-sub"><i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>${leaseLine}</p>
+                <h2 class="flat-hub-section-title">${membersLabel}</h2>
+                ${tenancy ? `<p class="flat-people-sub"><i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>${leaseLine}</p>` : ''}
             </div>
             <div class="flat-people-head-links">
-                ${count ? `<button type="button" data-go="flat-members" data-pid="${propertyId}" data-unit="${unit}" class="flat-hub-link-btn">View all</button>` : ''}
+                ${count > 1 ? `<button type="button" data-go="flat-members" data-pid="${propertyId}" data-unit="${unit}" class="flat-hub-link-btn">View all</button>` : ''}
                 ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-hub-link-btn">Lease</button>` : ''}
             </div>
         </div>
-        ${count ? `<div class="member-list-human member-list-preview">${previewMembers.map(m => renderMemberRow(m, propertyId, unit)).join('')}</div>` : `<p class="flat-people-empty-desc">No one on the lease yet.</p>`}
-        ${pendingInvite ? `
-        <button data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-invite-banner flat-invite-banner--inline w-full text-left">
-            <div class="flat-invite-banner-icon"><i data-lucide="mail" class="w-4 h-4"></i></div>
-            <div class="flex-1 min-w-0">
-                <p class="flat-invite-banner-title">Invite pending</p>
-                <p class="flat-invite-banner-meta">${pendingInvite.firstName} ${pendingInvite.lastName}</p>
-            </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
-        </button>` : ''}
+        <div class="flat-hub-section-body flat-hub-section-body--tight">
+            ${count ? `<div class="member-list-human">${previewMembers.map(m => renderMemberRow(m, propertyId, unit)).join('')}</div>` : `<p class="flat-people-empty-desc">No one on the lease yet.</p>`}
+            ${pendingInvite ? `
+            <button data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-invite-banner flat-invite-banner--inline w-full text-left">
+                <div class="flat-invite-banner-icon"><i data-lucide="mail" class="w-4 h-4"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="flat-invite-banner-title">Invite pending</p>
+                    <p class="flat-invite-banner-meta">${pendingInvite.firstName} ${pendingInvite.lastName}</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+            </button>` : ''}
+        </div>
     </section>`;
 }
 
@@ -2837,29 +3422,339 @@ function screenFlatRentHistory() {
     </div>`;
 }
 
-function renderFlatToolsGrid(propertyId, unit) {
-    const openMaint = maintenanceForUnit(propertyId, unit).find(m => m.status !== 'done');
-    const tools = [
-        openMaint
-            ? { icon: 'wrench', label: 'Issues', tone: 'maint', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="maintenance" data-unit="${unit}"` }
-            : { icon: 'wrench', label: 'Log issue', tone: 'maint', go: 'log-maintenance', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
-        { icon: 'clipboard-check', label: 'Inspection', tone: 'inspect', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inspection"` },
-        { icon: 'package', label: 'Inventory', tone: 'inventory', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inventory"` },
-        { icon: 'banknote', label: 'Rent', tone: 'rent', go: 'flat-rent-history', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
-        { icon: 'camera', label: 'Photo', tone: 'photo', action: 'upload-flat-photo', attrs: '' },
-        { icon: 'zap', label: 'Utilities', tone: 'util', go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+function flatDetailPhotoList(propertyId, unit) {
+    ensureFlatPhotos(propertyId);
+    const gal = getFlatPhotoGallery(propertyId, unit);
+    if (gal?.photos?.length) return gal.photos;
+    return [getFlatCoverPhoto(propertyId, unit)];
+}
+
+function flatDetailSpecChips(u) {
+    const specs = [];
+    if (u.beds) specs.push({ icon: 'bed-double', text: `${u.beds} Bed${u.beds === 1 ? '' : 's'}` });
+    if (u.baths) specs.push({ icon: 'bath', text: `${u.baths} Bath${u.baths === 1 ? '' : 's'}` });
+    if (u.sqft) specs.push({ icon: 'ruler', text: `${u.sqft} sqft` });
+    const floor = flatFloorLine(u);
+    if (floor) specs.push({ icon: 'layers', text: floor });
+    if (!specs.length) return '';
+    return `
+    <div class="flat-dt-spec-chips">
+        ${specs.map((s, i) => `
+        ${i ? '<span class="flat-dt-spec-dot" aria-hidden="true">·</span>' : ''}
+        <span class="flat-dt-spec"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${escapeHtml(s.text)}</span>`).join('')}
+    </div>`;
+}
+
+function flatDetailFinanceRow(u, tenancy) {
+    const rentAmt = flatEffectiveRentAmount(u, tenancy);
+    const rentLabel = rentAmt ? formatRentAmount(rentAmt) : '—';
+    return `
+    <div class="flat-dt-finance flat-dt-finance--single">
+        <div class="flat-dt-finance-col">
+            <span class="flat-dt-finance-label">Monthly Rent</span>
+            <span class="flat-dt-finance-val flat-dt-finance-val--rent">${escapeHtml(rentLabel)}</span>
+        </div>
+    </div>`;
+}
+
+function flatInspectionSubline(propertyId) {
+    const upcoming = AppStore.inspections.find(i => i.propertyId === propertyId && i.scheduled);
+    if (upcoming?.date) {
+        const d = formatDisplayDate(upcoming.date) || upcoming.date;
+        return `Next: ${d}`;
+    }
+    const past = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
+    if (past[0]?.date) {
+        const d = formatDisplayDate(past[0].date) || past[0].date;
+        return `Last: ${d}`;
+    }
+    return 'Not scheduled';
+}
+
+function flatDetailExtraLine(propertyId, u) {
+    const info = AppStore.meta(propertyId).info || {};
+    const parts = [];
+    const unitType = u.unitType || info.type;
+    if (unitType && unitType !== '—') parts.push(unitType);
+    if (u.furnished) parts.push(u.furnished);
+    const yearBuilt = u.yearBuilt || info.built;
+    if (yearBuilt) parts.push(`Built ${yearBuilt}`);
+    if (u.floorNote) parts.push(u.floorNote);
+    if (!parts.length) return '';
+    return `<p class="flat-dt-extra-line">${parts.map(p => escapeHtml(p)).join(' · ')}</p>`;
+}
+
+function flatDetailActivityEvents(propertyId, unit) {
+    const events = [];
+    invoicesForUnit(propertyId, unit).forEach(inv => {
+        if (inv.status !== 'Paid') return;
+        events.push({
+            icon: 'pound-sterling',
+            iconBg: '#DCFCE7', iconColor: '#16A34A',
+            title: 'Payment',
+            desc: `Rent payment received · ${inv.amount} for ${inv.month || inv.due}`,
+            date: inv.due || inv.month || '—',
+            badge: 'Paid', badgeBg: '#DCFCE7', badgeColor: '#16A34A',
+            go: 'invoice-detail', attrs: `data-iid="${inv.id}"`,
+            sort: inv.uploadedAt || 0,
+        });
+    });
+    maintenanceForUnit(propertyId, unit).forEach(m => {
+        const [sBg, sColor] = maintStatusStyle[m.status];
+        events.push({
+            icon: 'wrench',
+            iconBg: '#F3E8FF', iconColor: '#7C3AED',
+            title: 'Maintenance',
+            desc: `Maintenance request · ${m.issue}`,
+            date: m.time || '—',
+            badge: maintStatusLabel[m.status],
+            badgeBg: sBg, badgeColor: sColor,
+            go: 'maintenance-detail', attrs: `data-mid="${m.id}"`,
+            sort: m.uploadedAt || 0,
+        });
+    });
+    AppStore.docsForProperty(propertyId)
+        .filter(d => !d.unit || d.unit === unit)
+        .forEach(doc => {
+            const signed = doc.signed || /signed|agreement/i.test(doc.name || '');
+            events.push({
+                icon: 'file-text',
+                iconBg: '#EFF6FF', iconColor: '#2563EB',
+                title: 'Document',
+                desc: `Document uploaded · ${doc.name}`,
+                date: doc.date || 'Recent',
+                badge: signed ? 'Signed' : 'Uploaded',
+                badgeBg: signed ? '#DCFCE7' : '#EFF6FF',
+                badgeColor: signed ? '#16A34A' : '#2563EB',
+                go: 'document-preview', attrs: `data-doc="${doc.id}"`,
+                sort: doc.uploadedAt || 0,
+            });
+        });
+    return events;
+}
+
+function flatDetailActivityListHtml(propertyId, unit, maxItems = 4) {
+    const items = flatDetailActivityEvents(propertyId, unit)
+        .sort((a, b) => (b.sort || 0) - (a.sort || 0))
+        .slice(0, maxItems);
+    if (!items.length) {
+        return '<p class="flat-dt-activity-empty">No recent activity for this unit yet.</p>';
+    }
+    return `
+    <div class="flat-dt-activity-list">
+        ${items.map(ev => `
+        <button type="button" data-go="${ev.go}" ${ev.attrs} class="flat-dt-activity-row w-full text-left">
+            <span class="flat-dt-activity-icon" style="background:${ev.iconBg};color:${ev.iconColor}"><i data-lucide="${ev.icon}" class="w-4 h-4"></i></span>
+            <span class="flat-dt-activity-body">
+                <span class="flat-dt-activity-title">${escapeHtml(ev.title)}</span>
+                <span class="flat-dt-activity-desc">${escapeHtml(ev.desc)}</span>
+                <span class="flat-dt-activity-date">${escapeHtml(ev.date)}</span>
+            </span>
+            <span class="flat-dt-activity-badge" style="background:${ev.badgeBg};color:${ev.badgeColor}">${escapeHtml(ev.badge)}</span>
+        </button>`).join('')}
+    </div>`;
+}
+
+function flatDetailRecentActivity(propertyId, unit, opts = {}) {
+    const maxItems = opts.maxItems ?? 4;
+    const listHtml = flatDetailActivityListHtml(propertyId, unit, maxItems);
+    if (opts.compact) return listHtml;
+    return `
+    <section class="card flat-dt-activity">
+        <div class="flat-dt-activity-head">
+            <h2 class="flat-dt-section-title">Recent Activity</h2>
+        </div>
+        ${listHtml}
+    </section>`;
+}
+
+function flatDetailQuickLinks(propertyId, unit, members) {
+    const openMaint = maintenanceForUnit(propertyId, unit).filter(m => m.status === 'open' || m.status === 'progress').length;
+    const lead = members.find(m => m.isLead);
+    const noteCount = lead?.listId != null ? getTenantNotes(lead.listId).length : 0;
+    const links = [
+        { icon: 'wrench', tone: 'maint', title: 'Maintenance', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="maintenance" data-unit="${unit}"`, badge: openMaint || '' },
+        { icon: 'folder', tone: 'docs', title: 'Documents', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="documents"` },
+        { icon: 'package', tone: 'inventory', title: 'Inventory', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inventory"` },
+        { icon: 'shield-check', tone: 'inspect', title: 'Inspection', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inspection"` },
+        { icon: 'droplets', tone: 'util', title: 'Utilities', go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'notebook-pen', tone: 'notes', title: 'Notes', go: lead?.listId != null ? 'tenant-detail' : 'invite-tenant', attrs: lead?.listId != null ? `data-tid="${lead.listId}"` : `data-pid="${propertyId}" data-unit="${unit}"`, badge: noteCount || '' },
     ];
     return `
-    <section class="flat-tools-strip">
-        <p class="flat-section-eyebrow">Quick actions</p>
-        <div class="flat-hub-actions">
-            ${tools.map(t => `
-            <button type="button" ${t.action ? `data-action="${t.action}"` : `data-go="${t.go}"`} ${t.attrs} class="flat-hub-action">
-                <span class="flat-hub-action-icon flat-hub-action-icon--${t.tone}"><i data-lucide="${t.icon}" class="w-5 h-5"></i></span>
-                <span class="flat-hub-action-label">${t.label}</span>
+    <section class="card flat-dt-quicklinks">
+        <h3 class="flat-dt-block-title">Property</h3>
+        <div class="flat-dt-quicklinks-grid">
+            ${links.map(l => `
+            <button type="button" ${l.ftab ? `data-ftab="${l.ftab}"` : `data-go="${l.go}" ${l.attrs}`} class="flat-dt-quicklink-tile">
+                <span class="flat-dt-grid-icon flat-dt-grid-icon--${l.tone}"><i data-lucide="${l.icon}" class="w-[16px] h-[16px]"></i></span>
+                <span class="flat-dt-quicklink-title">${l.title}${l.badge ? ` (${l.badge})` : ''}</span>
             </button>`).join('')}
         </div>
     </section>`;
+}
+
+function flatDetailTabBadges(propertyId, unit, pendingInvite) {
+    const openMaint = maintenanceForUnit(propertyId, unit).filter(m => m.status === 'open' || m.status === 'progress').length;
+    const overdue = invoicesForUnit(propertyId, unit).some(i => i.status === 'Overdue');
+    return {
+        tenant: pendingInvite ? '!' : '',
+        payments: overdue ? '!' : '',
+        activity: openMaint ? String(openMaint) : '',
+    };
+}
+
+function renderFlatDetailTabNav(activeTab, badges = {}) {
+    const tabs = [
+        ['overview', 'Overview', 'layout-grid'],
+        ['tenant', 'Tenant', 'users'],
+        ['payments', 'Payments', 'pound-sterling'],
+        ['gallery', 'Gallery', 'images'],
+        ['activity', 'Activity', 'activity'],
+    ];
+    return `
+    <div class="flat-dt-tabs" role="tablist" aria-label="Unit sections">
+        ${tabs.map(([tab, label, icon]) => {
+            const active = activeTab === tab;
+            const badge = badges[tab];
+            return `
+        <button type="button" data-ftab="${tab}" role="tab" aria-selected="${active}" class="flat-dt-tab ${active ? 'flat-dt-tab--active' : ''}">
+            <span class="flat-dt-tab-icon"><i data-lucide="${icon}" class="w-[18px] h-[18px]"></i></span>
+            <span class="flat-dt-tab-label">${label}</span>
+            ${badge ? `<span class="flat-dt-tab-badge">${badge}</span>` : ''}
+        </button>`;
+        }).join('')}
+    </div>`;
+}
+
+function renderFlatDetailOverviewCard(propertyId, u, tenancy, coverPhoto, photoCount) {
+    return `
+    <div class="card flat-dt-overview-card">
+        <button type="button" data-ftab="gallery" class="flat-dt-overview-photo w-full text-left" aria-label="Open gallery">
+            <img src="${coverPhoto}" alt="" class="flat-dt-overview-photo-img">
+            <span class="flat-dt-carousel-badge">${photoCount} photo${photoCount === 1 ? '' : 's'}</span>
+        </button>
+        <div class="flat-dt-overview-body">
+            ${flatDetailSpecChips(u)}
+            ${flatDetailExtraLine(propertyId, u)}
+            ${flatDetailFinanceRow(u, tenancy)}
+        </div>
+    </div>`;
+}
+
+function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
+    return `
+    <div class="flat-dt-tab-panel">
+        ${renderFlatDetailOverviewCard(propertyId, u, tenancy, coverPhoto, photoCount)}
+        ${flatDetailQuickLinks(propertyId, unit, members)}
+        <section class="card flat-dt-activity flat-dt-activity--compact">
+            <div class="flat-dt-activity-head">
+                <h3 class="flat-dt-block-title">Recent activity</h3>
+                <button type="button" data-ftab="activity" class="flat-dt-activity-link">View all</button>
+            </div>
+            ${flatDetailRecentActivity(propertyId, unit, { compact: true, maxItems: 3 })}
+        </section>
+    </div>`;
+}
+
+function renderFlatDetailTenantActions(propertyId, unit, ctx) {
+    const { occ, tenancy, members, pendingInvite } = ctx;
+    if (!occ && !tenancy && !pendingInvite) return '';
+    const lead = members.find(m => m.isLead) || members[0];
+    const listItem = lead?.listId != null ? TENANT_LIST[lead.listId] : null;
+    const unpaid = invoicesForUnit(propertyId, unit).filter(i => i.status === 'Overdue');
+    if (!occ && !tenancy && pendingInvite) {
+        return `
+    <div class="flat-dt-tenant-actions">
+        <button type="button" data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-dt-tenant-action flat-dt-tenant-action--primary"><i data-lucide="mail" class="w-4 h-4"></i>View invite</button>
+        <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-action"><i data-lucide="user-plus" class="w-4 h-4"></i>Resend invite</button>
+    </div>`;
+    }
+    return `
+    <div class="flat-dt-tenant-actions">
+        ${listItem?.chatId != null ? `<button type="button" data-go="chat" data-chat="${listItem.chatId}" class="flat-dt-tenant-action"><i data-lucide="message-square" class="w-4 h-4"></i>Message</button>` : ''}
+        ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-action"><i data-lucide="file-text" class="w-4 h-4"></i>View lease</button>` : ''}
+        ${unpaid.length ? `<button type="button" data-go="mark-rent-received" data-iid="${unpaid[0].id}" class="flat-dt-tenant-action flat-dt-tenant-action--primary"><i data-lucide="pound-sterling" class="w-4 h-4"></i>Record rent</button>` : occ ? `<button type="button" data-ftab="payments" class="flat-dt-tenant-action"><i data-lucide="pound-sterling" class="w-4 h-4"></i>Payments</button>` : ''}
+    </div>`;
+}
+
+function renderFlatDetailTenantTab(propertyId, unit, ctx) {
+    return `
+    <div class="flat-dt-tab-panel">
+        ${renderFlatDetailTenantActions(propertyId, unit, ctx)}
+        ${renderFlatPeopleSection(propertyId, unit, ctx)}
+    </div>`;
+}
+
+function renderFlatDetailPaymentsTab(propertyId, unit) {
+    const stats = unitRentStats(propertyId, unit);
+    const unpaid = stats.unpaid;
+    const hasOverdue = unpaid.some(i => i.status === 'Overdue');
+    return `
+    <div class="flat-dt-tab-panel">
+        ${stats.outstanding && !hasOverdue ? `
+        <div class="flat-rent-summary card">
+            <p class="flat-rent-summary-label">Outstanding</p>
+            <p class="flat-rent-summary-amount">£${stats.outstanding.toLocaleString()}</p>
+            <p class="flat-rent-summary-hint">${unpaid.length} unpaid bill${unpaid.length === 1 ? '' : 's'} for this unit</p>
+            <button type="button" data-go="mark-rent-received"${unpaid.length === 1 ? ` data-iid="${unpaid[0].id}"` : ''} class="btn-primary w-full py-3 text-[13px] mt-3">Record payment</button>
+        </div>` : stats.collected && !hasOverdue ? `
+        <div class="flat-rent-summary card flat-rent-summary--ok">
+            <p class="flat-rent-summary-label">This month</p>
+            <p class="flat-rent-summary-amount text-[#16A34A]">£${stats.collected.toLocaleString()} collected</p>
+        </div>` : ''}
+        <p class="flat-section-eyebrow flat-dt-eyebrow-inset">Payment history</p>
+        ${renderUnitRentHistory(propertyId, unit)}
+    </div>`;
+}
+
+function renderFlatBuildingPhotosSection(propertyId) {
+    const meta = AppStore.meta(propertyId);
+    const photos = meta.photos?.length ? meta.photos : [IMG.props[propertyId] || IMG.fallback];
+    return `
+    <button type="button" data-go="property-photos" data-pid="${propertyId}" class="btn-secondary w-full py-3 text-[13px] mt-3 flat-dt-building-link">
+        <i data-lucide="building-2" class="w-4 h-4 inline align-[-2px] mr-1"></i>View building photos (${photos.length})
+    </button>`;
+}
+
+function renderFlatDetailGalleryTab(propertyId, unit) {
+    ensureFlatPhotos(propertyId);
+    const gal = getFlatPhotoGallery(propertyId, unit);
+    const photos = gal?.photos?.length ? gal.photos : [getFlatCoverPhoto(propertyId, unit)];
+    const cover = gal?.cover ?? 0;
+    return `
+    <div class="flat-dt-tab-panel">
+        <p class="flat-section-eyebrow flat-dt-eyebrow-inset">Unit photos</p>
+        ${renderFlatUnitPhotoPicker(photos, cover, {
+            coverAction: 'set-flat-cover',
+            removeAction: 'remove-flat-photo',
+            uploadAction: 'upload-flat-photo',
+            uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
+            hint: 'Tap ★ on any photo to set it as the cover. This shows in Overview and unit lists.',
+        })}
+        ${renderFlatBuildingPhotosSection(propertyId)}
+    </div>`;
+}
+
+function renderFlatDetailActivityTab(propertyId, unit) {
+    const maint = renderFlatMaintenancePreview(propertyId, unit);
+    return `
+    <div class="flat-dt-tab-panel">
+        <button type="button" data-go="log-maintenance" data-pid="${propertyId}" data-unit="${unit}" class="btn-primary w-full py-3 text-[13px] flat-dt-log-maint-btn">
+            <i data-lucide="wrench" class="w-4 h-4 inline align-[-2px] mr-1"></i>Log maintenance issue
+        </button>
+        ${maint || `<div class="card p-5 text-center flat-dt-empty"><i data-lucide="wrench" class="w-8 h-8 text-[#CBD5E1] mx-auto"></i><p class="text-[13px] font-semibold mt-2 text-[#0F172A]">No maintenance issues</p><p class="text-[12px] text-[#64748B] mt-1">Log an issue if something needs attention.</p></div>`}
+        ${flatDetailRecentActivity(propertyId, unit, { maxItems: 8 })}
+    </div>`;
+}
+
+function renderFlatDetailTabContent(tab, propertyId, unit, u, p, tenancy, members, ctx, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
+    switch (tab) {
+        case 'tenant': return renderFlatDetailTenantTab(propertyId, unit, ctx);
+        case 'payments': return renderFlatDetailPaymentsTab(propertyId, unit);
+        case 'gallery': return renderFlatDetailGalleryTab(propertyId, unit);
+        case 'activity': return renderFlatDetailActivityTab(propertyId, unit);
+        default: return renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor);
+    }
 }
 
 function screenFlatDetail() {
@@ -2868,8 +3763,9 @@ function screenFlatDetail() {
     const p = PROPERTIES[propertyId];
     const u = getUnitByName(propertyId, unit);
     if (!u) return `${topBar('Unit', { back: true })}<div class="screen-content"><p class="ux-intro">Unit not found.</p></div>`;
-    ensureFlatPhotos(propertyId);
-    const thumb = getFlatCoverPhoto(propertyId, unit);
+    const photos = flatDetailPhotoList(propertyId, unit);
+    const coverPhoto = getFlatCoverPhoto(propertyId, unit);
+    const photoCount = photos.length;
     const occ = u.status === 'occupied';
     const { tenancy, members, count } = getFlatMemberRoster(propertyId, unit);
     const pendingInvite = pendingInvitesForProperty(propertyId).find(i => i.unit === unit);
@@ -2878,35 +3774,38 @@ function screenFlatDetail() {
     const statusColor = occ ? '#16A34A' : '#D97706';
     const unitMenuKey = actionMenuKeyFor('unit', propertyId, unit);
     const unitMenuOpen = isActionMenuOpen(unitMenuKey);
+    const name = unitName(u);
+    const flatTab = STATE.flatTab || 'overview';
+    const tabBadges = flatDetailTabBadges(propertyId, unit, pendingInvite);
+    const peopleCtx = { occ, tenancy, members, count, pendingInvite };
+    const rentAlert = renderFlatRentAlert(propertyId, unit);
     return `
-    <div class="flat-detail-page screen-enter">
-        <div class="flat-detail-hero">
-            <img src="${thumb}" class="img-cover" alt="">
-            <div class="absolute inset-0 hero-gradient"></div>
-            <button data-action="back" class="flat-detail-fab flat-detail-fab--left" aria-label="Back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-        </div>
-        <div class="flat-detail-menu-slot${unitMenuOpen ? ' flat-detail-menu-slot--menu-open' : ''}">
-            ${renderActionMenuButton(unitMenuKey, 'Unit options')}
-            ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, unit, { fromDetail: true }))}
-        </div>
-        <div class="flat-detail-body screen-content screen-content-sm">
-            <div class="flat-detail-summary card">
-                <div class="flat-detail-summary-top">
-                    <div class="flat-detail-summary-main">
-                        <p class="flat-detail-property">${p.name}</p>
-                        <div class="flat-detail-title-row">
-                            <h1 class="flat-detail-name">${unitName(u)}</h1>
-                            <span class="badge shrink-0" style="background:${statusBg};color:${statusColor}">${statusLabel}</span>
-                        </div>
-                        ${renderFlatDetailStatGrid(u, tenancy)}
-                    </div>
+    <div class="flat-detail-page flat-detail-page--v2 flat-detail-page--tabs screen-enter">
+        <header class="flat-dt-header">
+            <button type="button" data-action="back" class="flat-dt-header-back" aria-label="Back"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+            <div class="flat-dt-header-main">
+                <h1 class="flat-dt-header-title">${escapeHtml(name)}</h1>
+                <div class="flat-dt-header-meta">
+                    <span class="flat-dt-header-property">${escapeHtml(p.name)}</span>
+                    <span class="flat-dt-header-dot" aria-hidden="true">·</span>
+                    <span class="flat-dt-header-status" style="color:${statusColor}">${statusLabel}</span>
                 </div>
             </div>
-            ${renderFlatRentAlert(propertyId, unit)}
-            ${renderFlatPeopleSection(propertyId, unit, { occ, tenancy, members, count, pendingInvite })}
-            ${renderFlatMaintenancePreview(propertyId, unit)}
-            ${renderFlatToolsGrid(propertyId, unit)}
+            <div class="flat-dt-header-menu${unitMenuOpen ? ' flat-dt-header-menu--open' : ''}">
+                ${renderActionMenuButton(unitMenuKey, 'Unit options')}
+                ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, unit, { fromDetail: true }))}
+            </div>
+        </header>
+        ${rentAlert ? `<div class="flat-dt-global-alert screen-content screen-content-sm">${rentAlert}</div>` : ''}
+        ${renderFlatDetailTabNav(flatTab, tabBadges)}
+        <div class="flat-dt-scroll flat-dt-scroll--tabbed screen-content screen-content-sm">
+            ${renderFlatDetailTabContent(flatTab, propertyId, unit, u, p, tenancy, members, peopleCtx, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
         </div>
+        <footer class="flat-dt-footer">
+            <button type="button" data-go="edit-flat" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-edit-btn">
+                <i data-lucide="pencil" class="w-4 h-4"></i>Edit Unit Details
+            </button>
+        </footer>
     </div>`;
 }
 
@@ -2927,6 +3826,8 @@ function propertyTenantEntries(propertyId) {
         const { members } = getFlatMemberRoster(propertyId, unit);
         members.forEach(m => {
             if (m.listId != null && TENANT_LIST[m.listId]) return;
+            // Lease-only names (no invite, no account) stay on the unit members screen — not here.
+            if (m.accountStatus === 'no-account') return;
             push(`${unit}:${m.name}`, { kind: 'member', member: m, unit });
         });
     });
@@ -2965,7 +3866,7 @@ function renderPropertyMemberRow(propertyId, unit, member) {
                 <span class="tenant-status-pill" style="background:${bg};color:${color}">${member.accountStatus === 'active' ? 'Active' : member.accountStatus === 'pending' ? 'Pending' : 'No account'}</span>
             </div>
             <p class="tenant-row-prop">${unit}</p>
-            <p class="tenant-row-meta">${member.isLead ? 'Lead tenant' : 'Group member'}</p>
+            <p class="tenant-row-meta">${member.isLead ? 'Lead tenant' : 'Group member'}${member.accountStatus === 'pending' ? ' · invite sent' : ''}</p>
         </div>
         <i data-lucide="chevron-right" class="tenant-row-chevron w-5 h-5"></i>
     </button>`;
@@ -3126,38 +4027,51 @@ function renderPropertyComplianceTab(propertyId) {
 
 function screenDocumentPreviewEnhanced() {
     let name = 'Document';
-    let type = 'File';
-    let date = '—';
+    let meta = '—';
     let docId = null;
+    let doc = null;
     if (STATE.previewDocSource === 'tenant-nid') {
         const tid = STATE.tenantId ?? 0;
         const proof = getTenantNidProof(tid);
-        if (proof) { name = proof.name; type = 'NID Document Proof'; date = proof.date; }
+        if (proof) { name = proof.name; meta = proof.date; }
     } else if (STATE.previewDocSource === 'tenant') {
         const docs = getTenantDocuments(STATE.tenantId ?? 0);
         const row = docs[STATE.previewDocIdx ?? 0];
-        if (row) { name = row[1]; type = 'Tenant Document'; date = row[2]; }
+        if (row) { name = row[1]; meta = row[2]; }
     } else {
-        const doc = AppStore.documents.find(d => d.id === STATE.previewDocId);
-        if (doc) { name = doc.name; type = doc.type; date = doc.date; docId = doc.id; }
+        doc = AppStore.documents.find(d => d.id === STATE.previewDocId);
+        if (doc) {
+            name = doc.name;
+            meta = documentRowSubtitle(doc);
+            docId = doc.id;
+        }
     }
-    const prop = PROPERTIES[STATE.propertyId]?.name || '';
+    const { icon, color, bg } = doc ? documentRowVisual(doc) : { icon: 'file-text', color: '#2563EB', bg: '#EFF6FF' };
+    const previewBody = doc?.fileUrl && isDocImage(doc)
+        ? `<img src="${doc.fileUrl}" alt="" class="doc-preview-image">`
+        : doc?.fileUrl && (doc.mime?.includes('pdf') || String(doc.name).toLowerCase().endsWith('.pdf'))
+            ? `<iframe src="${doc.fileUrl}" class="doc-preview-frame" title="PDF preview"></iframe>`
+            : `<div class="doc-preview-placeholder">
+                <i data-lucide="${icon}" class="w-12 h-12" style="color:${color}"></i>
+                <p class="text-[13px] text-[#94A3B8] mt-3">${escapeHtml(name)}</p>
+            </div>`;
     return `${topBar('Document', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-6 text-center mt-2">
-            <i data-lucide="file-text" class="w-16 h-16 text-[#2563EB] mx-auto"></i>
-            <p class="text-[14px] font-bold mt-4">${name}</p>
-            <p class="text-[13px] text-[#64748B]">${type}${prop ? ` · ${prop}` : ''} · PDF · 2.4 MB</p>
-            <p class="text-[12px] text-[#94A3B8] mt-1">${date}</p>
+            <div class="doc-preview-icon" style="color:${color};background:${bg}">
+                <i data-lucide="${icon}" class="w-8 h-8"></i>
+            </div>
+            <p class="doc-preview-name">${escapeHtml(name)}</p>
+            <p class="text-[12px] text-[#94A3B8] mt-1">${escapeHtml(meta)}</p>
         </div>
-        <div class="card mt-4 p-4 bg-[#F8FAFC] min-h-[300px] flex items-center justify-center">
-            <p class="text-[13px] text-[#94A3B8]">Preview of ${name}</p>
+        <div class="card mt-4 p-4 bg-[#F8FAFC] min-h-[300px] flex items-center justify-center doc-preview-panel">
+            ${previewBody}
         </div>
         <div class="grid grid-cols-2 gap-3 mt-4">
             <button data-action="download-doc" class="btn-secondary py-3 text-[13px] flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Download</button>
             ${docId != null ? `<button data-action="share-doc" data-doc="${docId}" class="btn-primary py-3 text-[13px] flex items-center justify-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i>Share</button>` : `<button data-action="toast" data-msg="Document saved" class="btn-primary py-3 text-[13px]">Save</button>`}
         </div>
-        ${docId != null && type === 'Custom Document' ? `
+        ${docId != null && isUserUploadedDoc(doc) ? `
         <div class="danger-zone">
             ${dangerZoneButton('Delete document', 'delete-document', `data-doc="${docId}"`)}
         </div>` : ''}
@@ -3168,14 +4082,86 @@ function getUnreadNotifCount() {
     return (NOTIFICATIONS || []).filter(n => n.unread).length;
 }
 
+function dashAttentionItems() {
+    const items = [];
+    const overdue = INVOICES.filter(i => i.status === 'Overdue');
+    if (overdue.length) {
+        const amt = overdue.reduce((s, i) => s + parseInt(String(i.amount).replace(/[^\d]/g, ''), 10), 0);
+        items.push({
+            icon: 'banknote', bg: '#FEE2E2', color: '#DC2626',
+            title: `${overdue.length} overdue rent`,
+            sub: `£${amt.toLocaleString()} to collect`,
+            go: 'mark-rent-received',
+        });
+    }
+    const openMaint = MAINTENANCE_ITEMS.filter(m => m.status === 'open' || m.status === 'progress');
+    if (openMaint.length) {
+        items.push({
+            icon: 'wrench', bg: '#FEF3C7', color: '#D97706',
+            title: `${openMaint.length} open issue${openMaint.length === 1 ? '' : 's'}`,
+            sub: 'Review maintenance queue',
+            go: 'maintenance',
+        });
+    }
+    const unreadChats = (CONVERSATIONS || []).filter(c => c.unread > 0).length;
+    if (unreadChats) {
+        items.push({
+            icon: 'message-square', bg: '#EFF6FF', color: '#2563EB',
+            title: `${unreadChats} unread message${unreadChats === 1 ? '' : 's'}`,
+            sub: 'Reply to tenants',
+            go: 'messages',
+        });
+    }
+    const compliantCount = PROPERTIES.filter(p => p.compliance).length;
+    const compliancePct = PROPERTIES.length ? Math.round((compliantCount / PROPERTIES.length) * 100) : 100;
+    if (compliancePct < 100 && items.length < 3) {
+        items.push({
+            icon: 'shield-alert', bg: '#FEF3C7', color: '#D97706',
+            title: 'Compliance review',
+            sub: `${compliantCount}/${PROPERTIES.length} properties compliant`,
+            go: 'compliance-dashboard',
+        });
+    }
+    return items.slice(0, 3);
+}
+
+function dashAttentionStrip() {
+    const items = dashAttentionItems();
+    if (!items.length) return '';
+    return `
+    <div class="dash-attention">
+        <p class="dash-attention-label">Needs attention</p>
+        ${items.map(item => `
+        <button type="button" data-go="${item.go}" class="dash-attention-row">
+            <span class="dash-attention-icon" style="background:${item.bg};color:${item.color}"><i data-lucide="${item.icon}" class="w-5 h-5"></i></span>
+            <span class="dash-attention-body">
+                <span class="dash-attention-title">${item.title}</span>
+                <span class="dash-attention-sub">${item.sub}</span>
+            </span>
+            <i data-lucide="chevron-right" class="w-5 h-5 dash-attention-chevron"></i>
+        </button>`).join('')}
+    </div>`;
+}
+
+function tenantListQuickActions(t) {
+    if (t.status !== 'active') return '';
+    const chatId = t.chatId ?? (typeof getTenantChatId === 'function' ? getTenantChatId(t.id) : null);
+    const unpaid = typeof invoicesForTenant === 'function' ? invoicesForTenant(t.id).find(i => i.status !== 'Paid') : null;
+    const msgAttrs = chatId != null && chatId !== 0
+        ? `data-go="chat" data-chat="${chatId}"`
+        : `data-go="messages"`;
+    const btns = [
+        `<button type="button" ${msgAttrs} class="tenant-list-quick-btn"><i data-lucide="message-square" class="w-3.5 h-3.5"></i>Message</button>`,
+    ];
+    if (unpaid) {
+        btns.push(`<button type="button" data-go="mark-rent-received" data-iid="${unpaid.id}" class="tenant-list-quick-btn tenant-list-quick-btn--success"><i data-lucide="circle-check" class="w-3.5 h-3.5"></i>Record rent</button>`);
+    }
+    return `<div class="tenant-list-quick">${btns.join('')}</div>`;
+}
+
 function screenDashboardEnhanced() {
     if (showScreenSkeleton('dashboard')) return renderDashboardSkeleton();
     const stats = portfolioStats();
-    const overdueAmt = INVOICES.filter(i => i.status === 'Overdue').reduce((s, i) => s + parseInt(i.amount.replace(/[^\d]/g, ''), 10), 0);
-    const overdueAmount = overdueAmt ? `£${overdueAmt.toLocaleString()}` : null;
-    const compliantCount = PROPERTIES.filter(p => p.compliance).length;
-    const compliancePct = PROPERTIES.length ? Math.round((compliantCount / PROPERTIES.length) * 100) : 0;
-    const unreadBell = getUnreadNotifCount();
     const landlordName = LANDLORD_USER.firstName || 'John';
     const reminders = AppStore.reminders.slice(0, 3).map(r => {
         const prop = PROPERTIES[r.propertyId];
@@ -3183,6 +4169,8 @@ function screenDashboardEnhanced() {
         const tab = r.type === 'inspection' ? 'inspection' : r.type === 'rent-review' ? 'units' : 'compliance';
         return [rt[2], r.title, prop?.name || '', `${r.daysLeft} days left`, rt[3], rt[4], r.propertyId, tab, r.urgency];
     });
+    const unreadBell = getUnreadNotifCount();
+    const finStats = typeof financialStats === 'function' ? financialStats() : null;
     return `
 <div class="screen-header dash-header">
     <div class="dash-header-top">
@@ -3213,6 +4201,19 @@ function screenDashboardEnhanced() {
             </div>
             <p class="dash-hero-amount">£${stats.monthlyRent.toLocaleString()}</p>
             <p class="dash-hero-sub">From ${stats.occupiedUnits} occupied unit${stats.occupiedUnits === 1 ? '' : 's'} across ${stats.buildingCount} building${stats.buildingCount === 1 ? '' : 's'}</p>
+            ${finStats ? `
+            <button type="button" data-go="financial" class="dash-hero-rent">
+                <div class="dash-hero-rent-col">
+                    <span class="dash-hero-rent-label">Collected</span>
+                    <span class="dash-hero-rent-val dash-hero-rent-val--green">£${finStats.collected.toLocaleString()}</span>
+                </div>
+                <div class="dash-hero-rent-divider"></div>
+                <div class="dash-hero-rent-col">
+                    <span class="dash-hero-rent-label">Outstanding</span>
+                    <span class="dash-hero-rent-val${finStats.outstanding ? ' dash-hero-rent-val--amber' : ''}">£${finStats.outstanding.toLocaleString()}</span>
+                </div>
+                <i data-lucide="chevron-right" class="dash-hero-rent-chevron w-4 h-4"></i>
+            </button>` : ''}
             <div class="dash-hero-stats">
                 <button data-go="properties" class="dash-hero-stat"><strong>${stats.buildingCount}</strong><span>Buildings</span></button>
                 <div class="dash-hero-divider"></div>
@@ -3221,26 +4222,9 @@ function screenDashboardEnhanced() {
                 <button data-go="properties" class="dash-hero-stat"><strong>${stats.occupancy}%</strong><span>Occupied</span></button>
             </div>
         </div>
-        ${overdueAmount ? `
-        <button data-go="financial" data-invoice-preset="overdue" class="dash-alert">
-            <div class="dash-alert-icon"><i data-lucide="alert-circle" class="w-5 h-5"></i></div>
-            <div class="dash-alert-body">
-                <p class="dash-alert-title">${overdueAmount} overdue rent</p>
-                <p class="dash-alert-desc">Review outstanding payments</p>
-            </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 dash-alert-chevron"></i>
-        </button>` : ''}
-        ${!overdueAmount && compliancePct < 100 ? `
-        <button data-go="compliance-dashboard" class="dash-alert">
-            <div class="dash-alert-icon" style="background:#FEF3C7;color:#D97706"><i data-lucide="shield-alert" class="w-5 h-5"></i></div>
-            <div class="dash-alert-body">
-                <p class="dash-alert-title">Compliance review needed</p>
-                <p class="dash-alert-desc">${compliantCount}/${PROPERTIES.length} properties fully compliant</p>
-            </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 dash-alert-chevron"></i>
-        </button>` : ''}
-        <div class="dash-quick dash-quick--compact">
-            ${[['circle-check','Record rent','mark-rent-received','success'],['house-plus','Add property','add-property','primary'],['wrench','Log issue','log-maintenance','warning']].map(([ic,l,go,tone])=>`
+        ${dashAttentionStrip()}
+        <div class="dash-quick dash-quick--grid">
+            ${[['circle-check','Record rent','mark-rent-received','success'],['wrench','Log issue','log-maintenance','warning'],['user-plus','Invite tenant','select-property-invite','indigo'],['message-square','Messages','messages','primary']].map(([ic,l,go,tone])=>`
             <button data-go="${go}" class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${l}</span>
@@ -3278,7 +4262,7 @@ function screenTenantsEnhanced() {
         pending: pendingTenantInviteCount(),
     };
     const defaultPid = PROPERTIES.find(p => p.status === 'Vacant')?.id ?? PROPERTIES[0]?.id ?? 0;
-  return `${topBar('Tenants', { back: true, sub: `${counts.active} active · ${counts.pending} pending invite${counts.pending === 1 ? '' : 's'}` })}
+  return `${topBar('Tenants', { sub: `${counts.active} active · ${counts.pending} pending invite${counts.pending === 1 ? '' : 's'}` })}
     <div class="screen-content screen-enter">
         <div class="search-bar">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
@@ -3433,6 +4417,9 @@ function flatDraftFromSource(propertyId, sourceName) {
             sqft: source.sqft || '',
             floor: source.floor ?? '',
             floorNote: source.floorNote || '',
+            unitType: source.unitType || '',
+            furnished: source.furnished || '',
+            yearBuilt: source.yearBuilt || '',
         };
     }
     return {
@@ -3443,6 +4430,9 @@ function flatDraftFromSource(propertyId, sourceName) {
         sqft: '',
         floor: '',
         floorNote: '',
+        unitType: '',
+        furnished: '',
+        yearBuilt: '',
     };
 }
 
@@ -3461,6 +4451,9 @@ function appendFlatToProperty(propertyId, flatData) {
         beds: flatData.beds,
         baths: flatData.baths,
         sqft: flatData.sqft || '',
+        unitType: flatData.unitType || '',
+        furnished: flatData.furnished || '',
+        yearBuilt: flatData.yearBuilt || '',
     };
     meta.units.push(newUnit);
     const building = getPropertyBuilding(propertyId);
@@ -3712,6 +4705,65 @@ function formatRentAmount(n) {
     return n ? `£${n.toLocaleString()}` : '—';
 }
 
+function flatEffectiveRentAmount(u, tenancy) {
+    return parseRentAmount(tenancy?.rent || u?.rent);
+}
+
+function flatUnitExtraFieldsHtml(unitOrDraft, propertyId) {
+    const info = AppStore.meta(propertyId).info || {};
+    const unitType = unitOrDraft.unitType || '';
+    const furnished = unitOrDraft.furnished || '';
+    const yearBuilt = unitOrDraft.yearBuilt || '';
+    const builtPlaceholder = info.built ? `Building default: ${info.built}` : 'e.g. 2020';
+    return `
+        ${formSelectField('Unit type', 'flatUnitType', PROPERTY_TYPE_OPTIONS, unitType, { blankLabel: 'Same as building' })}
+        ${formSelectField('Furnished', 'flatFurnished', FURNISHED_OPTIONS, furnished, { blankLabel: 'Not set' })}
+        <div class="form-field"><label class="form-label">Year built</label><input data-field="flatYearBuilt" type="number" class="form-input" value="${escapeHtml(String(yearBuilt || ''))}" placeholder="${escapeHtml(builtPlaceholder)}" min="1700" max="2030"></div>`;
+}
+
+function applyFlatUnitExtraFields(unit) {
+    unit.unitType = fieldVal('flatUnitType') || '';
+    unit.furnished = fieldVal('flatFurnished') || '';
+    const yb = fieldVal('flatYearBuilt');
+    unit.yearBuilt = yb ? String(yb) : '';
+}
+
+function syncUnitRentAcrossRecords(propertyId, unitName, rentFormatted) {
+    const rentMo = rentFormatted.includes('/mo') ? rentFormatted : `${rentFormatted}/mo`;
+    AppStore.tenancies
+        .filter(t => t.propertyId === propertyId && t.unit === unitName && t.status === 'active')
+        .forEach(t => { t.rent = rentFormatted; });
+    TENANT_LIST
+        .filter(t => t.propertyId === propertyId && t.unit === unitName && (t.status === 'active' || t.status === 'pending'))
+        .forEach(t => { t.rent = rentMo; });
+    TENANT_INVITATIONS
+        .filter(i => i.propertyId === propertyId && i.unit === unitName)
+        .forEach(i => { i.rent = rentFormatted; });
+}
+
+function renameUnitReferences(propertyId, oldName, newName) {
+    AppStore.tenancies.filter(t => t.propertyId === propertyId && t.unit === oldName).forEach(t => { t.unit = newName; });
+    TENANT_INVITATIONS.filter(i => i.propertyId === propertyId && i.unit === oldName).forEach(i => { i.unit = newName; });
+    TENANT_LIST.filter(t => t.propertyId === propertyId && t.unit === oldName).forEach(t => { t.unit = newName; });
+    MAINTENANCE_ITEMS.filter(m => m.propertyId === propertyId && m.unit === oldName).forEach(m => { m.unit = newName; });
+    INVOICES.filter(i => i.propertyId === propertyId && i.unit === oldName).forEach(i => { i.unit = newName; });
+    const util = AppStore.meta(propertyId).unitUtilities?.[oldName];
+    if (util) {
+        AppStore.meta(propertyId).unitUtilities[newName] = util;
+        delete AppStore.meta(propertyId).unitUtilities[oldName];
+    }
+    renameFlatPhoto(propertyId, oldName, newName);
+}
+
+function syncPropertyDisplayReferences(propertyId) {
+    const p = PROPERTIES[propertyId];
+    if (!p) return;
+    const full = `${p.name}, ${p.address}`;
+    MAINTENANCE_ITEMS.filter(m => m.propertyId === propertyId).forEach(m => { m.prop = p.name; });
+    INVOICES.filter(i => i.propertyId === propertyId).forEach(i => { i.prop = full; });
+    TENANT_LIST.filter(t => t.propertyId === propertyId).forEach(t => { t.prop = p.name; });
+}
+
 function getPropertyRentSummary(propertyId) {
     const units = getPropertyUnits(propertyId);
     const flatAmounts = units.map(u => parseRentAmount(u.rent)).filter(n => n > 0);
@@ -3759,9 +4811,9 @@ function propertyCardStats(propertyId) {
     const units = getPropertyUnits(propertyId);
     const total = units.length;
     const occupied = units.filter(u => u.status === 'occupied').length;
-    const { collected } = getPropertyRentSummary(propertyId);
+    const { potential } = getPropertyRentSummary(propertyId);
     const occupancy = total ? Math.round((occupied / total) * 100) : 0;
-    return { total, occupied, collected, occupancy };
+    return { total, occupied, monthlyRent: potential, occupancy };
 }
 
 function occupancyRing(pct) {
@@ -3958,7 +5010,8 @@ function renderMaintAssignmentStatus(item, contractorJob) {
 
 function renderMaintContractorCard(item, contractorJob, chatId, tenantChatId) {
     const visual = contractorTradeVisual(item.contractor);
-    const trade = getContractorForItem(item)?.trade || 'Contractor';
+    const contractor = getContractorForItem(item);
+    const trade = contractor?.trade || 'Contractor';
     const statusText = contractorJob
         ? contractorJob.status.replace(/_/g, ' ')
         : 'Job sent to their app';
@@ -3977,11 +5030,12 @@ function renderMaintContractorCard(item, contractorJob, chatId, tenantChatId) {
                 </div>
             </div>
         </div>
-        ${chatId != null || tenantChatId != null ? `
         <div class="maint-contractor-actions">
-            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="maint-contact-chip"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message contractor</span></button>` : ''}
-            ${tenantChatId != null ? `<button type="button" data-go="chat" data-chat="${tenantChatId}" class="maint-contact-chip maint-contact-chip--tenant"><i data-lucide="user" class="w-4 h-4"></i><span>Message tenant</span></button>` : ''}
-        </div>` : ''}
+            ${contractor?.phone ? `<button type="button" data-action="call-contractor" data-phone="${contractor.phone.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
+            ${contractor?.email ? `<button type="button" data-action="email-contractor" data-email="${contractor.email.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
+            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
+            ${tenantChatId != null ? `<button type="button" data-go="chat" data-chat="${tenantChatId}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="user" class="w-4 h-4"></i><span>Tenant</span></button>` : ''}
+        </div>
     </div>`;
 }
 
@@ -5565,14 +6619,17 @@ function screenAddFlat() {
     const isDup = !!sourceName;
     const draft = flatDraftFromSource(STATE.propertyId, sourceName || null);
     const showFloor = shouldGroupFlatsByFloor(STATE.propertyId) || draft.floor !== '' && draft.floor != null;
-    const thumb = STATE.pendingFlatPhoto || (isDup && sourceName ? getFlatCoverPhoto(STATE.propertyId, sourceName) : IMG.interior[0]);
+    const pendingPhotos = STATE.pendingFlatPhotos || [];
+    const pendingCover = STATE.pendingFlatCover ?? 0;
     return `${topBar(isDup ? 'Duplicate unit' : 'Add unit', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter flat-edit-page">
         ${isDup ? uxTip('Change only what is different for this new unit.', `Copied from ${sourceName}`) : uxIntro('Add rent, rooms and size for this unit.')}
-        <div class="flat-edit-photo card overflow-hidden">
-            <img src="${thumb}" class="img-cover" alt="" style="height:140px">
-            <button type="button" data-action="upload-pending-flat-photo" class="flat-edit-photo-btn">${STATE.pendingFlatPhoto ? 'Change unit photo' : 'Add unit photo (optional)'}</button>
-        </div>
+        ${renderFlatUnitPhotoPicker(pendingPhotos, pendingCover, {
+            placeholder: isDup && sourceName ? getFlatCoverPhoto(STATE.propertyId, sourceName) : IMG.interior[0],
+            hint: isDup && pendingPhotos.length
+                ? `Photos copied from ${sourceName}. Tap ★ to change the cover before saving.`
+                : 'Add multiple photos and tap ★ to choose which shows on the home screen.',
+        })}
         <div class="flat-edit-fields stack-sm">
             <div class="form-field"><label class="form-label">Unit name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${draft.name.replace(/"/g, '&quot;')}" placeholder="e.g. Flat 2A"></div>
             <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${draft.rent}" min="1"></div>
@@ -5585,6 +6642,7 @@ function screenAddFlat() {
                 <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${draft.floor !== '' && draft.floor != null ? draft.floor : ''}" placeholder="Optional" min="0"></div>
                 <div class="form-field"><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(draft.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>
             </div>` : ''}
+            ${flatUnitExtraFieldsHtml(draft, STATE.propertyId)}
         </div>
         <p class="form-helper flat-edit-helper">New units start as vacant. Occupancy updates when a tenant moves in.</p>
         <button data-action="save" class="btn-primary w-full">${isDup ? 'Save duplicated unit' : 'Save unit'}</button>
@@ -5606,14 +6664,16 @@ function saveAddFlat() {
         sqft: fieldVal('flatSqft') || '',
         floor: fieldVal('flatFloor'),
         floorNote: fieldVal('floorNote') || '',
+        unitType: fieldVal('flatUnitType') || '',
+        furnished: fieldVal('flatFurnished') || '',
+        yearBuilt: fieldVal('flatYearBuilt') ? String(fieldVal('flatYearBuilt')) : '',
     });
     const wasDup = !!STATE.flatDuplicateFrom;
     const dupSource = STATE.flatDuplicateFrom;
-    if (wasDup && dupSource && !STATE.pendingFlatPhoto) {
-        const srcPhoto = getFlatCoverPhoto(STATE.propertyId, dupSource);
-        setFlatCoverPhoto(STATE.propertyId, name, srcPhoto);
-    } else if (STATE.pendingFlatPhoto) {
-        setFlatCoverPhoto(STATE.propertyId, name, STATE.pendingFlatPhoto);
+    if (STATE.pendingFlatPhotos?.length) {
+        setFlatPhotoGallery(STATE.propertyId, name, STATE.pendingFlatPhotos, STATE.pendingFlatCover ?? 0);
+    } else if (wasDup && dupSource) {
+        copyFlatPhotoGallery(STATE.propertyId, dupSource, name);
     }
     if (dupSource) {
         const meta = AppStore.meta(STATE.propertyId);
@@ -5624,7 +6684,8 @@ function saveAddFlat() {
         }
     }
     STATE.flatDuplicateFrom = null;
-    STATE.pendingFlatPhoto = null;
+    STATE.pendingFlatPhotos = [];
+    STATE.pendingFlatCover = 0;
     withLoading(() => {
         AppStore.save();
         toast(wasDup ? 'Unit duplicated' : 'Unit added');
@@ -5638,20 +6699,27 @@ function screenEditFlat() {
     const u = getUnitByName(STATE.propertyId, unit);
     if (!u) return `${topBar('Edit unit', { back: true })}<div class="screen-content"><p class="ux-intro">Unit not found.</p></div>`;
     ensureFlatPhotos(STATE.propertyId);
-    const thumb = getFlatCoverPhoto(STATE.propertyId, unit);
-    const rent = (u.rent || '').replace(/[£,]/g, '');
+    const gal = getFlatPhotoGallery(STATE.propertyId, unit);
+    const photos = gal?.photos?.length ? gal.photos : [getFlatCoverPhoto(STATE.propertyId, unit)];
+    const cover = gal?.cover ?? 0;
+    const { tenancy } = getFlatMemberRoster(STATE.propertyId, unit);
+    const rentAmt = flatEffectiveRentAmount(u, tenancy) || parseRentAmount(u.rent);
+    const rent = rentAmt || '';
     const occ = u.status === 'occupied';
     const showFloor = shouldGroupFlatsByFloor(STATE.propertyId) || u.floor != null || u.floorNote;
     return `${topBar('Edit unit', { back: true, sub: `${p?.name || ''} · ${unitName(u)}` })}
     <div class="screen-content screen-content-sm screen-enter flat-edit-page">
-        <div class="flat-edit-photo card overflow-hidden">
-            <img src="${thumb}" class="img-cover" alt="" style="height:140px">
-            <button type="button" data-action="upload-flat-photo" class="flat-edit-photo-btn">Change unit photo</button>
-        </div>
+        ${renderFlatUnitPhotoPicker(photos, cover, {
+            coverAction: 'set-flat-cover',
+            removeAction: 'remove-flat-photo',
+            uploadAction: 'upload-flat-photo',
+            uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
+            hint: 'Tap ★ on any photo to set it as the cover. This shows in Overview and unit lists.',
+        })}
         <div class="flat-edit-status card">
             <div class="flat-edit-status-body">
                 <p class="flat-edit-status-title">Status</p>
-                <p class="flat-edit-status-desc">Updates when a tenant moves in or out</p>
+                <p class="flat-edit-status-desc">Updates when a tenant moves in or out${occ ? ' · rent changes update the active lease' : ''}</p>
             </div>
             <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
         </div>
@@ -5667,6 +6735,7 @@ function screenEditFlat() {
                 <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${u.floor != null && u.floor !== '' ? u.floor : ''}" placeholder="Optional" min="0"></div>
                 <div class="form-field"><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(u.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>
             </div>` : ''}
+            ${flatUnitExtraFieldsHtml(u, STATE.propertyId)}
         </div>
         <p class="form-helper flat-edit-helper">For building-wide details, use Edit Property instead.</p>
         <div class="flat-edit-actions stack-sm">
@@ -5691,24 +6760,20 @@ function saveFlatDetails() {
         return;
     }
     unit.name = newName;
-    unit.rent = `£${parseInt(fieldVal('flatRent'), 10).toLocaleString()}`;
+    const rentFormatted = `£${parseInt(fieldVal('flatRent'), 10).toLocaleString()}`;
+    unit.rent = rentFormatted;
     unit.beds = +fieldVal('flatBeds') || unit.beds || 2;
     unit.baths = +fieldVal('flatBaths') || unit.baths || 1;
     unit.sqft = fieldVal('flatSqft') || unit.sqft || '';
     const floorVal = fieldVal('flatFloor');
     if (floorVal !== '' && floorVal != null) unit.floor = +floorVal;
+    else if (floorVal === '') unit.floor = null;
     unit.floorNote = fieldVal('floorNote') || '';
+    applyFlatUnitExtraFields(unit);
     if (newName !== oldName) {
-        AppStore.tenancies.filter(t => t.propertyId === STATE.propertyId && t.unit === oldName).forEach(t => { t.unit = newName; });
-        TENANT_INVITATIONS.filter(i => i.propertyId === STATE.propertyId && i.unit === oldName).forEach(i => { i.unit = newName; });
-        TENANT_LIST.filter(t => t.propertyId === STATE.propertyId && t.unit === oldName).forEach(t => { t.unit = newName; });
-        const util = AppStore.meta(STATE.propertyId).unitUtilities?.[oldName];
-        if (util) {
-            AppStore.meta(STATE.propertyId).unitUtilities[newName] = util;
-            delete AppStore.meta(STATE.propertyId).unitUtilities[oldName];
-        }
-        renameFlatPhoto(STATE.propertyId, oldName, newName);
+        renameUnitReferences(STATE.propertyId, oldName, newName);
     }
+    syncUnitRentAcrossRecords(STATE.propertyId, newName, rentFormatted);
     STATE.selectedUnit = newName;
     syncPropertyStatus(STATE.propertyId);
     withLoading(() => { AppStore.save(); toast('Unit updated'); go('flat-detail', { propertyId: STATE.propertyId, unit: newName }); });
@@ -5992,6 +7057,7 @@ function saveEditProperty() {
     const building = getPropertyBuilding(STATE.propertyId);
     building.flatCount = getPropertyUnits(STATE.propertyId).length;
     meta.building = building;
+    syncPropertyDisplayReferences(STATE.propertyId);
     syncPropertyStatus(STATE.propertyId);
     withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Property updated'); back(); });
 }
@@ -6392,7 +7458,15 @@ function markAllNotificationsRead() {
 }
 
 function downloadDocument() {
-    toast('Downloading Lease Agreement.pdf…');
+    const doc = AppStore.documents.find(d => d.id === STATE.previewDocId);
+    const fileName = doc?.name || 'document';
+    if (doc?.fileUrl) {
+        const a = document.createElement('a');
+        a.href = doc.fileUrl;
+        a.download = fileName;
+        a.click();
+    }
+    toast(`Downloading ${fileName}…`);
 }
 
 function downloadInspectionReport() {
@@ -6660,14 +7734,49 @@ function uploadUnitUtilityDoc() {
 function uploadFlatPhotoAction() {
     const unit = STATE.selectedUnit;
     if (!unit || STATE.propertyId == null) return;
-    pickImageFiles({ multiple: false }).then(urls => {
+    pickImageFiles({ multiple: true }).then(urls => {
         if (!urls.length) return;
         ensureFlatPhotos(STATE.propertyId);
-        setFlatCoverPhoto(STATE.propertyId, unit, urls[0]);
+        appendFlatPhotos(STATE.propertyId, unit, urls);
         AppStore.save();
-        toast('Unit photo updated');
+        toast(urls.length === 1 ? 'Photo added' : `${urls.length} photos added`);
         render();
     });
+}
+
+function setPendingFlatCoverAction(idx) {
+    if (!STATE.pendingFlatPhotos?.length) return;
+    STATE.pendingFlatCover = idx;
+    toast('Cover photo updated');
+    render();
+}
+
+function removePendingFlatPhotoAction(idx) {
+    if (!STATE.pendingFlatPhotos?.length || idx < 0 || idx >= STATE.pendingFlatPhotos.length) return;
+    STATE.pendingFlatPhotos.splice(idx, 1);
+    if (!STATE.pendingFlatPhotos.length) STATE.pendingFlatCover = 0;
+    else if (STATE.pendingFlatCover >= STATE.pendingFlatPhotos.length) {
+        STATE.pendingFlatCover = STATE.pendingFlatPhotos.length - 1;
+    }
+    render();
+}
+
+function setFlatCoverAction(idx) {
+    const unit = STATE.selectedUnit;
+    if (!unit || STATE.propertyId == null) return;
+    setFlatCoverIndex(STATE.propertyId, unit, idx);
+    AppStore.save();
+    toast('Cover photo updated');
+    render();
+}
+
+function removeFlatPhotoAction(idx) {
+    const unit = STATE.selectedUnit;
+    if (!unit || STATE.propertyId == null) return;
+    removeFlatPhotoAt(STATE.propertyId, unit, idx);
+    AppStore.save();
+    toast('Photo removed');
+    render();
 }
 
 function addApplianceRow() {
@@ -6730,35 +7839,20 @@ function removeApplianceRow(idx) {
 }
 
 function uploadPendingFlatPhotoAction() {
-    pickImageFiles({ multiple: false }).then(urls => {
+    pickImageFiles({ multiple: true }).then(urls => {
         if (!urls.length) return;
-        STATE.pendingFlatPhoto = urls[0];
-        toast('Unit photo added');
+        if (!STATE.pendingFlatPhotos) STATE.pendingFlatPhotos = [];
+        STATE.pendingFlatPhotos.push(...urls);
+        if (STATE.pendingFlatPhotos.length && (STATE.pendingFlatCover == null || STATE.pendingFlatCover < 0)) {
+            STATE.pendingFlatCover = 0;
+        }
+        toast(urls.length === 1 ? 'Photo added' : `${urls.length} photos added`);
         render();
     });
 }
 
 async function uploadDocumentAction() {
-    const files = await pickDocumentFiles({ multiple: true });
-    if (!files.length) return;
-    files.forEach(file => {
-        const id = AppStore.nextId(AppStore.documents);
-        AppStore.documents.push({
-            id,
-            propertyId: STATE.propertyId,
-            type: 'Custom Document',
-            name: file.name,
-            date: formatDocUploadDate(),
-            shared: false,
-            signed: false,
-            userUpload: true,
-            fileUrl: file.url,
-            mime: file.mime,
-        });
-    });
-    AppStore.save();
-    toast(files.length === 1 ? 'File uploaded' : `${files.length} files uploaded`);
-    render();
+    openAddDocumentFlow();
 }
 
 async function uploadPhotoAction() {
@@ -6850,7 +7944,7 @@ function deletePropertyPhoto(idx) {
 function editDocumentAction(docId) {
     const doc = AppStore.documents.find(d => d.id === docId);
     if (!doc) { toast('Document not found'); return; }
-    if (doc.type !== 'Custom Document' && !doc.userUpload) { toast('Only uploaded files can be renamed'); return; }
+    if (!isUserUploadedDoc(doc)) { toast('Only uploaded files can be renamed'); return; }
     STATE.renameDocId = docId;
     STATE.renameDocValue = doc.name;
     render();
@@ -7113,6 +8207,18 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="upload-pending-flat-photo"]').forEach(el => {
         el.onclick = uploadPendingFlatPhotoAction;
     });
+    app.querySelectorAll('[data-action="set-pending-flat-cover"]').forEach(el => {
+        el.onclick = () => setPendingFlatCoverAction(+el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-action="remove-pending-flat-photo"]').forEach(el => {
+        el.onclick = () => removePendingFlatPhotoAction(+el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-action="set-flat-cover"]').forEach(el => {
+        el.onclick = () => setFlatCoverAction(+el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-action="remove-flat-photo"]').forEach(el => {
+        el.onclick = () => removeFlatPhotoAction(+el.dataset.photoIdx);
+    });
     app.querySelectorAll('[data-action="refresh-maint-units"]').forEach(el => {
         el.onchange = () => {
             STATE.propertyId = +el.value;
@@ -7223,16 +8329,34 @@ function bindFeatureEvents() {
         el.onclick = () => { STATE.tenantMaintFilter = el.dataset.tenantMaintFilter; render(); };
     });
     app.querySelectorAll('[data-action="call-tenant"]').forEach(el => {
-        el.onclick = () => {
-            const t = TENANTS[STATE.tenantId];
+        el.onclick = (e) => {
+            e.stopPropagation();
+            const tid = el.dataset.tid != null ? +el.dataset.tid : STATE.tenantId;
+            const t = TENANTS[tid];
             if (t?.phone) { window.location.href = `tel:${t.phone.replace(/\s/g, '')}`; }
             else toast('No phone number on file');
         };
     });
     app.querySelectorAll('[data-action="email-tenant"]').forEach(el => {
-        el.onclick = () => {
-            const t = TENANTS[STATE.tenantId];
+        el.onclick = (e) => {
+            e.stopPropagation();
+            const tid = el.dataset.tid != null ? +el.dataset.tid : STATE.tenantId;
+            const t = TENANTS[tid];
             if (t?.email) { window.location.href = `mailto:${t.email}`; }
+            else toast('No email on file');
+        };
+    });
+    app.querySelectorAll('[data-action="call-contractor"]').forEach(el => {
+        el.onclick = () => {
+            const phone = el.dataset.phone;
+            if (phone) window.location.href = `tel:${phone.replace(/\s/g, '')}`;
+            else toast('No phone number on file');
+        };
+    });
+    app.querySelectorAll('[data-action="email-contractor"]').forEach(el => {
+        el.onclick = () => {
+            const email = el.dataset.email;
+            if (email) window.location.href = `mailto:${email}`;
             else toast('No email on file');
         };
     });
@@ -7255,6 +8379,12 @@ render = function() {
         lucide.createIcons();
         const input = app.querySelector('[data-rename-doc-input]');
         if (input) { input.focus(); input.select(); }
+    }
+    if (app && !app.querySelector('.modal-overlay') && STATE.addDocumentOpen) {
+        app.insertAdjacentHTML('beforeend', addDocumentModal());
+        lucide.createIcons();
+        const nameInput = app.querySelector('[data-add-doc-name]');
+        if (nameInput) { nameInput.focus(); nameInput.select(); }
     }
     if (app && !app.querySelector('.modal-overlay') && STATE.newMessagePicker) {
         app.insertAdjacentHTML('beforeend', newMessagePickerModal());
@@ -7325,7 +8455,15 @@ function goFeature(screen, opts = {}) {
     if (screen === 'add-flat') {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
-        STATE.pendingFlatPhoto = null;
+        STATE.pendingFlatPhotos = [];
+        STATE.pendingFlatCover = 0;
+        if (opts.duplicateFrom && STATE.propertyId != null) {
+            const gal = getFlatPhotoGallery(STATE.propertyId, opts.duplicateFrom);
+            if (gal?.photos?.length) {
+                STATE.pendingFlatPhotos = [...gal.photos];
+                STATE.pendingFlatCover = gal.cover ?? 0;
+            }
+        }
     } else if (opts.unit) STATE.selectedUnit = opts.unit;
     if (screen === 'log-maintenance') {
         if (opts.unit) {
