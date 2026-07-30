@@ -35,8 +35,18 @@ const IMG = {
         imgUrl('1616594039964-ae9021a400a0', 400),
     ],
     onboarding: {
-        propertiesHouse: imgUrl('1600596542815-ffad4c1539a9', 600),
-        shieldIcon: 'assets/onboarding-shield.png',
+        splashBg: 'assets/splash-bg.jpg',
+        splashLogo: 'assets/splash-logo.png',
+        propertiesHouse: 'assets/onboarding-house.png',
+        maintenanceIllus: 'assets/onboarding-maintenance.png',
+        checkIcon: 'assets/onboarding-check.png',
+    },
+    auth: {
+        google: 'assets/auth-google.png',
+        mail: 'assets/auth-mail.png',
+        keyBadge: 'assets/auth-key-badge.png',
+        lock: 'assets/auth-lock.png',
+        shieldSuccess: 'assets/auth-shield-success.png',
     },
 };
 
@@ -74,6 +84,9 @@ const STATE = {
     activeTenantId: 0,
     signupEmail: '',
     signupDraft: null,
+    contractorSignupStep: 1,
+    contractorSignupDraft: null,
+    contractorInviteContext: false,
     selectedUnit: null,
     flatDuplicateFrom: null,
     logMaintPrefill: null,
@@ -99,11 +112,14 @@ const STATE = {
     flatReturn: null,
     propertyMaintUnit: null,
     navStack: [],
+    contractorViewId: null,
+    contractorCertPreviewId: null,
+    contractorProfileReturn: null,
+    contractorCertUpload: null,
+    maintMediaPreview: null,
 };
 
-let TENANT_INVITATIONS = [
-    { id: 0, token: 'DEMO-88KS', firstName: 'Emma', lastName: 'Roberts', email: 'emma.r@email.com', phone: '+44 7700 900459', propertyId: 2, unit: 'Main Flat', rent: '£2,100', leaseStart: '2025-04-01', leaseEnd: '2026-03-31', message: 'Welcome to your new home!', landlord: 'John Smith', status: 'pending', sentAt: 'Mar 10, 2025' },
-];
+let TENANT_INVITATIONS = [];
 
 let TENANT_ACCOUNTS = [];
 
@@ -170,7 +186,7 @@ function ensureDemoTenantAccount() {
         unit: 'Flat 2A',
         rent: '£2,450',
         leaseStart: 'Jan 2024',
-        leaseEnd: 'Jan 2026',
+        leaseEnd: 'Jan 2027',
         landlord: 'John Smith',
         password: DEMO_CREDENTIALS.tenant.password,
     });
@@ -190,9 +206,21 @@ function loadContractorAccounts() {
         firstName: 'Mike',
         lastName: 'Thompson',
         email: DEMO_CREDENTIALS.contractor.email,
+        phone: '+44 7700 900123',
         company: 'Plumber Pro Ltd',
+        tradeId: 'plumbing',
         trade: 'Plumbing & Heating',
+        category: 'Plumber',
+        jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains',
+        companyReg: '12345678',
+        vatNumber: 'GB123456789',
+        gasSafe: true,
+        liabilityInsurance: true,
         password: DEMO_CREDENTIALS.contractor.password,
+        certificates: [
+            { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'gas-safe-reg-2026.pdf', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027' },
+            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'liability-insurance-2026.pdf', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026' },
+        ],
     }];
     saveContractorAccounts();
 }
@@ -222,9 +250,10 @@ function authDemoCard() {
             <p class="auth-demo-title">Quick login</p>
         </div>
         <p class="auth-demo-creds">
-            <span>Enter as ${label}</span>
-            <span>No email or password needed — tap below to continue.</span>
+            <span>Demo sign-in</span>
+            <span>Use the email and password shown for your role, or tap quick login below.</span>
         </p>
+        <p class="auth-demo-creds auth-demo-creds--mono">${DEMO_CREDENTIALS[role]?.email || ''} · Password1</p>
         <button type="button" data-action="demo-login" data-demo-role="${role}" class="auth-demo-btn">Enter as ${label}</button>
     </div>`;
 }
@@ -262,10 +291,13 @@ function completeDemoLogin(role) {
     }
     if (role === 'contractor') {
         loadContractorAccounts();
-        if (!contractorAccountByEmail(demo.email)) {
+        const account = contractorAccountByEmail(demo.email);
+        if (!account) {
             toast('Demo contractor account not available');
             return;
         }
+        if (typeof setActiveContractorProfile === 'function') setActiveContractorProfile(account);
+        if (typeof syncContractorUserToDirectory === 'function') syncContractorUserToDirectory();
     }
     clearNavStack();
     STATE.isAuthenticated = true;
@@ -274,7 +306,7 @@ function completeDemoLogin(role) {
     go(getRoleHome());
     const name = role === 'landlord' ? LANDLORD_USER.firstName
         : role === 'tenant' ? getActiveTenant()?.firstName || 'Tenant'
-        : 'Mike';
+        : (typeof CONTRACTOR_USER !== 'undefined' ? CONTRACTOR_USER.firstName : 'Mike');
     setTimeout(() => toast(`Welcome back, ${name}!`), 50);
 }
 
@@ -295,14 +327,16 @@ const getActiveTenant = () => {
 const makeInviteToken = () => `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
 const MAINTENANCE_ITEMS = [
-    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'open', propertyId: 0, photos: [IMG.maint[0]], desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
+    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'progress', propertyId: 0, photos: [IMG.maint[0], IMG.maint[2]], videos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }], desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
     { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Main Flat', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, photos: [IMG.maint[1]], desc:'Bedroom window latch broken — window cannot be secured. Unit currently vacant.', reportedBy:'landlord' },
     { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[2]], desc:'Damp patch appearing on bedroom wall near window frame. Getting worse after recent rain.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2d ago' },
     { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, photos: [IMG.maint[2]], desc:'No hot water or heating. Boiler showing error code E119.', reportedBy:'tenant', tenantName:'David Wilson', reportedAt:'3d ago' },
     { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, photos: [IMG.maint[1]], desc:'Living room radiator cold while others work. Possible air lock or valve issue.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'4d ago' },
-    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2B', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, photos: [IMG.maint[2]], desc:'Living room ceiling light flickering — resolved with new fitting.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'5d ago' },
+    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2A', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, photos: [IMG.maint[2]], desc:'Living room ceiling light flickering — resolved with new fitting.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'5d ago' },
     { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, photos: [IMG.maint[0]], desc:'Kitchen tap replaced. No further issues reported.', reportedBy:'landlord', scope:'unit' },
     { id: 7, issue:'Hallway light out', prop:'12 Park Lane', unit:'Communal', scope:'communal', communalArea:'Hallway', time:'6h ago', priority:'Medium', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[1]], desc:'Main entrance hallway ceiling light not working. Affects all residents.', reportedBy:'landlord' },
+    { id: 8, issue:'Bathroom basin cracked', prop:'12 Park Lane', unit:'Flat 2A', time:'4h ago', priority:'High', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[0], IMG.maint[1]], videos: [{ name: 'basin-crack.mp4', poster: IMG.maint[1], demo: true }], desc:'Crack in the bathroom basin — water pooling on the vanity. Tenant says it worsened overnight.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'4h ago' },
+    { id: 9, issue:'Paint peeling in hallway', prop:'12 Park Lane', unit:'Flat 2A', time:'1d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[2]], desc:'Paint peeling along the hallway wall near the front door. Tenant reports it started after recent damp.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'1d ago' },
 ];
 
 const COMMUNAL_AREAS = ['Hallway', 'Stairwell', 'Roof', 'Garden', 'Boiler room', 'Other'];
@@ -536,8 +570,8 @@ const TENANT_LIST = [
     { id: 1, propertyId: 1, chatId: 2, name: 'David Wilson', prop: '45 Queens Road', unit: 'Flat 1A', lease: 'Jun 2023 – Jun 2027', leaseEnd: 'Jun 2027', img: IMG.avatar.david, status: 'active', rent: '£1,850/mo' },
     { id: 2, propertyId: 3, chatId: 4, name: 'Michael Lee', prop: '15 Victoria Ave', unit: 'Flat 2A', lease: 'Mar 2024 – Mar 2027', leaseEnd: 'Mar 2027', img: IMG.avatar.michael, status: 'active', rent: '£1,950/mo' },
     { id: 3, propertyId: 2, chatId: null, name: 'Emma Roberts', prop: '88 King Street', unit: 'Main Flat', lease: 'Ended Dec 2024', leaseEnd: 'Dec 2024', img: IMG.avatar.emma, status: 'inactive', rent: '—' },
-    { id: 4, propertyId: 0, chatId: null, name: 'Priya Sharma', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.priya, status: 'active', rent: '£2,200/mo' },
-    { id: 5, propertyId: 0, chatId: null, name: 'James Chen', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.james, status: 'pending', rent: '£2,200/mo' },
+    { id: 4, propertyId: 0, chatId: 6, name: 'Priya Sharma', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.priya, status: 'active', rent: '£2,200/mo' },
+    { id: 5, propertyId: 0, chatId: 7, name: 'James Chen', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.james, status: 'pending', rent: '£2,200/mo' },
 ];
 
 const TENANT_MENU = [
@@ -565,7 +599,7 @@ const TENANTS = [
 ];
 
 const COMPLIANCE_ITEMS = [
-    ['flame','Gas Certificate','Mar 15, 2026'],['zap','Electrical Installation','Apr 2, 2025'],
+    ['flame','Gas Certificate','Mar 15, 2026'],['zap','Electrical Installation','Aug 15, 2026'],
     ['bell-ring','Smoke Alarm','Annual check'],['thermometer','Heat Alarm','Annual check'],
     ['wind','CO Alarm','Annual check'],['shield','Landlord Insurance','Jun 2025'],
     ['landmark','Mortgage','Active'],['leaf','EPC Certificate','Rating B — Valid'],
@@ -577,9 +611,9 @@ const PREF_OPTIONS = {
     dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
     timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
 };
-const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','preferences','payment-methods','subscription','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','global-search'];
+const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','preferences','payment-methods','subscription','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','global-search','broadcast-notices','send-broadcast','tenant-building-info','tenant-announcements','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
 
-const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
+const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-sign-up','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
 
 const NAV_MAIN_TABS = new Set([
@@ -713,7 +747,52 @@ function skipOnboarding() {
 }
 
 function signIn() {
-    demoLogin(STATE.authRole || 'landlord');
+    const email = document.querySelector('[data-signin-email]')?.value?.trim().toLowerCase() || '';
+    const password = document.querySelector('[data-signin-password]')?.value || '';
+    const role = STATE.authRole || 'landlord';
+    if (!email || !password) {
+        toastError('Enter email and password');
+        return;
+    }
+    if (!isValidEmail(email)) {
+        toastError('Enter a valid email address');
+        return;
+    }
+    let account = null;
+    if (role === 'landlord') {
+        loadLandlordAccounts();
+        account = landlordAccountByEmail(email);
+    } else if (role === 'tenant') {
+        loadTenantData();
+        ensureDemoTenantAccount();
+        account = tenantAccountByEmail(email);
+    } else     if (role === 'contractor') {
+        loadContractorAccounts();
+        account = contractorAccountByEmail(email);
+        if (account && typeof setActiveContractorProfile === 'function') setActiveContractorProfile(account);
+        if (account && typeof syncContractorUserToDirectory === 'function') syncContractorUserToDirectory();
+    }
+    if (!account || account.password !== password) {
+        toastError('Invalid email or password');
+        return;
+    }
+    if (role === 'landlord') {
+        LANDLORD_USER.firstName = account.firstName;
+        LANDLORD_USER.lastName = account.lastName;
+        LANDLORD_USER.email = account.email;
+        if (typeof AppStore !== 'undefined') AppStore.save();
+    }
+    if (role === 'tenant') STATE.activeTenantId = account.id;
+    clearNavStack();
+    STATE.isAuthenticated = true;
+    STATE.userRole = role;
+    STATE.showPassword = false;
+    saveAuthSession();
+    go(getRoleHome());
+    const name = role === 'landlord' ? LANDLORD_USER.firstName
+        : role === 'tenant' ? getActiveTenant()?.firstName || 'Tenant'
+        : account.firstName || 'Mike';
+    setTimeout(() => toast(`Welcome back, ${name}!`), 50);
 }
 
 function markMaintComplete() {
@@ -748,6 +827,43 @@ function completeSignup() {
         if (typeof AppStore !== 'undefined') AppStore.save();
         STATE.signupDraft = null;
         STATE.signupEmail = '';
+    }
+    if (STATE.authRole === 'contractor' && STATE.signupDraft) {
+        loadContractorAccounts();
+        const d = STATE.signupDraft;
+        if (contractorAccountByEmail(d.email)) {
+            toastError('This email is already registered');
+            go('sign-in');
+            return;
+        }
+        const account = {
+            id: CONTRACTOR_ACCOUNTS.length,
+            firstName: d.firstName,
+            lastName: d.lastName,
+            email: d.email,
+            phone: d.phone || '',
+            company: d.company,
+            tradeId: d.tradeId,
+            trade: d.trade,
+            category: d.category,
+            jobsFor: d.jobsFor,
+            companyReg: d.companyReg || '',
+            vatNumber: d.vatNumber || '',
+            gasSafe: !!d.gasSafe,
+            liabilityInsurance: !!d.liabilityInsurance,
+            certificates: [],
+            password: d.password,
+        };
+        CONTRACTOR_ACCOUNTS.push(account);
+        saveContractorAccounts();
+        if (typeof registerContractorFromSignup === 'function') registerContractorFromSignup(account);
+        if (typeof setActiveContractorProfile === 'function') setActiveContractorProfile(account);
+        if (typeof syncContractorUserToDirectory === 'function') syncContractorUserToDirectory();
+        STATE.signupDraft = null;
+        STATE.signupEmail = '';
+        STATE.contractorSignupDraft = null;
+        STATE.contractorSignupStep = 1;
+        STATE.contractorInviteContext = false;
     }
     STATE.isAuthenticated = true;
     STATE.userRole = STATE.authRole;
@@ -921,9 +1037,11 @@ function activateTenantAccount() {
         toast('Passwords do not match');
         return;
     }
-    const listItem = typeof tenantListByProperty === 'function' ? tenantListByProperty(invite.propertyId) : null;
+    const tid = typeof syncLandlordAfterActivation === 'function'
+        ? syncLandlordAfterActivation(invite)
+        : (typeof tenantListItemForInvite === 'function' ? tenantListItemForInvite(invite)?.id : null) ?? TENANT_ACCOUNTS.length;
     const account = {
-        id: listItem?.id ?? TENANT_ACCOUNTS.length,
+        id: tid,
         inviteToken: invite.token,
         firstName: invite.firstName,
         lastName: invite.lastName,
@@ -937,7 +1055,6 @@ function activateTenantAccount() {
         landlord: invite.landlord,
         password,
     };
-    if (typeof syncLandlordAfterActivation === 'function') syncLandlordAfterActivation(invite);
     TENANT_ACCOUNTS.push(account);
     invite.status = 'activated';
     saveTenantData();
@@ -987,7 +1104,7 @@ const ONBOARDING_SLIDES = [
     },
     {
         title: 'Never Miss Important Things',
-        body: 'Reminders for certificates, inspections, rent due dates, and lease renewals.',
+        body: 'Smart reminders for certificates, inspections, rent, and more.',
         art: 'reminders',
     },
 ];
@@ -1101,14 +1218,13 @@ const passwordRequirementsHtml = () => `
 function onboardingArt(type) {
     if (type === 'properties') return `
         <div class="onboarding-illus-props">
-            <div class="ob-props-gradient">
-                <div class="ob-props-rent-card">
-                    <p class="ob-props-rent-amount">£24,560</p>
-                    <p class="ob-props-rent-label">Rent Collected</p>
-                </div>
-                <div class="ob-props-shield">
-                    <img src="${IMG.onboarding.shieldIcon}" alt="" class="ob-props-shield-icon">
-                </div>
+            <div class="ob-props-gradient"></div>
+            <div class="ob-props-rent-card">
+                <p class="ob-props-rent-amount">£24,560</p>
+                <p class="ob-props-rent-label">Rent Collected</p>
+            </div>
+            <div class="ob-props-check-card">
+                <img src="${IMG.onboarding.checkIcon}" alt="" class="ob-props-check-icon">
             </div>
             <div class="ob-props-house-wrap">
                 <img src="${IMG.onboarding.propertiesHouse}" alt="" class="ob-props-house">
@@ -1116,29 +1232,15 @@ function onboardingArt(type) {
         </div>`;
     if (type === 'maintenance') return `
         <div class="onboarding-illus-maint">
-            <div class="ob-maint-list">
-                ${[
-                    [IMG.avatar.sarah, '#22C55E'],
-                    [IMG.avatar.david, '#EF4444'],
-                    [IMG.avatar.michael, '#A855F7'],
-                ].map(([src, dot]) => `
-                <div class="ob-maint-row">
-                    <img src="${src}" alt="" class="ob-maint-avatar">
-                    <div class="ob-maint-card">
-                        <span class="ob-maint-dot" style="background:${dot}"></span>
-                        <div class="ob-maint-lines">
-                            <span class="ob-maint-line ob-maint-line-lg"></span>
-                            <span class="ob-maint-line ob-maint-line-sm"></span>
-                        </div>
-                    </div>
-                </div>`).join('')}
+            <div class="ob-maint-gradient"></div>
+            <div class="ob-maint-check-card">
+                <img src="${IMG.onboarding.checkIcon}" alt="" class="ob-maint-check-icon">
+                <div class="ob-maint-check-lines">
+                    <span></span><span></span>
+                </div>
             </div>
-            <div class="ob-maint-bell-card">
-                <i data-lucide="bell" class="w-5 h-5 text-[#94A3B8]"></i>
-                <span class="ob-maint-bell-badge">3</span>
-            </div>
-            <div class="ob-maint-wrench-btn">
-                <i data-lucide="wrench" class="w-11 h-11 text-white"></i>
+            <div class="ob-maint-hero-wrap">
+                <img src="${IMG.onboarding.maintenanceIllus}" alt="" class="ob-maint-hero">
             </div>
         </div>`;
     return `
@@ -1218,6 +1320,35 @@ function resetSuccessDone() {
 
 const appLogo = () => `<div class="auth-mini-logo"><i data-lucide="home" class="w-5 h-5"></i></div>`;
 
+const authBrandLogo = () => `
+<div class="auth-brand-logo">
+    <img src="${IMG.onboarding.splashLogo}" alt="" class="auth-brand-logo-img">
+</div>`;
+
+const authIconBadge = (src, size = 'md') => `
+<div class="auth-icon-badge auth-icon-badge-${size}">
+    <img src="${src}" alt="" class="auth-icon-badge-img">
+</div>`;
+
+const authBackTopbar = () => `
+<div class="auth-topbar auth-topbar-back-only">
+    <button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+</div>`;
+
+const authSocialDivider = () => `<div class="auth-divider">Or Continue with</div>`;
+
+const authGoogleBtn = () => `
+<button type="button" data-action="google-sign-in" class="auth-social-btn auth-social-google">
+    <img src="${IMG.auth.google}" alt="" class="auth-social-icon">
+    <span>Google</span>
+</button>`;
+
+const maskEmailFigma = (email) => {
+    if (!email || !email.includes('@')) return 'your email';
+    const [user, domain] = email.split('@');
+    return `${user.slice(0, 2)}****@${domain}`;
+};
+
 const authTopbar = (showLogo = false) => `
 <div class="auth-topbar">
     <button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
@@ -1228,12 +1359,11 @@ const authTopbar = (showLogo = false) => `
 function screenSplash() {
     return `
     <div class="splash-screen" data-action="splash-continue">
-        <div class="splash-content">
-            <div class="splash-logo"><i data-lucide="home" class="w-9 h-9"></i></div>
-            <h1 class="splash-title">Landlord HQ</h1>
-            <p class="splash-tagline">All your properties. All in one place.</p>
+        <img src="${IMG.onboarding.splashBg}" alt="" class="splash-bg">
+        <div class="splash-brand">
+            <img src="${IMG.onboarding.splashLogo}" alt="" class="splash-brand-logo">
+            <h1 class="splash-brand-title">Landlord HQ</h1>
         </div>
-        <img src="${imgUrl('1600607687939-ce8a6c25118c', 800)}" class="splash-photo" alt="">
     </div>`;
 }
 
@@ -1293,33 +1423,35 @@ function screenRoleSelect() {
 function screenSignIn() {
     const pwType = STATE.showPassword ? 'text' : 'password';
     return `
-    <div class="auth-screen">
-        <div class="auth-topbar">
-            <button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-            ${appLogo()}
-            <span style="width:40px"></span>
-        </div>
-        <div class="auth-content">
-            <div class="auth-icon-wrap">
-                <i data-lucide="log-in" class="w-7 h-7 text-[#2563EB]"></i>
+    <div class="auth-screen auth-screen-figma">
+        <div class="auth-content auth-content-figma">
+            <div class="auth-hero-block">
+                ${authBrandLogo()}
+                <h1 class="auth-heading">Welcome Back!</h1>
+                <p class="auth-sub">Sign in to continue to Landlord HQ</p>
             </div>
-            <h1 class="auth-heading">Welcome Back!</h1>
-            <p class="auth-sub">${signInSubtitle()}</p>
-            ${authDemoCard()}
-            <div class="auth-form">
-                <div class="auth-field">
-                    <label>Email address</label>
-                    <input type="email" data-signin-email class="auth-input" placeholder="you@email.com" autocomplete="username" inputmode="email">
-                </div>
-                <div class="auth-field">
-                    <label>Password</label>
-                    <div class="auth-input-wrap">
-                        <input type="${pwType}" data-signin-password class="auth-input" placeholder="Enter password" style="padding-right:44px" autocomplete="current-password">
-                        <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+            <div class="auth-form auth-form-figma">
+                <div class="auth-fields-group">
+                    <div class="auth-field">
+                        <label>Email or Phone</label>
+                        <input type="email" data-signin-email class="auth-input" placeholder="john@email.com" autocomplete="username" inputmode="email">
+                    </div>
+                    <div class="auth-field">
+                        <label>Password</label>
+                        <div class="auth-input-wrap">
+                            <input type="${pwType}" data-signin-password class="auth-input" placeholder="password123" style="padding-right:44px" autocomplete="current-password">
+                            <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+                        </div>
                     </div>
                 </div>
-                <button type="button" data-go="forgot-password" class="auth-link">Forgot Password?</button>
-                <button type="button" data-action="sign-in" class="btn-auth btn-auth-primary">Sign In</button>
+                <div class="auth-forgot-row">
+                    <button type="button" data-go="forgot-password" class="auth-link">Forgot Password?</button>
+                </div>
+                <div class="auth-actions-stack">
+                    <button type="button" data-action="sign-in" class="btn-auth btn-auth-primary">Sign In</button>
+                    ${authSocialDivider()}
+                    ${authGoogleBtn()}
+                </div>
             </div>
             <p class="auth-footer-text">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>
         </div>
@@ -1347,11 +1479,11 @@ function screenSignUp() {
                 <div class="auth-field">
                     <label>Password</label>
                     <div class="auth-input-wrap">
-                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Create password" style="padding-right:44px" autocomplete="new-password">
+                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Min. 8 characters" style="padding-right:44px" autocomplete="new-password">
                         <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
                     </div>
                 </div>
-                <div class="auth-field"><label>Confirm Password</label><input type="password" data-signup-confirm class="auth-input" placeholder="Confirm password" autocomplete="new-password"></div>
+                <div class="auth-field"><label>Confirm Password</label><input type="password" data-signup-confirm class="auth-input" placeholder="Re-enter password" autocomplete="new-password"></div>
                 ${passwordRequirementsHtml()}
                 <button type="button" data-action="start-signup" class="btn-auth btn-auth-primary">Create Account</button>
             </div>
@@ -1362,23 +1494,22 @@ function screenSignUp() {
 
 function screenForgotPassword() {
     return `
-    <div class="auth-screen">
-        ${authTopbar()}
-        <div class="auth-content">
-            ${authStepIndicator(1)}
-            <div class="auth-icon-wrap">
-                <i data-lucide="mail" class="w-7 h-7 text-[#2563EB]"></i>
+    <div class="auth-screen auth-screen-figma">
+        ${authBackTopbar()}
+        <div class="auth-content auth-content-figma">
+            <div class="auth-hero-block">
+                ${authIconBadge(IMG.auth.mail)}
+                <h1 class="auth-heading">Forgot Password?</h1>
+                <p class="auth-sub auth-sub-multiline">Enter the email linked to your account. We'll send a<br>6-digit verification code</p>
             </div>
-            <h1 class="auth-heading">Forgot Password?</h1>
-            <p class="auth-sub">Enter the email linked to your account. We'll send a 6-digit verification code — no reset links needed.</p>
-            <div class="auth-form">
+            <div class="auth-form auth-form-figma">
                 <div class="auth-field">
-                    <label>Email address</label>
-                    <input type="email" data-reset-email class="auth-input" placeholder="john@email.com" value="${STATE.resetEmail}" autocomplete="email">
+                    <label>Email or Phone</label>
+                    <input type="email" data-reset-email class="auth-input" placeholder="john@email.com" value="${STATE.resetEmail}" autocomplete="email" inputmode="email">
                 </div>
                 <button type="button" data-action="send-reset-code" class="btn-auth btn-auth-primary">Send Verification Code</button>
             </div>
-            <p class="auth-security-note"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Code expires in 10 minutes</p>
+            <p class="auth-security-note"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Code expires in 5 minutes</p>
             <p class="auth-footer-text">Remember your password? <button type="button" data-go="sign-in" data-reset-return="sign-in">Sign In</button></p>
         </div>
     </div>`;
@@ -1386,22 +1517,20 @@ function screenForgotPassword() {
 
 function screenResetVerifyCode() {
     const digits = STATE.otpDigits;
-    const email = maskEmail(STATE.resetEmail);
-    const codeComplete = digits.length === 6;
+    const email = maskEmailFigma(STATE.resetEmail);
     return `
-    <div class="auth-screen auth-screen-keypad" style="padding-bottom:0">
-        ${authTopbar()}
-        <div class="auth-content auth-content-otp">
-            ${authStepIndicator(2)}
-            <div class="auth-icon-wrap">
-                <i data-lucide="key-round" class="w-7 h-7 text-[#2563EB]"></i>
+    <div class="auth-screen auth-screen-keypad auth-screen-figma" style="padding-bottom:0">
+        ${authBackTopbar()}
+        <div class="auth-content auth-content-otp auth-content-figma">
+            <div class="auth-hero-block">
+                <div class="auth-key-badge">
+                    <img src="${IMG.auth.keyBadge}" alt="" class="auth-key-badge-img">
+                </div>
+                <h1 class="auth-heading">Enter Verification Code</h1>
+                <p class="auth-sub auth-sub-multiline">We sent a 6-digit code to<br>${email}</p>
             </div>
-            <h1 class="auth-heading">Enter Verification Code</h1>
-            <p class="auth-sub">We sent a 6-digit code to<br><strong>${email}</strong></p>
             ${otpBoxesHtml(digits)}
-            <button type="button" data-action="verify-reset-code" class="btn-auth btn-auth-primary ${codeComplete ? '' : 'btn-auth-disabled'}" ${codeComplete ? '' : 'disabled'}>Verify & Continue</button>
             <p class="otp-resend">Didn't get it? <button type="button" data-action="send-reset-code">Resend code</button> · <span class="otp-timer">00:59</span></p>
-            <p class="auth-security-note"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Never share this code with anyone</p>
             <p class="auth-footer-text">Wrong email? <button type="button" data-go="forgot-password">Change email</button></p>
         </div>
         ${otpKeypadHtml()}
@@ -1412,50 +1541,50 @@ function screenResetPassword() {
     const pwType = STATE.showPassword ? 'text' : 'password';
     const confirmType = STATE.showConfirmPassword ? 'text' : 'password';
     return `
-    <div class="auth-screen">
-        ${authTopbar()}
-        <div class="auth-content">
-            ${authStepIndicator(3)}
-            <div class="auth-icon-wrap">
-                <i data-lucide="key-round" class="w-7 h-7 text-[#2563EB]"></i>
+    <div class="auth-screen auth-screen-figma">
+        ${authBackTopbar()}
+        <div class="auth-content auth-content-figma">
+            <div class="auth-hero-block auth-hero-block-compact">
+                ${authIconBadge(IMG.auth.lock)}
+                <h1 class="auth-heading">Create New Password</h1>
+                <p class="auth-sub auth-sub-multiline">Choose a strong password you haven't used on Landlord HQ before.</p>
             </div>
-            <h1 class="auth-heading">Create New Password</h1>
-            <p class="auth-sub">Choose a strong password you haven't used on Landlord HQ before.</p>
-            <div class="auth-form">
-                <div class="auth-field">
-                    <label>New password</label>
-                    <div class="auth-input-wrap">
-                        <input type="${pwType}" data-reset-password class="auth-input" placeholder="Enter new password" style="padding-right:44px">
-                        <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+            <div class="auth-form auth-form-figma">
+                <div class="auth-fields-group">
+                    <div class="auth-field">
+                        <label class="auth-label-sm">New password</label>
+                        <div class="auth-input-wrap">
+                            <input type="${pwType}" data-reset-password class="auth-input" placeholder="Enter new password" style="padding-right:44px" autocomplete="new-password">
+                            <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+                        </div>
                     </div>
-                </div>
-                <div class="auth-field">
-                    <label>Confirm password</label>
-                    <div class="auth-input-wrap">
-                        <input type="${confirmType}" data-reset-confirm class="auth-input" placeholder="Re-enter new password" style="padding-right:44px">
-                        <button type="button" data-action="toggle-confirm-password" class="auth-input-toggle"><i data-lucide="${STATE.showConfirmPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+                    <div class="auth-field">
+                        <label class="auth-label-sm">Confirm password</label>
+                        <div class="auth-input-wrap">
+                            <input type="${confirmType}" data-reset-confirm class="auth-input" placeholder="Re-enter new password" style="padding-right:44px" autocomplete="new-password">
+                            <button type="button" data-action="toggle-confirm-password" class="auth-input-toggle"><i data-lucide="${STATE.showConfirmPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+                        </div>
                     </div>
                 </div>
                 ${passwordRequirementsHtml()}
                 <button type="button" data-action="reset-password-done" class="btn-auth btn-auth-primary">Update Password</button>
             </div>
-            <p class="auth-security-note"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Your password is encrypted and stored securely</p>
         </div>
     </div>`;
 }
 
 function screenResetSuccess() {
     return `
-    <div class="auth-screen">
-        <div class="auth-content auth-content-centered">
-            ${authStepComplete()}
-            <div class="auth-icon-wrap auth-icon-wrap-success auth-icon-wrap-lg">
-                <i data-lucide="circle-check" class="w-8 h-8 text-[#059669]"></i>
+    <div class="auth-screen auth-screen-figma">
+        <div class="auth-content auth-content-centered auth-content-figma auth-content-success">
+            <div class="auth-hero-block">
+                <div class="auth-icon-badge auth-icon-badge-lg">
+                    <img src="${IMG.auth.shieldSuccess}" alt="" class="auth-icon-badge-img auth-icon-badge-img-lg">
+                </div>
+                <h1 class="auth-heading">Password Updated</h1>
+                <p class="auth-sub auth-sub-multiline">Your password has been reset successfully. Sign in with your new password to continue.</p>
             </div>
-            <h1 class="auth-heading">Password Updated!</h1>
-            <p class="auth-sub">Your password has been reset successfully. You can now sign in with your new password.</p>
-            <button type="button" data-action="reset-success-done" class="btn-auth btn-auth-primary" style="margin-top:28px">Continue to Sign In</button>
-            <p class="auth-footer-text" style="margin-top:20px"><i data-lucide="shield-check" class="w-3.5 h-3.5 inline -mt-0.5"></i> Secured with end-to-end encryption</p>
+            <button type="button" data-action="reset-success-done" class="btn-auth btn-auth-primary">Sign In</button>
         </div>
     </div>`;
 }
@@ -1601,6 +1730,7 @@ function roleContinue() {
 
 function go(screen, opts = {}) {
     const from = STATE.screen;
+    if (screen === 'sign-up' && STATE.authRole === 'contractor') screen = 'contractor-sign-up';
     if (screen === 'sign-up' && ['sign-in', 'role-select'].includes(from)) {
         STATE.authReturnScreen = from;
         if (from === 'role-select' && STATE.authRole !== 'contractor') STATE.authRole = 'landlord';
@@ -1663,11 +1793,22 @@ function go(screen, opts = {}) {
     }
     if (screen === 'financial' && opts.invoiceFilter) STATE.invoiceFilter = opts.invoiceFilter;
     if (screen === 'transaction-history') {
-        if (from === 'financial') STATE.txnReturnScreen = 'financial';
-        else if (from === 'tenant-detail') STATE.txnReturnScreen = 'tenant-detail';
-        else STATE.txnReturnScreen = typeof profileHomeScreen === 'function' ? profileHomeScreen() : 'profile';
-        if (opts.invoiceFilter) STATE.invoiceFilter = opts.invoiceFilter;
-        else if (from === 'financial' || from === 'profile') STATE.invoiceFilter = 'all';
+        if (STATE.userRole === 'tenant') {
+            STATE.txnReturnScreen = ['personal-info', 'invoice-detail', 'transaction-history', 'tenant-dashboard'].includes(from)
+                ? from
+                : 'tenant-dashboard';
+            if (opts.tenantPayFilter) STATE.tenantPayFilter = opts.tenantPayFilter;
+        } else {
+            if (from === 'financial') STATE.txnReturnScreen = 'financial';
+            else if (from === 'tenant-detail') STATE.txnReturnScreen = 'tenant-detail';
+            else STATE.txnReturnScreen = typeof profileHomeScreen === 'function' ? profileHomeScreen() : 'profile';
+            if (opts.invoiceFilter) STATE.invoiceFilter = opts.invoiceFilter;
+            else if (from === 'financial' || from === 'profile') STATE.invoiceFilter = 'all';
+        }
+    }
+    if (screen === 'maintenance') {
+        if (opts.maintSourceFilter) STATE.maintSourceFilter = opts.maintSourceFilter;
+        if (opts.maintFilter) STATE.maintFilter = opts.maintFilter;
     }
     if (screen === 'maintenance-detail') STATE.maintId = opts.maintId ?? STATE.maintId ?? 0;
     if (screen === 'inspection-detail') {
@@ -1684,6 +1825,7 @@ function go(screen, opts = {}) {
     }
     if (screen === 'conduct-inspection') STATE.inspectionPhotos = [];
     if (screen === 'log-maintenance') STATE.selectedUnit = opts.unit ?? STATE.selectedUnit;
+    if (screen === 'tenant-ref-detail') STATE.tenantRefKey = opts.refKey ?? STATE.tenantRefKey ?? 'passport';
     if (screen === 'invite-tenant' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'flat-detail' || screen === 'flat-members') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
@@ -1732,6 +1874,8 @@ function go(screen, opts = {}) {
     if (opts.prefKey) STATE.prefKey = opts.prefKey;
     if (opts.paymentId !== undefined) STATE.paymentId = opts.paymentId;
     if (opts.noteId !== undefined) STATE.noteId = opts.noteId;
+    if (opts.contractorId != null) STATE.contractorViewId = opts.contractorId;
+    if (opts.certId != null) STATE.contractorCertPreviewId = opts.certId;
     if (screen === 'tenant-add-note' || screen === 'tenant-edit-note') STATE.tenantId = opts.tenantId ?? STATE.tenantId;
     if (screen === 'document-preview') {
         STATE.previewDocId = opts.docId ?? STATE.previewDocId;
@@ -1759,11 +1903,13 @@ function navigateBackFallback() {
     const profileParent = profileHomeScreen();
     const map = {
         'property-detail': 'properties', 'tenant-detail': 'tenants', 'chat': 'messages',
-        'maintenance-detail': STATE.userRole === 'tenant' ? 'tenant-dashboard' : 'maintenance', 'invoice-detail': 'financial',
+        'maintenance-detail': STATE.userRole === 'tenant' ? 'tenant-issues' : 'maintenance',
+        'invoice-detail': STATE.userRole === 'tenant' ? 'transaction-history' : 'financial',
         'inventory-room': 'property-detail',
         'personal-info': profileParent, 'notifications-settings': profileParent,
         'security': profileParent, 'password': profileParent, 'preferences': profileParent,
-        'payment-methods': profileParent, 'subscription': profileParent, 'transaction-history': profileParent,
+        'payment-methods': profileParent, 'subscription': profileParent,
+        'transaction-history': STATE.userRole === 'tenant' ? 'tenant-dashboard' : profileParent,
         'faq-detail': 'faq', 'about': profileParent,
         'edit-property': 'property-detail', 'add-flat': 'property-detail', 'invite-tenant': 'property-detail',
         'edit-flat': 'flat-detail', 'flat-detail': 'property-detail', 'flat-members': 'flat-detail', 'flat-rent-history': 'flat-detail', 'tenancy-detail': 'flat-detail',
@@ -1775,11 +1921,12 @@ function navigateBackFallback() {
         'add-property': 'properties',
         'tenants': 'dashboard',
         'profile': 'dashboard',
-        'log-maintenance': STATE.userRole === 'tenant' ? 'tenant-dashboard' : 'maintenance',
+        'log-maintenance': STATE.userRole === 'tenant' ? 'tenant-issues' : 'maintenance',
+        'maintenance': STATE.userRole === 'tenant' ? 'tenant-issues' : 'maintenance',
         'notifications-list': defaultHome,
         'financial': defaultHome,
         'sign-up-phone': 'sign-up',
-        'verify-otp': 'sign-up-phone',
+        'verify-otp': STATE.authRole === 'contractor' ? 'contractor-sign-up' : 'sign-up-phone',
         'reset-verify-code': 'forgot-password', 'reset-password': 'reset-verify-code',
         'reset-success': 'sign-in',
         'contractor-job-detail': 'contractor-jobs', 'contractor-schedule': 'contractor-job-detail',
@@ -1787,7 +1934,11 @@ function navigateBackFallback() {
         'contractor-documents': 'contractor-job-detail',
         'tenant-invite-sent': 'invite-tenant',
         'tenant-activate': 'tenant-invite',
-        'contractor-company': 'contractor-profile', 'contractor-invite': 'role-select',
+        'contractor-company': 'contractor-profile', 'contractor-certifications': 'contractor-profile',
+        'contractor-public-profile': STATE.contractorProfileReturn || (STATE.userRole === 'tenant' ? 'maintenance-detail' : 'contractors'),
+        'contractor-cert-preview': 'contractor-public-profile',
+        'contractor-invite': 'role-select',
+        'contractor-sign-up': STATE.contractorInviteContext ? 'contractor-invite' : 'role-select',
         'contractor-notifications': 'contractor-dashboard',
         'portfolio-overview': 'dashboard', 'compliance-dashboard': 'dashboard',
         'reminders': 'dashboard', 'add-reminder': 'reminders',
@@ -1803,10 +1954,26 @@ function navigateBackFallback() {
         'global-search': 'dashboard',
         'contractors': 'dashboard',
         'tenant-add-note': 'tenant-detail', 'tenant-edit-note': 'tenant-detail',
+        'tenant-building-info': 'tenant-dashboard',
+        'tenant-announcements': 'tenant-dashboard',
+        'tenant-house-rules': 'tenant-building-info',
+        'tenant-edit-profile': 'personal-info',
+        'tenant-issues': 'tenant-dashboard',
+        'tenant-documents': 'personal-info',
+        'tenant-referencing': 'personal-info',
+        'tenant-ref-detail': 'tenant-referencing',
+        'tenant-active-tenancy': 'tenant-dashboard',
+        'tenant-contact': 'personal-info',
+        'tenant-reminders': 'tenant-dashboard',
+        'tenant-compliance': 'tenant-dashboard',
+        'tenant-communication': 'tenant-dashboard',
+        'tenant-checkout': 'personal-info',
+        'broadcast-notices': 'dashboard',
+        'send-broadcast': 'broadcast-notices',
     };
     const tabMap = {
         'inventory-room': 'inventory',
-        'edit-property': 'units', 'add-flat': 'units', 'invite-tenant': 'tenant',
+        'edit-property': 'info', 'add-flat': 'units', 'invite-tenant': 'tenant',
         'flat-detail': 'units', 'flat-members': 'units', 'flat-rent-history': 'units', 'tenancy-detail': 'units',
         'reschedule-inspection': 'inspection', 'renew-compliance': 'compliance',
         'contractor-work': 'work', 'contractor-documents': 'invoice',
@@ -1903,6 +2070,15 @@ function back() {
         go(STATE.authReturnScreen || 'role-select', { noHistory: true });
         return;
     }
+    if (STATE.screen === 'contractor-sign-up') {
+        if ((STATE.contractorSignupStep || 1) > 1) {
+            STATE.contractorSignupStep = (STATE.contractorSignupStep || 1) - 1;
+            render();
+            return;
+        }
+        go(STATE.contractorInviteContext ? 'contractor-invite' : (STATE.authReturnScreen || 'role-select'), { noHistory: true });
+        return;
+    }
     if (STATE.screen === 'sign-in') {
         go('role-select', { noHistory: true });
         return;
@@ -1912,7 +2088,12 @@ function back() {
         return;
     }
     if (STATE.screen === 'verify-otp') {
-        go('sign-up-phone', { noHistory: true });
+        if (STATE.authRole === 'contractor') {
+            go('contractor-sign-up', { noHistory: true });
+            STATE.contractorSignupStep = 4;
+        } else {
+            go('sign-up-phone', { noHistory: true });
+        }
         return;
     }
     if (STATE.screen === 'forgot-password') {
@@ -1940,6 +2121,10 @@ function back() {
         return;
     }
     if (STATE.screen === 'document-preview') {
+        if (STATE.userRole === 'tenant') {
+            go(STATE.docReturnScreen || 'tenant-documents', { noHistory: true });
+            return;
+        }
         if (STATE.docReturnScreen === 'tenant-detail') {
             go('tenant-detail', { tenantId: STATE.tenantId, tenantTab: STATE.tenantTab || 'lease', noHistory: true });
         } else {
@@ -2030,6 +2215,7 @@ function filterProperties() {
 }
 function setMaintFilter(f) { STATE.maintFilter = f; render(); }
 function setMaintScopeFilter(f) { STATE.maintScopeFilter = f; render(); }
+function setMaintSourceFilter(f) { STATE.maintSourceFilter = f; render(); }
 function setInvoiceFilter(f) { STATE.invoiceFilter = f; render(); }
 function setLogPriority(p) { STATE.logPriority = p; render(); }
 function setLogMaintScope(scope) { STATE.logMaintScope = scope; render(); }
@@ -2051,17 +2237,23 @@ function logout() {
     STATE.showPassword = false;
     clearNavStack();
     saveAuthSession();
-    go('role-select', { noHistory: true });
-    setTimeout(() => toast('Signed out — choose your role to sign in again'), 50);
+    go('sign-in', { noHistory: true });
+    setTimeout(() => toast('Signed out successfully'), 50);
 }
 
-function toast(msg) {
+function toast(msg, opts = {}) {
+    const isError = opts?.error === true || opts?.type === 'error';
     let t = document.getElementById('toast');
     if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.getElementById('app').appendChild(t); }
-    t.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>${msg}`;
+    t.classList.toggle('toast--error', isError);
+    t.innerHTML = `<i data-lucide="${isError ? 'alert-circle' : 'check-circle'}" class="w-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}"></i>${msg}`;
     t.classList.add('show');
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function toastError(msg) {
+    toast(msg, { error: true });
 }
 
 /* ─── Shared Components ─── */
@@ -2164,10 +2356,10 @@ const dashboardHeader = () => `
 </div>`;
 
 let CONVERSATIONS = [
-    { id: 0, img: IMG.avatar.sarah, name: 'Sarah Johnson', sub: '12 Park Lane', preview: 'Hi, the maintenance issue has been fixed!', time: '10:30 AM', unread: 2, online: true, messages: [
+    { id: 0, img: IMG.avatar.sarah, name: 'Sarah Johnson', sub: '12 Park Lane', preview: "I'll be home after 1 PM today.", time: '10:28 AM', unread: 1, online: true, messages: [
         { type: 'in', text: 'Hi, the kitchen sink is leaking again. Could you send someone?', time: '10:15 AM' },
-        { type: 'out', text: "Thanks Sarah, I'll send a plumber today before 2pm.", time: '10:20 AM · Sent' },
-        { type: 'in', text: 'The maintenance issue has been fixed! Thank you 🙏', time: '10:30 AM' },
+        { type: 'out', text: "Thanks Sarah — Plumber Pro is booked for today before 2pm.", time: '10:20 AM · Sent' },
+        { type: 'in', text: "Great, I'll be home after 1 PM today.", time: '10:28 AM' },
     ]},
     { id: 1, img: IMG.avatar.plumber, name: 'Plumber Pro', sub: 'Regarding job #M-125', preview: 'Please let me know when you are free for access.', time: '9:15 AM', unread: 1, online: true, messages: [
         { type: 'in', text: 'Please let me know when you are free for access to 12 Park Lane.', time: '9:15 AM' },
@@ -2178,8 +2370,8 @@ let CONVERSATIONS = [
         { type: 'out', text: 'Yes, Heating Co. will visit Thursday morning.', time: 'Yesterday · Sent' },
         { type: 'in', text: 'Thanks for the update.', time: 'Yesterday' },
     ]},
-    { id: 3, img: IMG.avatar.electric, name: 'Electric Fixers', sub: 'Job completed — #M-120', preview: 'The issue has been fixed.', time: 'Yesterday', unread: 0, online: false, messages: [
-        { type: 'in', text: 'The light fitting has been replaced at 15 Victoria Ave.', time: 'Yesterday' },
+    { id: 3, img: IMG.avatar.electric, name: 'Electric Fix', sub: 'Job completed — Flat 2A', preview: 'Light fitting replaced at 15 Victoria Ave.', time: 'Yesterday', unread: 0, online: false, messages: [
+        { type: 'in', text: 'The light fitting has been replaced at 15 Victoria Ave, Flat 2A.', time: 'Yesterday' },
         { type: 'out', text: 'Great, please upload the invoice.', time: 'Yesterday · Sent' },
     ]},
     { id: 4, img: IMG.avatar.michael, name: 'Michael Lee', sub: '15 Victoria Ave', preview: 'Can we schedule an inspection?', time: '2d ago', unread: 0, online: false, messages: [
@@ -2189,6 +2381,14 @@ let CONVERSATIONS = [
     { id: 5, img: IMG.avatar.heating, name: 'Heating Experts', sub: 'Boiler service completed', preview: 'Invoice uploaded.', time: '2d ago', unread: 0, online: false, messages: [
         { type: 'in', text: 'Boiler service completed. Certificate and invoice uploaded.', time: '2d ago' },
     ]},
+    { id: 6, img: IMG.avatar.priya, name: 'Priya Sharma', sub: '12 Park Lane · Flat 2B', preview: 'Thanks for confirming the lease details.', time: '3d ago', unread: 0, online: false, messages: [
+        { type: 'in', text: 'Thanks for confirming the group lease details for Flat 2B.', time: '3d ago' },
+        { type: 'out', text: "You're welcome — I'll send James his portal invite shortly.", time: '3d ago · Sent' },
+    ]},
+    { id: 7, img: IMG.avatar.james, name: 'James Chen', sub: '12 Park Lane · Flat 2B', preview: 'Portal invite sent', time: '2d ago', unread: 0, online: false, messages: [
+        { type: 'out', text: 'Hi James — your tenant portal invite for Flat 2B is on its way.', time: '2d ago · Sent' },
+        { type: 'in', text: "Received it, thanks. I'll complete sign-up tonight.", time: '2d ago' },
+    ]},
 ];
 
 const conversation = (id) => CONVERSATIONS.find(c => c.id === id) || CONVERSATIONS[0];
@@ -2196,10 +2396,24 @@ const conversation = (id) => CONVERSATIONS.find(c => c.id === id) || CONVERSATIO
 function conversationsForRole() {
     if (STATE.userRole === 'tenant') {
         if (!getActiveTenant()) return [];
+        const tenant = getActiveTenant();
         const chatId = typeof getActiveTenantLandlordChatId === 'function' ? getActiveTenantLandlordChatId() : null;
-        const conv = chatId != null ? CONVERSATIONS.find(c => c.id === chatId) : null;
-        if (!conv) return [];
-        return typeof tenantChatView === 'function' ? [tenantChatView(conv)] : [conv];
+        const convs = [];
+        const seen = new Set();
+        if (chatId != null) {
+            const conv = CONVERSATIONS.find(c => c.id === chatId);
+            if (conv) {
+                convs.push(typeof tenantChatView === 'function' ? tenantChatView(conv) : conv);
+                seen.add(chatId);
+            }
+        }
+        const contractorIds = typeof tenantContractorChatIds === 'function' ? tenantContractorChatIds(tenant) : [];
+        contractorIds.forEach(id => {
+            if (seen.has(id)) return;
+            const c = CONVERSATIONS.find(x => x.id === id);
+            if (c) { convs.push(c); seen.add(id); }
+        });
+        return convs;
     }
     if (STATE.userRole === 'contractor') {
         const chatIds = new Set();
@@ -2247,7 +2461,7 @@ const msgRow = (c) => `
 </button>`;
 
 const MAIN_SCREENS = ['dashboard','properties','tenants','financial','maintenance','messages'];
-const TENANT_NAV_SCREENS = ['tenant-dashboard','log-maintenance','messages','personal-info'];
+const TENANT_NAV_SCREENS = ['tenant-dashboard','tenant-issues','log-maintenance','messages','personal-info'];
 const CONTRACTOR_NAV_SCREENS = ['contractor-dashboard','contractor-jobs','messages','contractor-profile'];
 
 function shouldShowBottomNav(screen = STATE.screen) {
@@ -2274,14 +2488,15 @@ const LANDLORD_DRAWER_NAV = [
 
 const TENANT_BOTTOM_NAV = [
     ['home', 'Home', 'tenant-dashboard'],
-    ['wrench', 'Issues', 'log-maintenance'],
+    ['wrench', 'Issues', 'tenant-issues'],
     ['message-square', 'Messages', 'messages'],
     ['user', 'Account', 'personal-info'],
 ];
 
 const TENANT_DRAWER_NAV = [
     ['home', 'Home', 'tenant-dashboard'],
-    ['wrench', 'Report Issue', 'log-maintenance'],
+    ['wrench', 'Maintenance', 'tenant-issues'],
+    ['folder-open', 'Documents', 'tenant-documents'],
     ['message-square', 'Messages', 'messages'],
     ['circle-help', 'FAQ', 'faq'],
     ['life-buoy', 'Help & Support', 'help-support'],
@@ -2291,6 +2506,7 @@ const INVOICES = [
     { id: 0, num: 'INV-2026-1048', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
     { id: 1, num: 'INV-2026-1047', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Overdue', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
     { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
+    { id: 5, num: 'INV-2026-1042', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent — group lease' },
     { id: 3, num: 'INV-2026-1044', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Bank transfer' },
     { id: 4, num: 'INV-2026-1043', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 3, 2026', paymentMethod: 'Standing order' },
 ];
@@ -2302,7 +2518,7 @@ const invoiceStatusStyle = (status) => ({
 }[status] || ['#F1F5F9', '#64748B']);
 
 const maintStatusLabel = { open: 'Open', progress: 'In Progress', done: 'Completed' };
-const maintStatusShort = { open: 'Open', progress: 'In Progress', done: 'Done' };
+const maintStatusShort = { open: 'Open', progress: 'In Progress', done: 'Completed' };
 const maintStatusStyle = { open: ['#FEF3C7', '#D97706'], progress: ['#DBEAFE', '#2563EB'], done: ['#ECFDF5', '#16A34A'] };
 
 const maintCard = (m, opts = {}) => {
@@ -2317,22 +2533,33 @@ const maintCard = (m, opts = {}) => {
             : `${propName}${m.unit && m.unit !== '—' ? ` · ${m.unit}` : ''}`);
     const when = m.reportedAt || m.time || '—';
     const statusLabel = maintStatusShort[m.status] || maintStatusLabel[m.status];
+    const tenantReport = typeof isTenantMaintReport === 'function' ? isTenantMaintReport(m) : (m.reportedBy === 'tenant' || !!m.tenantName);
+    const needsContractor = (m.status === 'open' || m.status === 'progress') && (!m.contractor || m.contractor === '—');
+    const showAssign = !opts.hideAssign && tenantReport && needsContractor && STATE.userRole !== 'tenant';
+    const contractorLine = m.contractor && m.contractor !== '—'
+        ? m.contractor
+        : (needsContractor ? 'Needs contractor' : '');
     return `
-    <button data-go="maintenance-detail" data-mid="${m.id}" class="maint-card-row card w-full text-left">
-        <img src="${photo}" alt="" class="maint-card-row-img">
-        <div class="maint-card-row-body min-w-0">
-            <div class="maint-card-row-top">
-                <p class="maint-card-row-title">${m.issue}</p>
-                <span class="maint-card-row-badge badge shrink-0" style="background:${sBg};color:${sColor}">${statusLabel}</span>
+    <div class="maint-card-row card w-full ${showAssign ? 'maint-card-row--with-action' : ''} ${needsContractor && tenantReport ? 'maint-card--needs-contractor' : ''}">
+        <button type="button" data-go="maintenance-detail" data-mid="${m.id}" class="maint-card-row-main w-full text-left">
+            <img src="${photo}" alt="" class="maint-card-row-img">
+            <div class="maint-card-row-body min-w-0">
+                <div class="maint-card-row-top">
+                    <p class="maint-card-row-title">${m.issue}</p>
+                    <span class="maint-card-row-badge badge shrink-0" style="background:${sBg};color:${sColor}">${statusLabel}</span>
+                </div>
+                <p class="maint-card-row-loc"><i data-lucide="map-pin" class="w-3 h-3"></i>${location}</p>
+                ${tenantReport ? `<p class="maint-card-tenant">Tenant report · ${m.tenantName || 'Tenant'}</p>` : ''}
+                ${contractorLine ? `<p class="maint-card-contractor ${needsContractor ? 'maint-card-contractor--warn' : ''}">${contractorLine}</p>` : ''}
+                <div class="maint-card-row-meta">
+                    <span class="maint-priority-pill ${priority.cls}">${priority.label}</span>
+                    <span class="maint-card-row-time">${when}</span>
+                </div>
             </div>
-            <p class="maint-card-row-loc"><i data-lucide="map-pin" class="w-3 h-3"></i>${location}</p>
-            <div class="maint-card-row-meta">
-                <span class="maint-priority-pill ${priority.cls}">${priority.label}</span>
-                <span class="maint-card-row-time">${when}</span>
-            </div>
-        </div>
-        <i data-lucide="chevron-right" class="maint-card-row-chevron w-4 h-4"></i>
-    </button>`;
+            <i data-lucide="chevron-right" class="maint-card-row-chevron w-4 h-4"></i>
+        </button>
+        ${showAssign ? `<button type="button" data-action="quick-assign-contractor" data-mid="${m.id}" class="maint-card-assign-btn">Assign</button>` : ''}
+    </div>`;
 };
 
 const invoiceRow = (inv) => {
@@ -2399,6 +2626,7 @@ const notifAttrs = (opts = {}) => [
     opts.mid != null ? `data-mid="${opts.mid}"` : '',
     opts.iid != null ? `data-iid="${opts.iid}"` : '',
     opts.tid != null ? `data-tid="${opts.tid}"` : '',
+    opts.tenantPayFilter ? `data-tenant-pay-preset="${opts.tenantPayFilter}"` : '',
 ].filter(Boolean).join(' ');
 
 const notifRow = (n) => `
@@ -2416,21 +2644,27 @@ const notifRow = (n) => `
     </div>
 </button>`;
 
-const formField = (label, value = '', type = 'text', ph = '', key = '') => {
-    const placeholder = ph || `Enter ${label.toLowerCase()}`;
+const formField = (label, value = '', type = 'text', ph = '', key = '', helper = '') => {
+    const placeholderFn = typeof inputPlaceholder === 'function' ? inputPlaceholder : (p) => p || '';
+    const placeholder = placeholderFn(ph, label, type);
     const valAttr = value !== '' && value != null ? ` value="${String(value).replace(/"/g, '&quot;')}"` : '';
     const fieldAttr = key ? ` data-field="${key}"` : '';
-    return `<div><label class="form-label">${label}</label>
-<input type="${type}" class="form-input"${fieldAttr}${valAttr} placeholder="${placeholder}"></div>`;
+    return `<div class="form-group"><label class="form-label">${label}</label>
+<input type="${type}" class="form-input"${fieldAttr}${valAttr} placeholder="${placeholder}">
+${helper ? `<p class="form-helper">${helper}</p>` : ''}</div>`;
 };
 
-const formTextarea = (label, value = '', ph = '', key = '') => {
-    const placeholder = ph || `Enter ${label.toLowerCase()}`;
+const formTextarea = (label, value = '', ph = '', key = '', helper = '') => {
+    const placeholderFn = typeof inputPlaceholder === 'function' ? inputPlaceholder : (p, l) => p || (l ? `Enter ${l.toLowerCase()}` : '');
+    const placeholder = placeholderFn(ph, label, 'text');
     const content = value ? value : '';
     const fieldAttr = key ? ` data-field="${key}"` : '';
-    return `<div><label class="form-label">${label}</label>
-<textarea class="form-input min-h-[96px] resize-none"${fieldAttr} placeholder="${placeholder}">${content}</textarea></div>`;
+    return `<div class="form-group"><label class="form-label">${label}</label>
+<textarea class="form-input min-h-[96px] resize-none"${fieldAttr} placeholder="${placeholder}">${content}</textarea>
+${helper ? `<p class="form-helper">${helper}</p>` : ''}</div>`;
 };
+
+const authFieldHint = (text) => `<p class="form-helper auth-field-hint">${text}</p>`;
 
 const uxIntro = (text) => `<p class="ux-intro">${text}</p>`;
 const uxTip = (text, title = '') => `<div class="ux-tip">${title ? `<p class="ux-tip-title">${title}</p>` : ''}<p class="ux-tip-text">${text}</p></div>`;
@@ -2481,9 +2715,31 @@ const bottomNav = () => {
         'contractor-documents': 'contractor-job-detail',
         'contractor-company': 'contractor-profile',
     } : STATE.userRole === 'tenant' ? {
-        'log-maintenance': 'tenant-dashboard',
+        'log-maintenance': 'tenant-issues',
         'personal-info': 'tenant-dashboard',
         'chat': 'messages',
+        'maintenance-detail': 'tenant-issues',
+        'tenant-building-info': 'tenant-dashboard',
+        'tenant-announcements': 'tenant-dashboard',
+        'tenant-house-rules': 'tenant-building-info',
+        'tenant-edit-profile': 'personal-info',
+        'tenant-issues': 'tenant-dashboard',
+        'tenant-documents': 'personal-info',
+        'tenant-referencing': 'personal-info',
+        'tenant-ref-detail': 'tenant-referencing',
+        'tenant-active-tenancy': 'tenant-dashboard',
+        'tenant-contact': 'personal-info',
+        'tenant-reminders': 'tenant-dashboard',
+        'tenant-compliance': 'tenant-dashboard',
+        'tenant-communication': 'tenant-dashboard',
+        'tenant-checkout': 'personal-info',
+        'invoice-detail': 'transaction-history',
+        'notifications-list': 'tenant-dashboard',
+        'faq': 'help-support',
+        'help-support': 'tenant-dashboard',
+        'transaction-history': 'tenant-dashboard',
+        'password': 'personal-info',
+        'security': 'personal-info',
     } : {
         'tenant-detail': 'tenants',
         'maintenance-detail': 'maintenance',
@@ -2975,8 +3231,12 @@ function screenPropertyDetail() {
         inventory: typeof renderPropertyInventoryTab === 'function'
             ? renderPropertyInventoryTab(STATE.propertyId)
             : `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Loading inventory…</p></div>`,
-        'floor-plans': `<div class="screen-content"><button data-tab="info" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
-        photos: `<div class="screen-content"><button data-tab="info" class="btn-primary w-full py-3.5 text-[14px]">Open Building Info</button></div>`,
+        'floor-plans': typeof renderPropertyFloorPlansTab === 'function'
+            ? renderPropertyFloorPlansTab(STATE.propertyId)
+            : `<div class="screen-content"><button data-go="property-floor-plans" data-pid="${STATE.propertyId}" class="btn-primary w-full py-3.5 text-[14px]">View floor plans</button></div>`,
+        photos: typeof renderPropertyPhotosTab === 'function'
+            ? renderPropertyPhotosTab(STATE.propertyId)
+            : `<div class="screen-content"><button data-go="property-photos" data-pid="${STATE.propertyId}" class="btn-primary w-full py-3.5 text-[14px]">View photos</button></div>`,
         timeline: `<div class="screen-content"><p class="text-[13px] text-[#64748B]">Activity is shown on the dashboard and in each section (maintenance, compliance, inspections).</p></div>`,
         info: typeof renderPropertyOverviewDetails === 'function'
             ? renderPropertyOverviewDetails(STATE.propertyId)
@@ -3078,7 +3338,7 @@ const tenantListRow = (t, opts = {}) => {
             </div>
         </div>
         <p class="tenant-row-prop">${detailLine}</p>
-        ${compact ? '' : `<p class="tenant-row-meta">${t.rent}${groupMeta ? ` · ${groupMeta}` : ''}</p>`}
+        ${compact ? '' : `<p class="tenant-row-meta">${typeof tenantListMetaLine === 'function' ? tenantListMetaLine(t) : t.rent}${groupMeta ? ` · ${groupMeta}` : ''}</p>`}
     </div>
     <i data-lucide="chevron-right" class="tenant-row-chevron w-5 h-5"></i>
 </button>
@@ -3127,48 +3387,46 @@ const tenantOverview = (t, avatar) => {
     const locNav = listItem.unit && listItem.propertyId != null
         ? `data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}"`
         : `data-go="property-detail" data-pid="${listItem.propertyId ?? 0}"`;
+    const statusLabel = listItem.status === 'active' ? 'Active' : listItem.status === 'pending' ? 'Pending invite' : 'Inactive';
+    const statusClass = listItem.status === 'active' ? 'tenant-profile-status--active' : listItem.status === 'pending' ? 'tenant-profile-status--pending' : 'tenant-profile-status--inactive';
+    const rentLabel = typeof formatTenantRent === 'function' ? formatTenantRent(t.rent) : listItem.rent;
+    const leaseLabel = typeof formatLeaseMonthYear === 'function' ? formatLeaseMonthYear(t.leaseEnd) : listItem.leaseEnd;
     return `
-    <div class="tenant-hero-card ${tenancy ? `tenant-hero-card--${tenancy.type}` : ''}">
-        <div class="tenant-hero-glow tenant-hero-glow-1" aria-hidden="true"></div>
-        <div class="tenant-hero-glow tenant-hero-glow-2" aria-hidden="true"></div>
-        <div class="tenant-hero-shine" aria-hidden="true"></div>
-        <div class="tenant-hero-toolbar">
-            <button type="button" data-action="back" class="tenant-hero-back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <div class="tenant-hero-menu-slot${tenantMenuOpen ? ' tenant-hero-menu-slot--menu-open' : ''}">
+    <div class="tenant-profile-card card">
+        <div class="tenant-profile-toolbar">
+            <button type="button" data-action="back" class="tenant-profile-back" aria-label="Back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <div class="tenant-profile-menu-slot${tenantMenuOpen ? ' tenant-profile-menu-slot--open' : ''}">
                 ${typeof renderActionMenuButton === 'function' ? renderActionMenuButton(tenantMenuKey, 'Tenant options') : ''}
                 ${typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function' ? renderActionMenuPopover(tenantMenuKey, tenantActionMenuItems(listItem)) : ''}
             </div>
         </div>
-        <div class="tenant-hero-content">
-            <div class="tenant-hero-avatar-wrap">
-                <img src="${avatar}" class="tenant-hero-avatar" alt="">
-            </div>
-            <h2 class="tenant-hero-name">${t.firstName} ${t.lastName}</h2>
-            <div class="tenant-hero-tags">
-                <span class="tenant-hero-badge"><span class="tenant-hero-badge-dot"></span>${listItem.status === 'active' ? 'Active' : listItem.status === 'pending' ? 'Pending invite' : 'Inactive'}</span>
-                ${typePill}
+        <div class="tenant-profile-main">
+            <img src="${avatar}" class="tenant-profile-avatar" alt="">
+            <div class="tenant-profile-copy">
+                <h2 class="tenant-profile-name">${t.firstName} ${t.lastName}</h2>
+                <div class="tenant-profile-tags">
+                    <span class="tenant-profile-status ${statusClass}">${statusLabel}</span>
+                    ${typePill}
+                </div>
+                <button type="button" class="tenant-profile-location" ${locNav} aria-label="View ${locLabel}">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                    <span>${locLabel}</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
         </div>
-        <div class="tenant-hero-meta">
-            <button type="button" class="tenant-hero-chip" ${locNav} aria-label="View ${locLabel}">
-                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-                <span>${locLabel}</span>
-                <i data-lucide="chevron-right" class="tenant-hero-chip-arrow w-3.5 h-3.5"></i>
-            </button>
-            <div class="tenant-hero-stats">
-                <div class="tenant-hero-stat">
-                    <span class="tenant-hero-stat-label">Monthly Rent</span>
-                    <strong>${typeof formatTenantRent === 'function' ? formatTenantRent(t.rent) : listItem.rent}</strong>
-                </div>
-                <div class="tenant-hero-stat-divider"></div>
-                <div class="tenant-hero-stat">
-                    <span class="tenant-hero-stat-label">Lease Ends</span>
-                    <strong>${typeof formatLeaseMonthYear === 'function' ? formatLeaseMonthYear(t.leaseEnd) : listItem.leaseEnd}</strong>
-                </div>
+        <div class="tenant-profile-stats">
+            <div class="tenant-profile-stat">
+                <span class="tenant-profile-stat-label">Monthly rent</span>
+                <strong>${rentLabel}</strong>
+            </div>
+            <div class="tenant-profile-stat">
+                <span class="tenant-profile-stat-label">Lease ends</span>
+                <strong>${leaseLabel}</strong>
             </div>
         </div>
+        ${typeof renderTenantContactQuickActions === 'function' ? renderTenantContactQuickActions(STATE.tenantId) : ''}
     </div>
-    ${typeof renderTenantContactQuickActions === 'function' ? renderTenantContactQuickActions(STATE.tenantId) : ''}
     ${typeof renderTenantOverviewSummary === 'function' ? renderTenantOverviewSummary(STATE.tenantId) : ''}
     ${typeof renderTenantNotesPreview === 'function' ? renderTenantNotesPreview(STATE.tenantId) : ''}
     <div class="tenant-menu-wrap">
@@ -3210,9 +3468,9 @@ const tenantSectionContent = (tab, t) => {
         },
         contact: () => {
             const chatId = typeof getTenantChatId === 'function' ? getTenantChatId(STATE.tenantId) : null;
-            const msgAttrs = chatId != null && chatId !== 0
+            const msgAttrs = chatId != null
                 ? `data-go="chat" data-chat="${chatId}"`
-                : `data-go="messages"`;
+                : `data-action="start-tenant-chat" data-tid="${STATE.tenantId}"`;
             return `
             ${typeof renderContactOutlineRow === 'function' ? renderContactOutlineRow([
                 ['phone', 'Call', `data-action="call-tenant" data-tid="${STATE.tenantId}"`],
@@ -3327,7 +3585,8 @@ const TENANT_SECTION_TITLES = {
 };
 
 function screenTenantDetail() {
-    const t = TENANTS[STATE.tenantId] || TENANTS[0];
+    const t = TENANTS[STATE.tenantId];
+    if (!t) return `${topBar('Tenant', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Tenant not found</p></div>`;
     const avatars = [IMG.avatar.sarah, IMG.avatar.david, IMG.avatar.michael];
     const avatar = avatars[STATE.tenantId];
     const tab = STATE.tenantTab || 'overview';
@@ -3578,35 +3837,7 @@ function screenProfile() {
 
 function screenPersonalInfo() {
     if (STATE.userRole === 'tenant') {
-        const t = getActiveTenant();
-        const tenantNav = typeof shouldShowBottomNav === 'function' && shouldShowBottomNav('personal-info');
-        if (!t) {
-            return `${topBar('Account', { back: !tenantNav })}
-            <div class="screen-content screen-enter">
-                <p class="text-[14px] text-[#64748B]">Activate your account via invitation link to view profile.</p>
-            </div>`;
-        }
-        const p = PROPERTIES[t.propertyId];
-        return `${topBar('Account', { back: !tenantNav })}
-        <div class="screen-content screen-content-sm screen-enter">
-            <div class="flex justify-center mb-2">
-                <img src="${IMG.avatar.sarah}" class="w-20 h-20 rounded-2xl object-cover" alt="">
-            </div>
-            ${formField('First Name', t.firstName, 'text', '', 'firstName')}${formField('Last Name', t.lastName, 'text', '', 'lastName')}
-            ${formField('Email', t.email, 'email', '', 'email')}${formField('Phone', t.phone || '—', 'tel', '', 'phone')}
-            <div><label class="form-label">Property</label><input class="form-input" value="${p?.name || '—'}" readonly></div>
-            <div><label class="form-label">Unit within property</label><input class="form-input" value="${t.unit || '—'}" readonly></div>
-            ${typeof renderLandlordContactCard === 'function' ? renderLandlordContactCard() : ''}
-            <p class="section-title">Support & Legal</p>
-            ${menuList([
-                ['circle-help', 'FAQ', 'faq'],
-                ['help-circle', 'Help & Support', 'help-support'],
-                ['shield', 'Privacy Policy', 'privacy'],
-                ['file-text', 'Terms & Conditions', 'terms'],
-                ['info', 'About', 'about'],
-            ])}
-            <button data-action="logout" class="btn-secondary w-full py-3 text-[13px] mt-4 text-[#DC2626] border border-[#FECACA]">Sign Out</button>
-        </div>`;
+        return typeof screenTenantAccount === 'function' ? screenTenantAccount() : screenTenantAccountFallback();
     }
     const u = LANDLORD_USER;
     return `${topBar('Personal Information', { back: true })}
@@ -3647,9 +3878,9 @@ function screenPassword() {
     return `${topBar('Change Password', { back: true })}
     <div class="screen-content screen-enter">
         <p class="text-[13px] text-[#64748B]">Update your account password. Use at least 8 characters.</p>
-        <div><label class="form-label">Current Password</label><input data-field="currentPassword" type="password" class="form-input" placeholder="Enter current password"></div>
-        <div><label class="form-label">New Password</label><input data-field="newPassword" type="password" class="form-input" placeholder="Enter new password"></div>
-        <div><label class="form-label">Confirm Password</label><input data-field="confirmPassword" type="password" class="form-input" placeholder="Confirm new password"></div>
+        ${formField('Current Password', '', 'password', 'Enter current password', 'currentPassword')}
+        ${formField('New Password', '', 'password', 'Enter new password', 'newPassword')}
+        ${formField('Confirm Password', '', 'password', 'Confirm new password', 'confirmPassword')}
         <button data-action="save" data-msg="Password updated" class="btn-primary w-full py-3.5 text-[14px]">Update Password</button>
     </div>`;
 }
@@ -3990,11 +4221,21 @@ function screenMaintenanceDetail() {
 function screenInvoiceDetail() {
     const inv = INVOICES.find(i => i.id === STATE.invoiceId) || INVOICES[0];
     const paid = inv.status === 'Paid';
-    const detailRows = [
+    const isTenant = STATE.userRole === 'tenant';
+    const isMaint = inv.type === 'maintenance' || inv.type === 'bill';
+    const payKind = isMaint ? 'maintenance' : 'rent';
+    const typeLabel = typeof invoiceTypeLabel === 'function' ? invoiceTypeLabel(inv) : (isMaint ? (inv.desc || 'Bill') : 'Monthly rent');
+    const detailRows = isTenant ? [
+        ['Property', inv.prop.split(',')[0]],
+        ...(inv.unit ? [['Unit', inv.unit]] : []),
+        ['Type', typeLabel],
+        ['Due date', inv.due],
+        ['Invoice #', inv.num],
+    ] : [
         ['Tenant', inv.tenant || tenantNameForInvoice(inv)],
         ['Property', inv.prop.split(',')[0]],
         ...(inv.unit ? [['Unit', inv.unit]] : []),
-        ['Type', inv.type === 'bill' ? (inv.desc || 'Bill') : 'Monthly rent'],
+        ['Type', typeLabel],
         ['Due date', inv.due],
         ['Invoice #', inv.num],
     ];
@@ -4004,25 +4245,32 @@ function screenInvoiceDetail() {
     }
     const sc = paid ? '#22C55E' : inv.status === 'Overdue' ? '#EF4444' : '#D97706';
     const tenantItem = TENANT_LIST.find(t => t.id === inv.tenantId || (t.name === inv.tenant && inv.prop.includes(t.prop)));
-    return `${topBar(paid ? 'Payment record' : 'Rent due', { back: true })}
+    const pageTitle = paid ? 'Payment record' : isMaint ? 'Bill due' : 'Rent due';
+    return `${topBar(pageTitle, { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-5 text-center">
-            <p class="text-[13px] text-[#64748B]">${paid ? 'Amount received' : 'Amount due'}</p>
+            <p class="text-[13px] text-[#64748B]">${paid ? 'Amount paid' : 'Amount due'}</p>
             <p class="text-3xl font-bold text-[#0F172A] mt-1">${inv.amount}</p>
             <span class="badge mt-3" style="background:${sc}18;color:${sc}">${inv.status}</span>
-            ${inv.month ? `<p class="text-[12px] text-[#64748B] mt-2">${inv.month}</p>` : ''}
+            ${!isMaint && inv.month ? `<p class="text-[12px] text-[#64748B] mt-2">${inv.month}</p>` : ''}
+            ${isMaint && inv.desc ? `<p class="text-[12px] text-[#64748B] mt-2">${inv.desc}</p>` : ''}
         </div>
         <div class="card divide-y divide-[#F1F5F9]">
             ${detailRows.map(([k,v])=>`
             <div class="p-4 flex justify-between text-[13px] gap-4"><span class="text-[#64748B] shrink-0">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
-        ${tenantItem ? `
+        ${!isTenant && tenantItem ? `
         <button type="button" data-go="tenant-detail" data-tid="${tenantItem.id}" data-tab="payments" class="btn-secondary w-full py-3 text-[13px]">View tenant payment history</button>` : ''}
+        ${isTenant ? `
+        <div class="grid grid-cols-2 gap-4">
+            <button data-action="toast" data-msg="Receipt downloaded" class="btn-secondary py-3 text-[13px]">Download PDF</button>
+            ${!paid ? `<button type="button" data-action="tenant-pay" data-kind="${payKind}" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Pay now</button>` : `<button data-action="toast" data-msg="Receipt downloaded" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
+        </div>` : `
         <div class="grid grid-cols-2 gap-4">
             <button data-action="toast" data-msg="Receipt downloaded" class="btn-secondary py-3 text-[13px]">Download PDF</button>
             ${!paid ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Record payment</button>` : `<button data-action="toast" data-msg="Receipt downloaded" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
         </div>
-        ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}
+        ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}`}
     </div>`;
 }
 
@@ -4076,9 +4324,10 @@ function screenDocumentPreview() {
 }
 
 function screenNotificationsList() {
-    const unread = NOTIFICATIONS.filter(n => n.unread).length;
-    const unreadItems = NOTIFICATIONS.filter(n => n.unread);
-    const readItems = NOTIFICATIONS.filter(n => !n.unread);
+    const items = typeof notificationsForRole === 'function' ? notificationsForRole() : NOTIFICATIONS;
+    const unread = items.filter(n => n.unread).length;
+    const unreadItems = items.filter(n => n.unread);
+    const readItems = items.filter(n => !n.unread);
     const section = (label, items) => items.length ? `
         <div class="notif-section">
             <p class="notif-section-label">${label}</p>
@@ -4115,9 +4364,9 @@ function screenAddProperty() {
             <p class="text-[13px] font-semibold text-[#0F172A] mt-2">${pending.length ? 'Add more photos' : 'Add property photos'}</p>
             <p class="text-[11px] text-[#64748B] mt-1">Select multiple from your device${pending.length ? ` · ${pending.length} selected` : ''}</p>
         </button>
-        <div><label class="form-label">Property name <span class="form-required">*</span></label><input data-field="name" type="text" class="form-input" placeholder="e.g. 12 Park Lane"></div>
-        <div><label class="form-label">Address <span class="form-required">*</span></label><input data-field="address" type="text" class="form-input" placeholder="Street and town"></div>
-        <div><label class="form-label">Postcode</label><input data-field="postcode" type="text" class="form-input" placeholder="e.g. SW1A 1AA"></div>
+        <div class="form-group"><label class="form-label">Property name <span class="form-required">*</span></label><input data-field="name" type="text" class="form-input" placeholder="e.g. 12 Park Lane"></div>
+        <div class="form-group"><label class="form-label">Address <span class="form-required">*</span></label><input data-field="address" type="text" class="form-input" placeholder="Street and town"></div>
+        <div class="form-group"><label class="form-label">Postcode</label><input data-field="postcode" type="text" class="form-input" placeholder="e.g. SW1A 1AA"></div>
         <button data-action="save" data-msg="Property added successfully" class="btn-primary w-full">Save property</button>
     </div>`;
 }
@@ -4202,7 +4451,8 @@ function screenTenantInviteSent() {
 }
 
 function screenEditTenant() {
-    const t = TENANTS[STATE.tenantId] || TENANTS[0];
+    const t = TENANTS[STATE.tenantId];
+    if (!t) return `${topBar('Edit Tenant', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Tenant not found</p></div>`;
     const hasNidProof = !!(t.nidProof || (typeof getTenantNidProof === 'function' && getTenantNidProof(STATE.tenantId)));
     return `${topBar('Edit Tenant', { back: true })}
     <div class="screen-content screen-enter">
@@ -4239,8 +4489,6 @@ function screenRescheduleInspection() {
         : (upcoming?.type || 'Mid-term');
     const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM'];
     const selectedSlot = upcoming?.timeSlot || '10:00 AM';
-    const activeTenant = TENANT_LIST.find(t => t.propertyId === STATE.propertyId && t.status === 'active');
-    const tenantEmail = activeTenant && TENANTS[activeTenant.id]?.email ? TENANTS[activeTenant.id].email : '';
     return `${topBar(title, { back: true })}
     <div class="screen-content screen-enter">
         ${uxTip('You (the landlord) conduct the visit and record the rating afterwards. A reminder is added to your Dashboard and Notifications.', 'How it works')}
@@ -4252,7 +4500,7 @@ function screenRescheduleInspection() {
         ${formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
         ${formSelect('Type', selectedType, types, 'inspType')}
         ${formTextarea('Access notes', upcoming?.notes || '', 'Parking, keys, tenant availability...', 'inspNotes')}
-        ${formField('Notify tenant (optional)', tenantEmail, 'email', 'Tenant email — for your records', 'notifyEmail')}
+        ${typeof renderTenantNotifySection === 'function' ? renderTenantNotifySection(STATE.propertyId) : ''}
         ${saveBtn(upcoming ? 'Confirm reschedule' : 'Schedule inspection', 'Inspection rescheduled')}
     </div>`;
 }
@@ -4391,16 +4639,32 @@ function screenLogMaintenance() {
     return `${topBar(isTenant ? 'Report Issue' : 'Log Issue', { back: !shouldShowBottomNav('log-maintenance') })}
     <div class="screen-content screen-enter">
         ${propertyField}
-        <div><label class="form-label">Issue Title <span class="form-required">*</span></label><input data-field="title" class="form-input" value="${titlePrefill.replace(/"/g, '&quot;')}" placeholder="Describe the issue"></div>
+        <div class="form-group"><label class="form-label">Issue Title <span class="form-required">*</span></label><input data-field="title" class="form-input" value="${titlePrefill.replace(/"/g, '&quot;')}" placeholder="Brief summary of the issue"></div>
         <div><label class="form-label">Priority</label>
         <div class="flex gap-2">${['Low','Medium','High'].map(pr=>`
         <button data-log-priority="${pr}" class="tab-pill ${STATE.logPriority===pr?'active':''}">${pr}</button>`).join('')}</div></div>
-        <div><label class="form-label">Description <span class="form-required">*</span></label><textarea data-field="desc" class="form-input h-24 resize-none" placeholder="Add details..."></textarea></div>
+        <div class="form-group"><label class="form-label">Description <span class="form-required">*</span></label><textarea data-field="desc" class="form-input h-24 resize-none" placeholder="Where is it? When did it start? Any access instructions?"></textarea></div>
         ${typeof renderPhotoPreviewStrip === 'function' ? renderPhotoPreviewStrip(STATE.logMaintPhotos, { removable: true, removeAction: 'remove-log-maint-photo' }) : ''}
         <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full">
             <i data-lucide="camera" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
             <p class="text-[13px] font-semibold text-[#0F172A] mt-2">Add photos</p>
             <p class="text-[11px] text-[#64748B] mt-1">Select multiple from your device${STATE.logMaintPhotos?.length ? ` · ${STATE.logMaintPhotos.length} added` : ''}</p>
+        </button>
+        ${STATE.logMaintVideos?.length ? `
+        <div class="maint-log-video-list card p-3">
+            <p class="maint-report-media-label">Attached videos</p>
+            ${STATE.logMaintVideos.map((video, idx) => {
+                const v = typeof normalizeMaintVideo === 'function' ? normalizeMaintVideo(video, idx) : { name: `Video ${idx + 1}` };
+                return `<div class="maint-log-video-row">
+                    <span class="maint-log-video-name"><i data-lucide="video" class="w-4 h-4"></i>${v.name}</span>
+                    <button type="button" data-action="remove-log-maint-video" data-photo-idx="${idx}" class="maint-log-video-remove">Remove</button>
+                </div>`;
+            }).join('')}
+        </div>` : ''}
+        <button type="button" data-action="upload-video" class="card border-2 border-dashed border-[#E2E8F0] p-4 text-center w-full">
+            <i data-lucide="video" class="w-6 h-6 text-[#94A3B8] mx-auto"></i>
+            <p class="text-[13px] font-semibold text-[#0F172A] mt-2">Add videos</p>
+            <p class="text-[11px] text-[#64748B] mt-1">Short clips help your landlord understand the issue</p>
         </button>
         <button data-action="save" data-msg="Issue logged successfully" class="btn-primary w-full py-3.5 text-[14px]">${isTenant ? 'Report to Landlord' : 'Submit Issue'}</button>
     </div>`;
@@ -4535,6 +4799,8 @@ function collectGoOptions(el) {
     if (el.dataset.tenantTab) opts.tenantTab = el.dataset.tenantTab;
     if (el.dataset.flatTab) opts.flatTab = el.dataset.flatTab;
     if (el.dataset.unit) opts.unit = el.dataset.unit;
+    if (el.dataset.refKey) opts.refKey = el.dataset.refKey;
+    if (el.dataset.tenantPayPreset) opts.tenantPayFilter = el.dataset.tenantPayPreset;
     if (el.dataset.duplicateFrom) opts.duplicateFrom = el.dataset.duplicateFrom;
     if (el.dataset.inviteToken) opts.token = el.dataset.inviteToken;
     if (el.dataset.inviteEmail) opts.inviteEmail = el.dataset.inviteEmail;
@@ -4547,8 +4813,14 @@ function collectGoOptions(el) {
     if (el.dataset.previewIdx !== undefined) opts.previewDocIdx = +el.dataset.previewIdx;
     if (el.dataset.previewSource) opts.previewDocSource = el.dataset.previewSource;
     if (el.dataset.invoicePreset) opts.invoiceFilter = el.dataset.invoicePreset;
+    if (el.dataset.maintSourceOnNav) opts.maintSourceFilter = el.dataset.maintSourceOnNav;
+    if (el.dataset.maintFilterOnNav) opts.maintFilter = el.dataset.maintFilterOnNav;
     if (el.dataset.resetReturn) STATE.resetReturnScreen = el.dataset.resetReturn;
     return opts;
+}
+
+function isModalBackdropMiss(e, el) {
+    return el.classList.contains('modal-overlay') && e.target !== el;
 }
 
 function handleDelegatedAction(e, el) {
@@ -4568,22 +4840,39 @@ function handleDelegatedAction(e, el) {
         case 'close-prop-filters': return run(closePropFilters);
         case 'toggle-prop-filters': return run(togglePropFilters);
         case 'reset-prop-filters': return run(resetPropFilters);
-        case 'confirm-cancel': return run(() => { STATE.confirm = null; render(); });
+        case 'confirm-cancel':
+            if (isModalBackdropMiss(e, el)) return false;
+            return run(() => { STATE.confirm = null; render(); });
         case 'confirm-ok': return run(() => { const fn = STATE.confirm?.onOk; STATE.confirm = null; if (fn) fn(); else render(); });
-        case 'close-rename-doc': return run(() => { STATE.renameDocId = null; render(); });
+        case 'close-rename-doc':
+            if (isModalBackdropMiss(e, el)) return false;
+            return run(() => { STATE.renameDocId = null; render(); });
         case 'confirm-rename-doc': return run(() => { if (typeof confirmRenameDoc === 'function') confirmRenameDoc(); });
         case 'open-add-document': return run(() => { if (typeof openAddDocumentFlow === 'function') openAddDocumentFlow(); });
-        case 'close-add-document': return run(() => { if (typeof closeAddDocumentFlow === 'function') closeAddDocumentFlow(); });
+        case 'open-add-document-slot': return run(() => { if (typeof openAddDocumentSlot === 'function') openAddDocumentSlot(el.dataset.docType); });
+        case 'replace-document-slot': return run(() => { if (typeof replaceDocumentSlot === 'function') replaceDocumentSlot(+el.dataset.doc); });
+        case 'close-add-document':
+            if (isModalBackdropMiss(e, el)) return false;
+            return run(() => { if (typeof closeAddDocumentFlow === 'function') closeAddDocumentFlow(); });
         case 'add-document-back': return run(() => { if (typeof addDocumentBackStep === 'function') addDocumentBackStep(); });
         case 'select-doc-type': return run(() => { if (typeof selectAddDocumentType === 'function') selectAddDocumentType(el.dataset.docType); });
         case 'pick-add-document-file': return run(() => { if (typeof pickAddDocumentFileAction === 'function') pickAddDocumentFileAction(); });
         case 'save-add-document': return run(() => { if (typeof saveAddDocumentAction === 'function') saveAddDocumentAction(); });
-        case 'close-new-message': return run(() => { STATE.newMessagePicker = false; render(); });
+        case 'close-new-message':
+            if (isModalBackdropMiss(e, el)) return false;
+            return run(() => { STATE.newMessagePicker = false; render(); });
         case 'pick-message-chat': return run(() => { STATE.newMessagePicker = false; go('chat', { chatId: +el.dataset.chat }); });
-        case 'close-photo-menu': return run(() => { STATE.photoMenuIdx = null; render(); });
+        case 'close-photo-menu':
+            if (isModalBackdropMiss(e, el)) return false;
+            return run(() => { STATE.photoMenuIdx = null; render(); });
         case 'toast': return run(() => toast(el.dataset.msg || 'Done'));
         case 'maint-status': return run(() => { if (typeof updateMaintStatus === 'function') updateMaintStatus(el.dataset.status); });
         case 'go-assign-contractor': return run(() => go('assign-contractor', { maintId: STATE.maintId }));
+        case 'quick-assign-contractor': {
+            e.stopPropagation();
+            const mid = +el.dataset.mid;
+            return run(() => go('assign-contractor', { maintId: mid }));
+        }
         case 'mark-invoice-paid': return run(() => { if (typeof markInvoicePaid === 'function') markInvoicePaid(+el.dataset.iid); });
         case 'toggle-rent-receive': return run(() => { e.stopPropagation(); if (typeof toggleRentReceiveInvoice === 'function') toggleRentReceiveInvoice(+el.dataset.iid); });
         case 'toggle-rent-receive-all': return run(() => { if (typeof toggleRentReceiveAll === 'function') toggleRentReceiveAll(); });
@@ -4619,6 +4908,9 @@ function handleAppClick(e) {
 
     const maintScopeFilter = e.target.closest('[data-maint-scope-filter]');
     if (maintScopeFilter) { e.preventDefault(); setMaintScopeFilter(maintScopeFilter.dataset.maintScopeFilter); return; }
+
+    const maintSourceFilter = e.target.closest('[data-maint-source-filter]');
+    if (maintSourceFilter) { e.preventDefault(); setMaintSourceFilter(maintSourceFilter.dataset.maintSourceFilter); return; }
 
     const invoiceFilter = e.target.closest('[data-invoice-filter]');
     if (invoiceFilter) { e.preventDefault(); setInvoiceFilter(invoiceFilter.dataset.invoiceFilter); return; }
@@ -4739,7 +5031,7 @@ function bindEvents() {
         el.onclick = roleContinue;
     });
     app.querySelectorAll('[data-action="contractor-signup"]').forEach(el => {
-        el.onclick = () => { STATE.authRole = 'contractor'; go('sign-up'); };
+        el.onclick = () => { STATE.authRole = 'contractor'; STATE.contractorInviteContext = true; go('contractor-sign-up'); };
     });
     app.querySelectorAll('[data-action="contractor-sign-in"]').forEach(el => {
         el.onclick = () => { STATE.authRole = 'contractor'; go('sign-in'); };
@@ -4776,6 +5068,9 @@ function bindEvents() {
             }
             signIn();
         };
+    });
+    app.querySelectorAll('[data-action="google-sign-in"]').forEach(el => {
+        el.onclick = () => toast('Google sign-in is not available in this prototype');
     });
     app.querySelectorAll('[data-action="start-signup"]').forEach(el => {
         el.onclick = startLandlordSignup;

@@ -45,7 +45,7 @@ function setField(page, key, value, invite = false) {
     screen: STATE.screen,
     last: PROPERTIES[PROPERTIES.length - 1]?.name,
   }));
-  log(afterAdd.len > beforeProps && afterAdd.screen === 'properties' ? 'PASS' : 'FAIL', 'Flow', `Add property: ${JSON.stringify(afterAdd)}`);
+  log(afterAdd.len > beforeProps && afterAdd.screen === 'property-detail' ? 'PASS' : 'FAIL', 'Flow', `Add property: ${JSON.stringify(afterAdd)}`);
 
   // Invite tenant validation (empty form)
   await run(page, () => go('invite-tenant', { propertyId: 0 }));

@@ -1,10 +1,40 @@
 /* Landlord HQ — Feature completion layer (persistence, new screens, workflows) */
 
 const CONTRACTORS = [
-    { id: 0, name: 'Plumber Pro', trade: 'Plumbing', img: IMG.avatar.plumber, phone: '+44 7700 900201', email: 'jobs@plumberpro.co.uk' },
-    { id: 1, name: 'Heating Co.', trade: 'Heating', img: IMG.avatar.heating, phone: '+44 7700 900202', email: 'service@heatingco.co.uk' },
-    { id: 2, name: 'Electric Fix', trade: 'Electrical', img: IMG.avatar.electric, phone: '+44 7700 900203', email: 'bookings@electricfix.co.uk' },
+    { id: 0, name: 'Plumber Pro', tradeId: 'plumbing', trade: 'Plumbing & Heating', category: 'Plumber', jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains', img: IMG.avatar.plumber, phone: '+44 7700 900201', email: 'jobs@plumberpro.co.uk', gasSafe: true, liabilityInsurance: true, certificates: [
+        { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'gas-safe-reg-2026.pdf', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027' },
+        { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'liability-insurance-2026.pdf', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026' },
+    ] },
+    { id: 1, name: 'Heating Co.', tradeId: 'heating', trade: 'Heating & Gas', category: 'Heating engineer', jobsFor: 'Boilers, radiators, gas safety, hot water', img: IMG.avatar.heating, phone: '+44 7700 900202', email: 'service@heatingco.co.uk', gasSafe: true, liabilityInsurance: true, certificates: [
+        { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'heating-co-gas-safe.pdf', uploadedAt: 'Feb 2, 2026', validUntil: 'Feb 2027' },
+    ] },
+    { id: 2, name: 'Electric Fix', tradeId: 'electrical', trade: 'Electrical', category: 'Electrician', jobsFor: 'Lights, sockets, wiring, fuse boxes', img: IMG.avatar.electric, phone: '+44 7700 900203', email: 'bookings@electricfix.co.uk', liabilityInsurance: true, certificates: [
+        { id: 0, type: 'trade_qualification', name: 'NICEIC Certification', fileName: 'niceic-cert-2026.pdf', uploadedAt: 'Jan 8, 2026', validUntil: 'Jan 2027' },
+        { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'electric-fix-insurance.pdf', uploadedAt: 'Nov 12, 2025', validUntil: 'Nov 2026' },
+    ] },
 ];
+
+function normalizeContractorRecord(c) {
+    if (!c || c.tradeId) return c;
+    const legacyMap = {
+        Plumbing: 'plumbing',
+        Heating: 'heating',
+        Electrical: 'electrical',
+        General: 'general',
+    };
+    const tradeId = legacyMap[c.trade] || (typeof contractorTradeFromLabel === 'function' ? contractorTradeFromLabel(c.trade).id : 'general');
+    const meta = typeof contractorTradeById === 'function' ? contractorTradeById(tradeId) : null;
+    if (meta) {
+        c.tradeId = meta.id;
+        c.trade = meta.label;
+        c.category = meta.shortLabel;
+        c.jobsFor = meta.jobsFor;
+    }
+    if (typeof ensureContractorCertificates === 'function') ensureContractorCertificates(c);
+    return c;
+}
+
+CONTRACTORS.forEach(normalizeContractorRecord);
 
 const REMINDER_TYPES = [
     ['gas', 'Gas Certificate Expiry', 'flame', '#FEE2E2', '#DC2626'],
@@ -33,8 +63,6 @@ const COMPLIANCE_ITEM_CONFIG = {
     7: { reminderType: 'epc', cert: true },
 };
 
-const INVENTORY_ROOM_ICONS = ['utensils', 'sofa', 'bed-double', 'bath', 'door-open'];
-
 const DOC_TYPES = [
     'Tenancy Agreement', 'Deposit Certificate', 'Gas Certificate', 'Electrical Certificate',
     'EPC Certificate', 'How to Rent Guide', 'Signed Document', 'Custom Document',
@@ -62,7 +90,10 @@ const AppStore = {
             if (d.paymentMethods) this.paymentMethods = d.paymentMethods;
             if (d.complianceCerts) this.complianceCerts = d.complianceCerts;
             if (d.tenantDocuments) this.tenantDocuments = d.tenantDocuments;
+            if (d.tenantReferencing) this.tenantReferencing = d.tenantReferencing;
+            if (d.tenantCheckout) this.tenantCheckout = d.tenantCheckout;
             if (d.conversations) this.conversations = d.conversations;
+            if (d.broadcasts) this.broadcasts = d.broadcasts;
             if (d.tenantList) { TENANT_LIST.splice(0, TENANT_LIST.length, ...d.tenantList); }
             if (d.tenants) { TENANTS.splice(0, TENANTS.length, ...d.tenants); }
             if (d.notifications) { NOTIFICATIONS.splice(0, NOTIFICATIONS.length, ...d.notifications); }
@@ -74,6 +105,14 @@ const AppStore = {
             if (typeof syncSmartReminders === 'function') syncSmartReminders(false);
             if (typeof syncSharedDocToTenants === 'function' && this.documents) {
                 this.documents.filter(d => d.shared).forEach(syncSharedDocToTenants);
+            }
+            migrateInventoryKeys();
+            if (!this.broadcasts?.length) {
+                this.broadcasts = [
+                    { id: 0, propertyId: 0, title: 'Boiler service next week', body: 'Heating Co. will access units on Mon 28 Jul, 9–11am. Please ensure someone is home or leave a key with reception.', date: 'Jul 22, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
+                    { id: 1, propertyId: 0, title: 'Rubbish collection change', body: 'Bins go out on Thursday instead of Wednesday for the rest of July.', date: 'Jul 18, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
+                    { id: 2, propertyId: 1, title: 'Garden maintenance', body: 'Shared garden will be serviced Fri 25 Jul. Please keep the gate unlocked.', date: 'Jul 15, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
+                ];
             }
         } catch (_) { this.seed(); }
     },
@@ -96,7 +135,10 @@ const AppStore = {
             paymentMethods: this.paymentMethods,
             complianceCerts: this.complianceCerts,
             tenantDocuments: this.tenantDocuments,
+            tenantReferencing: this.tenantReferencing,
+            tenantCheckout: this.tenantCheckout,
             conversations: this.conversations,
+            broadcasts: this.broadcasts,
             tenantList: TENANT_LIST,
             tenants: TENANTS,
             notifications: NOTIFICATIONS,
@@ -108,15 +150,15 @@ const AppStore = {
     seed() {
         this.reminders = [
             { id: 0, type: 'gas', propertyId: 0, title: 'Gas Certificate Expiry', due: '2026-03-12', daysLeft: 3, urgency: 'high' },
-            { id: 1, type: 'inspection', propertyId: 1, title: 'Inspection Due', due: '2025-02-28', daysLeft: 5, urgency: 'medium' },
-            { id: 2, type: 'rent-review', propertyId: 2, title: 'Rent Review', due: '2025-03-15', daysLeft: 10, urgency: 'medium' },
-            { id: 3, type: 'electrical', propertyId: 1, title: 'Electrical Certificate Expiry', due: '2025-04-02', daysLeft: 45, urgency: 'low' },
-            { id: 4, type: 'leasehold', propertyId: 0, title: 'Leasehold Service Charge', due: '2025-06-01', daysLeft: 90, urgency: 'low' },
+            { id: 1, type: 'inspection', propertyId: 1, title: 'Inspection Due', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
+            { id: 2, type: 'rent-review', propertyId: 2, title: 'Rent Review', due: '2026-09-01', daysLeft: 33, urgency: 'medium' },
+            { id: 3, type: 'electrical', propertyId: 0, title: 'Electrical Certificate Expiry', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
+            { id: 4, type: 'leasehold', propertyId: 0, title: 'Leasehold Service Charge', due: '2026-12-01', daysLeft: 124, urgency: 'low' },
         ];
         this.documents = [
             { id: 0, propertyId: 0, type: 'Tenancy Agreement', name: 'Lease Agreement.pdf', date: 'Jan 15, 2024', shared: true, signed: true },
-            { id: 1, propertyId: 0, type: 'Gas Certificate', name: 'Gas Safety 2025.pdf', date: 'Mar 2025', shared: false, signed: false },
-            { id: 2, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report.pdf', date: 'Apr 2024', shared: false, signed: false },
+            { id: 1, propertyId: 0, type: 'Gas Certificate', name: 'Gas Safety 2025.pdf', date: 'Mar 2025', shared: true, signed: false },
+            { id: 2, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report.pdf', date: 'Apr 2024', shared: true, signed: false },
             { id: 3, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B.pdf', date: '2023', shared: true, signed: false },
             { id: 4, propertyId: 0, type: 'Deposit Certificate', name: 'Deposit Protection.pdf', date: 'Jan 2024', shared: true, signed: true },
             { id: 5, propertyId: 1, type: 'How to Rent Guide', name: 'How to Rent.pdf', date: 'Jun 2023', shared: true, signed: false },
@@ -134,22 +176,56 @@ const AppStore = {
         this.inspections = [
             { id: 0, propertyId: 0, type: 'Check-in', date: '2024-01-15', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(0, 3), notes: 'Property in excellent condition at move-in. Minor scuff on hallway skirting noted.', report: 'Check-in report.pdf' },
             { id: 1, propertyId: 0, type: 'Annual', date: '2023-01-10', rating: '4.5', photos: 8, photoUrls: IMG.interior.slice(1, 4), notes: 'Annual check complete. Kitchen extractor filter replaced.', report: 'Annual 2023.pdf' },
-            { id: 2, propertyId: 1, type: 'Mid-term', date: '2025-02-28', rating: null, photos: 0, report: null, scheduled: true, notes: 'Tenant requested afternoon slot. Parking on street.' },
+            { id: 2, propertyId: 1, type: 'Mid-term', date: '2026-08-15', rating: null, photos: 0, report: null, scheduled: true, notes: 'Tenant requested afternoon slot. Parking on street.' },
         ];
         this.complianceCerts = {
             '0-0': { certNumber: 'GS-2026-001', issueDate: '2025-03-15', expiryDate: '2026-03-15', issuedBy: 'SafeGas Ltd' },
-            '0-1': { certNumber: 'EICR-8821', issueDate: '2024-04-02', expiryDate: '2025-04-02', issuedBy: 'Spark Electrical' },
+            '0-1': { certNumber: 'EICR-8821', issueDate: '2025-08-15', expiryDate: '2026-08-15', issuedBy: 'Spark Electrical' },
             '0-7': { certNumber: 'EPC-B-4421', issueDate: '2022-06-15', expiryDate: '2027-06-15', issuedBy: 'Green Assessors', notes: 'Rating B' },
             '1-0': { certNumber: 'GS-2025-114', issueDate: '2024-11-01', expiryDate: '2025-11-01', issuedBy: 'HeatSafe' },
         };
         this.inventory = {
-            '0-0': { condition: 'Good', notes: 'Minor wear on worktop near sink.', items: [], photos: IMG.interior.slice(0, 2) },
-            '0-1': { condition: 'Good', notes: 'Sofa in good condition.', items: [], photos: [IMG.interior[2]] },
-            '0-2': { condition: 'Fair', notes: 'Carpet showing light wear in corner.', items: [], photos: IMG.interior.slice(3, 5) },
+            '0-kitchen-0': {
+                condition: 'Good',
+                notes: 'Minor wear on worktop near sink.',
+                items: [['Oven / hob', 'Good'], ['Fridge freezer', 'Good'], ['Microwave', 'Good'], ['Extractor fan', 'Fair'], ['Worktops', 'Good']],
+                photos: IMG.interior.slice(0, 2),
+            },
+            '0-reception-0': {
+                condition: 'Good',
+                notes: 'Sofa in good condition.',
+                items: [['Sofa', 'Good'], ['Coffee table', 'Good'], ['Curtains / blinds', 'Good'], ['Flooring', 'Good'], ['Radiator', 'Good']],
+                photos: [IMG.interior[2]],
+            },
+            '0-bedroom-0': {
+                condition: 'Fair',
+                notes: 'Carpet showing light wear in corner.',
+                items: [['Bed frame', 'Good'], ['Mattress', 'Fair'], ['Wardrobe', 'Good'], ['Curtains / blinds', 'Good'], ['Radiator', 'Good']],
+                photos: IMG.interior.slice(3, 5),
+            },
+            '0-bedroom-1': {
+                condition: 'Good',
+                notes: 'Second bedroom — used as home office.',
+                items: [['Bed frame', 'Good'], ['Mattress', 'Good'], ['Wardrobe', 'Good'], ['Curtains / blinds', 'Good'], ['Radiator', 'Good']],
+                photos: [],
+            },
+            '0-bathroom-0': {
+                condition: 'Good',
+                notes: '',
+                items: [['Bath / shower', 'Good'], ['Toilet', 'Good'], ['Basin', 'Good'], ['Tiles / grouting', 'Good'], ['Extractor fan', 'Good']],
+                photos: [],
+            },
+            '0-hallway-0': {
+                condition: 'Good',
+                notes: 'Smoke alarm tested Jan 2025.',
+                items: [['Smoke alarm', 'Good'], ['CO alarm', 'Good'], ['Flooring', 'Good'], ['Doors', 'Good'], ['Lighting', 'Good']],
+                photos: [],
+            },
         };
         this.contractorInvoices = [
             { id: 0, contractor: 'Plumber Pro', job: 'Kitchen sink leaking', amount: '£185', status: 'Unpaid', propertyId: 0, maintId: 0 },
             { id: 1, contractor: 'Heating Co.', job: 'Boiler service', amount: '£220', status: 'Paid', propertyId: 1, maintId: 3 },
+            { id: 2, contractor: 'Plumber Pro', job: 'Tap replacement', amount: '£185', status: 'Unpaid', propertyId: 0, maintId: 6 },
         ];
         this.propertyMeta = {};
         this.tenantNotes = {
@@ -165,10 +241,34 @@ const AppStore = {
             { id: 0, type: 'Visa', last4: '4242', exp: '08/27', name: 'John Smith', default: true },
             { id: 1, type: 'Barclays', last4: '8901', exp: '—', name: 'Rent Collection', default: false },
         ];
+        this.tenantReferencing = {
+            0: {
+                passport: { status: 'verified', file: 'Passport_Sarah_J.pdf', date: 'Jan 8, 2024' },
+                rightToRent: { status: 'verified', shareCode: 'WXY9 8K2L', expiry: 'Jan 2027' },
+                proofOfAddress: { status: 'verified', file: 'Utility_Bill_Jan2024.pdf', date: 'Jan 9, 2024' },
+                proofOfIncome: { status: 'verified', file: 'Payslip_Dec2023.pdf', date: 'Jan 8, 2024' },
+                employment: { status: 'complete', employer: 'Tech Solutions Ltd', role: 'Product Designer', salary: '£52,000', startDate: '2021-03-01', contact: 'hr@techsolutions.co.uk' },
+                previousLandlord: { status: 'complete', name: 'Mrs Helen Price', phone: '+44 7700 900111', email: 'h.price@email.com', address: '8 Elm Court, London', tenancyDates: '2019–2023' },
+                guarantor: { status: 'not_required', name: '', phone: '', email: '', relationship: '' },
+            },
+        };
+        this.tenantCheckout = {
+            0: {
+                checklist: { kitchen: false, bathroom: false, bedroom: false, living: false, keys: false },
+                meters: { electricity: '', gas: '', water: '' },
+                photos: [],
+                depositStatus: 'protected',
+                depositScheme: 'MyDeposits',
+                depositAmount: '£2,450',
+            },
+        };
         this.tenantDocuments = {
             0: [
                 ['file-text', 'Lease Agreement.pdf', 'Jan 15, 2024', '#2563EB'],
                 ['file-image', 'NID Proof.jpg', 'Jan 10, 2024', '#7C3AED'],
+                ['file-text', 'Gas Safety 2025.pdf', 'Mar 2025', '#DC2626'],
+                ['file-text', 'EICR Report.pdf', 'Apr 2024', '#D97706'],
+                ['file-text', 'Deposit Protection.pdf', 'Jan 2024', '#059669'],
             ],
             1: [
                 ['file-text', 'Lease Agreement.pdf', 'Jun 1, 2023', '#2563EB'],
@@ -176,6 +276,11 @@ const AppStore = {
             ],
             2: [], 3: [],
         };
+        this.broadcasts = [
+            { id: 0, propertyId: 0, title: 'Boiler service next week', body: 'Heating Co. will access units on Mon 28 Jul, 9–11am. Please ensure someone is home or leave a key with reception.', date: 'Jul 22, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
+            { id: 1, propertyId: 0, title: 'Rubbish collection change', body: 'Bins go out on Thursday instead of Wednesday for the rest of July.', date: 'Jul 18, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
+            { id: 2, propertyId: 1, title: 'Garden maintenance', body: 'Shared garden will be serviced Fri 25 Jul. Please keep the gate unlocked.', date: 'Jul 15, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
+        ];
         PROPERTIES.forEach(p => {
             if (!this.propertyMeta[p.id]) {
                 const isSingle = p.id === 2;
@@ -208,6 +313,9 @@ const AppStore = {
                 };
             }
         });
+        if (this.propertyMeta[0] && !this.propertyMeta[0].inventoryLayout) {
+            this.propertyMeta[0].inventoryLayout = { bedrooms: 2, bathrooms: 1, kitchens: 1, reception: 1 };
+        }
         this.save();
     },
     meta(pid) {
@@ -246,9 +354,13 @@ Object.assign(STATE, {
     previewDocIdx: 0,
     previewDocSource: 'property',
     logMaintPhotos: [],
+    logMaintVideos: [],
+    tenantRefKey: '',
     inspectionPhotos: [],
     invitePrefill: null,
     pendingPropertyPhotos: [],
+    pendingPropertyCover: 0,
+    addPropertyUnitMode: 'single',
     pendingFlatPhotos: [],
     pendingFlatCover: 0,
     addDocumentOpen: false,
@@ -257,6 +369,9 @@ Object.assign(STATE, {
     addDocumentFile: null,
     addDocumentDisplayName: '',
     addDocumentShare: false,
+    addDocumentReplaceId: null,
+    editingInventoryLayout: false,
+    inventoryEditItems: null,
 });
 
 function pickImageFiles({ multiple = true, accept = 'image/*' } = {}) {
@@ -441,6 +556,136 @@ function maintIssuePhoto(m) {
     return IMG.interior?.[0] || IMG.fallback;
 }
 
+function getMaintReportPhotos(source) {
+    return source?.photos || source?.reportPhotos || [];
+}
+
+function getMaintReportVideos(source) {
+    return source?.videos || source?.reportVideos || [];
+}
+
+function normalizeMaintVideo(video, index) {
+    if (typeof video === 'string') return { url: video, name: `Video ${index + 1}`, poster: null };
+    return {
+        url: video?.url || '',
+        name: video?.name || `Video ${index + 1}`,
+        poster: video?.poster || null,
+        demo: !!video?.demo,
+    };
+}
+
+function maintReportMediaCount(source) {
+    return getMaintReportPhotos(source).length + getMaintReportVideos(source).length;
+}
+
+function syncMaintMediaToContractorJob(job, item) {
+    if (!job || !item) return job;
+    job.reportPhotos = [...getMaintReportPhotos(item)];
+    job.reportVideos = [...getMaintReportVideos(item)];
+    job.reportedBy = item.reportedBy || (item.tenantName ? 'tenant' : 'landlord');
+    return job;
+}
+
+function renderMaintReportMedia(source, opts = {}) {
+    const photos = getMaintReportPhotos(source);
+    const videos = getMaintReportVideos(source).map(normalizeMaintVideo);
+    if (!photos.length && !videos.length) return '';
+    const title = opts.title || 'Photos & videos from report';
+    const compact = !!opts.compact;
+    return `
+    <div class="maint-report-media${compact ? ' maint-report-media--compact' : ''}">
+        <div class="maint-report-media-head">
+            <p class="maint-report-media-label">${title}</p>
+            <span class="maint-report-media-count">${photos.length + videos.length} file${photos.length + videos.length === 1 ? '' : 's'}</span>
+        </div>
+        ${photos.length ? `
+        <div class="maint-report-photo-grid">
+            ${photos.map((src, i) => `
+            <button type="button" class="maint-report-media-thumb" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
+                <img src="${src}" alt="Report photo ${i + 1}">
+            </button>`).join('')}
+        </div>` : ''}
+        ${videos.length ? `
+        <div class="maint-report-video-list">
+            ${videos.map((video, i) => `
+            <button type="button" class="maint-report-video-item" data-action="preview-maint-media" data-kind="video" data-src="${String(video.url || '').replace(/"/g, '&quot;')}" data-poster="${String(video.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(video.name).replace(/"/g, '&quot;')}">
+                <span class="maint-report-video-poster"${video.poster || photos[0] ? ` style="background-image:url('${video.poster || photos[0]}')"` : ''}>
+                    <i data-lucide="play-circle" class="w-7 h-7"></i>
+                </span>
+                <span class="maint-report-video-copy">
+                    <span class="maint-report-video-name">${escapeHtml(video.name)}</span>
+                    <span class="maint-report-video-meta">Video attachment</span>
+                </span>
+            </button>`).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+function renderContractorWorkMedia(job, opts = {}) {
+    if (!job?.photos) return '';
+    const groups = [
+        ['Before', job.photos.before || []],
+        ['During', job.photos.during || []],
+        ['After', job.photos.after || []],
+    ].filter(([, list]) => list.length);
+    if (!groups.length) return '';
+    const title = opts.title || 'Contractor work photos';
+    return `
+    <div class="maint-report-media maint-report-media--work">
+        <div class="maint-report-media-head">
+            <p class="maint-report-media-label">${title}</p>
+            <span class="maint-report-media-count">${groups.reduce((n, [, list]) => n + list.length, 0)} photos</span>
+        </div>
+        ${groups.map(([label, list]) => `
+        <div class="maint-work-photo-group">
+            <p class="maint-work-photo-label">${label}</p>
+            <div class="maint-report-photo-grid">
+                ${list.map((src, i) => `
+                <button type="button" class="maint-report-media-thumb" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
+                    <img src="${src}" alt="${label} photo ${i + 1}">
+                </button>`).join('')}
+            </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderMaintMediaPreviewModal() {
+    const preview = STATE.maintMediaPreview;
+    if (!preview) return '';
+    return `
+    <div class="modal-overlay" data-action="close-maint-media-preview">
+        <div class="maint-media-preview-modal" onclick="event.stopPropagation()">
+            <button type="button" data-action="close-maint-media-preview" class="maint-media-preview-close"><i data-lucide="x" class="w-5 h-5"></i></button>
+            ${preview.kind === 'video' ? `
+            <div class="maint-media-preview-video-wrap">
+                ${preview.src
+                    ? `<video src="${preview.src}" controls playsinline class="maint-media-preview-video"></video>`
+                    : `<div class="maint-media-preview-demo">
+                        <img src="${preview.poster || IMG.maint[0]}" alt="">
+                        <p class="maint-media-preview-demo-label"><i data-lucide="play-circle" class="w-6 h-6"></i>${escapeHtml(preview.name || 'Video clip')}</p>
+                        <p class="maint-media-preview-demo-sub">Demo video attachment from tenant report</p>
+                    </div>`}
+            </div>` : `<img src="${preview.src}" alt="Maintenance media" class="maint-media-preview-image">`}
+            ${preview.name ? `<p class="maint-media-preview-name">${escapeHtml(preview.name)}</p>` : ''}
+        </div>
+    </div>`;
+}
+
+function openMaintMediaPreview(el) {
+    const kind = el.dataset.kind || 'photo';
+    const src = el.dataset.src || '';
+    const poster = el.dataset.poster || '';
+    const name = el.dataset.name || '';
+    STATE.maintMediaPreview = { kind, src: src || null, poster, name };
+    render();
+}
+
+function closeMaintMediaPreview() {
+    STATE.maintMediaPreview = null;
+    render();
+}
+
+
 function propertyPrimaryTenant(propertyId) {
     const entries = propertyTenantEntries(propertyId);
     const active = entries.find(e => e.kind === 'tenant' && e.tenant.status === 'active');
@@ -546,24 +791,22 @@ function renderTenantContactQuickActions(tenantId) {
     const t = TENANTS[tenantId];
     if (!t) return '';
     const chatId = typeof getTenantChatId === 'function' ? getTenantChatId(tenantId) : null;
-    const msgAttrs = chatId != null && chatId !== 0
+    const msgAttrs = chatId != null
         ? `data-go="chat" data-chat="${chatId}"`
-        : `data-go="messages"`;
+        : `data-action="start-tenant-chat" data-tid="${tenantId}"`;
     const actions = [
         ['phone', 'Call', `data-action="call-tenant" data-tid="${tenantId}"`],
         ['message-square', 'Message', msgAttrs],
         ['mail', 'Email', `data-action="email-tenant" data-tid="${tenantId}"`],
     ];
     return `
-    <div class="tenant-contact-row">
-        <div class="tenant-quick-actions">
+        <div class="tenant-profile-actions">
             ${actions.map(([ic, label, attrs]) => `
-            <button type="button" ${attrs} class="tenant-quick-btn">
-                <span class="tenant-quick-icon"><i data-lucide="${ic}" class="w-5 h-5"></i></span>
+            <button type="button" ${attrs} class="tenant-profile-action">
+                <i data-lucide="${ic}" class="w-4 h-4"></i>
                 <span>${label}</span>
             </button>`).join('')}
-        </div>
-    </div>`;
+        </div>`;
 }
 
 function renderTenantOverviewSummary(tenantId) {
@@ -573,22 +816,74 @@ function renderTenantOverviewSummary(tenantId) {
     const moveInLabel = fin.moveIn && typeof formatDisplayDate === 'function'
         ? formatDisplayDate(fin.moveIn) || fin.moveIn
         : (fin.moveIn || '—');
-    const rows = [
-        ['Phone', t.phone || '—'],
-        ['Email', t.email || '—'],
-        ['NID', t.idNumber || '—'],
-        ['ID document', tenantNidStatus(tenantId)],
-        ['Deposit held', fin.deposit],
-        ['Advance paid', fin.advancePaid],
-        ['Move-in', moveInLabel],
-    ];
-    return `
-    <div class="card tenant-fields-card tenant-overview-summary" style="margin:0 var(--gutter) 16px">
-        ${rows.map(([label, value]) => `
-        <div class="tenant-field">
-            <p class="tenant-field-label">${label}</p>
-            <p class="tenant-field-value">${escapeHtml(String(value))}</p>
-        </div>`).join('')}
+    const docStatus = tenantNidStatus(tenantId);
+    const nidDoc = typeof getTenantNidProof === 'function' ? getTenantNidProof(tenantId) : null;
+  return `
+    <div class="card tenant-info-compact" style="margin:0 var(--gutter) 12px">
+        <div class="tenant-info-row">
+            <div class="tenant-info-cell">
+                <span class="tenant-info-icon"><i data-lucide="phone" class="w-4 h-4"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">Phone</span>
+                    <span class="tenant-info-value">${escapeHtml(t.phone || '—')}</span>
+                </span>
+            </div>
+            <div class="tenant-info-cell">
+                <span class="tenant-info-icon"><i data-lucide="mail" class="w-4 h-4"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">Email</span>
+                    <span class="tenant-info-value tenant-info-value--truncate">${escapeHtml(t.email || '—')}</span>
+                </span>
+            </div>
+        </div>
+        <div class="tenant-info-row">
+            <div class="tenant-info-cell">
+                <span class="tenant-info-icon"><i data-lucide="id-card" class="w-4 h-4"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">NID</span>
+                    <span class="tenant-info-value">${escapeHtml(t.idNumber || '—')}</span>
+                </span>
+            </div>
+            ${nidDoc ? `
+            <button type="button" data-go="document-preview" data-preview-source="tenant-nid" data-tid="${tenantId}" class="tenant-info-cell tenant-info-cell--link">
+                <span class="tenant-info-icon"><i data-lucide="file-badge" class="w-4 h-4"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">ID document</span>
+                    <span class="tenant-info-value">${escapeHtml(docStatus)}</span>
+                </span>
+                <i data-lucide="chevron-right" class="tenant-info-chevron w-3.5 h-3.5"></i>
+            </button>` : `
+            <div class="tenant-info-cell">
+                <span class="tenant-info-icon"><i data-lucide="file-badge" class="w-4 h-4"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">ID document</span>
+                    <span class="tenant-info-value">${escapeHtml(docStatus)}</span>
+                </span>
+            </div>`}
+        </div>
+        <div class="tenant-info-row tenant-info-row--3">
+            <div class="tenant-info-cell tenant-info-cell--mini">
+                <span class="tenant-info-icon tenant-info-icon--mini"><i data-lucide="wallet" class="w-3.5 h-3.5"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">Deposit</span>
+                    <span class="tenant-info-value">${escapeHtml(fin.deposit || '—')}</span>
+                </span>
+            </div>
+            <div class="tenant-info-cell tenant-info-cell--mini">
+                <span class="tenant-info-icon tenant-info-icon--mini"><i data-lucide="banknote" class="w-3.5 h-3.5"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">Advance</span>
+                    <span class="tenant-info-value">${escapeHtml(fin.advancePaid || '—')}</span>
+                </span>
+            </div>
+            <div class="tenant-info-cell tenant-info-cell--mini">
+                <span class="tenant-info-icon tenant-info-icon--mini"><i data-lucide="calendar" class="w-3.5 h-3.5"></i></span>
+                <span class="tenant-info-copy">
+                    <span class="tenant-info-label">Move-in</span>
+                    <span class="tenant-info-value">${escapeHtml(moveInLabel)}</span>
+                </span>
+            </div>
+        </div>
     </div>`;
 }
 
@@ -937,16 +1232,51 @@ function saveEpcValue(raw) {
 /* ─── UI Helpers ─── */
 const requiredLabel = (t) => `${t} <span class="form-required">*</span>`;
 
+function inputPlaceholder(ph = '', label = '', type = 'text') {
+    if (ph) return ph;
+    if (type === 'date') return 'Select date';
+    if (type === 'time') return 'Select time';
+    if (type === 'tel') return '+44 7700 900000';
+    if (type === 'email') return 'name@email.com';
+    if (type === 'password') return label ? `${label}` : 'Enter password';
+    return '';
+}
+
+/** @deprecated Use inputPlaceholder for inputs; pass explicit helper text only when it adds context. */
+function fieldPlaceholderHint(ph = '', label = '', type = 'text') {
+    return inputPlaceholder(ph, label, type);
+}
+
 const formFieldReq = (label, key, value = '', type = 'text', ph = '', helper = '') => {
     const err = STATE.formErrors[key];
+    const placeholder = inputPlaceholder(ph, label, type);
+    const hint = helper === false ? '' : (helper || '');
     const valAttr = value !== '' && value != null ? ` value="${String(value).replace(/"/g, '&quot;')}"` : '';
     return `<div class="form-group ${err ? 'form-group-error' : ''}">
         <label class="form-label">${requiredLabel(label)}</label>
-        <input type="${type}" data-field="${key}" class="form-input${err ? ' form-input-error' : ''}"${valAttr} placeholder="${ph || `Enter ${label.toLowerCase()}`}">
-        ${helper ? `<p class="form-helper">${helper}</p>` : ''}
+        <input type="${type}" data-field="${key}" class="form-input${err ? ' form-input-error' : ''}"${valAttr} placeholder="${placeholder}">
+        ${hint ? `<p class="form-helper">${hint}</p>` : ''}
         ${err ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${err}</p>` : ''}
     </div>`;
 };
+
+function memberField(label, attr, type = 'text', ph = '') {
+    const placeholder = inputPlaceholder(ph, label, type);
+    return `<div class="form-group mb-2">
+        <label class="form-label">${label}</label>
+        <input data-member-${attr} type="${type}" class="form-input" placeholder="${placeholder}">
+    </div>`;
+}
+
+function labeledInput(label, key, value = '', type = 'text', ph = '', required = false, helper = '') {
+    const placeholder = inputPlaceholder(ph, label, type);
+    const valAttr = value !== '' && value != null ? ` value="${String(value).replace(/"/g, '&quot;')}"` : '';
+    return `<div class="form-group">
+        <label class="form-label">${required ? requiredLabel(label) : label}</label>
+        <input data-field="${key}" type="${type}" class="form-input"${valAttr} placeholder="${placeholder}">
+        ${helper ? `<p class="form-helper">${helper}</p>` : ''}
+    </div>`;
+}
 
 const emptyState = (icon, title, desc, btnLabel, btnAction, btnGo) => `
 <div class="empty-state card">
@@ -1043,7 +1373,7 @@ const confirmModal = () => {
     if (!STATE.confirm) return '';
     const c = STATE.confirm;
     return `<div class="modal-overlay open" data-action="confirm-cancel">
-        <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-sheet">
             <h3 class="modal-title">${c.title}</h3>
             <p class="modal-body">${c.message}</p>
             <div class="modal-actions">
@@ -1061,7 +1391,7 @@ const photoActionSheet = () => {
     const photos = meta.photos?.length ? meta.photos : [IMG.props[STATE.propertyId]];
     const isCover = idx === 0;
     return `<div class="modal-overlay open" data-action="close-photo-menu">
-        <div class="photo-action-sheet" onclick="event.stopPropagation()">
+        <div class="photo-action-sheet">
             ${!isCover ? `<button type="button" data-action="set-cover-photo" data-idx="${idx}" class="photo-action-item">Set as cover</button>` : ''}
             ${photos.length > 1 ? `<button type="button" data-action="delete-photo" data-idx="${idx}" class="photo-action-item danger">Remove photo</button>` : ''}
             <button type="button" data-action="close-photo-menu" class="photo-action-item cancel">Cancel</button>
@@ -1074,8 +1404,8 @@ const renameDocModal = () => {
     const doc = AppStore.documents.find(d => d.id === STATE.renameDocId);
     const value = escapeHtml(STATE.renameDocValue ?? doc?.name ?? '');
     return `<div class="modal-overlay open" data-action="close-rename-doc">
-        <div class="modal-sheet" onclick="event.stopPropagation()">
-            <h3 class="modal-title">Rename document</h3>
+        <div class="modal-sheet">
+            <h3 class="modal-title">Edit document</h3>
             <p class="modal-body">Choose a clear name tenants and contractors will recognise.</p>
             <input type="text" data-rename-doc-input class="form-input mb-4" value="${value}" placeholder="Document name">
             <div class="modal-actions">
@@ -1107,7 +1437,72 @@ function closeAddDocumentFlow() {
     STATE.addDocumentFile = null;
     STATE.addDocumentDisplayName = '';
     STATE.addDocumentShare = false;
+    STATE.addDocumentReplaceId = null;
     render();
+}
+
+function openAddDocumentSlot(docType, replaceDocId = null) {
+    const opt = addDocumentTypeOption(docType);
+    STATE.addDocumentOpen = true;
+    STATE.addDocumentStep = 'file';
+    STATE.addDocumentType = docType;
+    STATE.addDocumentReplaceId = replaceDocId ?? null;
+    STATE.addDocumentFile = null;
+    STATE.addDocumentDisplayName = replaceDocId ? '' : (opt?.label || '');
+    STATE.addDocumentShare = false;
+    STATE.actionMenuKey = null;
+    render();
+}
+
+function replaceDocumentSlot(docId) {
+    const doc = AppStore.documents.find(d => d.id === docId);
+    if (!doc) { toast('Document not found'); return; }
+    openAddDocumentSlot(doc.type, docId);
+}
+
+function docForPropertyByType(propertyId, type) {
+    return AppStore.docsForProperty(propertyId).find(d => d.type === type) || null;
+}
+
+function renderLandlordDocSlot(propertyId, slotOpt) {
+    const doc = docForPropertyByType(propertyId, slotOpt.type);
+    if (doc) {
+        return `
+        <div class="landlord-doc-slot landlord-doc-slot--filled">
+            <button type="button" data-go="document-preview" data-doc="${doc.id}" class="landlord-doc-slot-preview" style="color:${slotOpt.color};background:${slotOpt.bg}">
+                <i data-lucide="${slotOpt.icon}" class="w-7 h-7"></i>
+                <span class="landlord-doc-slot-view"><i data-lucide="eye" class="w-3.5 h-3.5"></i></span>
+            </button>
+            <div class="landlord-doc-slot-toolbar">
+                <button type="button" data-action="replace-document-slot" data-doc="${doc.id}" class="landlord-doc-slot-btn" aria-label="Replace file"><i data-lucide="upload" class="w-3.5 h-3.5"></i></button>
+                <button type="button" data-action="delete-document" data-doc="${doc.id}" class="landlord-doc-slot-btn landlord-doc-slot-btn--danger" aria-label="Delete file"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+            <p class="landlord-doc-slot-label">${escapeHtml(slotOpt.label)}</p>
+            <p class="landlord-doc-slot-meta">${escapeHtml(doc.name)}</p>
+            <p class="landlord-doc-slot-date">${escapeHtml(doc.date || '')}</p>
+        </div>`;
+    }
+    return `
+    <button type="button" data-action="open-add-document-slot" data-doc-type="${slotOpt.type}" class="landlord-doc-slot landlord-doc-slot--empty">
+        <span class="landlord-doc-slot-preview landlord-doc-slot-preview--empty">
+            <i data-lucide="plus" class="w-6 h-6"></i>
+        </span>
+        <span class="landlord-doc-slot-label">${escapeHtml(slotOpt.label)}</span>
+        <span class="landlord-doc-slot-meta landlord-doc-slot-meta--hint">Tap to upload</span>
+    </button>`;
+}
+
+function renderLandlordDocSlotGrid(propertyId) {
+    const slots = ADD_DOC_TYPE_OPTIONS.filter(o => o.type !== 'Custom Document');
+    const customDocs = AppStore.docsForProperty(propertyId).filter(d => d.type === 'Custom Document');
+    return `
+        <div class="landlord-doc-grid">
+            ${slots.map(slot => renderLandlordDocSlot(propertyId, slot)).join('')}
+        </div>
+        <p class="txn-section-label txn-section-label--spaced">Other files</p>
+        ${customDocs.length ? `<div class="doc-list mb-3">${customDocs.map(d => renderDocumentRow(d, propertyId)).join('')}</div>` : `
+        <p class="text-[12px] text-[#64748B] mb-3">Insurance, inventories, or any extra files for this property.</p>`}
+        <button type="button" data-action="open-add-document-slot" data-doc-type="Custom Document" class="btn-secondary w-full py-3 text-[13px]">+ Add other file</button>`;
 }
 
 function openAddDocumentFlow() {
@@ -1117,6 +1512,7 @@ function openAddDocumentFlow() {
     STATE.addDocumentFile = null;
     STATE.addDocumentDisplayName = '';
     STATE.addDocumentShare = false;
+    STATE.addDocumentReplaceId = null;
     STATE.actionMenuKey = null;
     render();
 }
@@ -1162,8 +1558,19 @@ function saveAddDocumentAction() {
         toast('Enter a document name');
         return;
     }
-    const shareNow = !!document.querySelector('[data-add-doc-share]')?.checked;
+    const shareTargets = getPropertyNotifyTargets(STATE.propertyId);
+    const shareTargetIds = getSelectedNotifyTargetIds();
+    const shareNow = shareTargets.length && shareTargetIds.length > 0;
     const now = Date.now();
+    const replaceId = STATE.addDocumentReplaceId;
+    if (replaceId != null) {
+        AppStore.documents = AppStore.documents.filter(d => d.id !== replaceId);
+    } else if (STATE.addDocumentType !== 'Custom Document') {
+        const existing = AppStore.documents.find(d =>
+            d.propertyId === STATE.propertyId && d.type === STATE.addDocumentType
+        );
+        if (existing) AppStore.documents = AppStore.documents.filter(d => d.id !== existing.id);
+    }
     const id = AppStore.nextId(AppStore.documents);
     const doc = {
         id,
@@ -1180,8 +1587,15 @@ function saveAddDocumentAction() {
     };
     AppStore.documents.push(doc);
     if (shareNow && typeof syncSharedDocToTenants === 'function') {
-        const targets = getDocumentShareTargets(doc.propertyId).map(t => t.id);
-        syncSharedDocToTenants(doc, targets);
+        const targets = getSelectedNotifyTargetIds();
+        syncSharedDocToTenants(doc, shareTargetIds);
+        shareTargetIds.forEach(tid => {
+            pushNotification({
+                icon: 'file-text', color: ['#EFF6FF', '#2563EB'],
+                title: 'New document shared', desc: `${doc.name} · ${PROPERTIES[doc.propertyId]?.name}`,
+                time: 'Just now', unread: true, screen: 'tenant-detail', opts: { tid, tenantTab: 'documents' },
+            });
+        });
     }
     AppStore.save();
     STATE.addDocumentOpen = false;
@@ -1190,7 +1604,8 @@ function saveAddDocumentAction() {
     STATE.addDocumentFile = null;
     STATE.addDocumentDisplayName = '';
     STATE.addDocumentShare = false;
-    toast(shareNow ? 'Document saved and shared' : 'Document saved');
+    STATE.addDocumentReplaceId = null;
+    toast(shareNow ? `Document saved — shared with ${shareTargetIds.length} tenant(s)` : replaceId != null ? 'Document replaced' : 'Document saved');
     render();
 }
 
@@ -1198,7 +1613,10 @@ const addDocumentModal = () => {
     if (!STATE.addDocumentOpen) return '';
     const step = STATE.addDocumentStep || 'type';
     const typeOpt = STATE.addDocumentType ? addDocumentTypeOption(STATE.addDocumentType) : null;
-    const stepTitle = step === 'type' ? 'Add document' : step === 'file' ? 'Upload file' : 'Review & save';
+    const replacing = STATE.addDocumentReplaceId != null;
+    const stepTitle = step === 'type' ? 'Add document'
+        : step === 'file' ? (replacing ? 'Replace file' : 'Upload file')
+        : (replacing ? 'Confirm replace' : 'Review & save');
     const stepBody = step === 'type'
         ? `<p class="modal-body">What type of document is this?</p>
             <div class="add-doc-type-list">
@@ -1230,13 +1648,12 @@ const addDocumentModal = () => {
                     <label class="form-label">Display name</label>
                     <input type="text" data-add-doc-name class="form-input" value="${escapeHtml(STATE.addDocumentDisplayName || '')}" placeholder="Document name">
                 </div>
-                <label class="add-doc-share-row">
-                    <input type="checkbox" data-add-doc-share class="accent-[#2563EB]" ${STATE.addDocumentShare ? 'checked' : ''}>
-                    <span>Share with tenant after saving</span>
-                </label>
+                ${getPropertyNotifyTargets(STATE.propertyId).length
+                    ? `<div class="mt-3">${renderTenantNotifySection(STATE.propertyId, { title: 'Share with tenants', hint: 'Select who should see this in their tenant portal. Use Notify all for multi-flat buildings.' })}</div>`
+                    : `<p class="form-helper mt-3">Invite tenants to this property to share documents with them.</p>`}
                 <button type="button" data-action="save-add-document" class="btn-primary w-full py-3.5 text-[14px] mt-4">Save document</button>`;
     return `<div class="modal-overlay open" data-action="close-add-document">
-        <div class="modal-sheet modal-sheet--tall" onclick="event.stopPropagation()">
+        <div class="modal-sheet modal-sheet--tall">
             <div class="add-doc-modal-head">
                 ${step !== 'type' ? `<button type="button" data-action="add-document-back" class="add-doc-back-btn" aria-label="Back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>` : '<span class="add-doc-back-spacer"></span>'}
                 <h3 class="modal-title add-doc-modal-title">${stepTitle}</h3>
@@ -1251,7 +1668,7 @@ const newMessagePickerModal = () => {
     if (!STATE.newMessagePicker) return '';
     const convos = typeof conversationsForRole === 'function' ? conversationsForRole() : CONVERSATIONS;
     return `<div class="modal-overlay open" data-action="close-new-message">
-        <div class="modal-sheet modal-sheet--tall" onclick="event.stopPropagation()">
+        <div class="modal-sheet modal-sheet--tall">
             <h3 class="modal-title">New message</h3>
             <p class="modal-body">Choose who to message</p>
             <div class="picker-list">
@@ -1295,7 +1712,7 @@ function validateFields(rules) {
         const val = el?.value?.trim() || '';
         if (!test(val)) { STATE.formErrors[key] = `${label} is required`; ok = false; }
     });
-    if (!ok) { toast('Please fix the errors below'); render(); }
+    if (!ok) { toastError('Please fix the errors below'); render(); }
     return ok;
 }
 
@@ -1306,38 +1723,381 @@ function fieldVal(key) {
     return (el.value ?? '').trim();
 }
 
-const INVENTORY_ROOM_NAMES = ['Kitchen', 'Living Room', 'Bedroom', 'Bathroom', 'Hallway'];
-const DEFAULT_INVENTORY_ITEMS = [['Oven & Hob', 'Good'], ['Fridge Freezer', 'Good'], ['Washing Machine', 'Fair'], ['Microwave', 'Good']];
+const INVENTORY_LEGACY_ROOM_SLUGS = ['kitchen-0', 'reception-0', 'bedroom-0', 'bathroom-0', 'hallway-0'];
+const INVENTORY_CONDITIONS = ['Good', 'Fair', 'Poor', 'Needs repair'];
 
-function inventoryKey(pid, rid) { return `${pid}-${rid}`; }
+const INVENTORY_ROOM_TEMPLATES = {
+    Kitchen: ['Oven / hob', 'Fridge freezer', 'Microwave', 'Extractor fan', 'Worktops'],
+    'Living room': ['Sofa', 'Coffee table', 'Curtains / blinds', 'Flooring', 'Radiator'],
+    Bedroom: ['Bed frame', 'Mattress', 'Wardrobe', 'Curtains / blinds', 'Radiator'],
+    Bathroom: ['Bath / shower', 'Toilet', 'Basin', 'Tiles / grouting', 'Extractor fan'],
+    Hallway: ['Smoke alarm', 'CO alarm', 'Flooring', 'Doors', 'Lighting'],
+};
+
+const INVENTORY_ROOM_QUICK_ADD = {
+    Kitchen: ['Dishwasher', 'Washing machine', 'Dryer', 'Bin'],
+    'Living room': ['TV', 'Dining table', 'Bookshelf'],
+    Bedroom: ['Bedside tables', 'Chest of drawers', 'Desk'],
+    Bathroom: ['Heated towel rail', 'Mirror cabinet', 'Shower screen'],
+    Hallway: ['Meter cupboard', 'Fuse box', 'Coat hooks'],
+};
+
+function migrateInventoryKeys() {
+    if (!AppStore.inventory) return;
+    Object.keys({ ...AppStore.inventory }).forEach(key => {
+        const match = key.match(/^(\d+)-(\d+)$/);
+        if (!match) return;
+        const slug = INVENTORY_LEGACY_ROOM_SLUGS[+match[2]];
+        if (!slug) return;
+        const newKey = `${match[1]}-${slug}`;
+        if (!AppStore.inventory[newKey]) AppStore.inventory[newKey] = AppStore.inventory[key];
+        delete AppStore.inventory[key];
+    });
+}
+
+function getInventoryRoomCatalog(propertyId) {
+    const layout = getPropertyInventoryLayout(propertyId);
+    const catalog = [];
+    const kitchens = Math.max(1, +layout.kitchens || 1);
+    const reception = Math.max(1, +layout.reception || 1);
+    const bedrooms = Math.max(1, +layout.bedrooms || 1);
+    const bathrooms = Math.max(1, +layout.bathrooms || 1);
+    for (let i = 0; i < kitchens; i++) {
+        catalog.push({
+            slug: `kitchen-${i}`,
+            name: kitchens === 1 ? 'Kitchen' : `Kitchen ${i + 1}`,
+            template: 'Kitchen',
+            icon: 'utensils',
+        });
+    }
+    for (let i = 0; i < reception; i++) {
+        catalog.push({
+            slug: `reception-${i}`,
+            name: reception === 1 ? 'Living room' : `Living room ${i + 1}`,
+            template: 'Living room',
+            icon: 'sofa',
+        });
+    }
+    for (let i = 0; i < bedrooms; i++) {
+        catalog.push({
+            slug: `bedroom-${i}`,
+            name: bedrooms === 1 ? 'Bedroom' : `Bedroom ${i + 1}`,
+            template: 'Bedroom',
+            icon: 'bed-double',
+        });
+    }
+    for (let i = 0; i < bathrooms; i++) {
+        catalog.push({
+            slug: `bathroom-${i}`,
+            name: bathrooms === 1 ? 'Bathroom' : `Bathroom ${i + 1}`,
+            template: 'Bathroom',
+            icon: 'bath',
+        });
+    }
+    catalog.push({ slug: 'hallway-0', name: 'Hallway', template: 'Hallway', icon: 'door-open' });
+    return catalog;
+}
+
+function resolveInventoryRoomSlug(propertyId, roomRef) {
+    if (typeof roomRef === 'string' && roomRef.includes('-')) return roomRef;
+    const catalog = getInventoryRoomCatalog(propertyId);
+    const idx = +roomRef || 0;
+    return catalog[idx]?.slug || catalog[0]?.slug || 'kitchen-0';
+}
+
+function inventoryKey(pid, roomRef) {
+    return `${pid}-${resolveInventoryRoomSlug(pid, roomRef ?? 0)}`;
+}
+
+function inventoryRoomMeta(propertyId, roomRef) {
+    const catalog = getInventoryRoomCatalog(propertyId);
+    const idx = typeof roomRef === 'number' || (typeof roomRef === 'string' && /^\d+$/.test(roomRef))
+        ? (+roomRef || 0)
+        : catalog.findIndex(r => r.slug === roomRef);
+    return catalog[idx >= 0 ? idx : 0] || catalog[0];
+}
+
+function inventoryRoomName(propertyId, roomRef) {
+    return inventoryRoomMeta(propertyId, roomRef).name;
+}
+
+function getDefaultItemsForRoom(roomName) {
+    const labels = INVENTORY_ROOM_TEMPLATES[roomName] || ['General fixture'];
+    return labels.map(label => [label, 'Good']);
+}
+
+function ensureInventoryRoom(pid, roomRef) {
+    const meta = inventoryRoomMeta(pid, roomRef);
+    const key = inventoryKey(pid, meta.slug);
+    if (!AppStore.inventory[key]) {
+        AppStore.inventory[key] = {
+            condition: 'Good',
+            notes: '',
+            items: getDefaultItemsForRoom(meta.template),
+            photos: [],
+        };
+    } else if (!AppStore.inventory[key].items?.length) {
+        AppStore.inventory[key].items = getDefaultItemsForRoom(meta.template);
+    }
+    return AppStore.inventory[key];
+}
+
+function getPropertyInventoryLayout(propertyId) {
+    const meta = AppStore.meta(propertyId);
+    if (meta.inventoryLayout) return meta.inventoryLayout;
+    return syncInventoryLayoutFromUnits(propertyId, false);
+}
+
+function syncInventoryLayoutFromUnits(propertyId, persist = true) {
+    const units = getPropertyUnits(propertyId);
+    let layout;
+    if (!units.length) {
+        layout = { bedrooms: 1, bathrooms: 1, kitchens: 1, reception: 1 };
+    } else if (units.length === 1) {
+        const u = units[0];
+        layout = {
+            bedrooms: Math.max(1, +u.beds || 1),
+            bathrooms: Math.max(1, +u.baths || 1),
+            kitchens: 1,
+            reception: 1,
+        };
+    } else {
+        const primary = units.reduce((best, u) => ((+u.beds || 0) > (+best.beds || 0) ? u : best), units[0]);
+        layout = {
+            bedrooms: Math.max(1, +primary.beds || 1),
+            bathrooms: Math.max(1, +primary.baths || 1),
+            kitchens: 1,
+            reception: 1,
+            multiUnit: true,
+        };
+    }
+    if (persist) {
+        AppStore.meta(propertyId).inventoryLayout = { ...layout };
+        AppStore.save();
+    }
+    return layout;
+}
+
+function inventoryLayoutSummaryLine(layout) {
+    const parts = [
+        `${layout.bedrooms} bed${layout.bedrooms === 1 ? '' : 's'}`,
+        `${layout.bathrooms} bath${layout.bathrooms === 1 ? '' : 's'}`,
+        `${layout.kitchens} kitchen${layout.kitchens === 1 ? '' : 's'}`,
+        `${layout.reception} reception`,
+    ];
+    return parts.join(' · ');
+}
+
+function inventoryConditionBadgeClass(condition) {
+    if (condition === 'Good') return 'bg-[#DCFCE7] text-[#16A34A]';
+    if (condition === 'Fair') return 'bg-[#FEF3C7] text-[#D97706]';
+    return 'bg-[#FEE2E2] text-[#DC2626]';
+}
 
 function getInventoryRooms(propertyId = STATE.propertyId) {
-    return INVENTORY_ROOM_NAMES.map((name, i) => {
-        const inv = AppStore.inventory[inventoryKey(propertyId, i)];
-        const condition = inv?.condition || (i === 2 ? 'Fair' : 'Good');
-        const photoCount = inv?.photos?.length || 0;
-        const itemCount = inv?.items?.length || DEFAULT_INVENTORY_ITEMS.length;
-        const notes = inv?.notes?.trim();
+    return getInventoryRoomCatalog(propertyId).map((room, i) => {
+        const inv = ensureInventoryRoom(propertyId, room.slug);
+        const condition = inv.condition || 'Good';
+        const photoCount = inv.photos?.length || 0;
+        const itemCount = inv.items?.length || 0;
+        const notes = inv.notes?.trim();
         const sub = notes
             ? truncateNote(notes, 52)
-            : (photoCount ? `${photoCount} photo${photoCount === 1 ? '' : 's'}` : `${itemCount} items`);
-        return [name, condition, sub];
+            : `${itemCount} item${itemCount === 1 ? '' : 's'}${photoCount ? ` · ${photoCount} photo${photoCount === 1 ? '' : 's'}` : ''}`;
+        return [room.name, condition, sub, room.icon, i];
     });
+}
+
+function inventoryHubLabel(propertyId) {
+    const layout = getPropertyInventoryLayout(propertyId);
+    const rooms = getInventoryRoomCatalog(propertyId);
+    return `${inventoryLayoutSummaryLine(layout)} · ${rooms.length} room${rooms.length === 1 ? '' : 's'}`;
+}
+
+function renderInventoryLayoutSection(propertyId) {
+    const layout = getPropertyInventoryLayout(propertyId);
+    const editing = STATE.editingInventoryLayout;
+    if (editing) {
+        return `
+        <div class="card p-4 inventory-layout-card">
+            <p class="form-section-title">Property layout</p>
+            <p class="form-helper mb-3">Beds, baths and rooms for check-in / check-out inventory.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="form-field"><label class="form-label">Bedrooms</label><input data-field="invBedrooms" type="number" min="0" class="form-input" value="${layout.bedrooms}"></div>
+                <div class="form-field"><label class="form-label">Bathrooms</label><input data-field="invBathrooms" type="number" min="0" class="form-input" value="${layout.bathrooms}"></div>
+                <div class="form-field"><label class="form-label">Kitchens</label><input data-field="invKitchens" type="number" min="0" class="form-input" value="${layout.kitchens}"></div>
+                <div class="form-field"><label class="form-label">Reception rooms</label><input data-field="invReception" type="number" min="0" class="form-input" value="${layout.reception}"></div>
+            </div>
+            <div class="flex gap-2 mt-3">
+                <button type="button" data-action="save-inventory-layout" class="btn-primary flex-1 py-2.5 text-[13px]">Save layout</button>
+                <button type="button" data-action="sync-inventory-layout-units" class="btn-secondary flex-1 py-2.5 text-[13px]">Pull from units</button>
+            </div>
+            <button type="button" data-action="toggle-inventory-layout-edit" class="btn-secondary w-full py-2.5 text-[13px] mt-2">Cancel</button>
+        </div>`;
+    }
+    return `
+    <div class="card p-4 inventory-layout-card">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="form-section-title">Property layout</p>
+                <p class="inventory-layout-line">${inventoryLayoutSummaryLine(layout)}</p>
+                ${layout.multiUnit ? `<p class="form-helper mt-1">Typical unit layout · ${getPropertyUnits(propertyId).length} units in building</p>` : ''}
+            </div>
+            <button type="button" data-action="toggle-inventory-layout-edit" class="header-text-link shrink-0">Edit</button>
+        </div>
+    </div>`;
 }
 
 function renderPropertyInventoryTab(propertyId) {
     const rooms = getInventoryRooms(propertyId);
     return `
     <div class="screen-content screen-content-sm">
-        ${rooms.map(([r, c, n], idx) => `
+        ${uxTip('Record each room at check-in and check-out. Add custom items for anything not in the default list.', 'How inventory works')}
+        ${renderInventoryLayoutSection(propertyId)}
+        <p class="screen-section-title mt-2">Room checklists</p>
+        <div class="stack-sm">
+        ${rooms.map(([r, c, n, icon, idx]) => `
         <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-4 flex items-center justify-between card-hover text-left">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center"><i data-lucide="${INVENTORY_ROOM_ICONS[idx] || 'package'}" class="w-[18px] h-[18px] text-[#64748B]"></i></div>
-                <div><p class="text-[13px] font-semibold">${r}</p><p class="text-[11px] text-[#64748B]">${n}</p></div>
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-[18px] h-[18px] text-[#64748B]"></i></div>
+                <div class="min-w-0"><p class="text-[13px] font-semibold">${r}</p><p class="text-[11px] text-[#64748B] truncate">${n}</p></div>
             </div>
-            <span class="badge ${c === 'Good' ? 'bg-[#DCFCE7] text-[#16A34A]' : c === 'Fair' ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#FEE2E2] text-[#DC2626]'}">${c}</span>
+            <span class="badge shrink-0 ${inventoryConditionBadgeClass(c)}">${c}</span>
         </button>`).join('')}
+        </div>
     </div>`;
+}
+
+function getInventoryItems(pid, rid) {
+    return ensureInventoryRoom(pid, rid).items.map(item => [...item]);
+}
+
+function getInventoryNotes(pid, rid) {
+    return ensureInventoryRoom(pid, rid).notes?.trim() || '';
+}
+
+function initInventoryEditItems() {
+    STATE.inventoryEditItems = getInventoryItems(STATE.propertyId, STATE.roomId ?? 0);
+}
+
+function addInventoryEditItem(name = '') {
+    if (!STATE.inventoryEditItems) initInventoryEditItems();
+    STATE.inventoryEditItems.push([name, 'Good']);
+    render();
+}
+
+function removeInventoryEditItem(idx) {
+    if (!STATE.inventoryEditItems) return;
+    STATE.inventoryEditItems.splice(idx, 1);
+    render();
+}
+
+function inventoryQuickAddItem(label) {
+    if (!STATE.inventoryEditItems) initInventoryEditItems();
+    const exists = STATE.inventoryEditItems.some(([n]) => n.toLowerCase() === label.toLowerCase());
+    if (exists) { toast('Item already in list'); return; }
+    STATE.inventoryEditItems.push([label, 'Good']);
+    render();
+}
+
+function collectInventoryEditItemsFromDom() {
+    const rows = document.querySelectorAll('[data-inventory-item-row]');
+    const items = [];
+    rows.forEach(row => {
+        const name = row.querySelector('[data-inventory-item-name]')?.value?.trim();
+        const condition = row.querySelector('[data-inventory-item-condition]')?.value || 'Good';
+        if (name) items.push([name, condition]);
+    });
+    return items.length ? items : (STATE.inventoryEditItems || []);
+}
+
+function screenInventoryRoomEnhanced() {
+    const rid = STATE.roomId ?? 0;
+    const rooms = getInventoryRooms(STATE.propertyId);
+    const room = rooms[rid] || rooms[0];
+    const items = getInventoryItems(STATE.propertyId, rid);
+    const notes = getInventoryNotes(STATE.propertyId, rid);
+    const invKey = inventoryKey(STATE.propertyId, rid);
+    const roomPhotos = AppStore.inventory[invKey]?.photos || [];
+    const photoPreview = typeof renderPhotoPreviewStrip === 'function'
+        ? renderPhotoPreviewStrip(roomPhotos, { removable: true, removeAction: 'remove-inventory-photo' })
+        : '';
+    const layout = getPropertyInventoryLayout(STATE.propertyId);
+    return `${topBar(room[0], { back: true })}
+    <div class="screen-content screen-enter">
+        <p class="form-helper">${inventoryLayoutSummaryLine(layout)}</p>
+        <div class="flex items-center justify-between mt-2">
+            <span class="badge ${inventoryConditionBadgeClass(room[1])}">Condition: ${room[1]}</span>
+            <button data-go="edit-inventory-room" data-room="${rid}" class="text-[13px] font-semibold text-[#2563EB]">Edit room</button>
+        </div>
+        ${photoPreview}
+        <button type="button" data-action="upload-photo" class="btn-secondary w-full py-3 text-[13px]">+ Add room photos</button>
+        <div class="card p-4 mt-3">
+            <h3 class="text-[14px] font-bold mb-2">Items in this room</h3>
+            ${items.length ? items.map(([item, c]) => `
+            <div class="flex justify-between text-[13px] py-2 border-b border-[#F1F5F9] last:border-0 gap-3">
+                <span class="font-medium">${escapeHtml(item)}</span>
+                <span class="text-[#64748B] shrink-0">${escapeHtml(c)}</span>
+            </div>`).join('') : `<p class="text-[13px] text-[#94A3B8]">No items yet — tap Edit room to add fixtures.</p>`}
+        </div>
+        <div class="card p-4 mt-3">
+            <p class="text-[12px] text-[#64748B] mb-1">Notes</p>
+            ${notes ? `<p class="text-[13px] leading-relaxed">${escapeHtml(notes)}</p>` : `<p class="text-[13px] text-[#94A3B8]">No notes for this room yet.</p>`}
+        </div>
+    </div>`;
+}
+
+function screenEditInventoryRoomEnhanced() {
+    const rid = STATE.roomId ?? 0;
+    const roomMeta = inventoryRoomMeta(STATE.propertyId, rid);
+    const roomName = roomMeta.name;
+    const rooms = getInventoryRooms(STATE.propertyId);
+    const room = rooms[rid] || rooms[0];
+    if (!STATE.inventoryEditItems) initInventoryEditItems();
+    const items = STATE.inventoryEditItems;
+    const quickAdd = INVENTORY_ROOM_QUICK_ADD[roomMeta.template] || [];
+    return `${topBar('Edit ' + roomName, { back: true })}
+    <div class="screen-content screen-enter">
+        ${uxTip('Set condition for each fixture. Add custom items for anything specific to this property.', roomName)}
+        <div class="form-field">
+            <label class="form-label">Overall room condition</label>
+            <select data-field="condition" class="form-input form-select">${INVENTORY_CONDITIONS.map(c =>
+                `<option ${room[1] === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        </div>
+        ${formTextarea('Room notes', getInventoryNotes(STATE.propertyId, rid), 'Scratches, stains, missing keys…', 'roomNotes')}
+        <p class="screen-section-title">Items</p>
+        <div class="stack-sm">
+        ${items.map(([item, c], i) => `
+        <div class="card p-3 inventory-item-row" data-inventory-item-row>
+            <div class="flex items-center gap-2">
+                <input type="text" data-inventory-item-name class="form-input flex-1 text-[13px]" value="${escapeHtml(item)}" placeholder="Item name">
+                <select data-inventory-item-condition class="form-input form-select w-[110px] py-2 text-[12px]">${INVENTORY_CONDITIONS.map(opt =>
+                    `<option ${c === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>
+                <button type="button" data-action="remove-inventory-item" data-item-idx="${i}" class="inventory-item-remove" aria-label="Remove item"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+        </div>`).join('')}
+        </div>
+        <button type="button" data-action="add-inventory-item" class="btn-secondary w-full py-2.5 text-[13px] mt-2">+ Add custom item</button>
+        ${quickAdd.length ? `
+        <p class="form-label mt-4">Quick add</p>
+        <div class="inventory-quick-add flex flex-wrap gap-2">
+            ${quickAdd.map(label => `<button type="button" data-action="inventory-quick-add" data-quick-label="${escapeHtml(label)}" class="filter-chip">${escapeHtml(label)}</button>`).join('')}
+        </div>` : ''}
+        <button data-action="save" class="btn-primary w-full py-3.5 text-[14px] mt-4">Save room</button>
+    </div>`;
+}
+
+function saveInventoryLayout() {
+    const pid = STATE.propertyId ?? 0;
+    const layout = {
+        bedrooms: Math.max(0, +fieldVal('invBedrooms') || 0),
+        bathrooms: Math.max(0, +fieldVal('invBathrooms') || 0),
+        kitchens: Math.max(0, +fieldVal('invKitchens') || 0),
+        reception: Math.max(0, +fieldVal('invReception') || 0),
+    };
+    AppStore.meta(pid).inventoryLayout = layout;
+    STATE.editingInventoryLayout = false;
+    withLoading(() => { AppStore.save(); toast('Layout saved'); render(); });
 }
 
 function syncSharedDocToTenants(doc, tenantIds = null) {
@@ -1362,16 +2122,292 @@ function getDocumentShareTargets(propertyId, unit) {
     const unitFiltered = unit ? active.filter(t => t.unit === unit) : active;
     const merged = [...fromRoster];
     unitFiltered.forEach(t => { if (!merged.some(m => m.id === t.id)) merged.push(t); });
-    return merged.length ? merged : active;
+    if (unit) return merged;
+    return active;
 }
 
-function getInventoryItems(pid, rid) {
-    const inv = AppStore.inventory[inventoryKey(pid, rid)];
-    return inv?.items || DEFAULT_INVENTORY_ITEMS.map(x => [...x]);
+function getPropertyNotifyTargets(propertyId) {
+    return TENANT_LIST
+        .filter(t => t.propertyId === propertyId && (t.status === 'active' || t.status === 'pending'))
+        .map(t => ({
+            id: t.id,
+            name: t.name || `${TENANTS[t.id]?.firstName || ''} ${TENANTS[t.id]?.lastName || ''}`.trim() || 'Tenant',
+            unit: t.unit || '—',
+            email: TENANTS[t.id]?.email || '',
+            status: t.status,
+            img: t.img || IMG.avatar.sarah,
+        }));
 }
 
-function getInventoryNotes(pid, rid) {
-    return AppStore.inventory[inventoryKey(pid, rid)]?.notes?.trim() || '';
+function renderTenantNotifySection(propertyId, opts = {}) {
+    const title = opts.title || 'Notify tenants';
+    const hint = opts.hint || 'Selected tenants receive an in-app alert. No need to pick one email for the whole building.';
+    const targets = getPropertyNotifyTargets(propertyId);
+    if (!targets.length) {
+        return `
+        <div class="notify-tenant-section">
+            <p class="form-label">${title}</p>
+            <div class="ux-tip">
+                <p class="ux-tip-text">No tenants on this property yet. You can still schedule — invite tenants when you are ready.</p>
+            </div>
+        </div>`;
+    }
+    const rows = targets.map(t => `
+        <label class="member-row card cursor-pointer notify-tenant-row">
+            <input type="checkbox" data-notify-target="${t.id}" class="accent-[#2563EB]" checked>
+            ${t.img ? `<img src="${t.img}" class="member-row-avatar" alt="">` : ''}
+            <div class="member-row-body min-w-0">
+                <p class="member-row-name">${escapeHtml(t.name)}</p>
+                <p class="member-row-meta">${escapeHtml(t.unit)} · ${t.status === 'active' ? 'Active' : 'Pending invite'}</p>
+            </div>
+        </label>`).join('');
+    if (targets.length === 1) {
+        return `
+        <div class="notify-tenant-section">
+            <p class="form-label">${title}</p>
+            <div class="notify-tenant-list stack-sm">${rows}</div>
+            <p class="form-helper">${hint}</p>
+        </div>`;
+    }
+    return `
+    <div class="notify-tenant-section">
+        <div class="notify-tenant-head">
+            <p class="form-label">${title}</p>
+            <label class="notify-all-toggle">
+                <input type="checkbox" data-notify-all class="accent-[#2563EB]" checked>
+                <span>Notify all (${targets.length})</span>
+            </label>
+        </div>
+        <div class="notify-tenant-list stack-sm">${rows}</div>
+        <p class="form-helper">${hint}</p>
+    </div>`;
+}
+
+function getSelectedNotifyTargetIds() {
+    return [...document.querySelectorAll('[data-notify-target]:checked')].map(el => +el.dataset.notifyTarget);
+}
+
+function notifyTenantsAboutEvent(propertyId, tenantIds, { title, desc, screen = 'tenant-dashboard' }) {
+    const p = PROPERTIES[propertyId];
+    tenantIds.forEach(tid => {
+        if (!TENANT_LIST.find(t => t.id === tid)) return;
+        pushNotification({
+            icon: 'megaphone',
+            color: ['#ECFDF5', '#059669'],
+            title,
+            desc: desc || p?.name || '',
+            time: 'Just now',
+            unread: true,
+            screen,
+            opts: {},
+        });
+    });
+    return tenantIds.length;
+}
+
+function broadcastAudienceLabel(b) {
+    if (!b || b.scope === 'all' || !b.units?.length) return 'Entire property';
+    if (b.units.length === 1) return b.units[0];
+    return `${b.units.length} flats`;
+}
+
+function tenantUnitForBroadcast(tenant) {
+    if (!tenant) return '';
+    const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : tenant.id;
+    const listItem = tid != null ? TENANT_LIST[tid] : null;
+    return tenant.unit || listItem?.unit || '';
+}
+
+function broadcastVisibleToTenant(b, tenant) {
+    if (!b || !tenant || tenant.propertyId == null) return false;
+    if (b.propertyId !== tenant.propertyId) return false;
+    if (b.scope === 'all' || !b.units?.length) return true;
+    const unit = tenantUnitForBroadcast(tenant);
+    return unit && b.units.includes(unit);
+}
+
+function announcementsForTenant(tenant) {
+    if (!tenant || tenant.propertyId == null) return [];
+    return (AppStore.broadcasts || [])
+        .filter(b => broadcastVisibleToTenant(b, tenant))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+}
+
+function unreadBroadcastCountForTenant(tenant) {
+    const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : tenant?.id;
+    if (tid == null) return 0;
+    return announcementsForTenant(tenant).filter(b => !(b.readBy || []).includes(tid)).length;
+}
+
+function markBroadcastsReadForTenant(tenant) {
+    const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : tenant?.id;
+    if (tid == null || !tenant) return;
+    let changed = false;
+    (AppStore.broadcasts || []).forEach(b => {
+        if (!broadcastVisibleToTenant(b, tenant)) return;
+        if (!b.readBy) b.readBy = [];
+        if (!b.readBy.includes(tid)) {
+            b.readBy.push(tid);
+            changed = true;
+        }
+    });
+    if (changed) AppStore.save();
+}
+
+function getBroadcastRecipientTenantIds(propertyId, scope, units) {
+    const active = TENANT_LIST.filter(t =>
+        t.propertyId === propertyId && (t.status === 'active' || t.status === 'pending')
+    );
+    if (scope === 'all') return active.map(t => t.id);
+    const picked = units || [];
+    return active.filter(t => picked.includes(t.unit)).map(t => t.id);
+}
+
+function renderBroadcastAudienceSection(propertyId) {
+    const scope = STATE.broadcastScope || 'all';
+    const units = getPropertyUnits(propertyId);
+    const unitNames = units.map(u => unitName(u));
+    const selected = STATE.broadcastUnits?.length
+        ? STATE.broadcastUnits
+        : unitNames.filter(un => TENANT_LIST.some(t => t.propertyId === propertyId && t.unit === un && t.status === 'active'));
+    return `
+    <div class="broadcast-audience">
+        <p class="form-label">Who should see this?</p>
+        <div class="fin-segments txn-segments">
+            <button type="button" data-broadcast-scope="all" class="fin-segment ${scope === 'all' ? 'active' : ''}">
+                <span class="fin-segment-label">Entire property</span>
+            </button>
+            <button type="button" data-broadcast-scope="units" class="fin-segment ${scope === 'units' ? 'active' : ''}">
+                <span class="fin-segment-label">Selected flats</span>
+            </button>
+        </div>
+        ${scope === 'units' ? `
+        <div class="notify-tenant-section">
+            ${unitNames.length > 1 ? `
+            <div class="notify-tenant-head">
+                <p class="form-label" style="margin:0">Flats</p>
+                <label class="notify-all-toggle">
+                    <input type="checkbox" data-broadcast-all class="accent-[#2563EB]" ${selected.length === unitNames.length ? 'checked' : ''}>
+                    <span>All flats (${unitNames.length})</span>
+                </label>
+            </div>` : ''}
+            <div class="notify-tenant-list stack-sm">
+                ${unitNames.map(un => {
+                    const tenants = TENANT_LIST.filter(t => t.propertyId === propertyId && t.unit === un);
+                    const occ = tenants.filter(t => t.status === 'active').length;
+                    const checked = selected.includes(un);
+                    return `
+                <label class="member-row card cursor-pointer notify-tenant-row">
+                    <input type="checkbox" data-broadcast-unit="${un}" class="accent-[#2563EB]" ${checked ? 'checked' : ''}>
+                    <div class="member-row-body min-w-0">
+                        <p class="member-row-name">${escapeHtml(un)}</p>
+                        <p class="member-row-meta">${occ ? `${occ} active tenant${occ === 1 ? '' : 's'}` : 'Vacant — no tenants notified'}</p>
+                    </div>
+                </label>`;
+                }).join('')}
+            </div>
+            <p class="form-helper">Only tenants in the selected flats will see this in their portal.</p>
+        </div>` : `
+        <p class="form-helper">Every active tenant in this building will see the notice under Announcements.</p>`}
+    </div>`;
+}
+
+function screenBroadcastNotices() {
+    const list = [...(AppStore.broadcasts || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return `${topBar('Notices', { back: true, sub: 'Broadcast to tenants' })}
+    <div class="screen-content screen-enter">
+        <button type="button" data-go="send-broadcast" class="btn-primary w-full py-3.5 text-[14px]">+ Send notice</button>
+        ${list.length ? `
+        <p class="txn-section-label txn-section-label--spaced">Sent</p>
+        <div class="txn-list">${list.map(b => {
+            const p = PROPERTIES[b.propertyId];
+            const recipients = getBroadcastRecipientTenantIds(b.propertyId, b.scope, b.units);
+            return `
+        <div class="txn-row broadcast-sent-row">
+            <div class="txn-icon txn-icon-pending"><i data-lucide="megaphone" class="w-4 h-4"></i></div>
+            <div class="txn-body">
+                <p class="txn-title">${escapeHtml(b.title)}</p>
+                <p class="txn-sub">${escapeHtml(p?.name || 'Property')} · ${broadcastAudienceLabel(b)}</p>
+                <p class="txn-sub txn-sub--muted">${b.date} · ${recipients.length} tenant${recipients.length === 1 ? '' : 's'}</p>
+            </div>
+        </div>`;
+        }).join('')}</div>` : `
+        <div class="card p-8 text-center mt-4">
+            <i data-lucide="megaphone" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
+            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No notices sent yet</p>
+            <p class="text-[12px] text-[#64748B] mt-1 leading-relaxed">Send building-wide updates or messages to specific flats.</p>
+        </div>`}
+    </div>`;
+}
+
+function screenSendBroadcast() {
+    const pid = STATE.broadcastPropertyId ?? STATE.propertyId ?? 0;
+    const p = PROPERTIES[pid];
+    if (!p) return `${topBar('Send notice', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Add a property first.</p></div>`;
+    const propertyOptions = PROPERTIES.map((prop, i) =>
+        `<option value="${i}" ${i === pid ? 'selected' : ''}>${escapeHtml(prop.name)}</option>`
+    ).join('');
+    return `${topBar('Send notice', { back: true, sub: p.name.split(',')[0] })}
+    <div class="screen-content screen-enter">
+        ${uxIntro('Tenants see notices in their portal under Announcements — not in Messages.')}
+        <div class="form-group">
+            <label class="form-label">Property</label>
+            <select data-broadcast-property class="form-input form-select">${propertyOptions}</select>
+        </div>
+        ${renderBroadcastAudienceSection(pid)}
+        ${formFieldReq('Notice title', 'broadcastTitle', '', 'text', 'e.g. Boiler service next week')}
+        <div class="form-group">
+            <label class="form-label">Message <span class="form-required">*</span></label>
+            <textarea data-field="broadcastBody" class="form-input min-h-[120px] resize-none" placeholder="What should tenants know? Include dates, access times, and any action needed."></textarea>
+        </div>
+        <button type="button" data-action="send-broadcast" class="btn-primary w-full py-3.5 text-[14px]">Send notice</button>
+    </div>`;
+}
+
+function sendBroadcastNotice() {
+    const pid = STATE.broadcastPropertyId ?? STATE.propertyId ?? 0;
+    const p = PROPERTIES[pid];
+    if (!p) { toast('Select a property'); return; }
+    const title = (fieldVal('broadcastTitle') || '').trim();
+    const body = (fieldVal('broadcastBody') || '').trim();
+    if (!title) { toastError('Enter a notice title'); return; }
+    if (!body) { toastError('Enter a message'); return; }
+    const scope = STATE.broadcastScope || 'all';
+    const unitNames = getPropertyUnits(pid).map(u => unitName(u));
+    const units = scope === 'units'
+        ? [...document.querySelectorAll('[data-broadcast-unit]:checked')].map(el => el.dataset.broadcastUnit)
+        : [];
+    if (scope === 'units' && !units.length) {
+        toastError('Select at least one flat');
+        return;
+    }
+    const tenantIds = getBroadcastRecipientTenantIds(pid, scope, units);
+    const from = `${LANDLORD_USER.firstName || 'John'} ${LANDLORD_USER.lastName || 'Smith'}`.trim();
+    const entry = {
+        id: AppStore.nextId(AppStore.broadcasts || []),
+        propertyId: pid,
+        title,
+        body,
+        date: typeof formatEventDate === 'function' ? formatEventDate() : 'Today',
+        from,
+        scope,
+        units: scope === 'units' ? units : [],
+        readBy: [],
+    };
+    if (!AppStore.broadcasts) AppStore.broadcasts = [];
+    AppStore.broadcasts.unshift(entry);
+    if (tenantIds.length) {
+        notifyTenantsAboutEvent(pid, tenantIds, {
+            title: 'New notice from landlord',
+            desc: title,
+            screen: 'tenant-announcements',
+        });
+    }
+    AppStore.save();
+    toast(tenantIds.length
+        ? `Notice sent to ${tenantIds.length} tenant${tenantIds.length === 1 ? '' : 's'}`
+        : 'Notice saved — no active tenants on selected flats yet');
+    go('broadcast-notices');
 }
 
 function getInventoryNotesDisplay(pid, rid) {
@@ -1674,6 +2710,7 @@ function renderActionMenuPopover(key, items) {
 
 function propertyActionMenuItems(propertyId) {
     return [
+        { label: 'Send notice', icon: 'megaphone', action: 'action-menu-go', attrs: `data-go="send-broadcast" data-pid="${propertyId}"` },
         { label: 'Edit property', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-property" data-pid="${propertyId}"` },
         { label: 'Add unit', icon: 'plus', action: 'action-menu-go', attrs: `data-go="add-flat" data-pid="${propertyId}"` },
         { label: 'View property', icon: 'eye', action: 'action-menu-go', attrs: `data-go="property-detail" data-pid="${propertyId}" data-tab="units"` },
@@ -1708,6 +2745,8 @@ function tenantActionMenuItems(t, opts = {}) {
     items.push({ label: 'Edit tenant', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-tenant" data-tid="${t.id}"` });
     if (t.chatId != null) {
         items.push({ label: 'Message', icon: 'message-square', action: 'action-menu-go', attrs: `data-go="chat" data-chat="${t.chatId}"` });
+    } else if (t.status === 'active' || t.status === 'pending') {
+        items.push({ label: 'Message', icon: 'message-square', action: 'start-tenant-chat', attrs: `data-tid="${t.id}"` });
     }
     if (t.propertyId != null && t.unit) {
         items.push({ label: 'View unit', icon: 'home', action: 'action-menu-go', attrs: `data-go="flat-detail" data-pid="${t.propertyId}" data-unit="${t.unit}"` });
@@ -1899,8 +2938,8 @@ function renderBuildingMetricsGrid(propertyId) {
     const distinctFloors = new Set(units.map(u => u.floor || 1)).size;
     const floors = b.floors > 1 ? b.floors : Math.max(1, distinctFloors);
     const occupancyPct = total ? Math.round((occupied / total) * 100) : 0;
-    const rentLabel = rs.collected > 0 ? 'Collected' : 'Potential';
-    const rentValue = rs.collected > 0 ? formatRentAmount(rs.collected) : (rs.potential ? formatRentAmount(rs.potential) : '—');
+    const rentLabel = 'Total rent';
+    const rentValue = rs.potential ? formatRentAmount(rs.potential) : '—';
     const metrics = [
         ['layers', 'Units', String(total)],
         ['building-2', 'Floors', String(floors)],
@@ -2008,7 +3047,7 @@ function renderPropertyHubSummaryCard(propertyId) {
         </div>
         <div class="prop-hub-summary-foot">
             <div class="prop-hub-income">
-                <span class="prop-hub-income-lbl">Monthly Income</span>
+                <span class="prop-hub-income-lbl">Total rent</span>
                 <span class="prop-hub-income-val"><i data-lucide="wallet" class="w-4 h-4"></i>${incomeLabel}</span>
             </div>
             <button type="button" data-go="edit-property" data-pid="${propertyId}" class="prop-hub-edit-btn">
@@ -2111,6 +3150,7 @@ function renderPropertyOverviewDetails(propertyId) {
         .map(a => ({ icon: a.icon, label: `${a.label} Alarm`, sub: meta.alarms[a.key].location || '' }));
     const featureItems = [...applianceItems, ...alarmItems];
     const infoRows = [
+        ['map-pin', 'Address', p.address || '—'],
         ['home', 'Type', info.type || '—'],
         ['calendar', 'Year Built', info.built || '—'],
         ['leaf', 'EPC', formatEpcDisplay(info.epc)],
@@ -2123,16 +3163,6 @@ function renderPropertyOverviewDetails(propertyId) {
     const floors = b.useFloors && b.floors > 1 ? b.floors : Math.max(1, new Set(units.map(u => u.floor || 1)).size);
     return `
     <div class="screen-content screen-content-sm building-info-page">
-        <div class="building-location card">
-            <span class="building-location-icon" aria-hidden="true"><i data-lucide="map-pin" class="w-5 h-5"></i></span>
-            <div class="building-location-body">
-                <p class="building-location-label">Location</p>
-                <p class="building-location-addr">${escapeHtml(p.address) || '—'}</p>
-            </div>
-            <button type="button" data-go="edit-property" data-pid="${propertyId}" class="building-location-edit" aria-label="Edit property address">
-                <i data-lucide="pencil" class="w-4 h-4"></i>
-            </button>
-        </div>
         <div class="building-section card">
             ${renderBuildingSectionHead('Property Photos', propertyId, 'photos', [
                 buildingSectionGoItem('Manage photos', 'image', 'property-photos', propertyId),
@@ -2147,16 +3177,17 @@ function renderPropertyOverviewDetails(propertyId) {
         </div>
         <div class="building-section card">
             ${renderBuildingSectionHead('Property Information', propertyId, 'info', [
+                buildingSectionGoItem('Edit address', 'map-pin', 'edit-property', propertyId),
                 buildingSectionGoItem('Edit property info', 'pencil', 'property-info', propertyId),
             ])}
             <div class="building-info-rows">
                 ${infoRows.map(([icon, label, value]) => `
-                <div class="building-info-row">
+                <div class="building-info-row${label === 'Address' ? ' building-info-row--address' : ''}">
                     <div class="building-info-row-left">
                         <i data-lucide="${icon}" class="w-4 h-4 text-[#94A3B8]"></i>
                         <span class="building-info-row-label">${label}</span>
                     </div>
-                    <span class="building-info-row-value">${value}</span>
+                    <span class="building-info-row-value">${escapeHtml(String(value))}</span>
                 </div>`).join('')}
             </div>
             ${info.notes ? `
@@ -2214,6 +3245,20 @@ function tenantListByProperty(propertyId) {
         || TENANT_LIST.find(t => t.propertyId === propertyId && t.status === 'pending');
 }
 
+function tenantListItemForInvite(invite) {
+    if (!invite) return null;
+    const fullName = `${invite.firstName} ${invite.lastName}`.trim();
+    const email = (invite.email || '').toLowerCase();
+    return TENANT_LIST.find(t =>
+        t.propertyId === invite.propertyId &&
+        t.unit === invite.unit &&
+        (t.name === fullName || (email && TENANTS[t.id]?.email?.toLowerCase() === email))
+    ) || TENANT_LIST.find(t =>
+        t.propertyId === invite.propertyId &&
+        email && TENANTS[t.id]?.email?.toLowerCase() === email
+    ) || null;
+}
+
 function tenantsForUnit(propertyId, unitName) {
     return TENANT_LIST.filter(t => t.propertyId === propertyId && t.unit === unitName && (t.status === 'active' || t.status === 'pending'));
 }
@@ -2253,6 +3298,7 @@ function propertyTypeTag(propertyId) {
 
 function flatRowSubline(tenancy, count, flatPending, occ, u, opts = {}) {
     if (flatPending.length) return 'Invite pending';
+    if (u?.status === 'reserved') return 'Lease reserved';
     if (occ && tenancy) {
         if (tenancy.type === 'group') {
             const n = count || tenancy.occupants || 0;
@@ -2273,7 +3319,8 @@ function flatRowSubline(tenancy, count, flatPending, occ, u, opts = {}) {
 }
 
 function flatRowRentLabel(tenancy, u, occ) {
-    const raw = (occ && tenancy?.rent) ? tenancy.rent : u.rent;
+    const showRent = occ || u?.status === 'reserved';
+    const raw = (showRent && tenancy?.rent) ? tenancy.rent : u.rent;
     if (!raw || raw === '—') return '—';
     const cleaned = String(raw).replace(/\s*\/\s*mo(?:nth)?/gi, '').trim();
     return cleaned ? `${cleaned}/mo` : '—';
@@ -2282,7 +3329,7 @@ function flatRowRentLabel(tenancy, u, occ) {
 function filterPropertyUnits(units) {
     const f = STATE.unitFilter || 'all';
     if (f === 'occupied') return units.filter(u => u.status === 'occupied');
-    if (f === 'vacant') return units.filter(u => u.status !== 'occupied');
+    if (f === 'vacant') return units.filter(u => u.status === 'vacant');
     return units;
 }
 
@@ -2299,7 +3346,26 @@ function tenantTenancyMetaLine(t) {
     const tenancy = getTenancyForTenantListItem(t);
     if (!tenancy || tenancy.type !== 'group') return '';
     const { count } = getFlatMemberRoster(t.propertyId, t.unit);
+    if (t.status === 'pending') return 'Group member · invite pending';
+    if (tenancy.leadName && tenancy.leadName !== t.name) return 'Group member · shared lease';
     return count > 1 ? `${count} on unit` : '';
+}
+
+function tenantListMetaLine(t) {
+    const tenancy = getTenancyForTenantListItem(t);
+    if (tenancy?.type === 'group') {
+        if (t.status === 'pending') return 'Group member · portal invite pending';
+        if (tenancy.leadName && tenancy.leadName !== t.name) return 'Group member · shared lease';
+        return `${t.rent} · group lead`;
+    }
+    return t.rent;
+}
+
+function formatReminderDaysLeft(daysLeft) {
+    if (daysLeft == null) return '—';
+    if (daysLeft < 0) return `${Math.abs(daysLeft)} days overdue`;
+    if (daysLeft === 0) return 'Due today';
+    return `${daysLeft} days left`;
 }
 
 function renderTenancyDemoTip(propertyId) {
@@ -2331,9 +3397,11 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
     if (opts.hubList) {
         const spec = flatRowSpecLine(u);
         const tenant = flatRowTenantLine(tenancy, members, occ);
-        const statusBadge = occ
+        const statusBadge = u.status === 'occupied'
             ? '<span class="unit-hub-badge unit-hub-badge--occupied">Occupied</span>'
-            : '<span class="unit-hub-badge unit-hub-badge--vacant">Vacant</span>';
+            : u.status === 'reserved'
+                ? '<span class="unit-hub-badge unit-hub-badge--reserved">Reserved</span>'
+                : '<span class="unit-hub-badge unit-hub-badge--vacant">Vacant</span>';
         return `
         <div class="unit-hub-row-wrap">
             <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="unit-hub-row">
@@ -2777,7 +3845,7 @@ function screenFlatMembers() {
                 <h2>${membersLabel}</h2>
                 <p>${count} on this unit · ${leaseLine}</p>
             </div>
-            <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="header-text-link">+ Add tenant</button>
+            <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="header-text-link">+ Invite tenant</button>
         </div>
         ${members.length ? `
         <div class="member-list-human member-list-detail">
@@ -2835,7 +3903,7 @@ function ensureContractorConversation(contractor) {
     if (existing != null) return existing;
     const id = CONVERSATIONS.length ? Math.max(...CONVERSATIONS.map(c => c.id)) + 1 : 0;
     CONVERSATIONS.push({
-        id, img: contractor.img, name: contractor.name, sub: contractor.trade,
+        id, img: contractor.img, name: contractor.name, sub: typeof contractorCategoryLabel === 'function' ? contractorCategoryLabel(contractor) : contractor.trade,
         preview: 'Start a conversation', time: 'Just now', unread: 0, online: false, messages: [],
     });
     CONTRACTOR_CHAT_MAP[contractor.name] = id;
@@ -2848,6 +3916,7 @@ function contractorOpenJobs(name) {
 }
 
 function contractorRow(c) {
+    normalizeContractorRecord(c);
     const chatId = ensureContractorConversation(c);
     const convo = CONVERSATIONS.find(x => x.id === chatId);
     const jobs = contractorOpenJobs(c.name);
@@ -2862,12 +3931,16 @@ function contractorRow(c) {
                     <p class="contractor-card-name">${escapeHtml(c.name)}</p>
                     ${unread ? `<span class="contractor-row-unread">${unread}</span>` : ''}
                 </div>
-                <p class="contractor-card-trade">${escapeHtml(c.trade)}</p>
+                <div class="contractor-card-trade-row">
+                    ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(c) : `<p class="contractor-card-trade">${escapeHtml(c.trade)}</p>`}
+                </div>
+                <p class="contractor-card-jobs-for">${escapeHtml(contractorJobsForLabel(c))}</p>
                 <p class="contractor-card-meta">${jobs ? `${jobs} open job${jobs === 1 ? '' : 's'}` : 'No active jobs'} · ${escapeHtml(preview)}</p>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>
         <div class="contractor-card-actions">
+            <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="user" class="w-4 h-4"></i><span>Profile</span></button>
             ${c.phone ? `<button type="button" data-action="call-contractor" data-phone="${c.phone.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
             ${c.email ? `<button type="button" data-action="email-contractor" data-email="${c.email.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
             <button type="button" data-go="chat" data-chat="${chatId}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>
@@ -2879,6 +3952,7 @@ function screenContractors() {
     const q = (STATE.search.contractors || '').toLowerCase();
     const list = CONTRACTORS.filter(c =>
         !q || c.name.toLowerCase().includes(q) || c.trade.toLowerCase().includes(q)
+        || (c.category || '').toLowerCase().includes(q) || (c.jobsFor || '').toLowerCase().includes(q)
     );
     return `${topBar('Contractors')}
     <div class="screen-content screen-content-sm screen-enter">
@@ -2908,20 +3982,493 @@ function tenantPaymentSummary(tenantId) {
         i.tenant === listItem.name ||
         (i.prop.includes(listItem.prop) && (!i.unit || i.unit === listItem.unit))
     );
-    const pending = invs.filter(i => i.status !== 'Paid');
+    const rentInvs = invs.filter(i => !i.type || i.type === 'rent');
+    const maintInvs = invs.filter(i => i.type === 'maintenance' || i.type === 'bill');
+    const pending = rentInvs.filter(i => i.status !== 'Paid');
     const balance = pending.reduce((s, i) => s + parseRentAmount(i.amount), 0);
+    const maintDue = maintInvs.filter(i => i.status !== 'Paid').reduce((s, i) => s + parseRentAmount(i.amount), 0);
     const lastPaid = invs.filter(i => i.status === 'Paid').sort((a, b) => (b.paidOn || b.due).localeCompare(a.paidOn || a.due))[0];
-    const nextDue = invs.find(i => i.status === 'Pending' || i.status === 'Overdue');
-    const overdue = invs.filter(i => i.status === 'Overdue');
+    const nextDue = rentInvs.find(i => i.status === 'Pending' || i.status === 'Overdue');
+    const nextMaint = maintInvs.find(i => i.status === 'Pending' || i.status === 'Overdue');
+    const overdue = rentInvs.filter(i => i.status === 'Overdue');
     const fin = getTenantFinancials(tenantId);
     return {
         balance: balance ? formatRentAmount(balance) : '£0.00',
+        maintBalance: maintDue ? formatRentAmount(maintDue) : '£0.00',
         lastPayment: lastPaid ? `${lastPaid.amount} · ${lastPaid.paidOn || lastPaid.due}` : '—',
         nextDue: nextDue ? `${nextDue.amount} · ${nextDue.due}` : '—',
+        nextMaintDue: nextMaint ? `${nextMaint.amount} · ${nextMaint.due}` : '—',
         overdueCount: overdue.length,
         deposit: fin.deposit,
         advancePaid: fin.advancePaid,
+        rentInvoiceId: nextDue?.id,
+        maintInvoiceId: nextMaint?.id,
     };
+}
+
+const TENANT_HOUSE_RULES = {
+    0: [
+        'Quiet hours after 10 PM — keep noise down for neighbours.',
+        'Report maintenance issues through the app so your landlord can respond quickly.',
+        'No smoking inside the building or communal areas.',
+        'Guests may not stay more than 14 consecutive nights without written approval.',
+        'Recycling bins are in the rear garden shed — please sort waste correctly.',
+        'Bicycle storage is in the basement — do not leave bikes in the hallway.',
+    ],
+    1: [
+        'Monthly rent is due on the 1st of each month.',
+        'Contact the landlord before making any alterations to the flat.',
+        'Pets require prior written consent.',
+    ],
+};
+
+function houseRulesForTenant(tenant) {
+    if (!tenant || tenant.propertyId == null) return [];
+    return TENANT_HOUSE_RULES[tenant.propertyId] || [
+        'Follow your tenancy agreement and report issues via the app.',
+        'Keep communal areas clear and respect neighbours.',
+    ];
+}
+
+function activeTenantListId() {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    if (!t) return null;
+    if (t.id != null && TENANT_LIST[t.id]) return t.id;
+    const byEmail = TENANT_LIST.findIndex(li => li.email && t.email && li.email.toLowerCase() === t.email.toLowerCase());
+    return byEmail >= 0 ? byEmail : 0;
+}
+
+const TENANT_NOTIFICATIONS = [
+    { icon: 'wrench', color: ['#DBEAFE', '#2563EB'], title: 'Issue update', desc: 'Kitchen sink — contractor assigned', time: '2h ago', unread: true, screen: 'maintenance-detail', opts: { mid: 0 } },
+    { icon: 'banknote', color: ['#FEF3C7', '#D97706'], title: 'Rent due', desc: 'Jul 2026 rent · £2,450 due Jul 1', time: '5h ago', unread: true, screen: 'transaction-history', opts: { tenantPayFilter: 'rent' } },
+    { icon: 'receipt', color: ['#FEF3C7', '#B45309'], title: 'Maintenance bill', desc: 'Kitchen sink repair share · £85', time: '1d ago', unread: false, screen: 'transaction-history', opts: { tenantPayFilter: 'maintenance' } },
+    { icon: 'megaphone', color: ['#ECFDF5', '#059669'], title: 'Building announcement', desc: 'Boiler service next week', time: '2d ago', unread: false, screen: 'tenant-announcements', opts: {} },
+];
+
+const TENANT_SCREEN_ALIASES = {
+    dashboard: 'tenant-dashboard',
+    maintenance: 'tenant-issues',
+    financial: 'transaction-history',
+    properties: 'tenant-active-tenancy',
+    tenants: 'personal-info',
+    profile: 'personal-info',
+    'compliance-dashboard': 'tenant-compliance',
+    reminders: 'tenant-reminders',
+    contractors: 'tenant-dashboard',
+    'portfolio-overview': 'tenant-dashboard',
+    'tenant-detail': 'personal-info',
+    'mark-rent-received': 'transaction-history',
+    'create-invoice': 'transaction-history',
+    'pay-contractor': 'transaction-history',
+};
+
+const LANDLORD_SCREEN_ALIASES = {
+    'tenant-dashboard': 'dashboard',
+    'tenant-issues': 'maintenance',
+    'tenant-documents': 'tenants',
+    'tenant-active-tenancy': 'tenants',
+    'tenant-building-info': 'properties',
+    'tenant-compliance': 'compliance-dashboard',
+    'tenant-reminders': 'reminders',
+    'tenant-announcements': 'dashboard',
+    'tenant-house-rules': 'properties',
+    'tenant-referencing': 'tenants',
+    'tenant-ref-detail': 'tenants',
+    'tenant-contact': 'tenants',
+    'tenant-communication': 'messages',
+    'tenant-checkout': 'tenants',
+    'tenant-edit-profile': 'profile',
+};
+
+const CONTRACTOR_SCREEN_ALIASES = {
+    dashboard: 'contractor-dashboard',
+    maintenance: 'contractor-jobs',
+    profile: 'contractor-profile',
+    properties: 'contractor-dashboard',
+    financial: 'contractor-dashboard',
+    tenants: 'contractor-dashboard',
+};
+
+const TENANT_ALLOWED_SCREENS = new Set([
+    'tenant-dashboard', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
+    'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance',
+    'tenant-communication', 'tenant-checkout', 'tenant-building-info', 'tenant-announcements',
+    'tenant-house-rules', 'tenant-edit-profile', 'tenant-welcome',
+    'log-maintenance', 'maintenance-detail', 'transaction-history', 'invoice-detail',
+    'messages', 'chat', 'personal-info', 'notifications-list', 'notifications-settings',
+    'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about',
+    'password', 'security', 'document-preview',
+]);
+
+function notificationsForRole() {
+    if (STATE.userRole === 'tenant') return TENANT_NOTIFICATIONS;
+    return NOTIFICATIONS;
+}
+
+function resolveScreenForRole(screen, opts = {}) {
+    if (!STATE.isAuthenticated) return { screen, opts };
+    const role = STATE.userRole;
+    const next = { screen, opts: { ...opts } };
+
+    if (role === 'tenant') {
+        if (screen === 'property-detail') {
+            const tab = opts.tab;
+            if (tab === 'compliance') next.screen = 'tenant-compliance';
+            else if (tab === 'documents') next.screen = 'tenant-documents';
+            else next.screen = 'tenant-building-info';
+            return next;
+        }
+        if (TENANT_ALLOWED_SCREENS.has(screen)) return next;
+        if (TENANT_SCREEN_ALIASES[screen]) {
+            next.screen = TENANT_SCREEN_ALIASES[screen];
+            return next;
+        }
+        next.screen = getRoleHome();
+        return next;
+    }
+
+    if (role === 'landlord') {
+        if (LANDLORD_SCREEN_ALIASES[screen]) {
+            next.screen = LANDLORD_SCREEN_ALIASES[screen];
+            return next;
+        }
+    }
+
+    if (role === 'contractor') {
+        if (CONTRACTOR_SCREEN_ALIASES[screen]) {
+            next.screen = CONTRACTOR_SCREEN_ALIASES[screen];
+            return next;
+        }
+        if (screen.startsWith('tenant-')) {
+            next.screen = 'contractor-dashboard';
+            return next;
+        }
+    }
+
+    return next;
+}
+
+function tenantAvatarUrl(tenantId) {
+    const tid = tenantId != null ? tenantId : (typeof activeTenantListId === 'function' ? activeTenantListId() : 0);
+    const avatars = { 0: IMG.avatar.sarah, 1: IMG.avatar.david, 2: IMG.avatar.michael, 4: IMG.avatar.priya };
+    return avatars[tid] || IMG.avatar.sarah;
+}
+
+function tenantHomeAttentionItems(tenant, pay, tenantId) {
+    if (!tenant) return [];
+    const items = [];
+    if (pay?.balance && pay.balance !== '£0.00') {
+        items.push({
+            priority: 1, icon: 'banknote', bg: '#FFFBEB', color: '#D97706',
+            title: 'Rent payment due', sub: pay.nextDue || 'Due soon',
+            go: 'transaction-history', cta: 'Pay', opts: { tenantPayFilter: 'rent' },
+        });
+    }
+    if (pay?.maintBalance && pay.maintBalance !== '£0.00') {
+        items.push({
+            priority: 2, icon: 'receipt', bg: '#FEF3C7', color: '#B45309',
+            title: 'Maintenance bill due', sub: pay.nextMaintDue || pay.maintBalance,
+            go: 'transaction-history', cta: 'Pay', opts: { tenantPayFilter: 'maintenance' },
+        });
+    }
+    const openIssues = typeof tenantMaintenanceForAccount === 'function'
+        ? tenantMaintenanceForAccount(tenant).filter(m => m.status !== 'done')
+        : [];
+    openIssues.slice(0, 2).forEach(m => {
+        const label = typeof maintStatusLabel !== 'undefined' ? (maintStatusLabel[m.status] || m.status) : m.status;
+        items.push({
+            priority: 3, icon: 'wrench', bg: '#EFF6FF', color: '#2563EB',
+            title: m.issue, sub: `${label} · ${m.time || 'Open'}`,
+            go: 'maintenance-detail', opts: { maintId: m.id }, cta: 'View',
+        });
+    });
+    (typeof tenantSmartReminders === 'function' ? tenantSmartReminders(tenant) : [])
+        .filter(r => r.urgency === 'high' || r.urgency === 'medium')
+        .slice(0, 1)
+        .forEach(r => {
+            items.push({
+                priority: 4, icon: 'bell', bg: '#F5F3FF', color: '#7C3AED',
+                title: r.title, sub: `Due ${r.due || '—'}`,
+                go: 'tenant-reminders', cta: 'View',
+            });
+        });
+    (typeof announcementsForTenant === 'function' ? announcementsForTenant(tenant) : [])
+        .filter(a => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : tenantId;
+            return tid != null && !(a.readBy || []).includes(tid);
+        })
+        .slice(0, 1)
+        .forEach(a => {
+            items.push({
+                priority: 5, icon: 'megaphone', bg: '#ECFDF5', color: '#059669',
+                title: a.title, sub: `${a.date} · From landlord`,
+                go: 'tenant-announcements', cta: 'Read',
+            });
+        });
+    return items.sort((a, b) => a.priority - b.priority).slice(0, 3);
+}
+
+function tenantInvoicesByKind(tenantId, kind) {
+    const all = typeof invoicesForTenant === 'function' ? invoicesForTenant(tenantId) : [];
+    if (kind === 'maintenance') return all.filter(i => i.type === 'maintenance' || i.type === 'bill');
+    return all.filter(i => !i.type || i.type === 'rent');
+}
+
+function renderTenantAccountMembers(tenantId) {
+    const listItem = TENANT_LIST[tenantId];
+    if (!listItem) return '';
+    const { tenancy, members } = getFlatMemberRoster(listItem.propertyId, listItem.unit);
+    const account = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const isGroup = tenancy?.type === 'group' && members.length > 1;
+    const roster = members.length ? members : [{ name: account ? `${account.firstName} ${account.lastName}` : listItem.name, isLead: true, accountStatus: 'active' }];
+    const body = roster.map(m => {
+        const isYou = account && (m.name === `${account.firstName} ${account.lastName}` || m.tenantId === tenantId);
+        const role = m.isLead || m.role === 'lead' ? 'Lead tenant' : isGroup ? 'Flatmate' : 'Tenant';
+        const status = m.accountStatus === 'active' ? 'Active' : m.accountStatus === 'pending' ? 'Invite pending' : 'No account yet';
+        return `
+        <div class="tnt-acct-member">
+            <span class="tnt-acct-member-avatar">${(m.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}</span>
+            <div class="min-w-0 flex-1">
+                <p class="tnt-acct-member-name">${escapeHtml(m.name || '—')}${isYou ? ' <span class="tnt-acct-you">You</span>' : ''}</p>
+                <p class="tnt-acct-member-meta">${role} · ${status}</p>
+            </div>
+        </div>`;
+    }).join('');
+    return `
+    <div class="card p-4">
+        <div class="tnt-acct-section-head">
+            <p class="tnt-acct-section-title">${isGroup ? 'People on your flat' : 'Your tenancy'}</p>
+            ${isGroup ? `<span class="badge bg-[#EEF2FF] text-[#4F46E5]">${members.length} members</span>` : ''}
+        </div>
+        <p class="tnt-acct-section-sub">${isGroup ? `Shared lease on ${listItem.unit}` : `Solo tenancy on ${listItem.unit}`}</p>
+        <div class="tnt-acct-member-list">${body}</div>
+    </div>`;
+}
+
+function renderTenantAccountContractors(tenant) {
+    if (!tenant || typeof MAINTENANCE_ITEMS === 'undefined') return '';
+    const issues = MAINTENANCE_ITEMS.filter(m =>
+        m.propertyId === tenant.propertyId &&
+        m.unit === tenant.unit &&
+        !(typeof isCommunalMaint === 'function' && isCommunalMaint(m))
+    );
+    const openIssues = issues.filter(m => m.status !== 'done');
+    const assigned = issues.filter(m => m.contractor && m.contractor !== '—');
+    const contractorLookup = (name) => (typeof CONTRACTORS !== 'undefined' ? CONTRACTORS.find(c => c.name === name) : null);
+    const rows = assigned.length ? assigned.map(m => {
+        const c = contractorLookup(m.contractor);
+        const st = typeof maintStatusLabel !== 'undefined' ? (maintStatusLabel[m.status] || m.status) : m.status;
+        return `
+        <div class="tnt-acct-contractor">
+            <button type="button" data-go="maintenance-detail" data-mid="${m.id}" class="tnt-acct-contractor-main w-full text-left">
+                <div class="tnt-acct-contractor-icon"><i data-lucide="hard-hat" class="w-4 h-4"></i></div>
+                <div class="min-w-0 flex-1">
+                    <p class="tnt-acct-contractor-name">${escapeHtml(m.contractor)}</p>
+                    <p class="tnt-acct-contractor-meta">${escapeHtml(c ? contractorCategoryLabel(c) : 'Contractor')} · ${escapeHtml(m.issue)}</p>
+                </div>
+                <span class="tnt-acct-contractor-status">${escapeHtml(st)}</span>
+            </button>
+            ${c ? `<button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="tnt-acct-contractor-profile">View profile</button>` : ''}
+        </div>`;
+    }).join('') : '';
+    return `
+    <div class="card p-4">
+        <div class="tnt-acct-section-head">
+            <p class="tnt-acct-section-title">Maintenance & contractors</p>
+            <button type="button" data-go="log-maintenance" class="tnt-link">Report issue</button>
+        </div>
+        ${openIssues.length ? `<p class="tnt-acct-section-sub">${openIssues.length} open request${openIssues.length === 1 ? '' : 's'} on your flat</p>` : `<p class="tnt-acct-section-sub">No open issues — report something if you need help.</p>`}
+        ${rows || `<p class="text-[12px] text-[#64748B] py-2">When your landlord assigns a contractor, they will appear here with job status.</p>`}
+    </div>`;
+}
+
+function renderTenantAccountHomeCard(t, p, tid) {
+    const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tid) : null;
+    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tid) : null;
+    return `
+    <div class="card p-4 tnt-acct-home">
+        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Property</p>
+        <p class="text-[15px] font-bold text-[#0F172A] mt-1">${escapeHtml(p?.name || '—')}</p>
+        <p class="text-[12px] text-[#64748B] mt-1">${escapeHtml(p?.address || '—')}</p>
+        <div class="tnt-acct-home-grid">
+            <div><p class="tnt-acct-mini-label">Unit within property</p><p class="tnt-acct-mini-value">${escapeHtml(t.unit || '—')}</p></div>
+            <div><p class="tnt-acct-mini-label">Monthly rent</p><p class="tnt-acct-mini-value">${escapeHtml(t.rent || fin?.rent || '—')}</p></div>
+            <div><p class="tnt-acct-mini-label">Lease ends</p><p class="tnt-acct-mini-value">${escapeHtml(t.leaseEnd || '—')}</p></div>
+            <div><p class="tnt-acct-mini-label">Next due</p><p class="tnt-acct-mini-value">${escapeHtml(pay?.nextDue || '—')}</p></div>
+        </div>
+        <button type="button" data-go="tenant-building-info" class="btn-secondary w-full py-2.5 text-[12px] mt-3">Building info & house rules</button>
+    </div>`;
+}
+
+const TENANT_REF_SECTIONS = [
+    { key: 'passport', label: 'Passport / ID', icon: 'book-open', type: 'upload', hint: 'Passport, national ID or driving licence' },
+    { key: 'rightToRent', label: 'Right to Rent', icon: 'shield-check', type: 'upload', hint: 'Share code or document from Home Office check' },
+    { key: 'proofOfAddress', label: 'Proof of Address', icon: 'map-pin', type: 'upload', hint: 'Utility bill or bank statement (last 3 months)' },
+    { key: 'proofOfIncome', label: 'Proof of Income', icon: 'banknote', type: 'upload', hint: 'Recent payslips or bank statements' },
+    { key: 'employment', label: 'Employment Details', icon: 'briefcase', type: 'form' },
+    { key: 'previousLandlord', label: 'Previous Landlord', icon: 'home', type: 'form' },
+    { key: 'guarantor', label: 'Guarantor Details', icon: 'user-check', type: 'form' },
+];
+
+const TENANT_CHECKOUT_CHECKLIST = [
+    ['kitchen', 'Kitchen cleaned & appliances wiped'],
+    ['bathroom', 'Bathroom cleaned & fixtures wiped'],
+    ['bedroom', 'Bedrooms vacuumed & surfaces dusted'],
+    ['living', 'Living areas tidy & floors cleaned'],
+    ['keys', 'All keys returned to landlord'],
+];
+
+function getTenantReferencing(tenantId) {
+    if (!AppStore.tenantReferencing) AppStore.tenantReferencing = {};
+    if (!AppStore.tenantReferencing[tenantId]) {
+        AppStore.tenantReferencing[tenantId] = {
+            passport: { status: 'pending' },
+            rightToRent: { status: 'pending' },
+            proofOfAddress: { status: 'pending' },
+            proofOfIncome: { status: 'pending' },
+            employment: { status: 'pending' },
+            previousLandlord: { status: 'pending' },
+            guarantor: { status: 'pending' },
+        };
+    }
+    return AppStore.tenantReferencing[tenantId];
+}
+
+function tenantRefStatusLabel(status) {
+    const map = {
+        verified: ['Verified', '#ECFDF5', '#059669'],
+        complete: ['Complete', '#ECFDF5', '#059669'],
+        pending: ['Pending review', '#FEF3C7', '#D97706'],
+        missing: ['Not provided', '#F1F5F9', '#64748B'],
+        not_required: ['Not required', '#F1F5F9', '#64748B'],
+    };
+    return map[status] || map.pending;
+}
+
+function tenantMaintenanceForAccount(tenant) {
+    if (!tenant || typeof MAINTENANCE_ITEMS === 'undefined') return [];
+    return MAINTENANCE_ITEMS.filter(m =>
+        m.propertyId === tenant.propertyId &&
+        m.unit === tenant.unit &&
+        !(typeof isCommunalMaint === 'function' && isCommunalMaint(m))
+    );
+}
+
+function tenantSmartReminders(tenant) {
+    if (!tenant) return [];
+    const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : tenant.id;
+    const listItem = TENANT_LIST[tid];
+    const tenantTypes = new Set(['rent-review', 'inspection', 'gas', 'electrical', 'epc', 'custom']);
+    const rows = (AppStore.reminders || []).filter(r =>
+        r.propertyId === tenant.propertyId && tenantTypes.has(r.type)
+    );
+    const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tid) : null;
+    if (pay?.balance && pay.balance !== '£0.00') {
+        rows.unshift({
+            id: 'rent-due', type: 'rent-review', title: 'Rent payment due',
+            due: pay.nextDue?.split('·').pop()?.trim() || 'Soon', urgency: 'high', daysLeft: 3,
+        });
+    }
+    if (listItem?.leaseEnd || tenant.leaseEnd) {
+        const leaseEnd = listItem?.leaseEnd || tenant.leaseEnd;
+        rows.push({
+            id: 'lease-end', type: 'rent-review', title: 'Lease end date',
+            due: leaseEnd, urgency: 'medium', daysLeft: 90,
+        });
+    }
+    return rows.slice(0, 8);
+}
+
+function tenantComplianceForTenant(tenant) {
+    if (!tenant) return [];
+    const items = typeof COMPLIANCE_ITEMS !== 'undefined' ? COMPLIANCE_ITEMS : [];
+    const tenantVisible = [0, 1, 5];
+    return tenantVisible.map(cid => {
+        const certKey = `${tenant.propertyId}-${cid}`;
+        const saved = AppStore.complianceCerts?.[certKey];
+        const cfg = COMPLIANCE_ITEM_CONFIG[cid];
+        const [ic, name, exp] = items[cid] || ['shield', 'Certificate', '—'];
+        const valid = saved?.expiryDate ? (daysUntil(saved.expiryDate) ?? 0) > 0 : cid === 5;
+        return {
+            cid, icon: ic, name, expiry: saved?.expiryDate || exp,
+            status: valid ? 'valid' : 'action_needed',
+            certNumber: saved?.certNumber || '—',
+            issuedBy: saved?.issuedBy || '—',
+        };
+    });
+}
+
+function tenantCommunicationHistory(tenant) {
+    const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : tenant?.id;
+    const rows = [];
+    const chatId = typeof getActiveTenantLandlordChatId === 'function' ? getActiveTenantLandlordChatId() : null;
+    const conv = chatId != null && typeof CONVERSATIONS !== 'undefined' ? CONVERSATIONS.find(c => c.id === chatId) : null;
+    if (conv?.messages?.length) {
+        conv.messages.slice(-3).forEach(m => {
+            rows.push({
+                icon: 'message-square', color: '#4F46E5', bg: '#EEF2FF',
+                title: m.type === 'in' ? 'You messaged landlord' : 'Landlord replied',
+                sub: m.text, time: m.time, go: 'chat', opts: { chatId },
+            });
+        });
+    }
+    tenantMaintenanceForAccount(tenant).slice(0, 4).forEach(m => {
+        const label = typeof maintStatusLabel !== 'undefined' ? (maintStatusLabel[m.status] || m.status) : m.status;
+        rows.push({
+            icon: 'wrench', color: '#D97706', bg: '#FFFBEB',
+            title: m.issue, sub: `${label} · ${m.contractor && m.contractor !== '—' ? m.contractor : 'Awaiting contractor'}`,
+            time: m.time, go: 'maintenance-detail', opts: { maintId: m.id },
+        });
+    });
+    return rows.sort((a, b) => 0).slice(0, 6);
+}
+
+function tenantContractorChatIds(tenant) {
+    if (!tenant) return [];
+    const ids = tenantMaintenanceForAccount(tenant)
+        .filter(m => m.contractor && m.contractor !== '—')
+        .map(m => getContractorChatId(m.contractor))
+        .filter(id => id != null);
+    return [...new Set(ids)];
+}
+
+function getTenantCheckout(tenantId) {
+    if (!AppStore.tenantCheckout) AppStore.tenantCheckout = {};
+    if (!AppStore.tenantCheckout[tenantId]) {
+        const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tenantId) : null;
+        AppStore.tenantCheckout[tenantId] = {
+            checklist: Object.fromEntries(TENANT_CHECKOUT_CHECKLIST.map(([k]) => [k, false])),
+            meters: { electricity: '', gas: '', water: '' },
+            photos: [],
+            depositStatus: 'protected',
+            depositScheme: 'MyDeposits',
+            depositAmount: fin?.deposit || '—',
+        };
+    }
+    return AppStore.tenantCheckout[tenantId];
+}
+
+function pickVideoFiles() {
+    return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*';
+        input.multiple = true;
+        input.style.cssText = 'position:fixed;left:-9999px;opacity:0;pointer-events:none';
+        const finish = (urls) => { input.remove(); resolve(urls); };
+        input.addEventListener('change', async () => {
+            const files = Array.from(input.files || []).filter(f => (f.type || '').startsWith('video/'));
+            if (!files.length) { finish([]); return; }
+            try {
+                finish(await Promise.all(files.map(readFileAsDataUrl)));
+            } catch {
+                finish([]);
+            }
+        });
+        input.addEventListener('cancel', () => finish([]));
+        document.body.appendChild(input);
+        input.click();
+    });
 }
 
 function syncInspectionDates() {
@@ -2941,6 +4488,7 @@ function normalizeDemoPortfolio() {
         { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
         { id: 3, num: 'INV-2026-1044', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Bank transfer' },
         { id: 4, num: 'INV-2026-1043', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 3, 2026', paymentMethod: 'Standing order' },
+        { id: 5, num: 'INV-2026-1050', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£85', status: 'Pending', due: 'Jul 20, 2026', month: 'Jul 2026', type: 'maintenance', desc: 'Kitchen sink repair share' },
     ];
     if (INVOICES.length !== canonicalInvoices.length || INVOICES.some((inv, idx) => inv.num !== canonicalInvoices[idx]?.num)) {
         INVOICES.splice(0, INVOICES.length, ...canonicalInvoices);
@@ -3098,18 +4646,24 @@ function syncLandlordAfterInviteSent(invite) {
 }
 
 function syncLandlordAfterActivation(invite) {
-    upsertTenantFromInvite(invite, true);
+    const tid = upsertTenantFromInvite(invite, true);
     if (typeof ensureLandlordConversation === 'function') ensureLandlordConversation(invite);
     pushNotification({
         icon: 'user-check', color: ['#ECFDF5', '#059669'],
         title: 'Tenant activated', desc: `${invite.firstName} ${invite.lastName} joined the portal`,
-        time: 'Just now', unread: true, screen: 'tenant-detail', opts: { tid: tenantListByProperty(invite.propertyId)?.id ?? 0 },
+        time: 'Just now', unread: true, screen: 'tenant-detail', opts: { tid },
     });
+    return tid;
 }
 
 function pushNotification(n) {
     NOTIFICATIONS.unshift(n);
     AppStore.save();
+}
+
+function broadcastHubLabel(propertyId) {
+    const count = (AppStore.broadcasts || []).filter(b => b.propertyId === propertyId).length;
+    return count ? `${count} sent` : 'Send to tenants';
 }
 
 function propertyHubStats(propertyId) {
@@ -3129,10 +4683,12 @@ function propertyHubStats(propertyId) {
 }
 
 function propertyHubStatusPill(propertyId) {
+    const p = PROPERTIES[propertyId];
+    if (p?.status === 'Partial') return { label: 'Partial', bg: '#DBEAFE', color: '#2563EB' };
     const { occupiedFlats, units } = propertyHubStats(propertyId);
     if (!units.length || occupiedFlats === 0) return { label: 'Vacant', bg: '#FEF3C7', color: '#D97706' };
     if (occupiedFlats === units.length) return { label: 'Fully occupied', bg: '#DCFCE7', color: '#16A34A' };
-    return { label: 'Active', bg: '#DCFCE7', color: '#16A34A' };
+    return { label: 'Partial', bg: '#DBEAFE', color: '#2563EB' };
 }
 
 function propertyInspectionHubLabel(propertyId) {
@@ -3245,10 +4801,11 @@ function renderPropertyRecordsHub(propertyId) {
     const { docs, upcoming, rooms } = propertyHubStats(propertyId);
     const inspLabel = upcoming ? 'Inspection scheduled' : 'Reports & schedule';
     const items = [
+        ['megaphone', 'Notices', 'broadcasts', broadcastHubLabel(propertyId), '#F5F3FF', '#7C3AED'],
         ['file-text', 'Documents', 'documents', docs.length ? `${docs.length} file${docs.length === 1 ? '' : 's'}` : 'Leases & certificates', '#ECFDF5', '#059669'],
         ['clipboard-list', 'Inspections', 'inspection', inspLabel, '#EFF6FF', '#2563EB'],
         ['shield-check', 'Compliance', 'compliance', propertyComplianceHubLabel(propertyId), '#FFF7ED', '#EA580C'],
-        ['package', 'Inventory', 'inventory', rooms.length ? `${rooms.length} room${rooms.length === 1 ? '' : 's'}` : 'Room checklists', '#F5F3FF', '#7C3AED'],
+        ['package', 'Inventory', 'inventory', typeof inventoryHubLabel === 'function' ? inventoryHubLabel(propertyId) : 'Room checklists', '#F5F3FF', '#7C3AED'],
     ];
     return `
     <div class="screen-content screen-content-sm prop-records-hub">
@@ -3258,7 +4815,7 @@ function renderPropertyRecordsHub(propertyId) {
         </div>
         <div class="card overflow-hidden prop-info-hub-list">
             ${items.map(([ic, label, tab, status, bg, color]) => `
-            <button type="button" data-tab="${tab}" class="prop-info-hub-row">
+            <button type="button" ${tab === 'broadcasts' ? `data-go="send-broadcast" data-pid="${propertyId}"` : `data-tab="${tab}"`} class="prop-info-hub-row">
                 <span class="prop-info-hub-icon" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></span>
                 <span class="prop-info-hub-copy">
                     <span class="prop-info-hub-title">${label}</span>
@@ -3362,16 +4919,10 @@ const DOC_TYPE_SORT = {
 function documentActionMenuItems(docId) {
     const doc = AppStore.documents.find(d => d.id === docId);
     if (!doc) return [];
-    const items = [
-        { label: 'Share with tenant', icon: 'share-2', action: 'action-menu-share-doc', attrs: `data-doc="${docId}"` },
+    return [
+        { label: 'Edit', icon: 'pencil', action: 'action-menu-edit-document', attrs: `data-doc="${docId}"` },
+        { label: 'Delete', icon: 'trash-2', action: 'action-menu-delete-document', danger: true, attrs: `data-doc="${docId}"` },
     ];
-    if (isUserUploadedDoc(doc)) {
-        items.push(
-            { label: 'Rename', icon: 'pencil', action: 'action-menu-edit-document', attrs: `data-doc="${docId}"` },
-            { label: 'Delete', icon: 'trash-2', action: 'action-menu-delete-document', danger: true, attrs: `data-doc="${docId}"` },
-        );
-    }
-    return items;
 }
 
 function renderDocumentRow(doc, propertyId) {
@@ -3399,22 +4950,15 @@ function renderDocumentRow(doc, propertyId) {
 
 function renderPropertyDocumentsTab(propertyId) {
     const docs = sortPropertyDocuments(AppStore.docsForProperty(propertyId));
+    const slotTotal = ADD_DOC_TYPE_OPTIONS.filter(o => o.type !== 'Custom Document').length;
+    const filledSlots = ADD_DOC_TYPE_OPTIONS.filter(o =>
+        o.type !== 'Custom Document' && docForPropertyByType(propertyId, o.type)
+    ).length;
     return `
-    <div class="screen-content screen-content-sm">
-        <div class="doc-page-head">
-            <p class="doc-page-count">${docs.length} file${docs.length === 1 ? '' : 's'}</p>
-            <button type="button" data-action="open-add-document" class="doc-add-btn">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add document</span>
-            </button>
-        </div>
-        ${docs.length ? `<div class="doc-list">${docs.map(d => renderDocumentRow(d, propertyId)).join('')}</div>` : `
-        <div class="card p-8 text-center">
-            <i data-lucide="folder-open" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
-            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No documents yet</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Add a lease, certificate or other file</p>
-            <button type="button" data-action="open-add-document" class="btn-primary py-2.5 px-5 text-[13px] mt-4">+ Add document</button>
-        </div>`}
+    <div class="screen-content screen-content-sm prop-docs-page">
+        <p class="ux-intro">Leases and compliance certificates for this property. Tap an empty slot to upload — use replace or delete on uploaded files.</p>
+        <p class="doc-page-count">${filledSlots}/${slotTotal} certificates on file${docs.length > filledSlots ? ` · ${docs.length} total` : ''}</p>
+        ${renderLandlordDocSlotGrid(propertyId)}
     </div>`;
 }
 
@@ -3561,7 +5105,7 @@ function renderFlatPeopleSection(propertyId, unit, { occ, tenancy, members, coun
                 <i data-lucide="users" class="w-7 h-7"></i>
             </div>
             <h3 class="flat-people-invite-title">No tenant yet</h3>
-            <p class="flat-people-invite-desc">Invite someone or set up a lease for this unit.</p>
+            <p class="flat-people-invite-desc">Invite someone to move in, or set up the lease first for a group flat.</p>
             ${pendingInvite ? `
             <button data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-invite-banner flat-invite-banner--inline w-full text-left">
                 <div class="flat-invite-banner-icon"><i data-lucide="mail" class="w-4 h-4"></i></div>
@@ -3572,9 +5116,9 @@ function renderFlatPeopleSection(propertyId, unit, { occ, tenancy, members, coun
                 <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
             </button>` : ''}
             <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="btn-primary w-full py-3.5 text-[13px] flat-people-invite-cta">
-                <i data-lucide="user-plus" class="w-4 h-4 inline-block align-[-2px] mr-1"></i>Add tenant
+                <i data-lucide="user-plus" class="w-4 h-4 inline-block align-[-2px] mr-1"></i>Invite a tenant
             </button>
-            <button type="button" data-go="create-tenancy" data-pid="${propertyId}" class="flat-people-invite-link">Set up lease instead</button>
+            <button type="button" data-go="create-tenancy" data-pid="${propertyId}" class="flat-people-invite-link">Group lease or lease first</button>
         </section>`;
     }
     const leaseLine = tenancy
@@ -4185,10 +5729,10 @@ function renderPropertyTenantTab(propertyId) {
             <div class="card p-8 text-center">
                 <i data-lucide="users" class="w-12 h-12 text-[#CBD5E1] mx-auto"></i>
                 <p class="text-[14px] font-semibold mt-3 text-[#0F172A]">No tenants yet</p>
-                <p class="text-[12px] text-[#64748B] mt-1">Invite someone to move into a unit.</p>
+                <p class="text-[12px] text-[#64748B] mt-1">Invite a tenant to a unit, or set up a group lease first.</p>
             </div>
-            <button data-go="invite-tenant" data-pid="${propertyId}" class="btn-primary w-full py-3 text-[13px]">Invite tenant</button>
-            <button data-go="create-tenancy" data-pid="${propertyId}" class="btn-secondary w-full py-3 text-[13px] mt-2">Create tenancy</button>
+            <button data-go="invite-tenant" data-pid="${propertyId}" class="btn-primary w-full py-3 text-[13px]">Invite a tenant</button>
+            <button data-go="create-tenancy" data-pid="${propertyId}" class="btn-secondary w-full py-3 text-[13px] mt-2">Group lease or lease first</button>
         </div>`;
     }
 
@@ -4354,7 +5898,7 @@ function screenDocumentPreviewEnhanced() {
             <button data-action="download-doc" class="btn-secondary py-3 text-[13px] flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Download</button>
             ${docId != null ? `<button data-action="share-doc" data-doc="${docId}" class="btn-primary py-3 text-[13px] flex items-center justify-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i>Share</button>` : `<button data-action="toast" data-msg="Document saved" class="btn-primary py-3 text-[13px]">Save</button>`}
         </div>
-        ${docId != null && isUserUploadedDoc(doc) ? `
+        ${docId != null ? `
         <div class="danger-zone">
             ${dangerZoneButton('Delete document', 'delete-document', `data-doc="${docId}"`)}
         </div>` : ''}
@@ -4362,7 +5906,8 @@ function screenDocumentPreviewEnhanced() {
 }
 
 function getUnreadNotifCount() {
-    return (NOTIFICATIONS || []).filter(n => n.unread).length;
+    const list = typeof notificationsForRole === 'function' ? notificationsForRole() : NOTIFICATIONS;
+    return (list || []).filter(n => n.unread).length;
 }
 
 function dashAttentionItems() {
@@ -4377,14 +5922,29 @@ function dashAttentionItems() {
             go: 'mark-rent-received',
         });
     }
-    const openMaint = MAINTENANCE_ITEMS.filter(m => m.status === 'open' || m.status === 'progress');
-    if (openMaint.length) {
+    const unassignedTenant = MAINTENANCE_ITEMS.filter(m =>
+        isTenantMaintReport(m) && maintNeedsContractor(m)
+    );
+    if (unassignedTenant.length) {
+        const preview = unassignedTenant.slice(0, 2).map(m => m.issue).join(', ');
         items.push({
             icon: 'wrench', bg: '#FEF3C7', color: '#D97706',
-            title: `${openMaint.length} open issue${openMaint.length === 1 ? '' : 's'}`,
-            sub: 'Review maintenance queue',
+            title: `${unassignedTenant.length} tenant report${unassignedTenant.length === 1 ? '' : 's'} need contractor`,
+            sub: preview + (unassignedTenant.length > 2 ? '…' : ''),
             go: 'maintenance',
+            maintSourceFilter: 'tenant',
+            maintFilter: 'open',
         });
+    } else {
+        const openMaint = MAINTENANCE_ITEMS.filter(m => m.status === 'open' || m.status === 'progress');
+        if (openMaint.length) {
+            items.push({
+                icon: 'wrench', bg: '#FEF3C7', color: '#D97706',
+                title: `${openMaint.length} open issue${openMaint.length === 1 ? '' : 's'}`,
+                sub: 'Review maintenance queue',
+                go: 'maintenance',
+            });
+        }
     }
     const unreadChats = (CONVERSATIONS || []).filter(c => c.unread > 0).length;
     if (unreadChats) {
@@ -4415,7 +5975,7 @@ function dashAttentionStrip() {
     <div class="dash-attention">
         <p class="dash-attention-label">Needs attention</p>
         ${items.map(item => `
-        <button type="button" data-go="${item.go}" class="dash-attention-row">
+        <button type="button" data-go="${item.go}"${item.maintSourceFilter ? ` data-maint-source-on-nav="${item.maintSourceFilter}"` : ''}${item.maintFilter ? ` data-maint-filter-on-nav="${item.maintFilter}"` : ''} class="dash-attention-row">
             <span class="dash-attention-icon" style="background:${item.bg};color:${item.color}"><i data-lucide="${item.icon}" class="w-5 h-5"></i></span>
             <span class="dash-attention-body">
                 <span class="dash-attention-title">${item.title}</span>
@@ -4430,9 +5990,9 @@ function tenantListQuickActions(t) {
     if (t.status !== 'active') return '';
     const chatId = t.chatId ?? (typeof getTenantChatId === 'function' ? getTenantChatId(t.id) : null);
     const unpaid = typeof invoicesForTenant === 'function' ? invoicesForTenant(t.id).find(i => i.status !== 'Paid') : null;
-    const msgAttrs = chatId != null && chatId !== 0
+    const msgAttrs = chatId != null
         ? `data-go="chat" data-chat="${chatId}"`
-        : `data-go="messages"`;
+        : `data-action="start-tenant-chat" data-tid="${t.id}"`;
     const btns = [
         `<button type="button" data-action="call-tenant" data-tid="${t.id}" class="tenant-list-quick-btn"><i data-lucide="phone" class="w-3.5 h-3.5"></i>Call</button>`,
         `<button type="button" ${msgAttrs} class="tenant-list-quick-btn"><i data-lucide="message-square" class="w-3.5 h-3.5"></i>Message</button>`,
@@ -4451,7 +6011,7 @@ function screenDashboardEnhanced() {
         const prop = PROPERTIES[r.propertyId];
         const rt = REMINDER_TYPES.find(t => t[0] === r.type) || ['custom', r.title, 'bell', '#EFF6FF', '#2563EB'];
         const tab = r.type === 'inspection' ? 'inspection' : r.type === 'rent-review' ? 'units' : 'compliance';
-        return [rt[2], r.title, prop?.name || '', `${r.daysLeft} days left`, rt[3], rt[4], r.propertyId, tab, r.urgency];
+        return [rt[2], r.title, prop?.name || '', formatReminderDaysLeft(r.daysLeft), rt[3], rt[4], r.propertyId, tab, r.urgency];
     });
     const unreadBell = getUnreadNotifCount();
     const finStats = typeof financialStats === 'function' ? financialStats() : null;
@@ -4508,7 +6068,7 @@ function screenDashboardEnhanced() {
         </div>
         ${dashAttentionStrip()}
         <div class="dash-quick dash-quick--grid">
-            ${[['circle-check','Record rent','mark-rent-received','success'],['wrench','Log issue','log-maintenance','warning'],['user-plus','Invite tenant','select-property-invite','indigo'],['message-square','Messages','messages','primary']].map(([ic,l,go,tone])=>`
+            ${[['circle-check','Record rent','mark-rent-received','success'],['megaphone','Send notice','broadcast-notices','indigo'],['wrench','Log issue','log-maintenance','warning'],['message-square','Messages','messages','primary']].map(([ic,l,go,tone])=>`
             <button data-go="${go}" class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${l}</span>
@@ -4941,6 +6501,10 @@ function getActiveTenanciesForProperty(propertyId) {
     return AppStore.tenancies.filter(t => t.propertyId === propertyId && t.status === 'active');
 }
 
+function getPendingTenanciesForProperty(propertyId) {
+    return AppStore.tenancies.filter(t => t.propertyId === propertyId && t.status === 'pending');
+}
+
 function getTenancyForUnit(propertyId, unitName) {
     return AppStore.tenancies.find(t => t.propertyId === propertyId && t.unit === unitName && t.status === 'active') || null;
 }
@@ -4958,27 +6522,51 @@ function syncPropertyStatus(propertyId) {
     if (!p) return;
     const units = getPropertyUnits(propertyId);
     const activeTenancies = getActiveTenanciesForProperty(propertyId);
+    const pendingTenancies = getPendingTenanciesForProperty(propertyId);
     const occupiedNames = new Set(activeTenancies.map(t => t.unit));
+    const reservedNames = new Set(pendingTenancies.map(t => t.unit));
     units.forEach(u => {
-        u.status = occupiedNames.has(unitName(u)) ? 'occupied' : 'vacant';
-        const tenancy = activeTenancies.find(t => t.unit === unitName(u));
-        if (tenancy?.rent) u.rent = tenancy.rent.startsWith('£') ? tenancy.rent : `£${parseRentAmount(tenancy.rent).toLocaleString()}`;
+        const name = unitName(u);
+        if (occupiedNames.has(name)) {
+            u.status = 'occupied';
+            const tenancy = activeTenancies.find(t => t.unit === name);
+            if (tenancy?.rent) u.rent = tenancy.rent.startsWith('£') ? tenancy.rent : `£${parseRentAmount(tenancy.rent).toLocaleString()}`;
+        } else if (reservedNames.has(name)) {
+            u.status = 'reserved';
+            const tenancy = pendingTenancies.find(t => t.unit === name);
+            if (tenancy?.rent) u.rent = tenancy.rent.startsWith('£') ? tenancy.rent : `£${parseRentAmount(tenancy.rent).toLocaleString()}`;
+        } else {
+            u.status = 'vacant';
+        }
     });
     const occupied = units.filter(u => u.status === 'occupied').length;
+    const reserved = units.filter(u => u.status === 'reserved').length;
     const total = units.length;
-    if (occupied === 0) {
+    if (occupied === 0 && reserved === 0) {
         p.status = 'Vacant';
         p.statusColor = ['#FEF3C7', '#D97706'];
-        p.occupancyLabel = total === 1 ? 'Vacant' : `${total} vacant`;
-    } else if (occupied < total) {
+        p.occupancyLabel = total === 0 ? 'No units' : (total === 1 ? 'Vacant' : `${total} vacant`);
+    } else if (occupied + reserved < total) {
         p.status = 'Partial';
         p.statusColor = ['#DBEAFE', '#2563EB'];
-        p.occupancyLabel = `${occupied}/${total} occupied`;
+        p.occupancyLabel = reserved
+            ? `${occupied}/${total} occupied · ${reserved} reserved`
+            : `${occupied}/${total} occupied`;
     } else {
-        p.status = 'Full';
-        p.statusColor = ['#DCFCE7', '#16A34A'];
-        p.occupancyLabel = total === 1 ? 'Occupied' : 'Full';
+        p.status = occupied === total ? 'Full' : 'Partial';
+        p.statusColor = occupied === total ? ['#DCFCE7', '#16A34A'] : ['#DBEAFE', '#2563EB'];
+        p.occupancyLabel = occupied === total
+            ? (total === 1 ? 'Occupied' : 'Full')
+            : `${occupied}/${total} occupied`;
     }
+    syncPropertyRent(propertyId);
+}
+
+function syncPropertyRent(propertyId) {
+    const p = PROPERTIES[propertyId];
+    if (!p) return;
+    const { potential } = getPropertyRentSummary(propertyId);
+    p.rent = potential > 0 ? formatRentAmount(potential) : '—';
 }
 
 function parseRentAmount(val) {
@@ -5061,20 +6649,17 @@ function getPropertyRentSummary(propertyId) {
 }
 
 function propertyRentRangeLabel(propertyId) {
-    const { collected, min } = getPropertyRentSummary(propertyId);
-    if (collected > 0) return `${formatRentAmount(collected)}/mo`;
-    return min ? `from ${formatRentAmount(min)}/mo` : 'Not set';
+    const { potential, flatCount } = getPropertyRentSummary(propertyId);
+    if (!potential) return 'Not set';
+    if (flatCount > 1) return `${formatRentAmount(potential)}/mo total`;
+    return `${formatRentAmount(potential)}/mo`;
 }
 
 function propertyRentListLabel(propertyId) {
-    const { collected, potential, min, flatCount } = getPropertyRentSummary(propertyId);
-    if (collected > 0) {
-        if (flatCount > 1 && collected < potential) return `${formatRentAmount(collected)}/mo collected`;
-        return `${formatRentAmount(collected)}/mo`;
-    }
-    if (flatCount > 1 && min) return `from ${formatRentAmount(min)}/mo`;
-    if (potential) return `${formatRentAmount(potential)}/mo`;
-    return 'Rent not set';
+    const { potential, flatCount } = getPropertyRentSummary(propertyId);
+    if (!potential) return 'Rent not set';
+    if (flatCount > 1) return `${formatRentAmount(potential)}/mo total`;
+    return `${formatRentAmount(potential)}/mo`;
 }
 
 function propertyOccupancyBadge(propertyId) {
@@ -5203,6 +6788,7 @@ function seedConversationsIfNeeded() {
 
 function getMaintTenantForItem(item) {
     if (!item) return null;
+    if (isCommunalMaint(item)) return null;
     if (item.tenantName) {
         const byName = TENANT_LIST.find(t =>
             t.name === item.tenantName && t.propertyId === item.propertyId &&
@@ -5222,9 +6808,26 @@ function isTenantMaintReport(item) {
 
 function suggestContractorForIssue(item) {
     const text = `${item?.issue || ''} ${item?.desc || ''}`.toLowerCase();
-    if (/boiler|radiator|heat|gas|hot water/.test(text)) return CONTRACTORS.find(c => c.trade === 'Heating') || CONTRACTORS[1];
-    if (/light|electric|flicker|socket|fuse/.test(text)) return CONTRACTORS.find(c => c.trade === 'Electrical') || CONTRACTORS[2];
-    if (/sink|tap|leak|pipe|plumb|water|damp/.test(text)) return CONTRACTORS.find(c => c.trade === 'Plumbing') || CONTRACTORS[0];
+    if (typeof CONTRACTOR_TRADE_CATALOG !== 'undefined') {
+        let bestMeta = null;
+        let bestScore = 0;
+        CONTRACTOR_TRADE_CATALOG.forEach(meta => {
+            const score = meta.keywords.filter(k => text.includes(k)).length;
+            if (score > bestScore) {
+                bestScore = score;
+                bestMeta = meta;
+            }
+        });
+        if (bestMeta && bestScore > 0) {
+            const match = CONTRACTORS.find(c => c.tradeId === bestMeta.id);
+            if (match) return match;
+        }
+    }
+    if (/boiler|radiator|heat|gas|hot water/.test(text)) return CONTRACTORS.find(c => c.tradeId === 'heating') || CONTRACTORS[1];
+    if (/light|electric|flicker|socket|fuse/.test(text)) return CONTRACTORS.find(c => c.tradeId === 'electrical') || CONTRACTORS[2];
+    if (/sink|tap|leak|pipe|plumb|water|damp|basin|toilet/.test(text)) return CONTRACTORS.find(c => c.tradeId === 'plumbing') || CONTRACTORS[0];
+    if (/paint|peel|wallpaper|decorat/.test(text)) return CONTRACTORS.find(c => c.tradeId === 'painting');
+    if (/window|door|latch|lock/.test(text)) return CONTRACTORS.find(c => c.tradeId === 'general' || c.tradeId === 'carpentry');
     return CONTRACTORS[0];
 }
 
@@ -5244,6 +6847,7 @@ function renderMaintTenantComplaint(item) {
             ${chatId != null ? `<button data-go="chat" data-chat="${chatId}" class="maint-tenant-complaint-chat">Message tenant</button>` : ''}
         </div>
         <p class="maint-tenant-complaint-text">"${item.desc || item.issue}"</p>
+        ${renderMaintReportMedia(item, { title: 'Tenant photos & videos', compact: true })}
         <p class="maint-tenant-complaint-meta">Reported ${reportedWhen}</p>
     </div>`;
 }
@@ -5253,13 +6857,123 @@ function getContractorForItem(item) {
 }
 
 function contractorTradeVisual(contractorName) {
-    const trade = getContractorForItem({ contractor: contractorName })?.trade || 'General';
+    const c = getContractorForItem({ contractor: contractorName });
+    const meta = typeof resolveContractorTrade === 'function' ? resolveContractorTrade(c) : null;
+    if (meta) return { icon: meta.icon, bg: meta.bg, color: meta.color };
+    const trade = c?.trade || 'General';
     const map = {
         Plumbing: { icon: 'wrench', bg: '#EFF6FF', color: '#2563EB' },
         Heating: { icon: 'flame', bg: '#FFF7ED', color: '#EA580C' },
         Electrical: { icon: 'zap', bg: '#FEF9C3', color: '#CA8A04' },
     };
     return map[trade] || { icon: 'hard-hat', bg: '#F1F5F9', color: '#64748B' };
+}
+
+function getContractorJobForMaint(maintId) {
+    if (typeof CONTRACTOR_JOBS === 'undefined' || maintId == null) return null;
+    return CONTRACTOR_JOBS.find(j => j.maintId === maintId) || null;
+}
+
+function contractorInvoiceForJob(job) {
+    if (!job || typeof AppStore === 'undefined') return null;
+    return AppStore.contractorInvoices?.find(i => i.maintId === job.maintId && i.status === 'Unpaid') || null;
+}
+
+function renderSharedJobStatusBadges(job, item) {
+    if (!job || typeof contractorStatusStyle !== 'function') return '';
+    const st = contractorStatusStyle(job.status);
+    const [pBg, pColor] = maintPriorityStyle(item?.priority || job.priority);
+    const communal = typeof contractorJobIsCommunal === 'function' ? contractorJobIsCommunal(job) : false;
+    return `
+    <div class="flex gap-2 flex-wrap maint-job-badges">
+        <span class="badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
+        <span class="badge" style="background:${pBg};color:${pColor}">${item?.priority || job.priority}</span>
+        ${communal ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal</span>' : ''}
+    </div>`;
+}
+
+function renderSharedJobVisitCard(job) {
+    if (!job) return '';
+    const visitPending = !job.visitDate || job.visitDate === 'Not scheduled';
+    return `
+    <div class="card p-4">
+        <p class="ctr-section-label">Visit</p>
+        <p class="text-[14px] font-bold text-[#0F172A] mt-1">${visitPending ? 'Not scheduled yet' : job.visitDate}</p>
+        ${job.scheduleNotes ? `<p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">${job.scheduleNotes}</p>` : ''}
+        ${visitPending ? `<p class="text-[12px] text-[#94A3B8] mt-2">Contractor will confirm a visit time in their app.</p>` : ''}
+    </div>`;
+}
+
+function renderSharedJobPeopleCard(job, item, role) {
+    if (!job) return '';
+    const contractorName = item?.contractor && item.contractor !== '—' ? item.contractor : (job.contractorName || '—');
+    if (role === 'tenant') {
+        return `
+        <div class="card p-4">
+            <p class="ctr-section-label">People</p>
+            <p class="text-[13px] font-semibold mt-1">Contractor: ${contractorName}</p>
+            <p class="text-[14px] text-[#64748B] mt-1">Landlord: ${job.landlord || '—'}</p>
+        </div>`;
+    }
+    return `
+    <div class="card p-4">
+        <p class="ctr-section-label">People</p>
+        <p class="text-[13px] font-semibold mt-1">Tenant: ${job.tenant || '—'}</p>
+        <p class="text-[14px] text-[#64748B] mt-1">Contractor: ${contractorName}</p>
+    </div>`;
+}
+
+function renderSharedJobInvoiceCard(job, role) {
+    if (!job) return '';
+    const unpaid = contractorInvoiceForJob(job);
+    if (job.invoice) {
+        const awaiting = job.status === 'waiting_approval';
+        return `
+        <div class="card p-4">
+            <p class="ctr-section-label">Invoice</p>
+            <div class="flex items-center justify-between gap-3 py-2">
+                <div class="min-w-0">
+                    <p class="text-[14px] font-bold">${job.invoice.amount}</p>
+                    <p class="text-[13px] text-[#64748B]">${job.invoice.file} · ${job.invoice.uploadedAt}</p>
+                </div>
+                ${awaiting && role === 'landlord'
+                    ? '<span class="badge shrink-0" style="background:#F3E8FF;color:#7C3AED">Awaiting payment</span>'
+                    : '<i data-lucide="check-circle" class="w-6 h-6 text-[#059669] shrink-0"></i>'}
+            </div>
+            ${role === 'landlord' && awaiting && unpaid
+                ? `<button type="button" data-action="pay-contractor" data-cid="${unpaid.id}" class="btn-primary w-full py-3 text-[13px] mt-3">Pay ${unpaid.amount}</button>`
+                : ''}
+            ${role === 'tenant' && awaiting
+                ? `<p class="text-[12px] text-[#64748B] mt-2">Invoice submitted — your landlord is reviewing payment.</p>`
+                : ''}
+        </div>`;
+    }
+    if (role === 'landlord' && job.status === 'waiting_approval') {
+        return `
+        <div class="card p-4">
+            <p class="ctr-section-label">Invoice</p>
+            <p class="text-[13px] text-[#64748B]">Contractor submitted work — review and pay from Finances.</p>
+            ${unpaid ? `<button type="button" data-action="pay-contractor" data-cid="${unpaid.id}" class="btn-primary w-full py-3 text-[13px] mt-3">Pay ${unpaid.amount}</button>` : ''}
+        </div>`;
+    }
+    return '';
+}
+
+function renderSharedJobProgress(job) {
+    if (!job || typeof contractorTimeline !== 'function') return '';
+    return `
+    <p class="ctr-section-label maint-job-progress-label">Progress</p>
+    ${contractorTimeline(job.status)}`;
+}
+
+function renderSharedMaintJobPanel(item, job, role = 'landlord') {
+    if (!job) return renderMaintAssignmentStatus(item, null);
+    return `
+    ${renderSharedJobStatusBadges(job, item)}
+    ${renderSharedJobPeopleCard(job, item, role)}
+    ${renderSharedJobVisitCard(job)}
+    ${renderSharedJobProgress(job)}
+    ${renderSharedJobInvoiceCard(job, role)}`;
 }
 
 function renderMaintAssignmentStatus(item, contractorJob) {
@@ -5309,7 +7023,8 @@ function renderMaintAssignmentStatus(item, contractorJob) {
 function renderMaintContractorCard(item, contractorJob, chatId) {
     const visual = contractorTradeVisual(item.contractor);
     const contractor = getContractorForItem(item);
-    const trade = contractor?.trade || 'Contractor';
+    const category = contractor ? contractorCategoryLabel(contractor) : 'Contractor';
+    const jobsFor = contractor ? contractorJobsForLabel(contractor) : '';
     const statusText = contractorJob?.visitDate
         ? `Visit ${contractorJob.visitDate}`
         : (contractorJob ? 'Job sent to their app' : 'Awaiting confirmation');
@@ -5323,12 +7038,14 @@ function renderMaintContractorCard(item, contractorJob, chatId) {
                 <p class="maint-contractor-eyebrow">Assigned contractor</p>
                 <p class="maint-contractor-name">${item.contractor}</p>
                 <div class="maint-contractor-tags">
-                    <span class="maint-contractor-trade">${trade}</span>
+                    <span class="maint-contractor-trade">${category}</span>
+                    ${jobsFor ? `<span class="maint-contractor-jobs-for">${jobsFor}</span>` : ''}
                     <span class="maint-contractor-status">${statusText}</span>
                 </div>
             </div>
         </div>
         <div class="maint-contractor-actions">
+            <button type="button" data-action="view-contractor-profile" data-cid="${contractor?.id ?? ''}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="user" class="w-4 h-4"></i><span>View profile</span></button>
             ${contractor?.phone ? `<button type="button" data-action="call-contractor" data-phone="${contractor.phone.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
             ${contractor?.email ? `<button type="button" data-action="email-contractor" data-email="${contractor.email.replace(/"/g, '')}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
             ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="contact-outline-btn contact-outline-btn--sm"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
@@ -5384,11 +7101,13 @@ function renderMaintTimeline(timeline) {
 }
 
 function getTenantChatId(tenantId) {
+    const listItem = TENANT_LIST.find(x => x.id === tenantId);
+    if (listItem?.chatId != null) return listItem.chatId;
     const t = TENANTS[tenantId];
-    if (!t) return 0;
+    if (!t) return null;
     const name = `${t.firstName} ${t.lastName}`;
     const conv = CONVERSATIONS.find(c => c.name === name);
-    return conv?.id ?? 0;
+    return conv?.id ?? null;
 }
 
 function sendChatMessage() {
@@ -5540,8 +7259,8 @@ function syncSmartReminders(persist = true) {
         if (!r.due) return;
         const left = daysUntil(r.due);
         if (left != null) {
-            r.daysLeft = Math.max(0, left);
-            r.urgency = r.daysLeft <= 7 ? 'high' : r.daysLeft <= 30 ? 'medium' : 'low';
+            r.daysLeft = left;
+            r.urgency = left < 0 ? 'high' : left <= 7 ? 'high' : left <= 30 ? 'medium' : 'low';
         }
     });
     if (persist) AppStore.save();
@@ -5564,8 +7283,35 @@ function invoicesForTenant(tenantId) {
 }
 
 function invoiceTypeLabel(inv) {
+    if (inv.type === 'maintenance') return inv.desc || 'Maintenance bill';
     if (inv.type === 'bill') return inv.desc || 'Bill';
     return inv.month ? `${inv.month} rent` : 'Monthly rent';
+}
+
+function renderTenantPaymentRow(inv) {
+    const isPaid = inv.status === 'Paid';
+    const isOverdue = inv.status === 'Overdue';
+    const isMaint = inv.type === 'maintenance' || inv.type === 'bill';
+    const iconClass = isPaid ? 'txn-icon-paid' : isOverdue ? 'txn-icon-overdue' : 'txn-icon-pending';
+    const badgeClass = isPaid ? 'txn-badge-paid' : isOverdue ? 'txn-badge-overdue' : 'txn-badge-pending';
+    const statusLabel = isPaid ? 'Paid' : isOverdue ? 'Overdue' : 'Due';
+    const dateLine = isPaid
+        ? `Paid ${inv.paidOn || inv.due}${inv.paymentMethod ? ` · ${inv.paymentMethod}` : ''}`
+        : `Due ${inv.due}`;
+    return `
+    <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="txn-row">
+        <div class="txn-icon ${iconClass}">
+            <i data-lucide="${isPaid ? 'check' : isOverdue ? 'alert-circle' : isMaint ? 'wrench' : 'home'}" class="w-4 h-4"></i>
+        </div>
+        <div class="txn-body">
+            <p class="txn-title">${invoiceTypeLabel(inv)}</p>
+            <p class="txn-sub txn-sub--muted">${dateLine}</p>
+        </div>
+        <div class="txn-meta">
+            <p class="txn-amount">${inv.amount}</p>
+            <span class="txn-badge ${badgeClass}">${statusLabel}</span>
+        </div>
+    </button>`;
 }
 
 function renderFinanceRentDueList() {
@@ -5710,6 +7456,7 @@ function renderTransactionRow(t) {
 }
 
 function screenTransactionHistoryEnhanced() {
+    if (STATE.userRole === 'tenant') return screenTenantPaymentHistory();
     syncTransactionsFromInvoices();
     const f = STATE.invoiceFilter || 'all';
     const statusMap = { pending: 'Pending', paid: 'Paid', overdue: 'Overdue' };
@@ -5943,6 +7690,190 @@ function maintDetailHeader(item) {
     return { title: p?.name?.split(',')[0] || item.prop.split(',')[0], subtitle: item.issue };
 }
 
+function maintNeedsContractor(item) {
+    return (item?.status === 'open' || item?.status === 'progress') && (!item?.contractor || item?.contractor === '—');
+}
+
+function maintSourceMatches(item, source) {
+    if (source === 'tenant') return isTenantMaintReport(item);
+    if (source === 'landlord') return !isTenantMaintReport(item);
+    return true;
+}
+
+function sortMaintInbox(items) {
+    return [...items].sort((a, b) => {
+        const aNeeds = maintNeedsContractor(a) && isTenantMaintReport(a) ? 0 : 1;
+        const bNeeds = maintNeedsContractor(b) && isTenantMaintReport(b) ? 0 : 1;
+        if (aNeeds !== bNeeds) return aNeeds - bNeeds;
+        const rank = { open: 0, progress: 1, done: 2 };
+        const statusDiff = (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
+        if (statusDiff) return statusDiff;
+        return (b.id ?? 0) - (a.id ?? 0);
+    });
+}
+
+function maintInboxIconClass(status) {
+    if (status === 'done') return 'txn-icon-paid';
+    if (status === 'progress') return 'txn-icon-progress';
+    return 'txn-icon-pending';
+}
+
+function maintInboxStatusBadge(status) {
+    const map = {
+        open: ['Open', 'txn-badge-pending'],
+        progress: ['In progress', 'txn-badge-progress'],
+        done: ['Done', 'txn-badge-paid'],
+    };
+    return map[status] || ['Open', 'txn-badge-pending'];
+}
+
+function renderMaintInboxRow(item) {
+    const tenantReport = isTenantMaintReport(item);
+    const needsAssign = maintNeedsContractor(item) && tenantReport;
+    const [statusLabel, badgeClass] = maintInboxStatusBadge(item.status);
+    const iconClass = maintInboxIconClass(item.status);
+    const iconName = item.status === 'done' ? 'check' : item.status === 'progress' ? 'loader' : 'alert-circle';
+    const propName = item.prop.split(',')[0];
+    const location = typeof formatMaintLocation === 'function'
+        ? formatMaintLocation(item, { propName })
+        : `${propName}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}`;
+    const whoLine = tenantReport
+        ? `${item.tenantName || 'Tenant'} · ${location}`
+        : location;
+    const when = item.reportedAt || item.time || '—';
+    const metaLine = [
+        tenantReport ? 'Tenant report' : 'Landlord log',
+        item.priority,
+        when,
+    ].filter(Boolean).join(' · ');
+    return `
+    <div class="txn-row-wrap${needsAssign ? ' txn-row-wrap--action' : ''}">
+        <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="txn-row">
+            <div class="txn-icon ${iconClass}">
+                <i data-lucide="${iconName}" class="w-4 h-4"></i>
+            </div>
+            <div class="txn-body">
+                <p class="txn-title">${item.issue}</p>
+                <p class="txn-sub">${whoLine}</p>
+                <p class="txn-sub txn-sub--muted">${metaLine}</p>
+            </div>
+            <div class="txn-meta">
+                <span class="txn-badge ${badgeClass}">${statusLabel}</span>
+            </div>
+        </button>
+        ${needsAssign ? `<button type="button" data-action="quick-assign-contractor" data-mid="${item.id}" class="txn-row-action">Assign</button>` : ''}
+    </div>`;
+}
+
+function renderMaintInboxSection(title, list, spaced) {
+    if (!list.length) return '';
+    return `
+        <p class="txn-section-label${spaced ? ' txn-section-label--spaced' : ''}">${title}</p>
+        <div class="txn-list">${list.map(renderMaintInboxRow).join('')}</div>`;
+}
+
+function screenMaintenanceEnhanced() {
+    const sourceF = STATE.maintSourceFilter || 'tenant';
+    const f = STATE.maintFilter || 'all';
+    const scopeF = STATE.maintScopeFilter || 'all';
+    const q = (STATE.search.maintenance || '').toLowerCase();
+    const isCommunal = typeof isCommunalMaint === 'function' ? isCommunalMaint : () => false;
+    const tenantReports = MAINTENANCE_ITEMS.filter(m => isTenantMaintReport(m));
+    const landlordLogs = MAINTENANCE_ITEMS.filter(m => !isTenantMaintReport(m));
+    const unassignedTenant = tenantReports.filter(m => maintNeedsContractor(m));
+    const sourceCounts = {
+        tenant: tenantReports.length,
+        landlord: landlordLogs.length,
+        all: MAINTENANCE_ITEMS.length,
+    };
+    let items = MAINTENANCE_ITEMS.filter(m => maintSourceMatches(m, sourceF));
+    if (f !== 'all') items = items.filter(m => m.status === f);
+    if (scopeF === 'unit') items = items.filter(m => !isCommunal(m));
+    else if (scopeF === 'communal') items = items.filter(m => isCommunal(m));
+    if (q) {
+        items = items.filter(m =>
+            m.issue.toLowerCase().includes(q)
+            || m.prop.toLowerCase().includes(q)
+            || (m.unit || '').toLowerCase().includes(q)
+            || (m.communalArea || '').toLowerCase().includes(q)
+            || (m.tenantName || '').toLowerCase().includes(q)
+            || (m.desc || '').toLowerCase().includes(q)
+        );
+    }
+    items = sortMaintInbox(items);
+    const scopedForCounts = MAINTENANCE_ITEMS.filter(m => maintSourceMatches(m, sourceF));
+    const counts = {
+        all: scopedForCounts.length,
+        open: scopedForCounts.filter(m => m.status === 'open').length,
+        progress: scopedForCounts.filter(m => m.status === 'progress').length,
+        done: scopedForCounts.filter(m => m.status === 'done').length,
+    };
+    const activeCount = counts.open + counts.progress;
+    const subtitle = sourceF === 'tenant'
+        ? `${tenantReports.length} tenant report${tenantReports.length === 1 ? '' : 's'}${unassignedTenant.length ? ` · ${unassignedTenant.length} need contractor` : ''}`
+        : `${activeCount} active issue${activeCount === 1 ? '' : 's'}`;
+    const needsBanner = sourceF === 'tenant' && unassignedTenant.length && (f === 'all' || f === 'open');
+    const needsSection = sourceF === 'tenant' && !q && (f === 'all' || f === 'open')
+        ? items.filter(m => maintNeedsContractor(m))
+        : [];
+    const restItems = needsSection.length
+        ? items.filter(m => !needsSection.some(n => n.id === m.id))
+        : items;
+    const listHtml = items.length ? (
+        needsSection.length
+            ? `${renderMaintInboxSection('Needs contractor', needsSection, false)}${renderMaintInboxSection(restItems.length ? 'Other reports' : '', restItems, !!needsSection.length)}`
+            : `<div class="txn-list">${items.map(renderMaintInboxRow).join('')}</div>`
+    ) : `
+        <div class="fin-empty">
+            <div class="fin-empty-icon"><i data-lucide="wrench" class="w-6 h-6"></i></div>
+            <p class="fin-empty-title">No issues here</p>
+            <p class="fin-empty-sub">${sourceF === 'tenant' ? 'Tenant reports appear when tenants log issues from their portal.' : 'Log an issue or try another filter.'}</p>
+            ${sourceF === 'tenant' ? '' : `<button type="button" data-go="log-maintenance" class="btn-primary py-2.5 px-5 text-[13px] mt-3">Log issue</button>`}
+        </div>`;
+    return `${topBar('Maintenance', { sub: subtitle })}
+    <div class="screen-content screen-enter maint-page">
+        <div class="search-bar">
+            <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+            <input data-search="maintenance" type="text" value="${STATE.search.maintenance || ''}" placeholder="Search issues, tenants, flats…" class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
+        </div>
+        <div class="filter-tabs">
+            ${[
+                ['tenant', 'Tenant reports', sourceCounts.tenant],
+                ['landlord', 'My logs', sourceCounts.landlord],
+                ['all', 'All', sourceCounts.all],
+            ].map(([key, label, n]) => `
+            <button type="button" data-maint-source-filter="${key}" class="filter-chip ${sourceF === key ? 'active' : ''}">${label} (${n})</button>`).join('')}
+        </div>
+        ${needsBanner ? `
+        <div class="fin-alert fin-alert--amber" role="status">
+            <span class="fin-alert-icon"><i data-lucide="alert-circle" class="w-5 h-5"></i></span>
+            <span class="fin-alert-text"><strong>${unassignedTenant.length} tenant report${unassignedTenant.length === 1 ? '' : 's'} need a contractor</strong> — review and assign from each report below.</span>
+        </div>` : ''}
+        <div class="fin-segments txn-segments">
+            ${[
+                ['open', 'Open', counts.open],
+                ['progress', 'In progress', counts.progress],
+                ['done', 'Done', counts.done],
+                ['all', 'All', counts.all],
+            ].map(([key, label, n]) => `
+            <button type="button" data-maint-filter="${key}" class="fin-segment ${f === key ? 'active' : ''}">
+                <span class="fin-segment-label">${label}</span>
+                ${key !== 'all' && n ? `<span class="fin-segment-count">${n}</span>` : ''}
+            </button>`).join('')}
+        </div>
+        <div class="filter-tabs" style="margin-bottom:12px">
+            ${[
+                ['all', 'All locations'],
+                ['unit', 'Units'],
+                ['communal', 'Communal'],
+            ].map(([key, label]) => `
+            <button type="button" data-maint-scope-filter="${key}" class="filter-chip ${scopeF === key ? 'active' : ''}">${label}</button>`).join('')}
+        </div>
+        ${listHtml}
+        <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3.5 text-[14px] maint-log-primary">+ Log issue</button>
+    </div>`;
+}
+
 function screenMaintenanceHistory() {
     const done = MAINTENANCE_ITEMS.filter(m => m.status === 'done');
     return `${topBar('Maintenance History', { back: true })}
@@ -5957,9 +7888,7 @@ function screenMaintenanceDetailEnhanced() {
     const item = maintItem(STATE.maintId);
     const statusLabel = maintStatusLabel[item.status] || item.status;
     const [pBg, pColor] = maintPriorityStyle(item.priority);
-    const contractorJob = typeof CONTRACTOR_JOBS !== 'undefined'
-        ? CONTRACTOR_JOBS.find(j => j.maintId === item.id)
-        : null;
+    const contractorJob = getContractorJobForMaint(item.id);
     if (contractorJob && typeof syncContractorJobToMaintenance === 'function') {
         syncContractorJobToMaintenance(contractorJob);
     }
@@ -5983,9 +7912,12 @@ function screenMaintenanceDetailEnhanced() {
             progress: { label: 'In Progress', bg: '#DBEAFE', color: '#2563EB' },
             done: { label: 'Resolved', bg: '#DCFCE7', color: '#16A34A' },
         }[item.status] || { label: statusLabel, bg: '#F1F5F9', color: '#64748B' };
-        const contractorLine = item.contractor && item.contractor !== '—'
-            ? `${item.contractor} assigned`
-            : 'Waiting for landlord to assign a contractor';
+        const contractorLine = contractorJob?.visitDate && contractorJob.visitDate !== 'Not scheduled'
+            ? `Visit ${contractorJob.visitDate}`
+            : (item.contractor && item.contractor !== '—' ? `${item.contractor} assigned` : 'Waiting for landlord to assign a contractor');
+        const jobStatusBadge = contractorJob && typeof contractorStatusStyle === 'function'
+            ? contractorStatusStyle(contractorJob.status)
+            : null;
         return `${topBar(item.issue, { back: true, sub: location })}
         <div class="screen-content screen-content-sm screen-enter prop-hub-page">
             <div class="card p-4" style="background:#F8FAFC;margin-bottom:12px">
@@ -6000,12 +7932,14 @@ function screenMaintenanceDetailEnhanced() {
                     <div class="maint-detail-badges">
                         <span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span>
                         <span class="badge" style="background:${tenantStatus.bg};color:${tenantStatus.color}">${tenantStatus.label}</span>
+                        ${jobStatusBadge ? `<span class="badge" style="background:${jobStatusBadge.bg};color:${jobStatusBadge.color}">${jobStatusBadge.label}</span>` : ''}
                     </div>
                 </div>
                 <p class="maint-detail-desc">${item.desc || item.issue}</p>
                 <p class="maint-detail-meta">Reported ${item.reportedAt || item.time}</p>
             </div>
-            ${renderMaintAssignmentStatus(item, contractorJob)}
+            ${renderMaintReportMedia(item, { title: 'Your photos & videos' })}
+            ${contractorJob ? renderSharedMaintJobPanel(item, contractorJob, 'tenant') : renderMaintAssignmentStatus(item, contractorJob)}
             ${item.contractor !== '—' ? `
             <div class="maint-contractor-card card">
                 <div class="maint-contractor-card-top">
@@ -6028,9 +7962,11 @@ function screenMaintenanceDetailEnhanced() {
                 <p class="text-[12px] text-[#64748B] mt-1 leading-relaxed">Your landlord has been notified and will arrange a contractor for this issue.</p>
             </div>`}
             ${renderMaintWorkNotes(item, contractorJob)}
+            ${renderContractorWorkMedia(contractorJob)}
             ${renderMaintTimeline(timeline)}
             ${item.status === 'done' ? `<p class="maint-resolved-note"><i data-lucide="check-circle" class="w-4 h-4"></i> Issue resolved</p>` : ''}
-        </div>`;
+        </div>
+        ${renderMaintMediaPreviewModal()}`;
     }
 
     const actions = [];
@@ -6045,26 +7981,21 @@ function screenMaintenanceDetailEnhanced() {
     const tenantReport = isTenantMaintReport(item);
     return `${topBar(headerTitle, { back: true, sub: headerSub })}
     <div class="screen-content screen-content-sm screen-enter prop-hub-page">
-        ${tenantReport ? `
-        <div class="maint-detail-badges-row">
-            <span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span>
-            <span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span>
-            <span class="badge" style="background:#FEF3C7;color:#B45309">Tenant report</span>
-        </div>` : `
         <div class="maint-detail-summary card">
             <div class="maint-detail-top">
                 <p class="maint-detail-title">${item.issue}</p>
                 <div class="maint-detail-badges">
                     <span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span>
                     <span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span>
+                    ${tenantReport ? '<span class="badge" style="background:#FEF3C7;color:#B45309">Tenant report</span>' : ''}
                     ${isCommunalMaint(item) ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal</span>' : ''}
                 </div>
             </div>
-            <p class="maint-detail-meta"><i data-lucide="map-pin" class="w-3.5 h-3.5 inline-block -mt-px"></i> ${location} · ${item.time}</p>
-            <p class="maint-detail-desc">${item.desc}</p>
-        </div>`}
-        ${renderMaintTenantComplaint(item)}
-        ${renderMaintAssignmentStatus(item, contractorJob)}
+            <p class="maint-detail-meta"><i data-lucide="map-pin" class="w-3.5 h-3.5 inline-block -mt-px"></i> ${location} · ${item.reportedAt || item.time}</p>
+            ${!tenantReport ? `<p class="maint-detail-desc">${item.desc}</p>` : ''}
+        </div>
+        ${tenantReport ? renderMaintTenantComplaint(item) : ''}
+        ${contractorJob ? renderSharedMaintJobPanel(item, contractorJob, 'landlord') : renderMaintAssignmentStatus(item, contractorJob)}
         ${item.contractor !== '—'
             ? renderMaintContractorCard(item, contractorJob, chatId)
             : `
@@ -6082,8 +8013,10 @@ function screenMaintenanceDetailEnhanced() {
         ${item.status !== 'done' ? `
         <button type="button" data-action="cancel-maintenance" data-mid="${item.id}" class="maint-cancel-link">Cancel issue</button>` : `<p class="maint-resolved-note"><i data-lucide="check-circle" class="w-4 h-4"></i> Issue resolved</p>`}
         ${renderMaintWorkNotes(item, contractorJob)}
+        ${renderContractorWorkMedia(contractorJob)}
         ${item.status === 'done' ? renderMaintTimeline(timeline) : ''}
-    </div>`;
+    </div>
+    ${renderMaintMediaPreviewModal()}`;
 }
 
 function inviteDraftFullName(draft = {}, prefill = {}) {
@@ -6129,11 +8062,12 @@ function screenInviteTenantEnhanced() {
         ${formFieldReq('NID', 'idNumber', prefill.idNumber || '', 'text', 'National ID number')}
         <div>
             <label class="form-label">${requiredLabel('NID Document Proof')}</label>
-            <button type="button" data-action="upload-nid-proof" class="card border-2 border-dashed border-[#E2E8F0] p-5 text-center w-full">
+            <button type="button" data-action="upload-nid-proof" class="card border-2 border-dashed p-5 text-center w-full ${STATE.formErrors.nidProof ? 'border-[#FCA5A5] bg-[#FEF2F2]' : 'border-[#E2E8F0]'}">
                 <i data-lucide="${STATE.nidProofName || draft.nidProofName ? 'file-check' : 'upload'}" class="w-7 h-7 text-[#94A3B8] mx-auto"></i>
                 <p class="text-[13px] font-semibold text-[#0F172A] mt-2">${STATE.nidProofName || draft.nidProofName || 'Upload NID scan or photo'}</p>
                 <p class="text-[11px] text-[#64748B] mt-1">Passport, national ID card, or driving licence</p>
             </button>
+            ${STATE.formErrors.nidProof ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${STATE.formErrors.nidProof}</p>` : ''}
         </div>
         ${formFieldReq('Full Name', 'fullName', inviteDraftFullName(draft, prefill), 'text', 'e.g. Sarah Johnson')}
         ${formFieldReq('Date of Birth', 'dob', prefill.dob || '', 'date')}`;
@@ -6145,12 +8079,23 @@ function screenInviteTenantEnhanced() {
     } else if (step === 3) {
         stepBody = `
         <p class="text-[12px] text-[#64748B] leading-relaxed">Choose the unit and lease dates for this invitation.</p>
-        <div><label class="form-label">${requiredLabel('Unit')}</label>${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit)}</div>
-        <div><label class="form-label">Unit rent</label><input data-invite="rent" type="text" class="form-input" placeholder="${unitRent}" value="${prefill.rent || unitRent}"></div>
+        <div class="form-group ${STATE.formErrors.unit ? 'form-group-error' : ''}">
+            <label class="form-label">${requiredLabel('Unit')}</label>
+            ${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit).replace('class="form-input form-select"', `class="form-input form-select${STATE.formErrors.unit ? ' form-input-error' : ''}"`)}
+            ${STATE.formErrors.unit ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${STATE.formErrors.unit}</p>` : ''}
+        </div>
+        <div class="form-group">
+            <label class="form-label">Unit rent</label>
+            <input data-invite="rent" type="text" class="form-input" placeholder="${unitRent}" value="${prefill.rent || unitRent}">
+            <p class="form-helper">${unitRent} per month for this unit</p>
+        </div>
         <p class="form-helper">Rent is for this unit only — not combined with other units in the building.</p>
-        <div><label class="form-label">Lease Start</label><input data-invite="leaseStart" type="date" class="form-input" value="${prefill.leaseStart || ''}"></div>
-        <div><label class="form-label">Lease End</label><input data-invite="leaseEnd" type="date" class="form-input" value="${prefill.leaseEnd || ''}"></div>
-        <div><label class="form-label">Personal Message</label><textarea data-invite="message" class="form-input" rows="3" placeholder="Add a personal message (optional)">${prefill.message || ''}</textarea></div>`;
+        ${formFieldReq('Lease Start', 'leaseStart', prefill.leaseStart || '', 'date')}
+        ${formFieldReq('Lease End', 'leaseEnd', prefill.leaseEnd || '', 'date')}
+        <div class="form-group">
+            <label class="form-label">Personal Message</label>
+            <textarea data-invite="message" class="form-input" rows="3" placeholder="Add a personal message (optional)">${prefill.message || ''}</textarea>
+        </div>`;
     } else {
         const fullName = inviteDraftFullName(prefill, STATE.invitePrefill || {});
         stepBody = `
@@ -6183,8 +8128,8 @@ function screenInviteTenantEnhanced() {
 function captureInviteDraft() {
     const draft = { ...(STATE.inviteDraft || {}) };
     ['idNumber', 'fullName', 'dob', 'email', 'phone', 'unit', 'rent', 'leaseStart', 'leaseEnd', 'message'].forEach((key) => {
-        const val = inviteField(key);
-        if (val) draft[key] = val;
+        const el = document.querySelector(`[data-invite="${key}"]`) || document.querySelector(`[data-field="${key}"]`);
+        draft[key] = el ? (el.value || '').trim() : (draft[key] || '');
     });
     const fullName = draft.fullName || inviteField('fullName');
     if (fullName && typeof splitFullName === 'function') {
@@ -6200,30 +8145,44 @@ function captureInviteDraft() {
 
 function validateInviteStep(step) {
     captureInviteDraft();
+    clearFormErrors();
     const d = STATE.inviteDraft || {};
+    let ok = true;
+    const fail = (key, message) => {
+        STATE.formErrors[key] = message;
+        ok = false;
+    };
     if (step === 1) {
-        if (!d.idNumber) { toast('Enter tenant NID'); return false; }
-        if (!STATE.nidProofName && !d.nidProofName) { toast('Upload NID document proof'); return false; }
-        if (!d.fullName && !d.firstName) { toast('Enter tenant full name'); return false; }
-        if (!d.dob) { toast('Enter date of birth'); return false; }
-        return true;
+        if (!d.idNumber) fail('idNumber', 'Enter tenant NID');
+        if (!STATE.nidProofName && !d.nidProofName) fail('nidProof', 'Upload NID document proof');
+        if (!d.fullName && !d.firstName) fail('fullName', 'Enter tenant full name');
+        if (!d.dob) fail('dob', 'Enter date of birth');
+    } else if (step === 2) {
+        if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) fail('email', 'Enter a valid email address');
+        if (!d.phone) fail('phone', 'Enter tenant phone number');
+    } else if (step === 3) {
+        if (!d.unit) fail('unit', 'Select a unit');
+        if (!d.leaseStart) fail('leaseStart', 'Enter lease start date');
+        if (!d.leaseEnd) fail('leaseEnd', 'Enter lease end date');
+        else if (d.leaseStart && d.leaseEnd <= d.leaseStart) fail('leaseEnd', 'Lease end must be after start date');
     }
-    if (step === 2) {
-        if (!d.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) { toast('Enter a valid email address'); return false; }
-        if (!d.phone) { toast('Enter tenant phone number'); return false; }
-        return true;
+    if (!ok) {
+        const firstMsg = Object.values(STATE.formErrors)[0] || 'Please complete the required fields';
+        if (typeof toastError === 'function') toastError(firstMsg);
+        else toast(firstMsg);
+        render();
+        setTimeout(() => {
+            const firstErr = document.querySelector('.form-input-error, .form-group-error .form-input');
+            firstErr?.focus();
+            firstErr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 60);
     }
-    if (step === 3) {
-        if (!d.unit) { toast('Select a unit'); return false; }
-        if (!d.leaseStart || !d.leaseEnd) { toast('Enter lease start and end dates'); return false; }
-        if (d.leaseEnd <= d.leaseStart) { toast('Lease end must be after start date'); return false; }
-        return true;
-    }
-    return true;
+    return ok;
 }
 
 function advanceInviteWizard() {
     if (!validateInviteStep(STATE.inviteStep || 1)) return;
+    clearFormErrors();
     if ((STATE.inviteStep || 1) < 4) {
         STATE.inviteStep = (STATE.inviteStep || 1) + 1;
         render();
@@ -6393,7 +8352,7 @@ function addGroupMemberRow() {
 function screenCreateTenancyEnhanced() {
     const p = PROPERTIES[STATE.propertyId];
     const count = STATE.groupMemberCount || 1;
-    return `${topBar('Create Tenancy', { back: true })}
+    return `${topBar('Set up lease', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4 flex items-center gap-3">
             <img src="${IMG.props[STATE.propertyId]}" class="w-12 h-12 rounded-xl object-cover" alt="">
@@ -6410,19 +8369,19 @@ function screenCreateTenancyEnhanced() {
                 ${Array.from({ length: count }, (_, i) => `
                 <div class="card p-3" data-member-row>
                     <p class="text-[11px] font-semibold text-[#64748B] mb-2">Occupant ${i + 1}</p>
-                    <input data-member-name type="text" class="form-input mb-2" placeholder="Full name">
-                    <input data-member-email type="email" class="form-input mb-2" placeholder="Email">
-                    <input data-member-phone type="tel" class="form-input" placeholder="Phone">
+                    ${memberField('Full name', 'name', 'text', 'e.g. Sarah Johnson')}
+                    ${memberField('Email', 'email', 'email', 'name@email.com')}
+                    ${memberField('Phone', 'phone', 'tel', '+44 7700 900000')}
                 </div>`).join('')}
             </div>
             <button type="button" data-action="add-group-member" class="btn-secondary w-full py-2.5 text-[12px]">+ Add Occupant</button>
         </div>
-        ${formFieldReq('Unit rent (£)', 'rent', propertyDefaultFlatRent(STATE.propertyId).replace(/[^\d]/g, ''), 'text')}
+        ${formFieldReq('Unit rent (£)', 'rent', propertyDefaultFlatRent(STATE.propertyId).replace(/[^\d]/g, ''), 'text', 'e.g. 2200')}
         <p class="form-helper">Rent applies to the selected unit only — not the whole building.</p>
         ${formFieldReq('Start Date', 'start', '', 'date')}
         ${formFieldReq('End Date', 'end', '', 'date')}
-        <p class="form-helper">After creating the tenancy, invite each occupant to activate their account.</p>
-        <button data-action="save-tenancy" class="btn-primary w-full py-3.5 text-[14px]">Create Tenancy</button>
+        <p class="form-helper">For solo tenants, use Invite a tenant on the unit screen. Use this when several people share one lease — invite each member after saving.</p>
+        <button data-action="save-tenancy" class="btn-primary w-full py-3.5 text-[14px]">Save lease</button>
     </div>`;
 }
 
@@ -6583,7 +8542,7 @@ function screenReminders() {
                     <button data-go="property-detail" data-pid="${r.propertyId}" data-tab="compliance" class="flex items-center gap-3 flex-1 min-w-0 text-left">
                         <div class="dash-reminder-icon" style="background:${rt[3]};color:${rt[4]}"><i data-lucide="${rt[2]}" class="w-[18px] h-[18px]"></i></div>
                         <div class="flex-1 min-w-0"><p class="text-[13px] font-semibold">${r.title}</p><p class="text-[11px] text-[#64748B]">${p?.name} · Due ${r.due}</p></div>
-                        <span class="badge shrink-0" style="background:${rt[3]};color:${rt[4]}">${r.daysLeft}d</span>
+                        <span class="badge shrink-0" style="background:${rt[3]};color:${rt[4]}">${r.daysLeft < 0 ? `${Math.abs(r.daysLeft)}d overdue` : r.daysLeft === 0 ? 'Today' : `${r.daysLeft}d`}</span>
                     </button>
                     <button type="button" data-action="delete-reminder" data-rid="${r.id}" class="row-icon-btn row-icon-btn--danger" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
@@ -6609,7 +8568,7 @@ function screenAddReminder() {
 
 function screenCreateTenancy() {
     const p = PROPERTIES[STATE.propertyId];
-    return `${topBar('Create Tenancy', { back: true })}
+    return `${topBar('Set up lease', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4 flex items-center gap-3">
             <img src="${IMG.props[STATE.propertyId]}" class="w-12 h-12 rounded-xl object-cover" alt="">
@@ -6619,16 +8578,17 @@ function screenCreateTenancy() {
         <select data-field="tenancyType" class="form-input form-select"><option value="solo">Solo Tenancy</option><option value="group">Group Tenancy</option></select></div>
         ${formFieldReq('Unit', 'unit', '', 'text', 'Flat 1A')}
         <div id="group-fields" style="display:none">${formFieldReq('Number of Occupants', 'occupants', '2', 'number')}</div>
-        ${formFieldReq('Unit rent (£)', 'rent', p.rent.replace('£',''), 'text')}
+        ${formFieldReq('Unit rent (£)', 'rent', String(propertyDefaultFlatRent(STATE.propertyId) || '').replace(/[^\d]/g, ''), 'text')}
         ${formFieldReq('Start Date', 'start', '', 'date')}
         ${formFieldReq('End Date', 'end', '', 'date')}
-        <p class="form-helper">After creating the tenancy, invite the tenant to activate their account.</p>
-        <button data-action="save-tenancy" class="btn-primary w-full py-3.5 text-[14px]">Create Tenancy</button>
+        <p class="form-helper">For solo tenants, use Invite a tenant on the unit screen. Use this when several people share one lease — invite each member after saving.</p>
+        <button data-action="save-tenancy" class="btn-primary w-full py-3.5 text-[14px]">Save lease</button>
     </div>`;
 }
 
 function screenCheckoutTenancy() {
-    const t = TENANTS[STATE.tenantId] || TENANTS[0];
+    const t = TENANTS[STATE.tenantId];
+    if (!t) return `${topBar('Check-out Tenancy', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Tenant not found</p></div>`;
     return `${topBar('Check-out Tenancy', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4">
@@ -6648,7 +8608,18 @@ function screenCheckoutTenancy() {
 function screenAssignContractor() {
     const item = maintItem(STATE.assignMaintId ?? STATE.maintId);
     const suggested = suggestContractorForIssue(item);
+    const suggestedMeta = suggested && typeof resolveContractorTrade === 'function' ? resolveContractorTrade(suggested) : null;
     const tenant = getMaintTenantForItem(item);
+    const sorted = [...CONTRACTORS].sort((a, b) => {
+        if (suggested?.id === a.id) return -1;
+        if (suggested?.id === b.id) return 1;
+        if (suggestedMeta) {
+            const aMatch = a.tradeId === suggestedMeta.id ? 0 : 1;
+            const bMatch = b.tradeId === suggestedMeta.id ? 0 : 1;
+            if (aMatch !== bMatch) return aMatch - bMatch;
+        }
+        return a.name.localeCompare(b.name);
+    });
     return `${topBar('Assign Contractor', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4">
@@ -6657,24 +8628,34 @@ function screenAssignContractor() {
             ${item.contractor !== '—' ? `<p class="text-[12px] text-[#D97706] mt-2">Currently: ${item.contractor}</p>` : ''}
         </div>
         ${renderMaintTenantComplaint(item)}
+        ${suggestedMeta ? `
+        <div class="ux-tip maint-assign-trade-tip">
+            <p class="ux-tip-title">Best match: ${suggestedMeta.shortLabel}</p>
+            <p class="ux-tip-text">For this issue, assign a <strong>${suggestedMeta.shortLabel.toLowerCase()}</strong> — ${suggestedMeta.jobsFor}.</p>
+        </div>` : ''}
         <div class="ux-tip">
             <p class="ux-tip-title">What the contractor sees</p>
             <p class="ux-tip-text">The full complaint, unit address, and tenant contact. They accept the job in their app, then schedule a visit.</p>
         </div>
         <p class="screen-section-title">Select contractor</p>
-        ${CONTRACTORS.map(c => {
+        ${sorted.map(c => {
             const isSuggested = suggested?.id === c.id;
             return `
-        <button data-action="assign-contractor" data-cid="${c.id}" class="card p-4 flex items-center gap-3 w-full text-left mb-2 ${isSuggested ? 'maint-contractor-pick--suggested' : ''}">
-            <img src="${c.img}" class="w-12 h-12 rounded-xl object-cover" alt="">
-            <div class="flex-1">
+        <button data-action="assign-contractor" data-cid="${c.id}" class="card p-4 flex items-center gap-3 w-full text-left mb-2 maint-contractor-pick ${isSuggested ? 'maint-contractor-pick--suggested' : ''}">
+            <img src="${c.img}" class="w-12 h-12 rounded-xl object-cover shrink-0" alt="">
+            <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                     <p class="text-[14px] font-semibold">${c.name}</p>
                     ${isSuggested ? `<span class="maint-suggested-pill">Suggested</span>` : ''}
+                    ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(c) : ''}
                 </div>
-                <p class="text-[12px] text-[#64748B]">${c.trade}${tenant ? ` · will contact ${tenant.name.split(' ')[0]}` : ''}</p>
+                <p class="maint-contractor-jobs-for">For: ${contractorJobsForLabel(c)}</p>
+                <p class="text-[12px] text-[#64748B] mt-1">${tenant ? `Will contact ${tenant.name.split(' ')[0]}` : isCommunalMaint(item) ? 'Communal issue' : 'Landlord-assigned job'}${ensureContractorCertificates(c).length ? ` · ${ensureContractorCertificates(c).length} cert${ensureContractorCertificates(c).length === 1 ? '' : 's'}` : ''}</p>
             </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
+            <div class="flex flex-col items-end gap-2 shrink-0">
+                <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="maint-contractor-profile-btn">Profile</button>
+                <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
+            </div>
         </button>`;
         }).join('')}
     </div>`;
@@ -6705,11 +8686,16 @@ function screenConductInspection() {
             <p class="text-[13px] font-semibold text-[#0F172A] mt-2">Add inspection photos</p>
             <p class="text-[11px] text-[#64748B] mt-1">Select multiple from your device${STATE.inspectionPhotos?.length ? ` · ${STATE.inspectionPhotos.length} added` : ''}</p>
         </button>
+        ${renderTenantNotifySection(STATE.propertyId, {
+            title: 'Notify tenants',
+            hint: 'Let residents know the inspection is complete, or uncheck if not needed.',
+        })}
         <button data-action="save-inspection" class="btn-primary w-full py-3.5 text-[14px]">Save Inspection Report</button>
     </div>`;
 }
 
 function screenCreateInvoice() {
+    const defaultPid = STATE.propertyId ?? PROPERTIES.find(p => propertyOccupiedFlatCount(p.id) > 0)?.id ?? 0;
     return `${topBar('Add bill / charge', { back: true })}
     <div class="screen-content screen-enter">
         <div class="ux-tip">
@@ -6717,8 +8703,8 @@ function screenCreateInvoice() {
             <p class="ux-tip-text">Use this for service charges, deposit top-ups, or one-off bills. Monthly rent is tracked automatically per flat.</p>
         </div>
         <div><label class="form-label">${requiredLabel('Property')}</label>
-        <select data-field="propertyId" class="form-input form-select">${PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).map(p => `<option value="${p.id}">${p.name} — ${propertyOccupancyBadge(p.id).label}</option>`).join('')}</select></div>
-        ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Unit</label>${unitSelectHtml(PROPERTIES[0]?.id ?? 0, 'unit', false, '')}</div>` : ''}
+        <select data-field="propertyId" data-action="refresh-invoice-units" class="form-input form-select">${PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).map(p => `<option value="${p.id}" ${p.id === defaultPid ? 'selected' : ''}>${p.name} — ${propertyOccupancyBadge(p.id).label}</option>`).join('')}</select></div>
+        ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Unit</label>${unitSelectHtml(defaultPid, 'unit', false, '')}</div>` : ''}
         ${formFieldReq('Amount (£)', 'amount', '', 'number', '2450')}
         ${formFieldReq('Due Date', 'due', '', 'date')}
         <div><label class="form-label">${requiredLabel('Description')}</label>
@@ -6913,9 +8899,8 @@ function screenShareDocument() {
     const doc = AppStore.documents.find(d => d.id === STATE.shareDocId);
     if (!doc) return `${topBar('Share Document', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Document not found</p></div>`;
     const p = PROPERTIES[doc.propertyId];
-    const tenancy = AppStore.tenancies.find(t => t.propertyId === doc.propertyId && t.status === 'active');
-    const unit = doc.unit || tenancy?.unit || '';
-    const targets = getDocumentShareTargets(doc.propertyId, unit);
+    const unit = doc.unit || '';
+    const targets = getDocumentShareTargets(doc.propertyId, unit || null);
     return `${topBar('Share with Tenant', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4">
@@ -6924,22 +8909,63 @@ function screenShareDocument() {
         </div>
         <p class="text-[13px] text-[#64748B]">Choose who can view this in their tenant portal.</p>
         ${targets.length ? `
-        <div class="stack-sm">
-            ${targets.map(t => `
-            <label class="member-row card cursor-pointer">
-                <input type="checkbox" data-share-target="${t.id}" class="accent-[#2563EB]" checked>
-                <img src="${t.img}" class="member-row-avatar" alt="">
-                <div class="member-row-body">
-                    <p class="member-row-name">${t.name}</p>
-                    <p class="member-row-meta">${t.unit || '—'} · ${t.status === 'active' ? 'Active account' : 'Pending'}</p>
-                </div>
-            </label>`).join('')}
+        <div class="share-notify-section">
+            ${targets.length > 1 ? `
+            <label class="notify-all-toggle card p-3 cursor-pointer mb-2">
+                <input type="checkbox" data-share-all class="accent-[#2563EB]" checked>
+                <span class="text-[13px] font-semibold text-[#0F172A]">Notify all tenants (${targets.length})</span>
+            </label>` : ''}
+            <div class="stack-sm">
+                ${targets.map(t => `
+                <label class="member-row card cursor-pointer">
+                    <input type="checkbox" data-share-target="${t.id}" class="accent-[#2563EB]" checked>
+                    <img src="${t.img}" class="member-row-avatar" alt="">
+                    <div class="member-row-body">
+                        <p class="member-row-name">${t.name}</p>
+                        <p class="member-row-meta">${t.unit || '—'} · ${t.status === 'active' ? 'Active account' : 'Pending'}</p>
+                    </div>
+                </label>`).join('')}
+            </div>
+            <p class="form-helper mt-2">For buildings with multiple flats, pick everyone who should see this — or use Notify all.</p>
         </div>` : `
         <div class="ux-tip">
             <p class="ux-tip-title">No active tenants yet</p>
             <p class="ux-tip-text">Invite tenants first — the document will be shared when they activate their account.</p>
         </div>`}
         <button data-action="confirm-share-doc" class="btn-primary w-full py-3.5 text-[14px]">Share Document</button>
+    </div>`;
+}
+
+function screenRescheduleInspectionEnhanced() {
+    const p = PROPERTIES[STATE.propertyId];
+    const upcoming = typeof getScheduledInspection === 'function' ? getScheduledInspection(STATE.propertyId) : null;
+    const title = upcoming ? 'Reschedule Inspection' : 'Schedule Inspection';
+    const currentLine = upcoming
+        ? `${upcoming.type || 'Inspection'} · Currently ${typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date}`
+        : 'Pick a date for your next visit';
+    const dateVal = upcoming && typeof toDateInputValue === 'function' ? toDateInputValue(upcoming.date) : '';
+    const types = ['Check-in', 'Mid-term', 'Annual', 'Check-out'];
+    const selectedType = typeof normalizeInspectionType === 'function'
+        ? normalizeInspectionType(upcoming?.type || 'Mid-term')
+        : (upcoming?.type || 'Mid-term');
+    const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM'];
+    const selectedSlot = upcoming?.timeSlot || '10:00 AM';
+    return `${topBar(title, { back: true })}
+    <div class="screen-content screen-enter">
+        ${uxTip('You conduct the visit and record the rating afterwards. A reminder is added to your Dashboard and Notifications.', 'How it works')}
+        <div class="card p-4 bg-[#EFF6FF]">
+            <p class="text-[13px] font-semibold text-[#0F172A]">${p.name}</p>
+            <p class="text-[12px] text-[#64748B] mt-1">${currentLine}</p>
+        </div>
+        ${formField('Inspection Date', dateVal, 'date', 'Select inspection date', 'inspDate')}
+        ${formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
+        ${formSelect('Type', selectedType, types, 'inspType')}
+        ${formTextarea('Access notes', upcoming?.notes || '', 'Parking, keys, tenant availability...', 'inspNotes')}
+        ${renderTenantNotifySection(STATE.propertyId, {
+            title: 'Notify tenants',
+            hint: 'Each flat has its own tenants — notify everyone who needs to know, or uncheck individuals.',
+        })}
+        ${saveBtn(upcoming ? 'Confirm reschedule' : 'Schedule inspection', 'Inspection rescheduled')}
     </div>`;
 }
 
@@ -7143,6 +9169,47 @@ function screenUnitUtilities() {
         </div>`).join('') : `<div class="card p-4 text-center text-[12px] text-[#64748B]">No utility documents uploaded yet</div>`}
         <button data-action="upload-unit-utility" class="btn-secondary w-full py-3 text-[13px]">Upload Bill / Document</button>
         <button data-action="save-unit-utilities" class="btn-primary w-full py-3.5 text-[14px] mt-2">Save Utilities</button>
+    </div>`;
+}
+
+function startTenantChat(tenantId) {
+    const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST.find(x => x.id === tenantId);
+    if (!t || !listItem) {
+        toast('Tenant not found');
+        return;
+    }
+    const chatId = ensureTenantConversation(`${t.firstName} ${t.lastName}`, listItem.prop, listItem.img);
+    listItem.chatId = chatId;
+    AppStore.save();
+    go('chat', { chatId });
+}
+
+function renderPropertyPhotosTab(propertyId) {
+    const meta = AppStore.meta(propertyId);
+    const photos = meta.photos?.length ? meta.photos : [IMG.props[propertyId]];
+    return `<div class="screen-content">
+        <div class="photo-gallery-grid photo-gallery-grid--compact">
+            ${photos.slice(0, 6).map((src, i) => `
+            <div class="photo-gallery-card">
+                <img src="${src}" class="photo-gallery-img" alt="">
+                ${i === 0 ? '<span class="photo-cover-badge">COVER</span>' : ''}
+            </div>`).join('')}
+        </div>
+        <button type="button" data-go="property-photos" data-pid="${propertyId}" class="btn-primary w-full py-3.5 text-[14px] mt-3">Manage photos</button>
+    </div>`;
+}
+
+function renderPropertyFloorPlansTab(propertyId) {
+    const meta = AppStore.meta(propertyId);
+    const plans = meta.floorPlans || [];
+    return `<div class="screen-content">
+        ${plans.length ? plans.slice(0, 2).map(fp => `
+        <div class="card overflow-hidden mb-3">
+            <div class="aspect-video"><img src="${fp.url}" class="img-cover" alt=""></div>
+            <div class="p-3"><p class="text-[13px] font-semibold">${fp.name}</p></div>
+        </div>`).join('') : `<p class="text-[13px] text-[#64748B] mb-3">No floor plans uploaded yet.</p>`}
+        <button type="button" data-go="property-floor-plans" data-pid="${propertyId}" class="btn-primary w-full py-3.5 text-[14px]">Manage floor plans</button>
     </div>`;
 }
 
@@ -7359,29 +9426,108 @@ function handleFeatureSave(el) {
     return false;
 }
 
+function setAddPropertyUnitMode(mode) {
+    STATE.addPropertyUnitMode = mode;
+    render();
+}
+
+function setPendingPropertyCover(idx) {
+    if (!STATE.pendingPropertyPhotos?.length) return;
+    STATE.pendingPropertyCover = Math.min(Math.max(0, idx), STATE.pendingPropertyPhotos.length - 1);
+    render();
+}
+
+function removePendingPropertyPhoto(idx) {
+    if (!STATE.pendingPropertyPhotos?.length || idx < 0 || idx >= STATE.pendingPropertyPhotos.length) return;
+    STATE.pendingPropertyPhotos.splice(idx, 1);
+    const cover = STATE.pendingPropertyCover ?? 0;
+    if (!STATE.pendingPropertyPhotos.length) STATE.pendingPropertyCover = 0;
+    else if (idx === cover) STATE.pendingPropertyCover = Math.min(cover, STATE.pendingPropertyPhotos.length - 1);
+    else if (idx < cover) STATE.pendingPropertyCover = Math.max(0, cover - 1);
+    render();
+}
+
+function screenAddPropertyEnhanced() {
+    const pending = STATE.pendingPropertyPhotos || [];
+    const cover = STATE.pendingPropertyCover ?? 0;
+    const photoPicker = renderFlatUnitPhotoPicker(pending, cover, {
+        coverAction: 'set-pending-property-cover',
+        removeAction: 'remove-pending-property-photo',
+        uploadAction: 'upload-photo',
+        uploadLabel: pending.length ? 'Add more photos' : 'Add property photos',
+        hint: 'Add multiple photos. Tap ★ on a thumbnail to set the portfolio cover image.',
+        placeholder: IMG.interior[0],
+    });
+    return `${topBar('Add Property', { back: true })}
+    <div class="screen-content screen-enter add-property-page">
+        <div class="ux-tip add-property-tip">
+            <p class="ux-tip-title">Building first, units later</p>
+            <p class="ux-tip-text">Save the property now. You can add flats and unit details afterwards from <strong>Property → Units → + Add unit</strong>. EPC, utilities and compliance go under <strong>Property → Info</strong>.</p>
+        </div>
+        <p class="screen-section-title">Photos</p>
+        ${photoPicker}
+        <p class="screen-section-title">Property details</p>
+        ${labeledInput('Property name', 'name', '', 'text', 'e.g. 12 Park Lane', true)}
+        ${labeledInput('Street address', 'address', '', 'text', 'Street and town', true)}
+        ${labeledInput('Postcode', 'postcode', '', 'text', 'e.g. SW1A 1AA')}
+        ${formSelectField('Property type', 'propertyType', PROPERTY_TYPE_OPTIONS, '', { blankLabel: 'Select type (optional)' })}
+        <p class="screen-section-title">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></p>
+        <div class="form-group">
+            <label class="form-label">Building notes</label>
+            <textarea data-field="notes" class="form-input min-h-[80px] resize-none" placeholder="Access codes, parking, meter locations…"></textarea>
+        </div>
+        <button type="button" data-action="save" class="btn-primary w-full py-3.5 text-[14px]">Save property</button>
+    </div>`;
+}
+
 function saveAddProperty() {
-    if (!validateFields([['name', 'Property Name', v => v], ['address', 'Address', v => v]])) return;
+    if (!validateFields([
+        ['name', 'Property name', v => v],
+        ['address', 'Street address', v => v],
+    ])) return;
     const id = AppStore.nextId(PROPERTIES);
+    const postcode = (fieldVal('postcode') || '').trim();
+    let address = (fieldVal('address') || '').trim();
+    if (postcode && !address.toUpperCase().includes(postcode.toUpperCase().replace(/\s/g, ''))) {
+        address = `${address}, ${postcode}`;
+    }
     PROPERTIES.push({
-        id, name: fieldVal('name'), address: fieldVal('address'),
+        id,
+        name: fieldVal('name').trim(),
+        address,
         status: 'Vacant',
         statusColor: ['#FEF3C7', '#D97706'],
-        tenant: null, rent: '—',
+        tenant: null,
+        rent: '—',
         compliance: false,
     });
     const meta = AppStore.meta(id);
-    meta.building = { flatCount: 0, floors: 1, flatsPerFloor: 1, useFloors: false };
     meta.units = [];
-    if (STATE.pendingPropertyPhotos?.length) {
-        meta.photos = [...STATE.pendingPropertyPhotos];
+    meta.building = { flatCount: 0, floors: 0, flatsPerFloor: 0, useFloors: false };
+    const photos = [...(STATE.pendingPropertyPhotos || [])];
+    const coverIdx = STATE.pendingPropertyCover ?? 0;
+    if (photos.length > 1 && coverIdx > 0 && coverIdx < photos.length) {
+        const [coverPhoto] = photos.splice(coverIdx, 1);
+        photos.unshift(coverPhoto);
     }
+    if (photos.length) meta.photos = photos;
+    meta.info = {
+        ...(meta.info || {}),
+        type: fieldVal('propertyType') || '',
+        postcode,
+        notes: fieldVal('notes') || '',
+    };
     STATE.pendingPropertyPhotos = [];
-    if (fieldVal('postcode')) {
-        if (!meta.info) meta.info = {};
-        meta.info.postcode = fieldVal('postcode');
-    }
+    STATE.pendingPropertyCover = 0;
+    STATE.addPropertyUnitMode = 'single';
     syncPropertyStatus(id);
-    withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Property added'); go('properties'); });
+    if (typeof syncPropertyDisplayReferences === 'function') syncPropertyDisplayReferences(id);
+    withLoading(() => {
+        syncSmartReminders();
+        AppStore.save();
+        toast('Property saved — add your first unit');
+        go('property-detail', { propertyId: id, tab: 'units' });
+    });
 }
 
 function saveEditProperty() {
@@ -7448,6 +9594,7 @@ function saveLogMaintenance() {
         priority: STATE.logPriority, contractor: '—', status: 'open', propertyId: pid,
         desc: fieldVal('desc'),
         photos: STATE.logMaintPhotos || [],
+        videos: STATE.logMaintVideos || [],
         scope,
         history: [{ event: 'Issue reported', detail: fieldVal('desc'), time: 'Just now' }],
     };
@@ -7462,6 +9609,7 @@ function saveLogMaintenance() {
     }
     MAINTENANCE_ITEMS.unshift(entry);
     STATE.logMaintPhotos = [];
+    STATE.logMaintVideos = [];
     STATE.logMaintPrefill = null;
     STATE.logMaintScope = 'unit';
     if (isTenant) {
@@ -7470,11 +9618,19 @@ function saveLogMaintenance() {
             title: 'Tenant reported issue', desc: `${entry.issue} · ${p.name}`,
             time: 'Just now', unread: true, screen: 'maintenance-detail', opts: { mid: id },
         });
+    } else if (scope === 'communal') {
+        const notifyIds = getPropertyNotifyTargets(pid).map(t => t.id);
+        if (notifyIds.length) {
+            notifyTenantsAboutEvent(pid, notifyIds, {
+                title: 'Communal maintenance',
+                desc: `${entry.issue} · ${communalArea}`,
+            });
+        }
     }
     withLoading(() => {
         AppStore.save();
         toast(isTenant ? 'Issue reported to landlord' : 'Issue logged');
-        go(isTenant ? 'tenant-dashboard' : 'maintenance');
+        go(isTenant ? 'tenant-issues' : 'maintenance');
     });
 }
 
@@ -7543,7 +9699,7 @@ function saveTenancy() {
     withLoading(() => {
         syncSmartReminders();
         AppStore.save();
-        toast(type === 'group' ? 'Group tenancy created — invite each member' : 'Tenancy created');
+        toast(type === 'group' ? 'Group tenancy created — invite each member' : 'Lease saved — unit marked as reserved until tenant accepts');
         STATE.invitePrefill = null;
         go('invite-tenant', { propertyId: STATE.propertyId, unit: unitName });
     });
@@ -7576,10 +9732,28 @@ function saveCheckout() {
         });
     }
     const ten = AppStore.tenancies.find(x => x.propertyId === listItem?.propertyId && x.unit === listItem?.unit && x.status !== 'ended');
+    const fullName = t ? `${t.firstName} ${t.lastName}`.trim() : listItem?.name || '';
     if (ten) {
-        ten.status = 'ended';
-        ten.end = checkoutDate;
-        ten.checkout = { reason, notes, deposit };
+        if (ten.type === 'group' && Array.isArray(ten.members) && ten.members.length > 1) {
+            ten.members = ten.members.filter(m =>
+                m.tenantId !== STATE.tenantId && m.name !== fullName &&
+                !(t?.email && m.email?.toLowerCase() === t.email.toLowerCase())
+            );
+            ten.occupants = Math.max(1, ten.members.length);
+            if (ten.members.length === 0) {
+                ten.status = 'ended';
+                ten.end = checkoutDate;
+                ten.checkout = { reason, notes, deposit };
+            } else if (ten.members[0] && !ten.members.some(m => m.role === 'lead')) {
+                ten.members[0].role = 'lead';
+                ten.leadName = ten.members[0].name;
+                ten.tenantId = ten.members[0].tenantId ?? ten.tenantId;
+            }
+        } else {
+            ten.status = 'ended';
+            ten.end = checkoutDate;
+            ten.checkout = { reason, notes, deposit };
+        }
     }
     if (listItem?.propertyId != null && listItem?.unit) {
         TENANT_INVITATIONS.filter(i => i.propertyId === listItem.propertyId && i.unit === listItem.unit && i.status === 'pending')
@@ -7620,7 +9794,17 @@ function saveInspection() {
     STATE.inspectionPhotos = [];
     STATE.inspectionRating = 4;
     STATE.inspectionPrefill = null;
-    withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Inspection saved'); go('property-detail', { propertyId: STATE.propertyId, tab: 'inspection' }); });
+    const pid = STATE.propertyId;
+    const notifyIds = getSelectedNotifyTargetIds();
+    const typeLabel = fieldVal('inspType') || 'Inspection';
+    const notified = notifyTenantsAboutEvent(pid, notifyIds, {
+        title: 'Inspection completed',
+        desc: `${typeLabel} · ${PROPERTIES[pid]?.name || ''}`,
+    });
+    const toastMsg = notified
+        ? `Inspection saved — ${notified} tenant${notified === 1 ? '' : 's'} notified`
+        : 'Inspection saved';
+    withLoading(() => { syncSmartReminders(); AppStore.save(); toast(toastMsg); go('property-detail', { propertyId: pid, tab: 'inspection' }); });
 }
 
 function saveEditTenant() {
@@ -7677,23 +9861,23 @@ function saveEditInventoryRoom() {
     const pid = STATE.propertyId ?? 0;
     const rid = STATE.roomId ?? 0;
     const key = inventoryKey(pid, rid);
-    const items = getInventoryItems(pid, rid).map((item, i) => [
-        item[0],
-        fieldVal(`item_${i}`) || item[1],
-    ]);
+    const items = collectInventoryEditItemsFromDom();
     AppStore.inventory[key] = {
         condition: fieldVal('condition') || 'Good',
         notes: fieldVal('roomNotes'),
         items,
         photos: AppStore.inventory[key]?.photos || [],
     };
-    withLoading(() => { AppStore.save(); toast('Inventory updated'); go('inventory-room', { propertyId: pid, roomId: rid }); });
+    STATE.inventoryEditItems = null;
+    withLoading(() => { AppStore.save(); toast('Room inventory saved'); go('inventory-room', { propertyId: pid, roomId: rid }); });
 }
 
 function saveRescheduleInspection() {
     if (!validateFields([['inspDate', 'Inspection Date', v => v]])) return;
     const pid = STATE.propertyId ?? 0;
     const dateStr = formatDisplayDate(fieldVal('inspDate'));
+    const timeSlot = fieldVal('timeSlot');
+    const notifyIds = getSelectedNotifyTargetIds();
     const insp = AppStore.inspections.find(i => i.propertyId === pid && i.scheduled)
         || AppStore.inspections.find(i => i.propertyId === pid);
     if (insp) {
@@ -7701,7 +9885,8 @@ function saveRescheduleInspection() {
         insp.type = fieldVal('inspType') || insp.type;
         insp.scheduled = true;
         insp.notes = fieldVal('inspNotes');
-        insp.timeSlot = fieldVal('timeSlot');
+        insp.timeSlot = timeSlot;
+        insp.notifyTenantIds = notifyIds;
     } else {
         AppStore.inspections.push({
             id: AppStore.nextId(AppStore.inspections),
@@ -7713,10 +9898,20 @@ function saveRescheduleInspection() {
             report: null,
             scheduled: true,
             notes: fieldVal('inspNotes'),
-            timeSlot: fieldVal('timeSlot'),
+            timeSlot,
+            notifyTenantIds: notifyIds,
         });
     }
-    withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Inspection rescheduled'); go('property-detail', { propertyId: pid, tab: 'inspection' }); });
+    const p = PROPERTIES[pid];
+    const typeLabel = fieldVal('inspType') || 'Inspection';
+    const notified = notifyTenantsAboutEvent(pid, notifyIds, {
+        title: 'Inspection scheduled',
+        desc: `${typeLabel} · ${dateStr}${timeSlot ? ` · ${timeSlot}` : ''} · ${p?.name || ''}`,
+    });
+    const toastMsg = notified
+        ? `Inspection scheduled — ${notified} tenant${notified === 1 ? '' : 's'} notified`
+        : 'Inspection scheduled';
+    withLoading(() => { syncSmartReminders(); AppStore.save(); toast(toastMsg); go('property-detail', { propertyId: pid, tab: 'inspection' }); });
 }
 
 function saveAddPaymentMethod() {
@@ -7777,11 +9972,16 @@ function savePassword() {
     const current = fieldVal('currentPassword');
     const next = fieldVal('newPassword');
     const confirm = fieldVal('confirmPassword');
+    const expected = landlordAccountByEmail(LANDLORD_USER.email)?.password || DEMO_CREDENTIALS.landlord.password;
     let ok = true;
     if (!current) { STATE.formErrors.currentPassword = 'Current password is required'; ok = false; }
+    else if (current !== expected) { STATE.formErrors.currentPassword = 'Current password is incorrect'; ok = false; }
     if (!next || next.length < 8) { STATE.formErrors.newPassword = 'Use at least 8 characters'; ok = false; }
     if (next !== confirm) { STATE.formErrors.confirmPassword = 'Passwords do not match'; ok = false; }
-    if (!ok) { toast('Please fix the errors below'); render(); return; }
+    if (!ok) { toastError('Please fix the errors below'); render(); return; }
+    const account = landlordAccountByEmail(LANDLORD_USER.email);
+    if (account) account.password = next;
+    saveLandlordAccounts();
     withLoading(() => { toast('Password updated'); back(); });
 }
 
@@ -7814,7 +10014,8 @@ function saveTenantNote(isEdit = false) {
 }
 
 function markAllNotificationsRead() {
-    NOTIFICATIONS.forEach(n => { n.unread = false; });
+    const list = typeof notificationsForRole === 'function' ? notificationsForRole() : NOTIFICATIONS;
+    list.forEach(n => { n.unread = false; });
     AppStore.save();
     toast('All marked as read');
     render();
@@ -7918,7 +10119,7 @@ function assignContractorToJob(cid) {
         });
     }
     AppStore.save();
-    toast(`${c.name} assigned — they'll see the tenant complaint`);
+    toast(isCommunalMaint(item) ? `${c.name} assigned to communal job` : `${c.name} assigned — they'll see the tenant complaint`);
     go('maintenance-detail', { maintId: item.id });
 }
 
@@ -7948,6 +10149,9 @@ function createContractorJobFromMaintenance(item, contractor, tenantOverride) {
         contractorName: contractor.name,
         tenantChatId: tenant?.chatId ?? (tenant?.id != null ? getTenantChatId(tenant.id) : null),
         landlordChatId: typeof getLandlordChatId === 'function' ? getLandlordChatId() : null,
+        reportPhotos: [...getMaintReportPhotos(item)],
+        reportVideos: [...getMaintReportVideos(item)],
+        reportedBy: item.reportedBy || (item.tenantName ? 'tenant' : 'landlord'),
     };
     if (existing) {
         Object.assign(existing, jobData, { id: existing.id });
@@ -8238,6 +10442,15 @@ async function uploadPhotoAction() {
         render();
         return;
     }
+    if (STATE.screen === 'tenant-checkout') {
+        const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+        const co = getTenantCheckout(tid);
+        co.photos.push(...urls);
+        AppStore.save();
+        toast(urls.length === 1 ? 'Checkout photo added' : `${urls.length} checkout photos added`);
+        render();
+        return;
+    }
     if (STATE.screen === 'conduct-inspection') {
         if (!STATE.inspectionPhotos) STATE.inspectionPhotos = [];
         STATE.inspectionPhotos.push(...urls);
@@ -8272,6 +10485,26 @@ async function uploadPhotoAction() {
     AppStore.save();
     toast(urls.length === 1 ? 'Photo added' : `${urls.length} photos added`);
     render();
+}
+
+async function uploadVideoAction() {
+    const urls = await pickVideoFiles();
+    if (!urls.length) return;
+    if (STATE.screen === 'log-maintenance') {
+        if (!STATE.logMaintVideos) STATE.logMaintVideos = [];
+        STATE.logMaintVideos.push(...urls);
+        toast(urls.length === 1 ? 'Video added to issue' : `${urls.length} videos added to issue`);
+        render();
+        return;
+    }
+    if (STATE.screen === 'tenant-checkout') {
+        const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+        const co = getTenantCheckout(tid);
+        co.photos.push(...urls);
+        AppStore.save();
+        toast('Checkout media added');
+        render();
+    }
 }
 
 function removePhotoFromList(list, idx) {
@@ -8309,7 +10542,6 @@ function deletePropertyPhoto(idx) {
 function editDocumentAction(docId) {
     const doc = AppStore.documents.find(d => d.id === docId);
     if (!doc) { toast('Document not found'); return; }
-    if (!isUserUploadedDoc(doc)) { toast('Only uploaded files can be renamed'); return; }
     STATE.renameDocId = docId;
     STATE.renameDocValue = doc.name;
     render();
@@ -8332,7 +10564,6 @@ function confirmRenameDoc() {
 function deleteDocumentAction(docId) {
     const doc = AppStore.documents.find(d => d.id === docId);
     if (!doc) { toast('Document not found'); return; }
-    if (!isUserUploadedDoc(doc)) { toast('Only uploaded files can be deleted'); return; }
     showConfirm('Delete Document', `Delete ${doc.name}?`, () => {
         AppStore.documents = AppStore.documents.filter(d => d.id !== docId);
         AppStore.save();
@@ -8425,7 +10656,7 @@ function cancelMaintenanceAction(maintId) {
         if (idx >= 0) MAINTENANCE_ITEMS.splice(idx, 1);
         AppStore.save();
         toast('Issue cancelled');
-        go('maintenance');
+        go(STATE.userRole === 'tenant' ? 'tenant-issues' : 'maintenance');
     }, { okLabel: 'Cancel issue', danger: true });
 }
 
@@ -8446,6 +10677,7 @@ function deleteInvoiceAction(invoiceId) {
 /* ─── Register screens & nav ─── */
 const FEATURE_SCREENS = [
     'portfolio-overview', 'compliance-dashboard', 'reminders', 'add-reminder',
+    'broadcast-notices', 'send-broadcast',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
     'property-floor-plans', 'property-photos', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'tenancy-detail',
@@ -8453,10 +10685,13 @@ const FEATURE_SCREENS = [
 ];
 
 Object.assign(SCREEN_MAP, {
+    'add-property': screenAddPropertyEnhanced,
     'portfolio-overview': screenPortfolioOverview,
     'compliance-dashboard': screenComplianceDashboard,
     'reminders': screenReminders,
     'add-reminder': screenAddReminder,
+    'broadcast-notices': screenBroadcastNotices,
+    'send-broadcast': screenSendBroadcast,
     'create-tenancy': screenCreateTenancyEnhanced,
     'checkout-tenancy': screenCheckoutTenancy,
     'assign-contractor': screenAssignContractor,
@@ -8465,6 +10700,7 @@ Object.assign(SCREEN_MAP, {
     'mark-rent-received': screenMarkRentReceived,
     'pay-contractor': screenPayContractor,
     'share-document': screenShareDocument,
+    'reschedule-inspection': screenRescheduleInspectionEnhanced,
     'property-floor-plans': screenPropertyFloorPlans,
     'property-photos': screenPropertyPhotos,
     'property-alarms': () => screenPropertyDetailsEdit('alarms'),
@@ -8482,6 +10718,7 @@ Object.assign(SCREEN_MAP, {
     'tenant-add-note': screenTenantAddNote,
     'tenant-edit-note': screenTenantEditNote,
     'maintenance-history': screenMaintenanceHistory,
+    'maintenance': screenMaintenanceEnhanced,
     'maintenance-detail': screenMaintenanceDetailEnhanced,
     'financial': screenFinancialEnhanced,
     'transaction-history': screenTransactionHistoryEnhanced,
@@ -8494,6 +10731,8 @@ Object.assign(SCREEN_MAP, {
     'document-preview': screenDocumentPreviewEnhanced,
     'contractors': screenContractors,
     'inspection-detail': screenInspectionDetail,
+    'inventory-room': screenInventoryRoomEnhanced,
+    'edit-inventory-room': screenEditInventoryRoomEnhanced,
 });
 
 NO_NAV.push(...FEATURE_SCREENS);
@@ -8503,6 +10742,8 @@ const FEATURE_BACK_MAP = {
     'compliance-dashboard': 'dashboard',
     'reminders': 'dashboard',
     'add-reminder': 'reminders',
+    'broadcast-notices': 'dashboard',
+    'send-broadcast': 'broadcast-notices',
     'create-tenancy': 'property-detail',
     'checkout-tenancy': 'tenant-detail',
     'assign-contractor': 'maintenance-detail',
@@ -8540,8 +10781,30 @@ const FEATURE_BACK_MAP = {
 
 // Drawer nav defined in landlord_hq_screens.js (LANDLORD_DRAWER_NAV)
 
+function bindNotifyPickerEvents(app) {
+    if (app._notifyPickerBound) return;
+    app._notifyPickerBound = true;
+    app.addEventListener('change', (e) => {
+        const master = e.target.closest('[data-notify-all], [data-share-all], [data-broadcast-all]');
+        if (master) {
+            const section = master.closest('.notify-tenant-section, .share-notify-section, .broadcast-audience');
+            section?.querySelectorAll('[data-notify-target], [data-share-target], [data-broadcast-unit]').forEach(cb => { cb.checked = master.checked; });
+            return;
+        }
+        const item = e.target.closest('[data-notify-target], [data-share-target], [data-broadcast-unit]');
+        if (!item) return;
+        const section = item.closest('.notify-tenant-section, .share-notify-section, .broadcast-audience');
+        const masterEl = section?.querySelector('[data-notify-all], [data-share-all], [data-broadcast-all]');
+        if (!masterEl) return;
+        const boxes = section.querySelectorAll('[data-notify-target], [data-share-target], [data-broadcast-unit]');
+        masterEl.checked = [...boxes].every(b => b.checked);
+        masterEl.indeterminate = !masterEl.checked && [...boxes].some(b => b.checked);
+    });
+}
+
 function bindFeatureEvents() {
     const app = document.getElementById('app');
+    bindNotifyPickerEvents(app);
     app.querySelectorAll('[data-action="save-reminder"]').forEach(el => { el.onclick = saveReminder; });
     app.querySelectorAll('[data-action="save-tenancy"]').forEach(el => { el.onclick = saveTenancy; });
     app.querySelectorAll('[data-action="save-checkout"]').forEach(el => { el.onclick = saveCheckout; });
@@ -8554,6 +10817,26 @@ function bindFeatureEvents() {
         el.onclick = () => payContractorInvoice(+el.dataset.cid);
     });
     app.querySelectorAll('[data-action="confirm-share-doc"]').forEach(el => { el.onclick = shareDocumentConfirm; });
+    app.querySelectorAll('[data-action="send-broadcast"]').forEach(el => { el.onclick = sendBroadcastNotice; });
+    app.querySelectorAll('[data-broadcast-scope]').forEach(el => {
+        el.onclick = () => {
+            STATE.broadcastScope = el.dataset.broadcastScope;
+            if (STATE.broadcastScope === 'units') {
+                const pid = STATE.broadcastPropertyId ?? STATE.propertyId ?? 0;
+                STATE.broadcastUnits = getPropertyUnits(pid).map(u => unitName(u));
+            } else {
+                STATE.broadcastUnits = [];
+            }
+            render();
+        };
+    });
+    app.querySelectorAll('[data-broadcast-property]').forEach(el => {
+        el.onchange = () => {
+            STATE.broadcastPropertyId = +el.value;
+            STATE.broadcastUnits = null;
+            render();
+        };
+    });
     app.querySelectorAll('[data-action="save-unit-utilities"]').forEach(el => { el.onclick = saveUnitUtilities; });
     app.querySelectorAll('[data-action="upload-unit-utility"]').forEach(el => { el.onclick = uploadUnitUtilityDoc; });
     app.querySelectorAll('[data-action="upload-flat-photo"]').forEach(el => { el.onclick = uploadFlatPhotoAction; });
@@ -8591,13 +10874,88 @@ function bindFeatureEvents() {
             render();
         };
     });
+    app.querySelectorAll('[data-action="refresh-invoice-units"]').forEach(el => {
+        el.onchange = () => {
+            STATE.propertyId = +el.value;
+            render();
+        };
+    });
     app.querySelectorAll('[data-action="upload-document"]').forEach(el => { el.onclick = uploadDocumentAction; });
     app.querySelectorAll('[data-action="upload-photo"]').forEach(el => { el.onclick = uploadPhotoAction; });
+    app.querySelectorAll('[data-action="upload-video"]').forEach(el => { el.onclick = uploadVideoAction; });
     app.querySelectorAll('[data-action="remove-pending-property-photo"]').forEach(el => {
-        el.onclick = () => removePhotoFromList(STATE.pendingPropertyPhotos, +el.dataset.photoIdx);
+        el.onclick = () => removePendingPropertyPhoto(+el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-action="set-pending-property-cover"]').forEach(el => {
+        el.onclick = () => setPendingPropertyCover(+el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-add-property-units]').forEach(el => {
+        el.onclick = () => setAddPropertyUnitMode(el.dataset.addPropertyUnits);
     });
     app.querySelectorAll('[data-action="remove-log-maint-photo"]').forEach(el => {
         el.onclick = () => removePhotoFromList(STATE.logMaintPhotos, +el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-action="remove-log-maint-video"]').forEach(el => {
+        el.onclick = () => removePhotoFromList(STATE.logMaintVideos, +el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-action="preview-maint-media"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openMaintMediaPreview(el);
+        };
+    });
+    app.querySelectorAll('[data-action="close-maint-media-preview"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            closeMaintMediaPreview();
+        };
+    });
+    app.querySelectorAll('[data-action="toggle-checkout-item"]').forEach(el => {
+        el.onclick = () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const co = getTenantCheckout(tid);
+            co.checklist[el.dataset.key] = el.checked;
+            AppStore.save();
+        };
+    });
+    app.querySelectorAll('[data-action="save-checkout-meters"]').forEach(el => {
+        el.onclick = () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const co = getTenantCheckout(tid);
+            co.meters.electricity = fieldVal('co_meter_electricity') || '';
+            co.meters.gas = fieldVal('co_meter_gas') || '';
+            co.meters.water = fieldVal('co_meter_water') || '';
+            AppStore.save();
+            toast('Meter readings saved');
+        };
+    });
+    app.querySelectorAll('[data-action="submit-tenant-checkout"]').forEach(el => {
+        el.onclick = () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const co = getTenantCheckout(tid);
+            const done = Object.values(co.checklist).filter(Boolean).length;
+            if (done < TENANT_CHECKOUT_CHECKLIST.length) {
+                toast('Complete the cleaning checklist first');
+                return;
+            }
+            AppStore.save();
+            toast('Check-out details submitted to your landlord');
+            go('tenant-dashboard');
+        };
+    });
+    app.querySelectorAll('[data-action="upload-tenant-ref"]').forEach(el => {
+        el.onclick = async () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const key = el.dataset.refKey;
+            const urls = await pickImageFiles({ multiple: false });
+            if (!urls.length) return;
+            const ref = getTenantReferencing(tid);
+            ref[key] = { status: 'pending', file: `${key}_upload.jpg`, date: 'Just now', preview: urls[0] };
+            AppStore.save();
+            toast('Document uploaded — pending landlord review');
+            render();
+        };
     });
     app.querySelectorAll('[data-action="remove-inspection-photo"]').forEach(el => {
         el.onclick = () => removePhotoFromList(STATE.inspectionPhotos, +el.dataset.photoIdx);
@@ -8611,6 +10969,29 @@ function bindFeatureEvents() {
             AppStore.save();
             render();
         };
+    });
+    app.querySelectorAll('[data-action="toggle-inventory-layout-edit"]').forEach(el => {
+        el.onclick = () => { STATE.editingInventoryLayout = !STATE.editingInventoryLayout; render(); };
+    });
+    app.querySelectorAll('[data-action="save-inventory-layout"]').forEach(el => {
+        el.onclick = saveInventoryLayout;
+    });
+    app.querySelectorAll('[data-action="sync-inventory-layout-units"]').forEach(el => {
+        el.onclick = () => {
+            syncInventoryLayoutFromUnits(STATE.propertyId, true);
+            STATE.editingInventoryLayout = true;
+            toast('Pulled from unit details');
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="add-inventory-item"]').forEach(el => {
+        el.onclick = () => addInventoryEditItem('');
+    });
+    app.querySelectorAll('[data-action="remove-inventory-item"]').forEach(el => {
+        el.onclick = () => removeInventoryEditItem(+el.dataset.itemIdx);
+    });
+    app.querySelectorAll('[data-action="inventory-quick-add"]').forEach(el => {
+        el.onclick = () => inventoryQuickAddItem(el.dataset.quickLabel || '');
     });
     app.querySelectorAll('[data-action="delete-property"]').forEach(el => { el.onclick = deleteProperty; });
     bindActionMenuEvents(app);
@@ -8700,6 +11081,12 @@ function bindFeatureEvents() {
             const t = TENANTS[tid];
             if (t?.phone) { window.location.href = `tel:${t.phone.replace(/\s/g, '')}`; }
             else toast('No phone number on file');
+        };
+    });
+    app.querySelectorAll('[data-action="start-tenant-chat"]').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            startTenantChat(+el.dataset.tid);
         };
     });
     app.querySelectorAll('[data-action="email-tenant"]').forEach(el => {
@@ -8851,7 +11238,23 @@ function goFeature(screen, opts = {}) {
                 STATE.pendingFlatCover = gal.cover ?? 0;
             }
         }
-    } else if (opts.unit) STATE.selectedUnit = opts.unit;
+    } else if (screen === 'add-property' && from !== 'add-property') {
+        STATE.pendingPropertyPhotos = [];
+        STATE.pendingPropertyCover = 0;
+        STATE.addPropertyUnitMode = 'single';
+    } else if (screen === 'edit-inventory-room') {
+        initInventoryEditItems();
+    } else if (screen !== 'edit-inventory-room') {
+        STATE.inventoryEditItems = null;
+    }
+    if (screen === 'property-detail' && opts.tab !== 'inventory') {
+        STATE.editingInventoryLayout = false;
+    }
+    if (opts.unit) STATE.selectedUnit = opts.unit;
+    if (screen === 'send-broadcast') {
+        STATE.broadcastPropertyId = opts.propertyId != null ? opts.propertyId : (STATE.broadcastPropertyId ?? STATE.propertyId ?? 0);
+        if (from !== 'send-broadcast' && !STATE.broadcastScope) STATE.broadcastScope = 'all';
+    }
     if (screen === 'log-maintenance') {
         if (opts.unit) {
             STATE.logMaintPrefill = {
@@ -8865,6 +11268,7 @@ function goFeature(screen, opts = {}) {
             if (from !== 'log-maintenance') STATE.logMaintScope = 'unit';
         }
         STATE.logMaintPhotos = [];
+        STATE.logMaintVideos = [];
     }
     if (screen === 'mark-rent-received') {
         if (from === 'flat-rent-history' || from === 'flat-detail') {
@@ -8902,6 +11306,10 @@ function goFeature(screen, opts = {}) {
 }
 const _origGo = go;
 go = function(screen, opts = {}) {
+    const routed = typeof resolveScreenForRole === 'function' ? resolveScreenForRole(screen, opts) : { screen, opts: opts || {} };
+    screen = routed.screen;
+    opts = routed.opts || opts || {};
+    if (opts.tenantPayFilter) STATE.tenantPayFilter = opts.tenantPayFilter;
     goFeature(screen, opts);
     if (SKELETON_SCREENS.has(screen)) {
         STATE.screenLoading = screen;

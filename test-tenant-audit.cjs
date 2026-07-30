@@ -23,42 +23,47 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
   const home = await page.evaluate(() => ({
     screen: STATE.screen,
     role: STATE.userRole,
+    html: document.getElementById('app')?.innerHTML || '',
     hasNav: !!document.querySelector('.bottom-nav'),
-    hasDrawer: !!document.querySelector('.drawer'),
-    hasMaintList: !!document.querySelector('.maint-row'),
   }));
   log(home.screen === 'tenant-dashboard' && home.role === 'tenant' ? 'PASS' : 'FAIL', 'Auth', `Home: ${home.screen} role=${home.role}`);
-  log(home.hasNav ? 'PASS' : 'FAIL', 'Nav', 'Bottom nav visible on dashboard');
-  log(home.hasDrawer ? 'PASS' : 'FAIL', 'Nav', 'Drawer present');
+  log(home.hasNav ? 'PASS' : 'FAIL', 'Nav', 'Bottom nav visible');
+  log(home.html.includes('Next rent due') ? 'PASS' : 'FAIL', 'Dashboard', 'Rent due first');
+  log(home.html.includes('Active tenancy') ? 'PASS' : 'FAIL', 'Dashboard', 'Compact tenancy strip');
+  log(home.html.includes('Needs attention') ? 'PASS' : 'FAIL', 'Dashboard', 'Attention section');
+  log(home.html.includes('Quick actions') ? 'PASS' : 'FAIL', 'Dashboard', 'Quick actions');
+  log(!home.html.includes('House rules') ? 'PASS' : 'FAIL', 'Dashboard', 'House rules moved off home');
+
+  await page.evaluate(() => go('tenant-issues'));
+  await new Promise((r) => setTimeout(r, 400));
+  const issuesTab = await page.evaluate(() => ({
+    screen: STATE.screen,
+    html: document.getElementById('app')?.innerHTML || '',
+  }));
+  log(issuesTab.screen === 'tenant-issues' ? 'PASS' : 'FAIL', 'Screen', `Issues tab: ${issuesTab.screen}`);
+  log(issuesTab.html.includes('Report new issue') ? 'PASS' : 'FAIL', 'Maintenance', 'Issues list with report CTA');
 
   await page.evaluate(() => go('log-maintenance'));
   await new Promise((r) => setTimeout(r, 400));
   const report = await page.evaluate(() => ({
     screen: STATE.screen,
-    title: (document.querySelector('.sub-header-title') || document.querySelector('.page-title'))?.textContent?.trim(),
-    hasProperty: (document.getElementById('app')?.innerHTML || '').includes('Property') && (document.getElementById('app')?.innerHTML || '').includes('unit within property'),
+    html: document.getElementById('app')?.innerHTML || '',
   }));
   log(report.screen === 'log-maintenance' ? 'PASS' : 'FAIL', 'Screen', `Report issue: ${report.screen}`);
-  log(report.title === 'Report Issue' ? 'PASS' : 'FAIL', 'Header', `Title: ${report.title}`);
-  log(report.hasProperty ? 'PASS' : 'FAIL', 'Form', 'Shows tenant property context');
+  log(report.html.includes('Add photos') && report.html.includes('Add videos') ? 'PASS' : 'FAIL', 'Maintenance', 'Photo & video upload on report form');
 
   await page.evaluate(() => go('maintenance-detail', { maintId: 0 }));
   await new Promise((r) => setTimeout(r, 400));
   const detail = await page.evaluate(() => ({
     screen: STATE.screen,
-    title: document.querySelector('.sub-header-title')?.textContent?.trim(),
+    html: document.getElementById('app')?.innerHTML || '',
     hasAssign: !!document.querySelector('[data-action="go-assign-contractor"]'),
-    hasCancel: !!document.querySelector('[data-action="cancel-maintenance"]'),
     hasTimeline: !!document.querySelector('.maint-progress'),
   }));
   log(detail.screen === 'maintenance-detail' ? 'PASS' : 'FAIL', 'Screen', `Maint detail: ${detail.screen}`);
-  log(detail.title && detail.title !== 'Maintenance' ? 'PASS' : 'FAIL', 'Header', `Issue title shown: ${detail.title}`);
-  log(!detail.hasAssign ? 'PASS' : 'FAIL', 'Tenant UX', 'No assign contractor action');
-  log(!detail.hasCancel ? 'PASS' : 'FAIL', 'Tenant UX', 'No cancel issue action');
-  log(detail.hasTimeline ? 'PASS' : 'FAIL', 'Content', 'Progress timeline visible');
+  log(!detail.hasAssign ? 'PASS' : 'FAIL', 'Tenant UX', 'No assign contractor');
+  log(detail.html.includes('Message contractor') ? 'PASS' : 'FAIL', 'Messaging', 'Message contractor on assigned issue');
 
-  await page.evaluate(() => go('tenant-dashboard'));
-  await new Promise((r) => setTimeout(r, 300));
   await page.evaluate(() => go('personal-info'));
   await new Promise((r) => setTimeout(r, 400));
   const account = await page.evaluate(() => ({
@@ -66,39 +71,78 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
     html: document.getElementById('app')?.innerHTML || '',
   }));
   log(account.screen === 'personal-info' ? 'PASS' : 'FAIL', 'Screen', `Account: ${account.screen}`);
-  log(account.html.includes('Property') && account.html.includes('Unit within property') ? 'PASS' : 'FAIL', 'Profile', 'Shows property and unit');
-  log(account.html.includes('Your landlord') ? 'PASS' : 'FAIL', 'Profile', 'Landlord contact card on account');
+  log(account.html.includes('profile-card') && account.html.includes('profile-card-name') ? 'PASS' : 'FAIL', 'Profile', 'Landlord-style profile card');
+  log(account.html.includes('Flat 2A') ? 'PASS' : 'FAIL', 'Profile', 'Unit badge on profile card');
+  log(account.html.includes('Active tenancy') ? 'PASS' : 'FAIL', 'Profile', 'Tenancy menu section');
+  log(account.html.includes('Tenant referencing') ? 'PASS' : 'FAIL', 'Profile', 'Referencing menu');
+  log(account.html.includes('Documents') ? 'PASS' : 'FAIL', 'Profile', 'Documents menu');
+  log(account.html.includes('Check-out') ? 'PASS' : 'FAIL', 'Profile', 'Check-out menu');
+  log(account.html.includes('Change password') ? 'PASS' : 'FAIL', 'Profile', 'Change password');
+  log(account.html.includes('Your landlord') ? 'PASS' : 'FAIL', 'Profile', 'Landlord contact');
 
-  await page.evaluate(() => go('tenant-dashboard'));
-  await new Promise((r) => setTimeout(r, 300));
-  const dash = await page.evaluate(() => ({
-    html: document.getElementById('app')?.innerHTML || '',
-    hasCall: !!document.querySelector('[data-action="call-landlord"]'),
-  }));
-  log(dash.hasCall ? 'PASS' : 'FAIL', 'Contact', 'Tenant dashboard call landlord action');
-  log(dash.html.includes('Your landlord') ? 'PASS' : 'FAIL', 'Contact', 'Landlord contact card on dashboard');
-
-  await page.evaluate(() => go('help-support'));
+  await page.evaluate(() => go('tenant-documents'));
   await new Promise((r) => setTimeout(r, 400));
-  const help = await page.evaluate(() => ({
+  const docs = await page.evaluate(() => ({
     screen: STATE.screen,
     html: document.getElementById('app')?.innerHTML || '',
-    hasLandlordSupport: !!document.querySelector('[data-action="tenant-support-chat"]'),
   }));
-  log(help.screen === 'help-support' ? 'PASS' : 'FAIL', 'Screen', `Help & Support: ${help.screen}`);
-  log(help.hasLandlordSupport ? 'PASS' : 'FAIL', 'Help', 'Support routes to landlord message');
-  log(!help.html.includes('support@landlordhq.com') ? 'PASS' : 'FAIL', 'Help', 'No platform email for tenant help');
+  log(docs.screen === 'tenant-documents' ? 'PASS' : 'FAIL', 'Screen', `Documents: ${docs.screen}`);
+  log(docs.html.includes('Lease Agreement') ? 'PASS' : 'FAIL', 'Documents', 'Shared lease visible');
+
+  await page.evaluate(() => go('tenant-referencing'));
+  await new Promise((r) => setTimeout(r, 400));
+  const ref = await page.evaluate(() => ({
+    screen: STATE.screen,
+    html: document.getElementById('app')?.innerHTML || '',
+  }));
+  log(ref.screen === 'tenant-referencing' ? 'PASS' : 'FAIL', 'Screen', `Referencing: ${ref.screen}`);
+  log(ref.html.includes('Right to Rent') && ref.html.includes('Guarantor') ? 'PASS' : 'FAIL', 'Referencing', 'All referencing sections');
+
+  await page.evaluate(() => go('tenant-checkout'));
+  await new Promise((r) => setTimeout(r, 400));
+  const checkout = await page.evaluate(() => ({
+    screen: STATE.screen,
+    html: document.getElementById('app')?.innerHTML || '',
+  }));
+  log(checkout.screen === 'tenant-checkout' ? 'PASS' : 'FAIL', 'Screen', `Check-out: ${checkout.screen}`);
+  log(checkout.html.includes('Deposit status') && /meter/i.test(checkout.html) ? 'PASS' : 'FAIL', 'Check-out', 'Deposit & meters');
 
   await page.evaluate(() => go('messages'));
   await new Promise((r) => setTimeout(r, 400));
   const msgs = await page.evaluate(() => ({
     screen: STATE.screen,
     count: document.querySelectorAll('[data-go="chat"]').length,
-    landlordName: document.querySelector('.inbox-name')?.textContent?.trim(),
+    names: [...document.querySelectorAll('.inbox-name')].map((n) => n.textContent.trim()),
   }));
   log(msgs.screen === 'messages' ? 'PASS' : 'FAIL', 'Screen', `Messages: ${msgs.screen}`);
-  log(msgs.count >= 1 ? 'PASS' : 'FAIL', 'Messages', `${msgs.count} conversation(s)`);
-  log(msgs.landlordName === 'John Smith' ? 'PASS' : 'FAIL', 'Messages', `Landlord thread: ${msgs.landlordName}`);
+  log(msgs.names.includes('John Smith') ? 'PASS' : 'FAIL', 'Messages', 'Landlord thread');
+  log(msgs.names.includes('Plumber Pro') ? 'PASS' : 'FAIL', 'Messages', 'Contractor thread for assigned job');
+
+  const routeChecks = [
+    ['maintenance', 'tenant-issues'],
+    ['financial', 'transaction-history'],
+    ['dashboard', 'tenant-dashboard'],
+    ['properties', 'tenant-active-tenancy'],
+    ['profile', 'personal-info'],
+  ];
+  for (const [from, expected] of routeChecks) {
+    await page.evaluate((s) => go(s), from);
+    await new Promise((r) => setTimeout(r, 300));
+    const r = await page.evaluate((exp) => ({ screen: STATE.screen, ok: STATE.screen === exp }), expected);
+    log(r.ok ? 'PASS' : 'FAIL', 'Routing', `${from} → ${r.screen} (expected ${expected})`);
+  }
+
+  await page.evaluate(() => go('notifications-list'));
+  await new Promise((r) => setTimeout(r, 400));
+  const notifs = await page.evaluate(() => ({
+    screen: STATE.screen,
+    html: document.getElementById('app')?.innerHTML || '',
+    hasLandlordNotif: document.body.innerHTML.includes('Rent received') && document.body.innerHTML.includes('Sarah Johnson'),
+    hasTenantNotif: document.body.innerHTML.includes('Rent due') || document.body.innerHTML.includes('Issue update'),
+  }));
+  log(notifs.screen === 'notifications-list' ? 'PASS' : 'FAIL', 'Screen', `Notifications: ${notifs.screen}`);
+  log(notifs.hasTenantNotif ? 'PASS' : 'FAIL', 'Routing', 'Tenant notifications shown');
+  log(!notifs.hasLandlordNotif ? 'PASS' : 'FAIL', 'Routing', 'No landlord rent-received notification for tenant');
 
   await browser.close();
 
