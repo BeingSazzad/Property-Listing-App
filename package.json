@@ -1,8 +1,9 @@
 {
-  "name": "landlord-hq-local",
+  "name": "landlord-hq",
   "private": true,
   "scripts": {
     "start": "npx --yes serve -l 5500 .",
-    "dev": "npx --yes serve -l 5500 ."
+    "dev": "npx --yes serve -l 5500 .",
+    "build": "node scripts/vercel-build.js"
   }
 }
