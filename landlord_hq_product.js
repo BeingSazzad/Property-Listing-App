@@ -166,12 +166,27 @@ function renderDocFolderBrowser(propertyId, contextKey = `property-${propertyId}
         ? allDocs.filter(d => `${d.name} ${d.type} ${d.date}`.toLowerCase().includes(q))
         : allDocs;
     const primaryFolderIds = new Set(['gas', 'eicr', 'epc', 'tenancy']);
+    let defaultOpenFolderId = null;
+    if (compact && !q) {
+        for (const folder of DOC_FOLDER_DEFS) {
+            const files = sortDocList(docsForFolder(filtered, folder.id), sort);
+            if (files.length) {
+                defaultOpenFolderId = folder.id;
+                break;
+            }
+        }
+        if (defaultOpenFolderId == null) {
+            defaultOpenFolderId = DOC_FOLDER_DEFS.find(f => primaryFolderIds.has(f.id))?.id || null;
+        }
+    }
     const folders = DOC_FOLDER_DEFS.map(folder => {
         const files = sortDocList(docsForFolder(filtered, folder.id), sort);
         if (!files.length && !primaryFolderIds.has(folder.id)) return null;
         const years = [...new Set(files.map(d => docYearFromDate(d.date)))].sort((a, b) => b.localeCompare(a));
         const openKey = `${contextKey}-${folder.id}`;
-        const open = STATE.docFolderOpen[openKey] === true;
+        const open = compact
+            ? (STATE.docFolderOpen[openKey] === true || (STATE.docFolderOpen[openKey] === undefined && folder.id === defaultOpenFolderId))
+            : (STATE.docFolderOpen[openKey] === true);
         const lastUpdated = files[0]?.date || '—';
         return `
         <div class="doc-folder card${compact ? ' doc-folder--compact' : ''}">

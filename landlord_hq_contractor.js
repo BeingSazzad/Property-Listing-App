@@ -1355,7 +1355,7 @@ function screenTenantDashboard() {
         </div>`}
 
         <p class="tnt-section-title">Quick actions</p>
-        <div class="tnt-quick-grid">
+        <div class="tnt-quick-grid tnt-quick-grid--v2">
             ${[
                 ['wrench', 'Report issue', 'log-maintenance', '#2563EB', '#EFF6FF'],
                 ['clipboard-list', openIssueCount ? `${openIssueCount} open` : 'Issues', 'tenant-issues', '#7C3AED', '#F5F3FF'],
@@ -2061,43 +2061,38 @@ function screenContractorJobs() {
     const properties = [...new Set(CONTRACTOR_JOBS.map(j => j.property).filter(Boolean))];
     const landlordF = STATE.contractorLandlordFilter || 'all';
     const propertyF = STATE.contractorPropertyFilter || 'all';
-    const activeJob = jobs[0];
-    return `${topBar('Jobs', { sub: `${jobs.length} shown` })}
-    <div class="screen-content screen-enter ctr-jobs-screen">
-        ${activeJob ? `
-        <div class="card p-4 ctr-context-card">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Current context</p>
-            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${activeJob.landlord}</p>
-            <p class="text-[12px] text-[#64748B]">${activeJob.property}${activeJob.unit ? ` · ${activeJob.unit}` : ''}</p>
-        </div>` : ''}
-        <div class="search-bar mb-2">
+    return `${contractorDashboardHeader('Mike Thompson', 'Plumber Pro Ltd')}
+    <div class="screen-content screen-enter ctr-jobs-page">
+        <div class="ctr-jobs-title-block">
+            <h1 class="page-title">Jobs</h1>
+            <p class="page-subtitle">${jobs.length} job${jobs.length === 1 ? '' : 's'} shown</p>
+        </div>
+        <div class="search-bar ctr-jobs-search">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
             <input data-search="contractorJobs" type="text" value="${STATE.search.contractorJobs || ''}" placeholder="Search jobs…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
         </div>
         ${landlords.length > 1 ? `
-        <p class="text-[11px] font-semibold text-[#64748B] mb-1">Landlord</p>
-        <div class="ctr-jobs-filter-row mb-2">
-            <button type="button" data-contractor-landlord-filter="all" class="ctr-jobs-filter ${landlordF === 'all' ? 'active' : ''}">All</button>
+        <div class="ctr-jobs-filter-row">
+            <button type="button" data-contractor-landlord-filter="all" class="ctr-jobs-filter ${landlordF === 'all' ? 'active' : ''}">All landlords</button>
             ${landlords.map(l => `
             <button type="button" data-contractor-landlord-filter="${l.replace(/"/g, '')}" class="ctr-jobs-filter ${landlordF === l ? 'active' : ''}">${l.split(' ')[0]}</button>`).join('')}
         </div>` : ''}
         ${properties.length > 1 ? `
-        <p class="text-[11px] font-semibold text-[#64748B] mb-1">Property</p>
-        <div class="ctr-jobs-filter-row mb-2">
-            <button type="button" data-contractor-property-filter="all" class="ctr-jobs-filter ${propertyF === 'all' ? 'active' : ''}">All</button>
+        <div class="ctr-jobs-filter-row">
+            <button type="button" data-contractor-property-filter="all" class="ctr-jobs-filter ${propertyF === 'all' ? 'active' : ''}">All properties</button>
             ${properties.slice(0, 4).map(p => `
             <button type="button" data-contractor-property-filter="${p.replace(/"/g, '')}" class="ctr-jobs-filter ${propertyF === p ? 'active' : ''}">${p.split(',')[0]}</button>`).join('')}
         </div>` : ''}
-        <div class="ctr-jobs-filter-row">
+        <div class="ctr-jobs-filter-row ctr-jobs-filter-row--status">
             ${tabs.map(([k, l]) => `
             <button type="button" data-contractor-filter="${k}" class="ctr-jobs-filter ${f === k ? 'active' : ''}">${l}</button>`).join('')}
         </div>
         <div class="ctr-jobs-list">
             ${jobs.length ? jobs.map(j => contractorJobCard(j)).join('') : `
-            <div class="card p-8 text-center ctr-jobs-empty">
-                <i data-lucide="briefcase" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
-                <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No jobs in this filter</p>
-                <p class="text-[12px] text-[#64748B] mt-1">Try another tab or wait for new assignments.</p>
+            <div class="ctr-empty card">
+                <i data-lucide="briefcase" class="w-10 h-10 text-[#CBD5E1]"></i>
+                <p class="ctr-empty-title">No jobs in this filter</p>
+                <p class="ctr-empty-sub">Try another tab or wait for new assignments.</p>
             </div>`}
         </div>
     </div>`;

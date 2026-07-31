@@ -3331,8 +3331,18 @@ function renderPropertyOverviewDetails(propertyId) {
     ];
     const b = getPropertyBuilding(propertyId);
     const floors = b.useFloors && b.floors > 1 ? b.floors : Math.max(1, new Set(units.map(u => u.floor || 1)).size);
+    const vacant = units.length - occupied;
     return `
-    <div class="screen-content screen-content-sm building-info-page">
+    <div class="screen-content screen-content-sm building-info-page building-info-page--v2">
+        <div class="prop-overview-strip card">
+            <div class="prop-overview-stat"><strong>${occupied}</strong><span>Occupied</span></div>
+            <div class="prop-overview-divider"></div>
+            <div class="prop-overview-stat"><strong>${vacant}</strong><span>Vacant</span></div>
+            <div class="prop-overview-divider"></div>
+            <div class="prop-overview-stat"><strong>${units.length}</strong><span>Units</span></div>
+            <div class="prop-overview-divider"></div>
+            <div class="prop-overview-stat"><strong>${floors}</strong><span>Floors</span></div>
+        </div>
         <div class="building-section card">
             ${renderBuildingSectionHead('Property Photos', propertyId, 'photos', [
                 buildingSectionGoItem('Manage photos', 'image', 'property-photos', propertyId),
@@ -3391,15 +3401,24 @@ function renderPropertyOverviewDetails(propertyId) {
                 ${featureItems.map(item => renderBuildingIconItem(item)).join('')}
             </div>` : `<p class="building-empty-copy">No appliances or alarms added yet.</p>`}
         </div>
-        <button type="button" data-tab="records" class="building-records-link card w-full text-left">
-            <span class="building-records-link-icon" aria-hidden="true"><i data-lucide="folder-open" class="w-5 h-5"></i></span>
-            <span class="building-records-link-body">
-                <span class="building-records-link-label">Property records</span>
-                <span class="building-records-link-meta">${propertyRecordsSummaryLine(propertyId)}</span>
-            </span>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
-        </button>
-        <button data-go="property-floor-plans" class="btn-secondary w-full py-3 text-[13px]">View Floor Plans</button>
+        <div class="prop-overview-links">
+            <button type="button" data-tab="records" class="prop-overview-link card w-full text-left">
+                <span class="prop-overview-link-icon"><i data-lucide="folder-open" class="w-5 h-5"></i></span>
+                <span class="min-w-0 flex-1">
+                    <span class="prop-overview-link-label">Records</span>
+                    <span class="prop-overview-link-meta">${propertyRecordsSummaryLine(propertyId)}</span>
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>
+            <button type="button" data-go="property-floor-plans" class="prop-overview-link card w-full text-left">
+                <span class="prop-overview-link-icon"><i data-lucide="layout-grid" class="w-5 h-5"></i></span>
+                <span class="min-w-0 flex-1">
+                    <span class="prop-overview-link-label">Floor plans</span>
+                    <span class="prop-overview-link-meta">View unit layouts</span>
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>
+        </div>
     </div>`;
 }
 
@@ -5247,6 +5266,10 @@ function propertyRecordsSummaryLine(propertyId) {
 function renderPropertyRecordsHub(propertyId) {
     const quickLinks = `
     <div class="records-quick-links">
+        <button type="button" data-go="send-broadcast" data-pid="${propertyId}" class="records-quick-link">
+            <i data-lucide="megaphone" class="w-3.5 h-3.5"></i>
+            <span>Notices</span>
+        </button>
         <button type="button" data-tab="compliance" class="records-quick-link">
             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
             <span>Compliance</span>
@@ -5954,21 +5977,22 @@ function renderFlatDetailPaymentsTab(propertyId, unit) {
     const stats = unitRentStats(propertyId, unit);
     const unpaid = stats.unpaid;
     const hasOverdue = unpaid.some(i => i.status === 'Overdue');
+    const history = renderUnitRentHistory(propertyId, unit);
     return `
-    <div class="flat-dt-tab-panel">
-        ${stats.outstanding && !hasOverdue ? `
-        <div class="flat-rent-summary card">
-            <p class="flat-rent-summary-label">Outstanding</p>
-            <p class="flat-rent-summary-amount">£${stats.outstanding.toLocaleString()}</p>
-            <p class="flat-rent-summary-hint">${unpaid.length} unpaid bill${unpaid.length === 1 ? '' : 's'} for this unit</p>
-            <button type="button" data-go="mark-rent-received"${unpaid.length === 1 ? ` data-iid="${unpaid[0].id}"` : ''} class="btn-primary w-full py-3 text-[13px] mt-3">Record payment</button>
-        </div>` : stats.collected && !hasOverdue ? `
-        <div class="flat-rent-summary card flat-rent-summary--ok">
-            <p class="flat-rent-summary-label">This month</p>
-            <p class="flat-rent-summary-amount text-[#16A34A]">£${stats.collected.toLocaleString()} collected</p>
-        </div>` : ''}
-        <p class="flat-section-eyebrow flat-dt-eyebrow-inset">Payment history</p>
-        ${renderUnitRentHistory(propertyId, unit)}
+    <div class="flat-dt-tab-panel flat-dt-payments-v2">
+        ${stats.outstanding || stats.collected ? `
+        <div class="flat-pay-summary card${hasOverdue ? ' flat-pay-summary--overdue' : stats.collected && !hasOverdue ? ' flat-pay-summary--ok' : ''}">
+            <p class="flat-pay-summary-label">${hasOverdue ? 'Overdue' : stats.outstanding ? 'Outstanding' : 'This month'}</p>
+            <p class="flat-pay-summary-amount">${hasOverdue || stats.outstanding ? `£${(stats.outstanding || 0).toLocaleString()}` : `£${stats.collected.toLocaleString()} collected`}</p>
+            <p class="flat-pay-summary-hint">${unpaid.length ? `${unpaid.length} unpaid bill${unpaid.length === 1 ? '' : 's'}` : 'Rent up to date'}</p>
+            ${unpaid.length ? `<button type="button" data-go="mark-rent-received"${unpaid.length === 1 ? ` data-iid="${unpaid[0].id}"` : ''} class="flat-pay-summary-btn">Record payment</button>` : ''}
+        </div>` : `
+        <div class="card flat-dt-empty p-6 text-center">
+            <i data-lucide="banknote" class="w-8 h-8 text-[#CBD5E1] mx-auto"></i>
+            <p class="text-[13px] font-semibold mt-2 text-[#0F172A]">No payments yet</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Rent and bills for this unit appear here.</p>
+        </div>`}
+        ${history ? `<p class="flat-section-eyebrow flat-dt-eyebrow-inset">Payment history</p>${history}` : ''}
     </div>`;
 }
 
@@ -8351,6 +8375,25 @@ function screenTransactionHistoryEnhanced() {
     </div>`;
 }
 
+function renderFinancialPageHeader() {
+    const unreadBell = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
+    const stats = typeof financialStats === 'function' ? financialStats() : null;
+    return `
+    <div class="screen-header fin-page-header">
+        <div class="dash-header-top">
+            <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
+            <button type="button" data-go="notifications-list" class="top-icon-btn relative" aria-label="Notifications">
+                <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
+                ${unreadBell ? `<span class="notif-badge">${unreadBell}</span>` : ''}
+            </button>
+        </div>
+        <div class="fin-title-block">
+            <h1 class="page-title">Finances</h1>
+            ${stats ? `<p class="page-subtitle">£${stats.collected.toLocaleString()} collected · ${stats.pct}% this month</p>` : ''}
+        </div>
+    </div>`;
+}
+
 function screenFinancialEnhanced() {
     if (showScreenSkeleton('financial')) return renderFinancialSkeleton();
     const counts = {
@@ -8360,7 +8403,7 @@ function screenFinancialEnhanced() {
     };
     const stats = financialStats();
     const outstandingCount = counts.pending + counts.overdue;
-    return `${topBar('Finances')}
+    return `${renderFinancialPageHeader()}
     <div class="screen-content screen-enter financial-page">
         ${counts.overdue ? `
         <button type="button" data-go="transaction-history" data-invoice-preset="overdue" class="fin-alert">
@@ -9502,11 +9545,43 @@ function screenCheckoutTenancy() {
     </div>`;
 }
 
+function renderAssignContractorRow(c, item, isSuggested) {
+    const tenant = getMaintTenantForItem(item);
+    const certCount = ensureContractorCertificates(c).length;
+    const metaLine = [
+        tenant ? `Contacts ${tenant.name.split(' ')[0]}` : (isCommunalMaint(item) ? 'Communal job' : 'Landlord job'),
+        certCount ? `${certCount} cert${certCount === 1 ? '' : 's'}` : '',
+    ].filter(Boolean).join(' · ');
+    return `
+    <article class="ctr-card card assign-ctr-card${isSuggested ? ' assign-ctr-card--suggested' : ''}">
+        <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="ctr-card-main w-full text-left">
+            <img src="${c.img}" class="ctr-card-avatar" alt="">
+            <span class="ctr-card-body min-w-0 flex-1">
+                <span class="ctr-card-name-row">
+                    <span class="ctr-card-name">${escapeHtml(c.name)}</span>
+                    ${isSuggested ? '<span class="assign-suggested-pill">Suggested</span>' : ''}
+                </span>
+                <span class="ctr-card-trade-row">
+                    ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(c) : ''}
+                </span>
+                <span class="ctr-card-jobs">${escapeHtml(contractorJobsForLabel(c))}</span>
+                <span class="ctr-card-meta">${escapeHtml(metaLine)}</span>
+            </span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+        </button>
+        <div class="ctr-card-actions assign-ctr-card-actions">
+            <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="ctr-card-action"><i data-lucide="user" class="w-4 h-4"></i><span>Profile</span></button>
+            ${c.phone ? `<button type="button" data-action="call-contractor" data-phone="${c.phone.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
+            <button type="button" data-action="assign-contractor" data-cid="${c.id}" class="ctr-card-action ctr-card-action--primary"><i data-lucide="user-plus" class="w-4 h-4"></i><span>Assign</span></button>
+        </div>
+    </article>`;
+}
+
 function screenAssignContractor() {
     const item = maintItem(STATE.assignMaintId ?? STATE.maintId);
     const suggested = suggestContractorForIssue(item);
     const suggestedMeta = suggested && typeof resolveContractorTrade === 'function' ? resolveContractorTrade(suggested) : null;
-    const tenant = getMaintTenantForItem(item);
+    const categoryMeta = resolveMaintTradeCategory(item);
     const q = (STATE.search['assign-contractor'] || '').toLowerCase().trim();
     let sorted = [...CONTRACTORS].sort((a, b) => {
         if (suggested?.id === a.id) return -1;
@@ -9527,49 +9602,25 @@ function screenAssignContractor() {
                 || jobs.toLowerCase().includes(q);
         });
     }
-    return `${topBar('Assign Contractor', { back: true })}
+    return `${topBar('Assign contractor', { back: true })}
     <div class="screen-content screen-enter assign-contractor-page">
-        <div class="card p-4 assign-issue-card">
-            <p class="assign-issue-title">${item.issue}</p>
-            <p class="assign-issue-meta">${item.prop}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''} · ${item.priority}</p>
-            <p class="maint-paid-by-line">${maintPaidByLabel(item)}</p>
-            ${item.contractor !== '—' ? `<p class="assign-issue-current">Current: ${item.contractor}</p>` : ''}
+        <div class="card assign-issue-v2">
+            <span class="maint-v2-cat-badge assign-issue-v2-badge" style="background:${categoryMeta.bg};color:${categoryMeta.color}">${escapeHtml(categoryMeta.shortLabel)}</span>
+            <p class="assign-issue-v2-title">${escapeHtml(item.issue)}</p>
+            <p class="assign-issue-v2-meta">${escapeHtml(item.prop)}${item.unit && item.unit !== '—' ? ` · ${escapeHtml(item.unit)}` : ''} · ${escapeHtml(item.priority)}</p>
+            ${item.contractor !== '—' ? `<p class="assign-issue-v2-current">Current: ${escapeHtml(item.contractor)}</p>` : ''}
         </div>
-        ${renderMaintTenantComplaint(item)}
         <div class="search-bar assign-search-bar">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-            <input data-search="assign-contractor" type="text" value="${STATE.search['assign-contractor'] || ''}" placeholder="Search by name or trade…" class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
+            <input data-search="assign-contractor" type="text" value="${STATE.search['assign-contractor'] || ''}" placeholder="Search contractors…" class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
         </div>
-        ${suggestedMeta && !q ? `
-        <div class="ux-tip maint-assign-trade-tip">
-            <p class="ux-tip-title">Suggested: ${suggestedMeta.shortLabel}</p>
-            <p class="ux-tip-text">${suggestedMeta.jobsFor}</p>
-        </div>` : ''}
-        <p class="screen-section-title">${sorted.length} contractor${sorted.length === 1 ? '' : 's'}</p>
-        <div class="assign-contractor-list">
-            ${sorted.length ? sorted.map(c => {
-                const isSuggested = suggested?.id === c.id;
-                return `
-            <div class="assign-contractor-card ${isSuggested ? 'assign-contractor-card--suggested' : ''}">
-                <img src="${c.img}" class="assign-contractor-avatar" alt="">
-                <div class="assign-contractor-body">
-                    <div class="assign-contractor-head">
-                        <p class="assign-contractor-name">${c.name}</p>
-                        ${isSuggested ? '<span class="maint-suggested-pill">Suggested</span>' : ''}
-                    </div>
-                    ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(c) : ''}
-                    <p class="assign-contractor-jobs">For: ${contractorJobsForLabel(c)}</p>
-                    <p class="assign-contractor-meta">${tenant ? `Contacts ${tenant.name.split(' ')[0]}` : isCommunalMaint(item) ? 'Communal job' : 'Landlord job'}${ensureContractorCertificates(c).length ? ` · ${ensureContractorCertificates(c).length} cert${ensureContractorCertificates(c).length === 1 ? '' : 's'}` : ''}</p>
-                </div>
-                <div class="assign-contractor-actions">
-                    <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="maint-contractor-profile-btn">Profile</button>
-                    <button type="button" data-action="assign-contractor" data-cid="${c.id}" class="assign-contractor-assign-btn">Assign</button>
-                </div>
-            </div>`;
-            }).join('') : `
-            <div class="fin-empty">
-                <p class="fin-empty-title">No contractors found</p>
-                <p class="fin-empty-sub">Try a different search term.</p>
+        ${suggestedMeta && !q ? `<p class="assign-list-hint">Suggested for <strong>${escapeHtml(suggestedMeta.shortLabel)}</strong> · ${sorted.length} contractor${sorted.length === 1 ? '' : 's'}</p>` : `<p class="assign-list-hint">${sorted.length} contractor${sorted.length === 1 ? '' : 's'}</p>`}
+        <div class="assign-ctr-list">
+            ${sorted.length ? sorted.map(c => renderAssignContractorRow(c, item, suggested?.id === c.id)).join('') : `
+            <div class="ctr-empty card">
+                <i data-lucide="hard-hat" class="w-10 h-10 text-[#CBD5E1]"></i>
+                <p class="ctr-empty-title">No contractors found</p>
+                <p class="ctr-empty-sub">Try a different search term.</p>
             </div>`}
         </div>
     </div>`;

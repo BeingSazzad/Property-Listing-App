@@ -3606,83 +3606,7 @@ function screenTenantDetail() {
 }
 
 function screenMaintenance() {
-    const f = STATE.maintFilter || 'all';
-    const scopeF = STATE.maintScopeFilter || 'all';
-    const q = (STATE.search.maintenance || '').toLowerCase();
-    const isCommunal = typeof isCommunalMaint === 'function' ? isCommunalMaint : () => false;
-    const counts = {
-        all: MAINTENANCE_ITEMS.length,
-        open: MAINTENANCE_ITEMS.filter(m => m.status === 'open').length,
-        progress: MAINTENANCE_ITEMS.filter(m => m.status === 'progress').length,
-        done: MAINTENANCE_ITEMS.filter(m => m.status === 'done').length,
-    };
-    const activeCount = counts.open + counts.progress;
-    let items = f === 'all' ? MAINTENANCE_ITEMS : MAINTENANCE_ITEMS.filter(m => m.status === f);
-    if (scopeF === 'unit') items = items.filter(m => !isCommunal(m));
-    else if (scopeF === 'communal') items = items.filter(m => isCommunal(m));
-    if (q) {
-        items = items.filter(m =>
-            m.issue.toLowerCase().includes(q)
-            || m.prop.toLowerCase().includes(q)
-            || (m.unit || '').toLowerCase().includes(q)
-            || (m.communalArea || '').toLowerCase().includes(q)
-            || (m.tenantName || '').toLowerCase().includes(q)
-        );
-    }
-    const unreadBell = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : NOTIFICATIONS.filter(n => n.unread).length;
-    const summaryCards = [
-        ['open', 'alert-circle', counts.open, 'Open', 'maint-summary-icon--open'],
-        ['progress', 'loader', counts.progress, 'In Progress', 'maint-summary-icon--progress'],
-        ['done', 'check-circle', counts.done, 'Done', 'maint-summary-icon--done'],
-        ['all', 'archive', counts.all, 'All', 'maint-summary-icon--all'],
-    ];
-    return `
-    <div class="screen-header maint-page-header">
-        <div class="dash-header-top">
-            <button data-action="drawer" class="top-icon-btn"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
-            <button data-go="notifications-list" class="top-icon-btn relative">
-                <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-                ${unreadBell ? `<span class="notif-badge">${unreadBell}</span>` : ''}
-            </button>
-        </div>
-        <div class="maint-title-block">
-            <h1 class="page-title">Maintenance</h1>
-            <p class="page-subtitle">${activeCount} active issue${activeCount === 1 ? '' : 's'}</p>
-        </div>
-    </div>
-    <div class="screen-content screen-enter maint-page">
-        <div class="maint-search-row">
-            <div class="search-bar flex-1">
-                <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-                <input data-search="maintenance" type="text" value="${STATE.search.maintenance || ''}" placeholder="Search issues..." class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
-            </div>
-            <button type="button" data-go="log-maintenance" class="maint-log-btn" title="Log new issue" aria-label="Log new issue">
-                <i data-lucide="plus" class="w-5 h-5"></i>
-            </button>
-        </div>
-        <div class="maint-summary-row">
-            ${summaryCards.map(([key, icon, n, label, cls]) => `
-            <button type="button" data-maint-filter="${key}" class="maint-summary-card ${f === key ? 'maint-summary-card--active' : ''}">
-                <span class="maint-summary-icon ${cls}"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
-                <span class="maint-summary-val">${n}</span>
-                <span class="maint-summary-lbl">${label}</span>
-            </button>`).join('')}
-        </div>
-        <div class="filter-tabs" style="margin-bottom:12px">
-            ${[
-                ['all', 'All locations'],
-                ['unit', 'Units'],
-                ['communal', 'Communal'],
-            ].map(([key, label]) => `
-            <button type="button" data-maint-scope-filter="${key}" class="filter-chip ${scopeF === key ? 'active' : ''}">${label}</button>`).join('')}
-        </div>
-        ${items.length ? `<div class="maint-list">${items.map(m => maintCard(m)).join('')}</div>` : `
-        <div class="card p-8 text-center">
-            <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
-            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No issues found</p>
-            <p class="text-[12px] text-[#64748B] mt-1">${q ? 'Try a different search' : 'Tap + to log a new issue'}</p>
-        </div>`}
-    </div>`;
+    return typeof screenMaintenanceEnhanced === 'function' ? screenMaintenanceEnhanced() : '';
 }
 
 function screenFinancial() {
@@ -4188,36 +4112,7 @@ function screenAbout() {
 }
 
 function screenMaintenanceDetail() {
-    const item = maintItem(STATE.maintId);
-    const statusLabel = maintStatusLabel[item.status] || item.status;
-    const [pBg, pColor] = maintPriorityStyle(item.priority);
-    const timeline = {
-        open: [['Issue reported', `Today · ${item.time}`]],
-        progress: [['Issue reported', item.time], ['Contractor assigned', 'Today'], ['Work in progress', 'In progress']],
-        done: [['Issue reported', item.time], ['Contractor assigned', 'Completed'], ['Work completed', 'Resolved']],
-    }[item.status] || [['Issue reported', item.time]];
-    const contractorAvatar = item.contractor === 'Heating Co.' ? IMG.avatar.heating
-        : item.contractor === 'Electric Fix' ? IMG.avatar.electric : IMG.avatar.plumber;
-    return `${topBar('Maintenance', { back: true })}
-    <div class="screen-content screen-enter">
-        <img src="${IMG.maint[item.id % IMG.maint.length]}" class="w-full h-44 rounded-xl object-cover" alt="">
-        <div class="flex gap-2"><span class="badge" style="background:${pBg};color:${pColor}">${item.priority}</span><span class="badge bg-[#F1F5F9] text-[#64748B]">${statusLabel}</span></div>
-        <h2 class="text-[14px] font-bold">${item.issue}</h2>
-        <p class="text-[13px] text-[#64748B]">${item.prop} · ${item.time}</p>
-        <div class="card p-4"><p class="text-[13px] leading-relaxed text-[#475569]">${item.desc}</p></div>
-        ${item.contractor !== '—' ? `<div class="card p-4 flex items-center gap-3">
-            <img src="${contractorAvatar}" class="w-10 h-10 rounded-xl object-cover" alt="">
-            <div class="flex-1"><p class="text-[13px] font-semibold">${item.contractor}</p><p class="text-[11px] text-[#64748B]">Assigned contractor</p></div>
-            <button data-go="chat" data-chat="1" class="text-[13px] font-semibold text-[#2563EB]">Contact</button>
-        </div>` : `<button data-action="go-assign-contractor" class="btn-secondary w-full py-3 text-[13px]">Assign Contractor</button>`}
-        ${item.contractor !== '—' ? `<button data-action="go-assign-contractor" class="btn-secondary w-full py-3 text-[13px]">Reassign Contractor</button>` : ''}
-        <div class="relative pl-6 space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E2E8F0]">
-            ${timeline.map(([t, d]) => `
-            <div class="relative"><div class="absolute -left-6 w-3 h-3 rounded-full bg-[#2563EB] border-2 border-white"></div>
-            <p class="text-[13px] font-medium">${t}</p><p class="text-[11px] text-[#64748B]">${d}</p></div>`).join('')}
-        </div>
-        ${item.status !== 'done' ? `<button data-action="mark-maint-complete" class="btn-primary w-full py-3.5 text-[14px]">Mark Complete</button>` : `<p class="text-[13px] text-center text-[#059669] font-semibold py-2">This issue has been resolved</p>`}
-    </div>`;
+    return typeof screenMaintenanceDetailEnhanced === 'function' ? screenMaintenanceDetailEnhanced() : '';
 }
 
 function screenInvoiceDetail() {

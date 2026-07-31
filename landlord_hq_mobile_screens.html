@@ -5653,6 +5653,50 @@
 
         /* Building info page */
         .building-info-page { display: flex; flex-direction: column; gap: 12px; }
+        .building-info-page--v2 { gap: 10px; }
+        .prop-overview-strip {
+            display: flex; align-items: center; justify-content: space-around;
+            padding: 14px 12px; margin-bottom: 2px;
+        }
+        .prop-overview-stat { text-align: center; min-width: 0; flex: 1; }
+        .prop-overview-stat strong { display: block; font-size: 18px; font-weight: 800; color: #0F172A; line-height: 1; }
+        .prop-overview-stat span { display: block; font-size: 11px; color: #64748B; margin-top: 4px; font-weight: 600; }
+        .prop-overview-divider { width: 1px; height: 28px; background: #E2E8F0; flex-shrink: 0; }
+        .prop-overview-links { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .prop-overview-link {
+            display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+            border: none; background: transparent; cursor: pointer; text-align: left;
+        }
+        .prop-overview-link:active { background: #F8FAFC; }
+        .prop-overview-link-icon {
+            width: 40px; height: 40px; border-radius: 12px; background: #EFF6FF; color: #2563EB;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .prop-overview-link-label { display: block; font-size: 14px; font-weight: 700; color: #0F172A; }
+        .prop-overview-link-meta { display: block; font-size: 12px; color: #64748B; margin-top: 2px; }
+        .flat-dt-payments-v2 { display: flex; flex-direction: column; gap: 12px; }
+        .flat-pay-summary { padding: 16px; }
+        .flat-pay-summary--overdue { background: #FEF2F2; border-color: #FECACA; }
+        .flat-pay-summary--ok { background: #F0FDF4; border-color: #BBF7D0; }
+        .flat-pay-summary-label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: .04em; margin: 0; }
+        .flat-pay-summary-amount { font-size: 28px; font-weight: 800; color: #0F172A; margin: 6px 0 0; line-height: 1; }
+        .flat-pay-summary--ok .flat-pay-summary-amount { color: #16A34A; }
+        .flat-pay-summary--overdue .flat-pay-summary-amount { color: #DC2626; }
+        .flat-pay-summary-hint { font-size: 12px; color: #64748B; margin: 6px 0 0; }
+        .flat-pay-summary-btn {
+            width: 100%; margin-top: 12px; padding: 12px; border: none; border-radius: 10px;
+            background: #2563EB; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+        }
+        .fin-page-header { padding-bottom: 0; }
+        .fin-title-block { padding: 0 var(--gutter) 12px; }
+        .ctr-jobs-page { padding-top: 0; }
+        .ctr-jobs-title-block { padding: 0 2px 12px; }
+        .ctr-jobs-search { margin-bottom: 10px; }
+        .ctr-jobs-filter-row { display: flex; gap: 6px; overflow-x: auto; flex-wrap: nowrap; margin-bottom: 8px; scrollbar-width: none; }
+        .ctr-jobs-filter-row::-webkit-scrollbar { display: none; }
+        .ctr-jobs-filter-row--status { margin-bottom: 12px; }
+        .tnt-quick-grid--v2 { gap: 10px; }
+        .tnt-quick-grid--v2 .tnt-quick-btn { border-radius: 14px; }
         .building-location {
             display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
         }
@@ -6029,32 +6073,24 @@
 
         .maint-paid-by-line { font-size: 12px; font-weight: 600; color: #4338CA; margin: 6px 0 0; }
         .assign-contractor-page { padding-bottom: 24px; }
-        .assign-issue-card { margin-bottom: 12px; }
-        .assign-issue-title { font-size: 15px; font-weight: 700; color: #0F172A; margin: 0; }
-        .assign-issue-meta { font-size: 12px; color: #64748B; margin: 4px 0 0; }
-        .assign-issue-current { font-size: 12px; color: #D97706; margin: 8px 0 0; }
-        .assign-search-bar { margin: 12px 0 16px; }
-        .assign-contractor-list { display: flex; flex-direction: column; gap: 10px; }
-        .assign-contractor-card {
-            display: flex; align-items: center; gap: 12px; width: 100%;
-            padding: 14px; border: 1px solid #E2E8F0; border-radius: 14px;
-            background: #fff; text-align: left; cursor: pointer;
+        .assign-issue-v2 { padding: 14px 16px; margin-bottom: 12px; }
+        .assign-issue-v2-badge { margin-bottom: 8px; }
+        .assign-issue-v2-title { font-size: 16px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.3; }
+        .assign-issue-v2-meta { font-size: 12px; color: #64748B; margin: 6px 0 0; }
+        .assign-issue-v2-current { font-size: 12px; font-weight: 600; color: #D97706; margin: 8px 0 0; }
+        .assign-search-bar { margin-bottom: 8px; }
+        .assign-list-hint { font-size: 12px; color: #94A3B8; margin: 0 0 10px 2px; }
+        .assign-ctr-list { display: flex; flex-direction: column; gap: 10px; }
+        .assign-ctr-card--suggested { border-color: #BFDBFE; box-shadow: 0 0 0 1px #BFDBFE; }
+        .assign-ctr-card-actions { grid-template-columns: repeat(3, 1fr); }
+        .assign-ctr-card-actions:has(:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
+        .ctr-card-action--primary {
+            background: #EFF6FF; border-color: #BFDBFE; color: #2563EB; font-weight: 700;
         }
-        .assign-contractor-card--suggested { border-color: #BFDBFE; background: #F8FAFF; }
-        .assign-contractor-card:active { background: #F8FAFC; }
-        .assign-contractor-avatar { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
-        .assign-contractor-body { flex: 1; min-width: 0; }
-        .assign-contractor-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .assign-contractor-name { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; }
-        .assign-contractor-jobs { font-size: 12px; color: #475569; margin: 6px 0 0; line-height: 1.4; }
-        .assign-contractor-meta { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
-        .assign-contractor-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
-        .assign-contractor-assign { font-size: 12px; font-weight: 700; color: #2563EB; }
-        .assign-contractor-assign-btn {
-            font-size: 12px; font-weight: 700; color: #fff; background: #2563EB;
-            border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer;
+        .assign-suggested-pill {
+            font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+            background: #DBEAFE; color: #1D4ED8; flex-shrink: 0;
         }
-        .assign-contractor-assign-btn:active { background: #1D4ED8; }
         .maint-detail-v2-page {
             padding: 12px var(--gutter) 24px; background: #F8FAFC;
             display: flex; flex-direction: column; gap: 12px;
@@ -6552,10 +6588,10 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=74"></script>
-    <script src="landlord_hq_contractor.js?v=74"></script>
-    <script src="landlord_hq_features.js?v=74"></script>
-    <script src="landlord_hq_product.js?v=74"></script>
+    <script src="landlord_hq_screens.js?v=76"></script>
+    <script src="landlord_hq_contractor.js?v=76"></script>
+    <script src="landlord_hq_features.js?v=76"></script>
+    <script src="landlord_hq_product.js?v=76"></script>
     <script>
     (function () {
         function showBootError(msg) {
