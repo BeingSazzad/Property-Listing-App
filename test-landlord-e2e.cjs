@@ -95,7 +95,7 @@ async function demoLogin(page) {
     ['unit-utilities', { propertyId: 0, unit: 'Flat 2A' }],
     ['reminders', {}],
     ['compliance-dashboard', {}],
-    ['portfolio-overview', {}],
+    ['maintenance-history', {}],
     ['select-property-invite', {}],
     ['global-search', {}],
   ];

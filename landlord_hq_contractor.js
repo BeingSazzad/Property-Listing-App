@@ -3,16 +3,12 @@ const CONTRACTOR_BOTTOM_NAV = [
     ['layout-dashboard', 'Home', 'contractor-dashboard'],
     ['briefcase', 'Jobs', 'contractor-jobs'],
     ['message-square', 'Messages', 'messages'],
-    ['user', 'Profile', 'contractor-profile'],
+    ['user-round', 'Profile', 'contractor-profile'],
 ];
 
 const CONTRACTOR_DRAWER_NAV = [
-    ['layout-dashboard', 'Dashboard', 'contractor-dashboard'],
-    ['briefcase', 'Jobs', 'contractor-jobs'],
     ['building-2', 'Landlords', 'contractor-landlords'],
-    ['message-square', 'Messages', 'messages'],
     ['bell', 'Notifications', 'contractor-notifications'],
-    ['user', 'Profile', 'contractor-profile'],
     ['life-buoy', 'Help & Support', 'help-support'],
 ];
 
@@ -329,11 +325,16 @@ function uploadContractorFile(kind) {
 
 function markContractorJobComplete() {
     const job = contractorJob(STATE.contractorJobId);
+    const note = document.querySelector('[data-field="workNote"]')?.value?.trim();
+    if (note) {
+        job.notes.push({ text: note, time: new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) });
+    }
     if (!job.invoice) {
         job.invoice = typeof generateContractorSystemInvoice === 'function' ? generateContractorSystemInvoice(job) : null;
     }
     if (!job.invoice) {
-        toast('Generate your invoice first — amount required');
+        toast('Add invoice details first');
+        go('contractor-documents', { jobId: job.id });
         return;
     }
     job.status = 'waiting_approval';
@@ -345,17 +346,128 @@ function markContractorJobComplete() {
     go('contractor-jobs');
 }
 
-const contractorFilterJobs = () => {
-    const f = STATE.contractorJobFilter;
+let contractorFilterJobs = () => {
+    const f = STATE.contractorJobFilter || 'all';
     const map = {
         all: () => true,
+        pending: j => ['assigned', 'accepted'].includes(j.status),
         assigned: j => j.status === 'assigned',
         accepted: j => ['accepted', 'scheduled'].includes(j.status),
-        in_progress: j => ['in_progress', 'waiting_approval', 'approved'].includes(j.status),
+        in_progress: j => ['scheduled', 'in_progress', 'waiting_approval', 'approved'].includes(j.status),
         completed: j => ['completed', 'paid'].includes(j.status),
     };
-    return CONTRACTOR_JOBS.filter(map[f] || map.all);
+    let jobs = CONTRACTOR_JOBS.filter(map[f] || map.all);
+    const landlordF = STATE.contractorLandlordFilter || 'all';
+    const propertyF = STATE.contractorPropertyFilter || 'all';
+    const q = (STATE.search?.contractorJobs || '').trim().toLowerCase();
+    if (landlordF !== 'all') jobs = jobs.filter(j => j.landlord === landlordF);
+    if (propertyF !== 'all') jobs = jobs.filter(j => j.property === propertyF);
+    if (q) {
+        jobs = jobs.filter(j => [j.issue, j.property, j.address, j.tenant, j.landlord].join(' ').toLowerCase().includes(q));
+    }
+    return jobs;
 };
+
+function contractorJobFilterCounts() {
+    const all = CONTRACTOR_JOBS.length;
+    const pending = CONTRACTOR_JOBS.filter(j => ['assigned', 'accepted'].includes(j.status)).length;
+    const inProgress = CONTRACTOR_JOBS.filter(j => ['scheduled', 'in_progress', 'waiting_approval', 'approved'].includes(j.status)).length;
+    const completed = CONTRACTOR_JOBS.filter(j => ['completed', 'paid'].includes(j.status)).length;
+    return { all, pending, inProgress, completed };
+}
+
+function contractorJobEstimate(job) {
+    if (job.invoice?.amount) return job.invoice.amount;
+    return ({ High: '£185', Medium: '£120', Low: '£85' })[job.priority] || '£120';
+}
+
+function contractorJobDisplayStatus(job) {
+    const st = contractorStatusStyle(job.status);
+    const label = {
+        assigned: 'Pending', accepted: 'Pending', scheduled: 'In progress',
+        in_progress: 'In progress', waiting_approval: 'Pending review',
+        approved: 'Pending review', completed: 'Completed', paid: 'Completed',
+    }[job.status] || st.label;
+    return { label, bg: st.bg, color: st.color };
+}
+
+function contractorJobListCard(job) {
+    const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
+    const disp = contractorJobDisplayStatus(job);
+    const location = `${job.property}${job.unit && job.unit !== '—' ? ` · ${job.unit}` : ''}`;
+    return `
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-v2-job-card card w-full text-left">
+        <img src="${thumb}" alt="" class="ctr-v2-job-thumb">
+        <div class="ctr-v2-job-body">
+            <p class="ctr-v2-job-title">${job.issue}</p>
+            <p class="ctr-v2-job-addr">${location}</p>
+            <div class="ctr-v2-job-meta">
+                <span class="ctr-v2-job-badge" style="background:${disp.bg};color:${disp.color}">${disp.label}</span>
+                <span class="ctr-v2-job-time"><i data-lucide="clock" class="w-3 h-3"></i>${job.visitDate || '—'}</span>
+            </div>
+            <p class="ctr-v2-job-price">Est. ${contractorJobEstimate(job)}</p>
+        </div>
+        <i data-lucide="chevron-right" class="ctr-v2-job-chevron"></i>
+    </button>`;
+}
+
+function contractorEarningsSummary() {
+    const paidJobs = CONTRACTOR_JOBS.filter(j => ['paid', 'completed', 'waiting_approval', 'approved'].includes(j.status));
+    const total = paidJobs.reduce((sum, j) => {
+        const amt = parseFloat(String(contractorJobEstimate(j)).replace(/[^\d.]/g, '')) || 0;
+        return sum + amt;
+    }, 0);
+    const completed = CONTRACTOR_JOBS.filter(j => ['completed', 'paid'].includes(j.status)).length;
+    return { total, completed, jobs: paidJobs.slice(0, 5) };
+}
+
+function contractorReviewDistribution(reviews) {
+    const dist = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    (reviews || []).forEach(r => { if (dist[r.stars] != null) dist[r.stars]++; });
+    const max = Math.max(1, ...Object.values(dist));
+    return [5, 4, 3, 2, 1].map(stars => ({
+        stars,
+        count: dist[stars],
+        pct: Math.round((dist[stars] / max) * 100),
+    }));
+}
+
+function renderCtrProgressChecklist(job) {
+    if (!['scheduled', 'in_progress', 'waiting_approval'].includes(job.status)) return '';
+    const steps = [
+        ['Arrive at property', ['in_progress', 'waiting_approval', 'approved', 'paid', 'completed'].includes(job.status)],
+        ['Diagnose & repair', ['waiting_approval', 'approved', 'paid', 'completed'].includes(job.status)],
+        ['Add work photos', (job.photos?.after?.length || 0) > 0],
+        ['Submit invoice', !!job.invoice],
+    ];
+    return `
+    <div class="card ctr-compact-block">
+        <p class="ctr-compact-label">Progress</p>
+        <ul class="ctr-compact-checklist">
+            ${steps.map(([label, done]) => `
+            <li class="ctr-compact-check-item${done ? ' is-done' : ''}">
+                <span class="ctr-compact-check-dot" aria-hidden="true"></span>
+                <span>${label}</span>
+            </li>`).join('')}
+        </ul>
+    </div>`;
+}
+
+function renderCtrEarnPeriodPills() {
+    const period = STATE.contractorEarnPeriod || '1M';
+    const periods = [['1W', '1W'], ['1M', '1M'], ['3M', '3M'], ['1Y', '1Y'], ['all', 'All']];
+    return `<div class="ctr-compact-periods">${periods.map(([k, l]) => `
+        <button type="button" data-contractor-earn-period="${k}" class="ctr-compact-period${period === k ? ' is-active' : ''}">${l}</button>`).join('')}</div>`;
+}
+
+function contractorProfileCompleteness() {
+    let score = 40;
+    if (CONTRACTOR_USER.phone) score += 15;
+    if (CONTRACTOR_USER.companyReg) score += 15;
+    if (ensureContractorCertificates(CONTRACTOR_USER).length >= 2) score += 20;
+    if (CONTRACTOR_USER.vatNumber) score += 10;
+    return Math.min(100, score);
+}
 
 const CONTRACTOR_TRADE_CATALOG = [
     { id: 'plumbing', label: 'Plumbing & Heating', shortLabel: 'Plumber', icon: 'wrench', color: '#2563EB', bg: '#EFF6FF', jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains', keywords: ['sink', 'tap', 'leak', 'pipe', 'plumb', 'water', 'damp', 'toilet', 'drain', 'bathroom', 'basin', 'shower'] },
@@ -1255,25 +1367,141 @@ function screenTenantWelcome() {
 
 function tenantDashboardHeader(t, p) {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t.id;
-    const unitLabel = t.unit ? `${t.unit}, ${(p?.name || 'Your home').replace(/,.*/, '')}` : (p?.name || 'Your property');
     const av = typeof tenantAvatarUrl === 'function' ? tenantAvatarUrl(tid) : IMG.avatar.sarah;
+    const greeting = typeof dashGreeting === 'function' ? dashGreeting() : 'Good morning';
+    const unread = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const sub = p ? `${p.name} · ${t.unit || 'Your unit'}` : (typeof dashDateLabel === 'function' ? dashDateLabel() : '');
     return `
-<div class="screen-header tnt-home-header">
-    <div class="tnt-home-top">
-        <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
+<div class="screen-header dash-header">
+    <div class="dash-header-top">
+        <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu">
+            <i data-lucide="menu" class="w-[22px] h-[22px]"></i>
+        </button>
         <button type="button" data-go="notifications-list" class="top-icon-btn relative" aria-label="Notifications">
             <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-            <span class="notif-badge">2</span>
+            ${unread ? `<span class="notif-badge">${unread}</span>` : ''}
         </button>
     </div>
-    <div class="tnt-home-greeting">
-        <img src="${av}" class="tnt-home-avatar" alt="">
+    <div class="dash-greeting-row">
+        <img src="${av}" class="dash-avatar" alt="">
         <div class="min-w-0">
-            <p class="tnt-home-hi">Hi, ${typeof escapeHtml === 'function' ? escapeHtml(t.firstName) : t.firstName}! 👋</p>
-            <p class="tnt-home-hi-sub">${typeof escapeHtml === 'function' ? escapeHtml(unitLabel) : unitLabel}</p>
+            <p class="dash-greeting">${esc(greeting)}, ${esc(t.firstName)}</p>
+            <p class="dash-date">${esc(sub)}</p>
         </div>
     </div>
 </div>`;
+}
+
+function renderTenantHomePropertyCard(t, p) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const cover = typeof getPropertyCoverPhoto === 'function'
+        ? getPropertyCoverPhoto(t.propertyId)
+        : (IMG.props[t.propertyId] || IMG.props[0]);
+    const addrLine = [t.unit, p?.address].filter(Boolean).join(', ');
+    return `
+    <button type="button" data-go="tenant-active-tenancy" class="tnt-home-hero card w-full text-left">
+        <div class="tnt-home-hero-body">
+            <p class="tnt-home-hero-label">My home</p>
+            <p class="tnt-home-hero-title">${esc(p?.name || 'Your property')}</p>
+            <p class="tnt-home-hero-addr">${esc(addrLine || p?.address || '—')}</p>
+            <span class="tnt-home-hero-pill">View property <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
+        </div>
+        <img src="${cover}" alt="" class="tnt-home-hero-img">
+    </button>`;
+}
+
+function renderTenantHomeRentStrip(t, pay, rentDue) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const rentAmt = rentDue
+        ? (pay?.balance || '—')
+        : (t.rent ? `£${String(t.rent).replace(/^£/, '')}` : '—');
+    const lastParts = (pay?.lastPayment || '—').split('·').map(s => s.trim());
+    const lastAmt = lastParts[0] || '—';
+    const lastDate = lastParts[1] || '—';
+    const dueMeta = pay?.nextDue
+        ? pay.nextDue.split('·').pop()?.trim() || '1st of every month'
+        : '1st of every month';
+    return `
+    <div class="tnt-rent-strip card">
+        <div class="tnt-rent-strip-col">
+            <p class="tnt-rent-strip-label">Next rent due</p>
+            <p class="tnt-rent-strip-amt${rentDue ? ' tnt-rent-strip-amt--due' : ''}">${esc(rentAmt)}</p>
+            <span class="tnt-rent-badge ${rentDue ? 'tnt-rent-badge--due' : 'tnt-rent-badge--ok'}">${rentDue ? 'Pending' : 'Paid'}</span>
+            <p class="tnt-rent-strip-sub"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(dueMeta)}</p>
+        </div>
+        <div class="tnt-rent-strip-div" aria-hidden="true"></div>
+        <div class="tnt-rent-strip-col">
+            <p class="tnt-rent-strip-label">Last payment</p>
+            <p class="tnt-rent-strip-amt tnt-rent-strip-amt--sm">${esc(lastAmt)}</p>
+            <p class="tnt-rent-strip-sub"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(lastDate)}</p>
+        </div>
+        <div class="tnt-rent-strip-div" aria-hidden="true"></div>
+        <button type="button" ${rentDue
+            ? `data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}"`
+            : `data-go="transaction-history"`} class="tnt-rent-strip-action">
+            <span class="tnt-rent-strip-action-icon"><i data-lucide="${rentDue ? 'credit-card' : 'receipt'}" class="w-5 h-5"></i></span>
+            <span class="tnt-rent-strip-action-label">${rentDue ? 'Pay rent' : 'Payments'}</span>
+        </button>
+    </div>`;
+}
+
+function renderTenantHomeMaintBill(pay) {
+    if (!pay?.maintBalance || pay.maintBalance === '£0.00') return '';
+    return `
+    <div class="tnt-maint-bill card">
+        <div class="tnt-rent-card-head">
+            <p class="tnt-rent-label">Bill due</p>
+            <span class="tnt-rent-badge tnt-rent-badge--due">Due</span>
+        </div>
+        <p class="tnt-rent-amount tnt-rent-amount--sm">${pay.maintBalance}</p>
+        <p class="tnt-rent-meta">${pay.nextMaintDue || 'Maintenance or utility charge'}</p>
+        <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-secondary w-full py-2.5 text-[12px] mt-2">Pay with Stripe</button>
+    </div>`;
+}
+
+function renderTenantHomeMaintSection(tenant, tid) {
+    const issues = typeof tenantMaintenanceForAccount === 'function'
+        ? tenantMaintenanceForAccount(tenant).filter(m => m.status !== 'done')
+        : [];
+    const body = issues.length
+        ? `<div class="maint-list tnt-home-maint-list">${issues.slice(0, 1).map(m =>
+            typeof maintCard === 'function'
+                ? maintCard(m, { hideProperty: true, hideAssign: true })
+                : ''
+        ).join('')}</div>`
+        : `
+        <div class="empty-state card">
+            <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1]"></i>
+            <p class="empty-state-title">No open maintenance requests</p>
+            <p class="empty-state-desc">Report an issue and your landlord will be notified.</p>
+        </div>`;
+    return `
+    <div class="dash-section-head">
+        <div>
+            <h3 class="screen-section-title">My maintenance requests</h3>
+            <p class="dash-section-sub">${issues.length ? `${issues.length} open` : 'Nothing pending right now'}</p>
+        </div>
+        ${issues.length ? `<button type="button" data-go="tenant-issues" class="dash-view-all">View all</button>` : ''}
+    </div>
+    ${body}`;
+}
+
+function renderTenantHomeAnnouncement(t) {
+    const items = typeof announcementsForTenant === 'function' ? announcementsForTenant(t) : [];
+    const a = items[0];
+    if (!a) return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const preview = a.body.length > 72 ? `${a.body.slice(0, 72)}…` : a.body;
+    return `
+    <button type="button" data-go="tenant-announcements" class="tnt-announce-strip card w-full text-left">
+        <span class="tnt-announce-strip-icon"><i data-lucide="megaphone" class="w-5 h-5"></i></span>
+        <span class="min-w-0 flex-1">
+            <p class="tnt-announce-strip-title">Building announcement</p>
+            <p class="tnt-announce-strip-body"><strong>${esc(a.title)}</strong> — ${esc(preview)}</p>
+        </span>
+        <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+    </button>`;
 }
 
 function screenTenantDashboard() {
@@ -1281,10 +1509,10 @@ function screenTenantDashboard() {
     if (!t) {
         return `${topBar('Tenant Portal', { hideBell: true })}
         <div class="screen-content screen-enter">
-            <div class="card p-8 text-center">
-                <i data-lucide="mail" class="w-12 h-12 text-[#16A34A] mx-auto"></i>
-                <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation Required</p>
-                <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">Tenant accounts are created by your landlord. Open the invitation link from your email to activate your account.</p>
+            <div class="empty-state card">
+                <i data-lucide="mail" class="w-10 h-10 text-[#16A34A]"></i>
+                <p class="empty-state-title">Invitation required</p>
+                <p class="empty-state-desc">Tenant accounts are created by your landlord. Open the invitation link from your email to activate your account.</p>
             </div>
         </div>`;
     }
@@ -1292,81 +1520,26 @@ function screenTenantDashboard() {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t.id;
     const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tid) : null;
     const rentDue = pay?.balance !== '£0.00';
-    const maintDue = pay?.maintBalance && pay.maintBalance !== '£0.00';
-    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const leaseLabel = t.leaseEnd || '—';
-    const attention = typeof tenantHomeAttentionItems === 'function' ? tenantHomeAttentionItems(t, pay, tid) : [];
-    const openIssueCount = typeof tenantMaintenanceForAccount === 'function'
-        ? tenantMaintenanceForAccount(t).filter(m => m.status !== 'done').length
-        : 0;
 
     return `${tenantDashboardHeader(t, p)}
     <div class="screen-content screen-enter tnt-home-page">
-        <div class="tnt-rent-card card">
-            <div class="tnt-rent-card-head">
-                <p class="tnt-rent-label">Next rent due</p>
-                <span class="tnt-rent-badge ${rentDue ? 'tnt-rent-badge--due' : 'tnt-rent-badge--ok'}">${rentDue ? 'Pending' : 'Paid'}</span>
-            </div>
-            <p class="tnt-rent-amount">${rentDue ? pay.balance : (t.rent ? `£${String(t.rent).replace(/^£/, '')}` : '—')}</p>
-            <p class="tnt-rent-meta"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${pay?.nextDue || 'Due Apr 1, 2026'}</p>
-            ${rentDue
-                ? `<button type="button" data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}" class="tnt-pay-btn">Pay rent with Stripe</button>`
-                : `<p class="tnt-rent-paid-note">Rent for this month is up to date.</p>`}
-        </div>
-
-        ${maintDue ? `
-        <div class="tnt-maint-bill card">
-            <div class="tnt-rent-card-head">
-                <p class="tnt-rent-label">Bill due</p>
-                <span class="tnt-rent-badge tnt-rent-badge--due">Due</span>
-            </div>
-            <p class="tnt-rent-amount tnt-rent-amount--sm">${pay.maintBalance}</p>
-            <p class="tnt-rent-meta">${pay.nextMaintDue || 'Maintenance or utility charge'}</p>
-            <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-secondary w-full py-3 text-[13px] mt-3">Pay with Stripe</button>
-        </div>` : ''}
-
-        <button type="button" data-go="tenant-active-tenancy" class="tnt-tenancy-strip card w-full text-left">
-            <span class="tnt-tenancy-strip-icon"><i data-lucide="home" class="w-5 h-5"></i></span>
-            <span class="min-w-0 flex-1">
-                <p class="tnt-tenancy-strip-label">Active tenancy</p>
-                <p class="tnt-tenancy-strip-title">${esc(p?.name || '—')} · ${esc(t.unit || '—')}</p>
-                <p class="tnt-tenancy-strip-meta">Lease ends ${esc(leaseLabel)}</p>
-            </span>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#94A3B8] shrink-0"></i>
-        </button>
-
-        <div class="tnt-section-head">
-            <p class="tnt-section-title" style="margin:0">Needs attention</p>
-            ${attention.length ? `<button type="button" data-go="tenant-issues" class="tnt-link">See all</button>` : ''}
-        </div>
-        ${attention.length ? `<div class="tnt-attention-list stack-sm">${attention.map(item => `
-        <button type="button" data-go="${item.go}" ${item.opts?.maintId != null ? `data-mid="${item.opts.maintId}"` : ''}${item.opts?.tenantPayFilter ? ` data-tenant-pay-preset="${item.opts.tenantPayFilter}"` : ''} class="tnt-attention-row card w-full text-left">
-            <span class="tnt-attention-icon" style="background:${item.bg};color:${item.color}"><i data-lucide="${item.icon}" class="w-4 h-4"></i></span>
-            <span class="min-w-0 flex-1">
-                <p class="tnt-attention-title">${esc(item.title)}</p>
-                <p class="tnt-attention-sub">${esc(item.sub)}</p>
-            </span>
-            <span class="tnt-attention-cta">${item.cta}</span>
-        </button>`).join('')}</div>` : `
-        <div class="card p-5 tnt-caught-up">
-            <i data-lucide="check-circle" class="w-8 h-8 text-[#16A34A] mx-auto"></i>
-            <p class="text-[13px] font-semibold text-[#0F172A] mt-2 text-center">You're all caught up</p>
-            <p class="text-[12px] text-[#64748B] mt-1 text-center">No urgent tasks right now.</p>
-        </div>`}
-
-        <p class="tnt-section-title">Quick actions</p>
-        <div class="tnt-quick-grid tnt-quick-grid--v2">
+        ${renderTenantHomePropertyCard(t, p)}
+        ${renderTenantHomeRentStrip(t, pay, rentDue)}
+        ${renderTenantHomeMaintBill(pay)}
+        <div class="dash-quick">
             ${[
-                ['wrench', 'Report issue', 'log-maintenance', '#2563EB', '#EFF6FF'],
-                ['clipboard-list', openIssueCount ? `${openIssueCount} open` : 'Issues', 'tenant-issues', '#7C3AED', '#F5F3FF'],
-                ['folder-open', 'Documents', 'tenant-documents', '#059669', '#ECFDF5'],
-                ['message-square', 'Messages', 'messages', '#D97706', '#FFFBEB'],
-            ].map(([ic, label, go, color, bg]) => `
-            <button type="button" data-go="${go}" class="tnt-quick-btn">
-                <span class="tnt-quick-icon" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-5 h-5"></i></span>
+                ['wrench', 'Report issue', 'log-maintenance', 'warning'],
+                ['scroll-text', 'My lease', 'tenant-active-tenancy', 'indigo'],
+                ['files', 'Documents', 'tenant-documents', 'primary'],
+                ['receipt', 'Payment history', 'transaction-history', 'success'],
+            ].map(([ic, label, go, tone]) => `
+            <button type="button" data-go="${go}" class="dash-quick-btn">
+                <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${label}</span>
             </button>`).join('')}
         </div>
+        ${renderTenantHomeMaintSection(t, tid)}
+        ${renderTenantHomeAnnouncement(t)}
     </div>`;
 }
 
@@ -1419,18 +1592,42 @@ function screenTenantAnnouncements() {
         if (a.units.length === 1) return a.units[0];
         return `${a.units.length} flats`;
     };
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `${topBar('Announcements', { back: true, sub: 'From your landlord' })}
     <div class="screen-content screen-enter stack-sm">
-        <p class="text-[13px] text-[#64748B] mb-1">Notices from your landlord about your building or flat.</p>
         ${items.length ? items.map(a => `
-        <div class="tnt-announce card">
+        <button type="button" data-go="tenant-announcement-detail" data-bid="${a.id}" class="tnt-announce card w-full text-left">
+            ${a.image ? `<img src="${a.image}" alt="" class="tnt-announce-thumb">` : ''}
             <div class="tnt-announce-head">
-                <p class="tnt-announce-title">${typeof escapeHtml === 'function' ? escapeHtml(a.title) : a.title}</p>
+                <p class="tnt-announce-title">${esc(a.title)}</p>
                 <span class="badge bg-[#F5F3FF] text-[#7C3AED]">${audienceLabel(a)}</span>
             </div>
-            <p class="tnt-announce-body">${typeof escapeHtml === 'function' ? escapeHtml(a.body) : a.body}</p>
-            <p class="tnt-announce-meta">${a.date} · ${typeof escapeHtml === 'function' ? escapeHtml(a.from) : a.from}</p>
-        </div>`).join('') : `<div class="card p-8 text-center text-[13px] text-[#64748B]">No announcements yet. Your landlord will post building updates here.</div>`}
+            <p class="tnt-announce-body">${esc(a.body.length > 100 ? `${a.body.slice(0, 100)}…` : a.body)}</p>
+            <p class="tnt-announce-meta"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(a.date)} · ${esc(a.from)}</p>
+            <i data-lucide="chevron-right" class="tnt-announce-chevron w-4 h-4"></i>
+        </button>`).join('') : `
+        <div class="empty-state card">
+            <i data-lucide="megaphone" class="w-10 h-10 text-[#CBD5E1]"></i>
+            <p class="empty-state-title">No announcements yet</p>
+            <p class="empty-state-desc">Your landlord will post building updates here.</p>
+        </div>`}
+    </div>`;
+}
+
+function screenTenantAnnouncementDetail() {
+    const t = getActiveTenant();
+    const b = typeof broadcastById === 'function' ? broadcastById(STATE.broadcastId) : null;
+    if (!b || !t || !broadcastVisibleToTenant(b, t)) {
+        return `${topBar('Announcement', { back: true })}
+        <div class="screen-content"><p class="text-[13px] text-[#64748B]">Announcement not found.</p></div>`;
+    }
+    if (typeof markBroadcastsReadForTenant === 'function') markBroadcastsReadForTenant(t);
+    const content = typeof renderBroadcastDetailContent === 'function'
+        ? renderBroadcastDetailContent(b)
+        : `<div class="card p-4"><p>${typeof escapeHtml === 'function' ? escapeHtml(b.body) : b.body}</p></div>`;
+    return `${topBar('Announcement', { back: true, sub: b.date })}
+    <div class="screen-content screen-enter broadcast-detail-page">
+        ${content}
     </div>`;
 }
 
@@ -1458,10 +1655,10 @@ function screenTenantPaymentHistory() {
     const dueTotal = unpaid.reduce((s, i) => s + (typeof parseRentAmount === 'function' ? parseRentAmount(i.amount) : 0), 0);
     const renderRow = inv => typeof renderTenantPaymentRow === 'function' ? renderTenantPaymentRow(inv) : '';
     const listBody = !rows.length ? `
-        <div class="fin-empty">
-            <div class="fin-empty-icon"><i data-lucide="receipt" class="w-6 h-6"></i></div>
-            <p class="fin-empty-title">No ${kind === 'maintenance' ? 'bills' : 'rent payments'} yet</p>
-            <p class="fin-empty-sub">${kind === 'maintenance' ? 'Maintenance and utility bills from your landlord will appear here.' : 'Your rent payment history will show here.'}</p>
+        <div class="empty-state card">
+            <i data-lucide="receipt" class="empty-state-icon"></i>
+            <p class="empty-state-title">No ${kind === 'maintenance' ? 'bills' : 'payments'} yet</p>
+            <p class="empty-state-desc">${kind === 'maintenance' ? 'Maintenance and utility bills from your landlord will appear here.' : 'Your rent payments will show here.'}</p>
         </div>` : `
         ${unpaid.length && dueTotal ? `
         <div class="fin-summary card">
@@ -1524,17 +1721,19 @@ function screenTenantIssues() {
     const issues = typeof tenantMaintenanceForAccount === 'function' ? tenantMaintenanceForAccount(t) : [];
     const openCount = issues.filter(m => m.status !== 'done').length;
     return `${topBar('Maintenance', { sub: `${openCount} open` })}
-    <div class="screen-content screen-enter tnt-home-page">
-        <div class="tnt-issues-head card p-4">
-            <p class="tnt-issues-count">${openCount} open request${openCount === 1 ? '' : 's'}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Track status and message your landlord or assigned contractor.</p>
-            <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3 text-[13px] mt-3">Report new issue</button>
+    <div class="screen-content screen-enter">
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Your requests</h3>
+                <p class="dash-section-sub">${openCount} open · track status with your landlord</p>
+            </div>
         </div>
-        ${issues.length ? `<div class="stack-sm">${issues.map(m => typeof maintCard === 'function' ? maintCard(m, { hideProperty: true }) : '').join('')}</div>` : `
-        <div class="card p-8 text-center">
-            <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
-            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No issues yet</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Report maintenance inside your flat — communal areas are handled by your landlord.</p>
+        <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3 text-[13px]">Report new issue</button>
+        ${issues.length ? `<div class="maint-list stack-sm">${issues.map(m => typeof maintCard === 'function' ? maintCard(m, { hideProperty: true }) : '').join('')}</div>` : `
+        <div class="empty-state card">
+            <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1]"></i>
+            <p class="empty-state-title">No issues yet</p>
+            <p class="empty-state-desc">Report maintenance inside your flat — communal areas are handled by your landlord.</p>
         </div>`}
     </div>`;
 }
@@ -1545,7 +1744,11 @@ function screenTenantDocuments() {
         ? renderTenantDocFolderBrowser(tid)
         : (typeof getTenantDocuments === 'function' && getTenantDocuments(tid).length && typeof renderTenantDocThumbGrid === 'function'
             ? renderTenantDocThumbGrid(getTenantDocuments(tid), tid)
-            : `<div class="card p-8 text-center text-[13px] text-[#64748B]">No documents shared yet.</div>`);
+            : `<div class="empty-state card">
+                <i data-lucide="folder-open" class="w-10 h-10 text-[#CBD5E1]"></i>
+                <p class="empty-state-title">No documents shared yet</p>
+                <p class="empty-state-desc">Your landlord will share lease files and certificates here.</p>
+            </div>`);
     return `${topBar('Documents', { back: true, sub: 'Shared with you' })}
     <div class="screen-content screen-enter">
         <p class="text-[13px] text-[#64748B] mb-3">Lease, compliance certificates and files your landlord has shared — organised by folder.</p>
@@ -1632,16 +1835,21 @@ function screenTenantActiveTenancy() {
     const p = PROPERTIES[t?.propertyId];
     const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tid) : null;
     const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(t?.propertyId, t?.unit) : null;
+    const moveInLabel = fin?.moveIn && typeof formatDisplayDate === 'function'
+        ? formatDisplayDate(fin.moveIn) || fin.moveIn
+        : (fin?.moveIn || t?.moveIn || '—');
+    const leaseEndLabel = fin?.leaseEnd && typeof formatDisplayDate === 'function'
+        ? formatDisplayDate(fin.leaseEnd) || fin.leaseEnd
+        : (fin?.leaseEnd || t?.leaseEnd || '—');
     return `${topBar('Active tenancy', { back: true })}
     <div class="screen-content screen-enter stack-sm">
         ${typeof renderTenantLivingCard === 'function' && listItem ? renderTenantLivingCard(listItem) : ''}
+        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
         ${typeof tenantFieldsCard === 'function' ? tenantFieldsCard([
             ['Tenancy type', tenancy?.type === 'group' ? 'Group' : 'Solo'],
             ['Monthly rent', fin?.rent || t?.rent || '—'],
-            ['Deposit held', fin?.deposit || '—'],
-            ['Advance paid', fin?.advancePaid || '—'],
-            ['Move-in', fin?.moveIn || t?.moveIn || '—'],
-            ['Lease ends', fin?.leaseEnd || t?.leaseEnd || '—'],
+            ['Move-in', moveInLabel],
+            ['Lease ends', leaseEndLabel],
             ['Property', p?.name || '—'],
             ['Unit', t?.unit || '—'],
         ]) : ''}
@@ -1664,13 +1872,9 @@ function screenTenantContact() {
     const chatId = typeof getActiveTenantLandlordChatId === 'function' ? getActiveTenantLandlordChatId() : null;
     return `${topBar('Contact details', { back: true })}
     <div class="screen-content screen-enter stack-sm">
-        ${typeof tenantFieldsCard === 'function' ? tenantFieldsCard([
-            ['Phone', t?.phone || '—'],
-            ['Email', t?.email || '—'],
-            ['Emergency contact', t?.emergency || TENANTS[tid]?.emergency || '—'],
-            ['Emergency phone', t?.emergencyPhone || TENANTS[tid]?.emergencyPhone || '—'],
-        ]) : ''}
-        <button type="button" data-go="tenant-edit-profile" class="btn-secondary w-full py-3 text-[13px]">Edit personal details</button>
+        ${typeof renderTenantContactCard === 'function' ? renderTenantContactCard(tid, { actions: false }) : ''}
+        ${typeof renderTenantPersonalIdCard === 'function' ? renderTenantPersonalIdCard(tid, { showPreviousAddress: true, viewDocs: true }) : ''}
+        <button type="button" data-go="tenant-edit-profile" class="btn-secondary w-full py-3 text-[13px]">Edit contact details</button>
         ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="btn-primary w-full py-3 text-[13px]">Message landlord</button>` : ''}
     </div>`;
 }
@@ -1692,7 +1896,12 @@ function screenTenantReminders() {
                 <span class="badge shrink-0" style="background:${urg[0]};color:${urg[1]}">${r.urgency === 'high' ? 'Urgent' : r.urgency === 'medium' ? 'Soon' : 'Upcoming'}</span>
             </div>
         </div>`;
-        }).join('') : `<div class="card p-8 text-center text-[13px] text-[#64748B]">No reminders right now.</div>`}
+        }).join('') : `
+        <div class="empty-state card">
+            <i data-lucide="bell" class="w-10 h-10 text-[#CBD5E1]"></i>
+            <p class="empty-state-title">No reminders right now</p>
+            <p class="empty-state-desc">Lease dates and compliance deadlines will appear here.</p>
+        </div>`}
     </div>`;
 }
 
@@ -1736,8 +1945,12 @@ function screenTenantCommunication() {
                 <p class="tnt-activity-sub">${typeof escapeHtml === 'function' ? escapeHtml(r.sub) : r.sub}</p>
             </div>
             ${r.time ? `<span class="tnt-activity-time">${r.time}</span>` : ''}
-        </button>`).join('') : `<div class="card p-8 text-center text-[13px] text-[#64748B]">No communication history yet.</div>`}
-        <button type="button" data-go="messages" class="btn-primary w-full py-3 text-[13px] mt-2">Open messages</button>
+        </button>`).join('') : `
+        <div class="empty-state card">
+            <i data-lucide="message-square" class="empty-state-icon"></i>
+            <p class="empty-state-title">No communication history yet</p>
+            <p class="empty-state-desc">Messages and maintenance updates will show up here.</p>
+        </div>`}
     </div>`;
 }
 
@@ -1753,8 +1966,7 @@ function screenTenantCheckout() {
             <p class="text-[18px] font-bold text-[#0F172A] mt-1">${co.depositAmount || '—'}</p>
             <p class="text-[12px] text-[#64748B] mt-1">${co.depositScheme || 'Deposit scheme'} · ${co.depositStatus === 'protected' ? 'Protected' : 'Pending'}</p>
         </div>
-        <p class="section-title">Cleaning checklist</p>
-        <p class="section-hint">${done}/${(typeof TENANT_CHECKOUT_CHECKLIST !== 'undefined' ? TENANT_CHECKOUT_CHECKLIST : []).length} completed</p>
+        <p class="section-title">Cleaning checklist · ${done}/${(typeof TENANT_CHECKOUT_CHECKLIST !== 'undefined' ? TENANT_CHECKOUT_CHECKLIST : []).length} done</p>
         <div class="card p-4 stack-sm">
             ${(typeof TENANT_CHECKOUT_CHECKLIST !== 'undefined' ? TENANT_CHECKOUT_CHECKLIST : []).map(([key, label]) => `
             <label class="tnt-checkout-row">
@@ -1795,33 +2007,21 @@ function screenTenantAccount() {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const propLabel = (p?.name || 'Your home').split(',')[0];
     const unitMeta = `${propLabel} · ${t.unit || '—'}`;
-    const docCount = typeof getTenantDocuments === 'function' ? getTenantDocuments(tid).length : 0;
-    const openIssues = typeof tenantMaintenanceForAccount === 'function'
-        ? tenantMaintenanceForAccount(t).filter(m => m.status !== 'done').length
-        : 0;
     const ref = typeof getTenantReferencing === 'function' ? getTenantReferencing(tid) : {};
     const refDone = Object.values(ref).filter(r => ['verified', 'complete', 'not_required'].includes(r?.status)).length;
     const refTotal = typeof TENANT_REF_SECTIONS !== 'undefined' ? TENANT_REF_SECTIONS.length : 7;
     const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tid) : null;
-    const landlordName = typeof LANDLORD_USER !== 'undefined' ? `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}` : 'Your landlord';
 
     const tenancyMenus = menuList([
         ['home', 'Active tenancy', 'tenant-active-tenancy', unitMeta],
         ['phone', 'Contact information', 'tenant-contact', t.phone || '—'],
         ['clipboard-check', 'Tenant referencing', 'tenant-referencing', `${refDone}/${refTotal} complete`],
-        ['folder-open', 'Documents', 'tenant-documents', docCount ? `${docCount} files` : 'View shared files'],
         ['log-out', 'Check-out', 'tenant-checkout', `Deposit ${pay?.deposit || '—'}`],
     ]);
-    const maintenanceMenus = menuList([
-        ['wrench', 'Maintenance requests', 'tenant-issues', openIssues ? `${openIssues} open` : 'No open issues'],
-        ['message-square', 'Your landlord', 'messages', landlordName],
-    ]);
     const accountMenus = menuList([
+        ['user-round', 'Personal information', 'tenant-edit-profile'],
         ['bell', 'Notification settings', 'notifications-settings'],
         ['key-round', 'Change password', 'password'],
-        ['shield-check', 'Security', 'security'],
-        ['receipt', 'Payment history', 'transaction-history', pay?.nextDue ? `Next ${(pay.nextDue.split('·').pop() || '').trim()}` : ''],
-        ['megaphone', 'Announcements', 'tenant-announcements'],
     ]);
     const supportMenus = menuList([
         ['circle-help', 'FAQ', 'faq'],
@@ -1844,22 +2044,14 @@ function screenTenantAccount() {
         </button>
         <div class="profile-section">
             <p class="section-title">Your tenancy</p>
-            <p class="section-hint">Flat, documents and end-of-lease tasks.</p>
             ${tenancyMenus}
         </div>
         <div class="profile-section">
-            <p class="section-title">Maintenance & landlord</p>
-            <p class="section-hint">Report issues and message your landlord.</p>
-            ${maintenanceMenus}
-        </div>
-        <div class="profile-section">
             <p class="section-title">Your account</p>
-            <p class="section-hint">Sign-in, payments and notifications.</p>
             ${accountMenus}
         </div>
         <div class="profile-section">
-            <p class="section-title">Support & legal</p>
-            <p class="section-hint">Help centre and platform policies.</p>
+            <p class="section-title">Support</p>
             ${supportMenus}
         </div>
         <button data-action="logout" class="profile-logout">Log Out</button>
@@ -1869,6 +2061,8 @@ function screenTenantAccount() {
 
 function screenTenantEditProfile() {
     const t = getActiveTenant();
+    const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t?.id;
+    const rec = tid != null ? TENANTS[tid] : null;
     if (!t) {
         return `${topBar('Edit profile', { back: true })}
         <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenant account.</p></div>`;
@@ -1879,11 +2073,20 @@ function screenTenantEditProfile() {
             <div class="relative"><img src="${IMG.avatar.sarah}" class="w-20 h-20 rounded-2xl object-cover" alt="">
             <button type="button" data-action="toast" data-msg="Profile photo updated" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button></div>
         </div>
-        <p class="text-[13px] text-[#64748B] mb-3">Property and unit are managed by your landlord.</p>
+        <p class="text-[13px] text-[#64748B] mb-3">Update contact details. Lease and deposit are managed by your landlord.</p>
         ${formField('First Name', t.firstName, 'text', '', 'firstName')}
         ${formField('Last Name', t.lastName, 'text', '', 'lastName')}
         ${formField('Email', t.email, 'email', '', 'email')}
-        ${formField('Phone', t.phone || '', 'tel', '', 'phone')}
+        ${formField('Phone', t.phone || rec?.phone || '', 'tel', '', 'phone')}
+        ${formField('Emergency contact', rec?.emergency && rec.emergency !== '—' ? rec.emergency : '', 'text', 'Full name', 'emergency')}
+        ${formField('Emergency phone', rec?.emergencyPhone && rec.emergencyPhone !== '—' ? rec.emergencyPhone : '', 'tel', '+44 7700 900000', 'emergencyPhone')}
+        <div class="card p-4 bg-[#F8FAFC]">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">On file with landlord</p>
+            <div class="grid grid-cols-2 gap-3 mt-2">
+                <div><p class="text-[11px] text-[#94A3B8]">Date of birth</p><p class="text-[13px] font-semibold text-[#0F172A]">${typeof formatTenantDob === 'function' ? formatTenantDob(rec?.dob) : (rec?.dob || '—')}</p></div>
+                <div><p class="text-[11px] text-[#94A3B8]">NID</p><p class="text-[13px] font-semibold text-[#0F172A]">${rec?.idNumber || '—'}</p></div>
+            </div>
+        </div>
         ${saveBtn('Save Changes', 'Profile updated')}
         <button type="button" data-action="back" class="btn-secondary w-full py-3 text-[13px] mt-2">Cancel</button>
     </div>`;
@@ -1983,50 +2186,162 @@ function screenContractorLandlords() {
     </div>`;
 }
 
-function screenContractorDashboard() {
+function contractorHomeStats() {
     const assigned = CONTRACTOR_JOBS.filter(j => j.status === 'assigned').length;
-    const today = CONTRACTOR_JOBS.filter(j => j.visitDate.startsWith('Today')).length;
-    const active = CONTRACTOR_JOBS.filter(j => ['accepted', 'scheduled', 'in_progress'].includes(j.status)).length;
-    const completed = CONTRACTOR_JOBS.filter(j => ['completed', 'paid', 'waiting_approval'].includes(j.status)).length;
-    const upcoming = CONTRACTOR_JOBS.filter(j => ['assigned', 'accepted', 'scheduled', 'in_progress'].includes(j.status)).slice(0, 3);
-    return `${contractorDashboardHeader('Mike Thompson', 'Plumber Pro Ltd')}
-    <div class="screen-content screen-enter">
-        ${assigned ? `
-        <button type="button" data-go="contractor-jobs" data-contractor-filter="assigned" class="fin-alert" style="background:#FFFBEB;border-color:#FDE68A;color:#92400E">
-            <span class="fin-alert-icon" style="background:#FEF3C7;color:#D97706"><i data-lucide="briefcase" class="w-5 h-5"></i></span>
-            <span class="fin-alert-text"><strong>${assigned} new job${assigned > 1 ? 's' : ''}</strong> — tap to accept</span>
-            <i data-lucide="chevron-right" class="w-5 h-5 fin-alert-chevron"></i>
-        </button>` : ''}
-        <div class="ctr-stat-grid">
+    const inProgress = CONTRACTOR_JOBS.filter(j => ['accepted', 'scheduled', 'in_progress'].includes(j.status)).length;
+    const completed = CONTRACTOR_JOBS.filter(j => ['completed', 'paid'].includes(j.status)).length;
+    const pendingReview = CONTRACTOR_JOBS.filter(j => ['waiting_approval', 'approved'].includes(j.status)).length;
+    return { assigned, inProgress, completed, pendingReview };
+}
+
+function contractorNextVisitJob() {
+    const today = CONTRACTOR_JOBS.filter(j => (j.visitDate || '').toLowerCase().includes('today'));
+    if (today.length) return today[0];
+    const upcoming = CONTRACTOR_JOBS.filter(j => ['assigned', 'accepted', 'scheduled', 'in_progress'].includes(j.status));
+    return upcoming[0] || null;
+}
+
+function contractorHomeHeader(name, company) {
+    const unread = CONTRACTOR_NOTIFS.filter(n => n.unread).length;
+    const first = (name || 'Mike').split(' ')[0];
+    const greeting = typeof dashGreeting === 'function' ? dashGreeting() : 'Good morning';
+    return `
+<div class="screen-header ctr-home-header">
+    <div class="ctr-home-header-top">
+        <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu">
+            <i data-lucide="menu" class="w-[22px] h-[22px]"></i>
+        </button>
+        <div class="ctr-home-header-actions">
+            <button type="button" data-go="contractor-notifications" class="top-icon-btn relative" aria-label="Notifications">
+                <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
+                ${unread ? `<span class="notif-badge">${unread}</span>` : ''}
+            </button>
+            <button type="button" data-go="contractor-profile" class="ctr-home-avatar-btn" aria-label="Profile">
+                <img src="${IMG.avatar.plumber}" class="ctr-home-avatar" alt="">
+            </button>
+        </div>
+    </div>
+    <h1 class="ctr-home-greeting">${greeting}, ${first} 👋</h1>
+    <p class="ctr-home-sub">Here's your work overview for today.</p>
+    <p class="ctr-home-company">${company}</p>
+</div>`;
+}
+
+function renderCtrScheduleHero(job) {
+    if (!job) {
+        return `
+        <div class="ctr-schedule-hero card">
+            <div class="ctr-schedule-hero-glow"></div>
+            <div class="ctr-schedule-hero-top">
+                <span class="ctr-schedule-hero-label"><i data-lucide="calendar" class="w-4 h-4"></i> Today's schedule</span>
+            </div>
+            <p class="ctr-schedule-hero-time">No visits today</p>
+            <p class="ctr-schedule-hero-title">Check your jobs for upcoming work</p>
+            <button type="button" data-go="contractor-jobs" class="ctr-schedule-hero-btn">View jobs <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+        </div>`;
+    }
+    const timeMatch = (job.visitDate || '').match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
+    const timeLabel = timeMatch ? timeMatch[1] : (job.visitDate || 'Scheduled');
+    const location = contractorJobLocation(job);
+    return `
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-schedule-hero card w-full text-left">
+        <div class="ctr-schedule-hero-glow"></div>
+        <div class="ctr-schedule-hero-top">
+            <span class="ctr-schedule-hero-label"><i data-lucide="calendar" class="w-4 h-4"></i> Today's schedule</span>
+            <span class="ctr-schedule-duty"><span class="ctr-schedule-duty-dot"></span> On duty</span>
+        </div>
+        <p class="ctr-schedule-hero-time">${timeLabel}</p>
+        <p class="ctr-schedule-hero-title">${job.issue}</p>
+        <p class="ctr-schedule-hero-loc"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${location} · ${job.property}</p>
+        <span class="ctr-schedule-hero-btn">View schedule <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+    </button>`;
+}
+
+function renderCtrOverviewCard(icon, label, value, sub, tone) {
+    return `
+    <button type="button" data-go="contractor-jobs" class="ctr-overview-card ctr-overview-card--${tone}">
+        <span class="ctr-overview-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
+        <p class="ctr-overview-value">${value}</p>
+        <p class="ctr-overview-label">${label}</p>
+        <p class="ctr-overview-sub">${sub}</p>
+    </button>`;
+}
+
+function renderCtrHomeJobRow(job) {
+    const st = contractorStatusStyle(job.status);
+    const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
+    const location = contractorJobLocation(job);
+    return `
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-home-job-row card w-full text-left">
+        <img src="${thumb}" alt="" class="ctr-home-job-thumb">
+        <div class="ctr-home-job-body">
+            <p class="ctr-home-job-title">${job.issue}</p>
+            <p class="ctr-home-job-loc">${location}</p>
+            <span class="ctr-home-job-badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
+        </div>
+        <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+    </button>`;
+}
+
+function screenContractorDashboard() {
+    const stats = contractorHomeStats();
+    const nextVisit = contractorNextVisitJob();
+    const recent = CONTRACTOR_JOBS
+        .filter(j => ['in_progress', 'waiting_approval', 'completed', 'assigned', 'scheduled'].includes(j.status))
+        .slice(0, 3);
+    const newAssigned = CONTRACTOR_JOBS.filter(j => j.status === 'assigned').length;
+    return `${contractorHomeHeader('Mike Thompson', 'Plumber Pro Ltd')}
+    <div class="screen-content screen-enter ctr-home-page">
+        ${renderCtrScheduleHero(nextVisit)}
+        <div class="ctr-home-section-head">
+            <h3 class="screen-section-title">Work overview</h3>
+            <span class="ctr-home-week-pill">This week</span>
+        </div>
+        <div class="ctr-overview-grid">
+            ${renderCtrOverviewCard('briefcase', 'Assigned jobs', stats.assigned, newAssigned ? `${newAssigned} new` : 'Up to date', 'blue')}
+            ${renderCtrOverviewCard('wrench', 'In progress', stats.inProgress, stats.inProgress ? 'Active now' : 'None active', 'amber')}
+            ${renderCtrOverviewCard('check-circle', 'Completed', stats.completed, 'This month', 'green')}
+            ${renderCtrOverviewCard('clock', 'Pending review', stats.pendingReview, stats.pendingReview ? 'Needs action' : 'All clear', 'rose')}
+        </div>
+        <div class="ctr-home-section-head">
+            <h3 class="screen-section-title">Recent jobs</h3>
+            <button type="button" data-go="contractor-jobs" class="dash-view-all">View all</button>
+        </div>
+        <div class="ctr-home-jobs-list">
+            ${recent.length ? recent.map(j => renderCtrHomeJobRow(j)).join('') : `
+            <div class="empty-state card">
+                <i data-lucide="briefcase" class="empty-state-icon"></i>
+                <p class="empty-state-title">No jobs yet</p>
+                <p class="empty-state-desc">New assignments from landlords appear here.</p>
+            </div>`}
+        </div>
+        <div class="ctr-home-section-head">
+            <h3 class="screen-section-title">Tools &amp; quick actions</h3>
+        </div>
+        <div class="ctr-tools-grid">
             ${[
-                ['briefcase', 'New Jobs', assigned, 'issues'],
-                ['calendar', "Today's Visits", today, 'vacant'],
-                ['clock', 'Active', active, 'collected'],
-                ['check-circle', 'Done', completed, 'compliant'],
-            ].map(([ic, label, val, variant]) => dashStatCard({
-                go: 'contractor-jobs', variant, icon: ic, label, value: val, pill: null,
-            })).join('')}
-        </div>
-        <div class="dash-section-head" style="margin-top:4px">
-            <div><h3 class="screen-section-title">Your Jobs</h3><p class="dash-section-sub">${upcoming.length} need your attention</p></div>
-            <button data-go="contractor-jobs" class="dash-view-all">View all</button>
-        </div>
-        <div class="stack-sm">${upcoming.length ? upcoming.map(j => contractorJobCard(j)).join('') : `<p class="text-[14px] text-[#64748B] px-1">No active jobs right now</p>`}</div>
-        <div class="dash-section-head">
-            <h3 class="screen-section-title">Quick Actions</h3>
-        </div>
-        <div class="dash-quick">
-            ${[
-                ['briefcase', 'View Jobs', 'contractor-jobs', 'primary'],
-                ['building-2', 'Landlords', 'contractor-landlords', 'indigo'],
-                ['message-square', 'Messages', 'messages', 'success'],
-                ['file-text', 'Invoices', 'contractor-jobs', 'warning'],
+                ['clipboard-list', 'My jobs', 'contractor-jobs', 'blue'],
+                ['calendar', 'Schedule', 'contractor-schedule-hub', 'green'],
+                ['banknote', 'Earnings', 'contractor-earnings', 'purple'],
+                ['message-square', 'Messages', 'messages', 'orange'],
             ].map(([ic, label, go, tone]) => `
-            <button data-go="${go}" class="dash-quick-btn">
-                <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
+            <button type="button" data-go="${go}" class="ctr-tool-btn ctr-tool-btn--${tone}">
+                <span class="ctr-tool-icon"><i data-lucide="${ic}" class="w-5 h-5"></i></span>
                 <span>${label}</span>
             </button>`).join('')}
         </div>
+        <div class="ctr-home-section-head">
+            <h3 class="screen-section-title">Announcements</h3>
+            <button type="button" data-go="contractor-notifications" class="dash-view-all">View all</button>
+        </div>
+        <button type="button" data-go="contractor-notifications" class="ctr-announce-card card w-full text-left">
+            <span class="ctr-announce-icon"><i data-lucide="megaphone" class="w-5 h-5"></i></span>
+            <span class="ctr-announce-body">
+                <span class="ctr-announce-title">Gas safety refresher — 25 May at 9:00 AM</span>
+                <span class="ctr-announce-desc">Required for all plumbing &amp; heating contractors on the platform.</span>
+            </span>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-[#94A3B8] shrink-0"></i>
+        </button>
     </div>`;
 }
 
@@ -2052,47 +2367,30 @@ function contractorDashboardHeader(name, sub) {
 
 function screenContractorJobs() {
     const f = STATE.contractorJobFilter || 'all';
+    const counts = contractorJobFilterCounts();
     const tabs = [
-        ['all', 'All'], ['assigned', 'Assigned'], ['accepted', 'Accepted'],
-        ['in_progress', 'In Progress'], ['completed', 'Completed'],
+        ['all', 'All', counts.all],
+        ['pending', 'Pending', counts.pending],
+        ['in_progress', 'In progress', counts.inProgress],
+        ['completed', 'Completed', counts.completed],
     ];
     const jobs = contractorFilterJobs();
-    const landlords = [...new Set(CONTRACTOR_JOBS.map(j => j.landlord).filter(Boolean))];
-    const properties = [...new Set(CONTRACTOR_JOBS.map(j => j.property).filter(Boolean))];
-    const landlordF = STATE.contractorLandlordFilter || 'all';
-    const propertyF = STATE.contractorPropertyFilter || 'all';
-    return `${contractorDashboardHeader('Mike Thompson', 'Plumber Pro Ltd')}
-    <div class="screen-content screen-enter ctr-jobs-page">
-        <div class="ctr-jobs-title-block">
-            <h1 class="page-title">Jobs</h1>
-            <p class="page-subtitle">${jobs.length} job${jobs.length === 1 ? '' : 's'} shown</p>
+    return `${topBar('Jobs', { hideBell: true })}
+    <div class="screen-content screen-enter ctr-compact-page ctr-v2-jobs-page">
+        <div class="ctr-v2-filter-row">
+            ${tabs.map(([k, l, n]) => `
+            <button type="button" data-contractor-filter="${k}" class="ctr-v2-filter-pill ${f === k ? 'is-active' : ''}">${l} (${n})</button>`).join('')}
         </div>
         <div class="search-bar ctr-jobs-search">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
             <input data-search="contractorJobs" type="text" value="${STATE.search.contractorJobs || ''}" placeholder="Search jobs…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
         </div>
-        ${landlords.length > 1 ? `
-        <div class="ctr-jobs-filter-row">
-            <button type="button" data-contractor-landlord-filter="all" class="ctr-jobs-filter ${landlordF === 'all' ? 'active' : ''}">All landlords</button>
-            ${landlords.map(l => `
-            <button type="button" data-contractor-landlord-filter="${l.replace(/"/g, '')}" class="ctr-jobs-filter ${landlordF === l ? 'active' : ''}">${l.split(' ')[0]}</button>`).join('')}
-        </div>` : ''}
-        ${properties.length > 1 ? `
-        <div class="ctr-jobs-filter-row">
-            <button type="button" data-contractor-property-filter="all" class="ctr-jobs-filter ${propertyF === 'all' ? 'active' : ''}">All properties</button>
-            ${properties.slice(0, 4).map(p => `
-            <button type="button" data-contractor-property-filter="${p.replace(/"/g, '')}" class="ctr-jobs-filter ${propertyF === p ? 'active' : ''}">${p.split(',')[0]}</button>`).join('')}
-        </div>` : ''}
-        <div class="ctr-jobs-filter-row ctr-jobs-filter-row--status">
-            ${tabs.map(([k, l]) => `
-            <button type="button" data-contractor-filter="${k}" class="ctr-jobs-filter ${f === k ? 'active' : ''}">${l}</button>`).join('')}
-        </div>
-        <div class="ctr-jobs-list">
-            ${jobs.length ? jobs.map(j => contractorJobCard(j)).join('') : `
-            <div class="ctr-empty card">
-                <i data-lucide="briefcase" class="w-10 h-10 text-[#CBD5E1]"></i>
-                <p class="ctr-empty-title">No jobs in this filter</p>
-                <p class="ctr-empty-sub">Try another tab or wait for new assignments.</p>
+        <div class="ctr-v2-jobs-list">
+            ${jobs.length ? jobs.map(j => contractorJobListCard(j)).join('') : `
+            <div class="empty-state card">
+                <i data-lucide="briefcase" class="empty-state-icon"></i>
+                <p class="empty-state-title">No jobs in this filter</p>
+                <p class="empty-state-desc">Try another tab or wait for new assignments.</p>
             </div>`}
         </div>
     </div>`;
@@ -2100,87 +2398,205 @@ function screenContractorJobs() {
 
 function screenContractorJobDetail() {
     const job = contractorJob(STATE.contractorJobId);
-    const st = contractorStatusStyle(job.status);
-    const [pBg, pColor] = contractorPriorityStyle(job.priority);
+    const st = contractorJobDisplayStatus(job);
     const tab = STATE.contractorJobTab || 'overview';
-    const tabs = [['overview', 'Overview'], ['work', 'Work & Photos'], ['invoice', 'Invoice']];
+    if (tab === 'work') return screenContractorCompleteJob();
+    if (tab === 'invoice') return screenContractorJobInvoice();
     const canMessageTenant = job.tenant && job.tenant !== '—' && job.tenantChatId != null;
-    const communal = contractorJobIsCommunal(job);
-    const locationSub = contractorJobLocation(job);
-    const actions = {
-        assigned: `
-            <div class="grid grid-cols-2 gap-3">
-                <button data-contractor-action="accept" data-msg="Job accepted" class="btn-primary py-4 text-[13px] font-semibold">Accept Job</button>
-                <button data-contractor-action="decline" data-msg="Job declined" class="btn-secondary py-4 text-[13px]">Decline</button>
-            </div>`,
-        accepted: `<button data-contractor-action="schedule" class="btn-primary w-full py-4 text-[13px] font-semibold">Schedule Visit</button>`,
-        scheduled: `<button data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-4 text-[13px] font-semibold">Start Work</button>`,
-        in_progress: `
-            <button data-contractor-action="work" class="btn-primary w-full py-4 text-[13px] font-semibold">Add Photos & Notes</button>
-            <button data-contractor-action="documents" class="btn-secondary w-full py-3.5 text-[14px] mt-3">Create invoice</button>
-            ${!job.milestoneRequest ? `
-            <div class="card p-4 mt-3">
-                <p class="ctr-section-label">Request milestone payment</p>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <input type="text" data-field="milestone_amount" class="form-input" placeholder="Amount">
-                    <input type="text" data-field="milestone_label" class="form-input" placeholder="e.g. Materials">
-                </div>
-                <button type="button" data-action="request-milestone" class="btn-secondary w-full py-3 text-[13px] mt-3">Request from landlord</button>
-            </div>` : `<div class="card p-4 mt-3 text-center"><p class="text-[13px] font-semibold">Milestone ${job.milestoneRequest.amount}</p><p class="text-[12px] text-[#64748B]">${job.milestoneRequest.status}</p></div>`}`,
-        waiting_approval: `<div class="card p-4 text-center" style="background:#F5F3FF"><p class="text-[14px] font-semibold text-[#7C3AED]">Awaiting landlord review</p><p class="text-[13px] text-[#64748B] mt-1">Invoice ${job.invoice?.amount || '—'} submitted for approval</p></div>`,
-        approved: `<div class="card p-4 text-center" style="background:#ECFDF5"><p class="text-[14px] font-semibold text-[#059669]">Approved — awaiting payment</p><p class="text-[13px] text-[#64748B] mt-1">${job.invoice?.amount || '—'} will be paid via Stripe</p></div>`,
-        completed: `<div class="card p-4 text-center" style="background:#ECFDF5"><p class="text-[14px] font-semibold text-[#059669]">Job completed — awaiting payment</p></div>`,
-        paid: `<div class="card p-4 text-center" style="background:#ECFDF5"><p class="text-[14px] font-semibold text-[#059669]">Payment received</p></div>`,
-    };
-    const overview = `
-        <div class="card p-4">
-            <p class="ctr-section-label">Property</p>
-            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.property}</p>
-            <p class="text-[14px] text-[#64748B] mt-1">${job.address}</p>
-            ${communal ? `
-            <p class="ctr-section-label" style="margin-top:12px">Communal area</p>
-            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.communalArea || 'Shared area'}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Shared part of this building — not inside a tenant flat.</p>` : job.unit ? `
-            <p class="ctr-section-label" style="margin-top:12px">Unit within property</p>
-            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.unit}</p>` : ''}
+    const contactName = canMessageTenant ? job.tenant : job.landlord;
+    const contactInitials = contactName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const maintItem = job.maintId != null && typeof MAINTENANCE_ITEMS !== 'undefined'
+        ? MAINTENANCE_ITEMS.find(m => m.id === job.maintId)
+        : null;
+    const photos = [...(job.reportPhotos || []), ...(job.photos?.before || [])].slice(0, 4);
+    const price = contractorJobEstimate(job);
+    const paymentStatus = ['paid', 'approved'].includes(job.status) ? 'Paid' : (job.status === 'waiting_approval' ? 'Awaiting approval' : 'Upon completion');
+    const primaryAction = {
+        assigned: `<button data-contractor-action="accept" data-msg="Job accepted" class="btn-primary ctr-compact-cta">Accept job</button>`,
+        accepted: `<button data-contractor-action="schedule" class="btn-primary ctr-compact-cta">Schedule visit</button>`,
+        scheduled: `<button data-contractor-action="start" data-msg="Work started" class="btn-primary ctr-compact-cta">Start job</button>`,
+        in_progress: `<button data-contractor-action="work" class="btn-primary ctr-compact-cta">Finish &amp; invoice</button>`,
+        waiting_approval: `<div class="ctr-compact-banner ctr-compact-banner--purple">Invoice submitted — awaiting landlord review</div>`,
+        approved: `<div class="ctr-compact-banner ctr-compact-banner--blue">Approved — payment via Stripe</div>`,
+        completed: `<div class="ctr-compact-banner ctr-compact-banner--blue">Job completed</div>`,
+        paid: `<div class="ctr-compact-banner ctr-compact-banner--blue">Payment received</div>`,
+    }[job.status] || '';
+    const reviewsBlock = typeof renderContractorJobReviewsReadonly === 'function'
+        ? renderContractorJobReviewsReadonly(maintItem, job) : '';
+    return `${topBar('Job details', { back: true })}
+    <div class="screen-content screen-enter ctr-compact-page ctr-compact-page--footer">
+        <div class="ctr-compact-head">
+            <span class="ctr-v2-job-badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
+            <span class="ctr-compact-id">#JOB-${1000 + job.id}</span>
         </div>
-        <div class="card p-4">
-            <p class="ctr-section-label">${communal ? 'Issue details' : 'Tenant complaint'}</p>
-            <p class="text-[14px] text-[#475569] mt-2 leading-relaxed">${job.desc}</p>
-            <div class="flex gap-2 mt-3 flex-wrap">
-                ${communal
-                    ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal job</span>'
-                    : `<span class="badge bg-[#FEF3C7] text-[#B45309]">${job.reportedBy === 'landlord' ? 'From landlord' : 'From tenant'}</span>`}
-                <span class="badge" style="background:${pBg};color:${pColor}">${job.priority} priority</span>
+        <h1 class="ctr-compact-title">${job.issue}</h1>
+        <div class="ctr-compact-meta">
+            <span><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${job.address}</span>
+            <span><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${job.visitDate || 'Not scheduled'}</span>
+        </div>
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-label">Job description</p>
+            <p class="ctr-compact-text">${job.desc}</p>
+        </div>
+        ${photos.length ? `
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-label">Photos</p>
+            <div class="ctr-compact-photo-row">
+                ${photos.map(src => `<img src="${src}" alt="" class="ctr-compact-photo">`).join('')}
             </div>
-            ${typeof renderMaintReportMedia === 'function' ? renderMaintReportMedia(job, { title: 'Photos & videos from report', compact: true }) : ''}
+        </div>` : ''}
+        ${renderCtrProgressChecklist(job)}
+        <div class="card ctr-compact-block">
+            <div class="ctr-compact-payout-top">
+                <div>
+                    <p class="ctr-compact-label">Payout</p>
+                    <p class="ctr-compact-payout-amt">${price}</p>
+                </div>
+                <button type="button" data-go="contractor-documents" class="ctr-compact-link">View breakdown</button>
+            </div>
+            <p class="ctr-compact-muted">${paymentStatus}</p>
         </div>
-        <div class="card p-4">
-            <p class="ctr-section-label">People</p>
-            <p class="text-[13px] font-semibold mt-1">Tenant: ${job.tenant}</p>
-            <p class="text-[14px] text-[#64748B] mt-1">Landlord: ${job.landlord}</p>
+        <div class="card ctr-compact-block ctr-compact-owner">
+            <div class="ctr-compact-owner-avatar">${contactInitials}</div>
+            <div class="ctr-compact-owner-body">
+                <p class="ctr-compact-owner-name">${contactName}</p>
+                <p class="ctr-compact-muted">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
+            </div>
+            <div class="ctr-compact-owner-actions">
+                <button type="button" data-action="toast" data-msg="Calling ${contactName}…" class="ctr-compact-icon-btn" aria-label="Call"><i data-lucide="phone" class="w-4 h-4"></i></button>
+                <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="ctr-compact-icon-btn" aria-label="Message"><i data-lucide="message-square" class="w-4 h-4"></i></button>
+            </div>
         </div>
-        <div class="card p-4">
-            <p class="ctr-section-label">Visit</p>
-            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${job.visitDate}</p>
-            ${job.scheduleNotes ? `<p class="text-[13px] text-[#64748B] mt-2">${job.scheduleNotes}</p>` : ''}
+        ${reviewsBlock}
+        <div class="ctr-compact-footer">${primaryAction}</div>
+    </div>
+    ${typeof renderMaintMediaPreviewModal === 'function' ? renderMaintMediaPreviewModal() : ''}`;
+}
+
+function screenContractorCompleteJob() {
+    const job = contractorJob(STATE.contractorJobId);
+    const afterPhotos = job.photos?.after || [];
+    const price = contractorJobEstimate(job);
+    const hasInvoice = !!job.invoice;
+    return `${topBar(job.property, { back: true, sub: job.issue })}
+    <div class="screen-content screen-enter ctr-compact-page">
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-muted">${job.address} · ${job.tenant}</p>
+            <p class="ctr-compact-payout-amt">${price}</p>
         </div>
-        <p class="ctr-section-label" style="margin-top:4px">Progress</p>
-        ${contractorTimeline(job.status)}
-        <div class="grid grid-cols-2 gap-3">
-            <button data-go="chat" data-chat="${job.landlordChatId}" class="btn-secondary py-3.5 flex items-center justify-center gap-2 text-[14px]"><i data-lucide="message-square" class="w-4 h-4"></i>Message Landlord</button>
-            ${canMessageTenant ? `<button data-go="chat" data-chat="${job.tenantChatId}" class="btn-secondary py-3.5 flex items-center justify-center gap-2 text-[14px]"><i data-lucide="user" class="w-4 h-4"></i>Message Tenant</button>` : `<button disabled class="btn-secondary py-3.5 text-[14px] opacity-50">No tenant</button>`}
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-label">Work photos</p>
+            <div class="ctr-compact-photo-row">
+                ${afterPhotos.map(src => `<img src="${src}" alt="" class="ctr-compact-photo">`).join('')}
+                <button type="button" data-contractor-upload="after" class="ctr-compact-photo-add" aria-label="Add photos">
+                    <i data-lucide="image-plus" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
-        ${job.groupChatId != null ? `
-        <button data-go="chat" data-chat="${job.groupChatId}" class="btn-primary w-full py-3.5 flex items-center justify-center gap-2 text-[14px] mt-3"><i data-lucide="users" class="w-4 h-4"></i>Job group chat</button>` : ''}`;
-    const work = `
-        ${contractorNotesList(job.notes)}
-        <div><label class="form-label">Add work note</label><textarea data-field="workNote" class="form-input min-h-[96px]" placeholder="What did you do? Parts used, findings..."></textarea></div>
-        <button type="button" data-action="save-contractor-note" class="btn-secondary w-full py-3.5 text-[14px]">Save Note</button>
-        ${contractorPhotoSection('before', job.photos.before, 'Before photos')}
-        ${contractorPhotoSection('during', job.photos.during, 'During work photos')}
-        ${contractorPhotoSection('after', job.photos.after, 'After photos')}`;
-    const invoice = `
+        ${formTextarea('Work note', '', 'What did you fix on site? (optional)', 'workNote')}
+        ${hasInvoice ? `
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-label">Invoice</p>
+            <p class="ctr-compact-payout-amt" style="font-size:18px">${job.invoice.amount}</p>
+            <p class="ctr-compact-muted">${job.invoice.number || job.invoice.file || 'Ready to submit'}</p>
+        </div>` : `
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-text">No invoice yet — <button type="button" data-go="contractor-documents" class="ctr-compact-link">add invoice</button> or we generate one on submit.</p>
+        </div>`}
+        <button type="button" data-action="mark-contractor-complete" class="btn-primary ctr-compact-cta">Submit for approval</button>
+    </div>`;
+}
+
+function screenContractorScheduleHub() {
+    const today = new Date();
+    const monthLabel = today.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const dayNum = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const firstDow = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+    const blanks = (firstDow + 6) % 7;
+    const todayJobs = CONTRACTOR_JOBS.filter(j => (j.visitDate || '').toLowerCase().includes('today') || ['assigned', 'accepted', 'scheduled', 'in_progress'].includes(j.status)).slice(0, 4);
+    const calCells = [];
+    for (let i = 0; i < blanks; i++) calCells.push('<span class="ctr-cal-cell ctr-cal-cell--empty"></span>');
+    for (let d = 1; d <= daysInMonth; d++) {
+        calCells.push(`<span class="ctr-cal-cell${d === dayNum ? ' is-today' : ''}">${d}</span>`);
+    }
+    return `${topBar('Schedule', { hideBell: true })}
+    <div class="screen-content screen-enter ctr-compact-page">
+        <div class="ctr-cal card ctr-compact-block">
+            <div class="ctr-cal-head">
+                <span class="ctr-cal-month">${monthLabel}</span>
+                <i data-lucide="calendar" class="w-4 h-4 text-[#64748B]"></i>
+            </div>
+            <div class="ctr-cal-weekdays">
+                ${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<span>${d}</span>`).join('')}
+            </div>
+            <div class="ctr-cal-grid ctr-cal-grid--compact">${calCells.join('')}</div>
+        </div>
+        <p class="ctr-compact-section-title">Today · ${today.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+        <div class="ctr-compact-schedule-list">
+            ${todayJobs.length ? todayJobs.map(j => {
+                const time = (j.visitDate || '').split(',')[1]?.trim() || (j.visitDate || '').split(' ').slice(-2).join(' ') || '—';
+                const disp = contractorJobDisplayStatus(j);
+                return `
+            <button type="button" data-go="contractor-job-detail" data-job="${j.id}" class="card ctr-compact-schedule-row w-full text-left">
+                <span class="ctr-compact-schedule-time">${time}</span>
+                <span class="ctr-compact-schedule-body">
+                    <span class="ctr-compact-schedule-title">${j.issue}</span>
+                    <span class="ctr-compact-schedule-loc">${contractorJobLocation(j)}</span>
+                </span>
+                <span class="ctr-v2-job-badge" style="background:${disp.bg};color:${disp.color}">${disp.label}</span>
+            </button>`;
+            }).join('') : `
+            <div class="card ctr-compact-block">
+                <p class="ctr-compact-text">No visits scheduled for today.</p>
+            </div>`}
+        </div>
+    </div>`;
+}
+
+function screenContractorEarnings() {
+    const summary = contractorEarningsSummary();
+    const bars = [40, 65, 55, 80, 70, 90, 60, 75].map(h => `<span class="ctr-earn-bar" style="height:${h}%"></span>`).join('');
+    const fee = Math.round(summary.total * 0.05);
+    const net = summary.total - fee;
+    return `${topBar('Earnings', { back: true })}
+    <div class="screen-content screen-enter ctr-compact-page">
+        <div class="card ctr-compact-block ctr-compact-earn-hero">
+            <p class="ctr-compact-label">This month</p>
+            <p class="ctr-compact-earn-amt">£${summary.total.toLocaleString()}</p>
+            <p class="ctr-compact-muted"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i> +12% vs last month</p>
+            ${renderCtrEarnPeriodPills()}
+        </div>
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-label">Earnings trend</p>
+            <div class="ctr-earn-chart ctr-earn-chart--compact">${bars}</div>
+        </div>
+        <div class="card ctr-compact-block">
+            <p class="ctr-compact-label">Breakdown</p>
+            <div class="ctr-compact-breakdown">
+                <div class="ctr-compact-breakdown-row"><span>Total income</span><strong>£${summary.total.toLocaleString()}</strong></div>
+                <div class="ctr-compact-breakdown-row"><span>Platform fee</span><span>−£${fee.toLocaleString()}</span></div>
+                <div class="ctr-compact-breakdown-row ctr-compact-breakdown-row--total"><span>Net earnings</span><strong>£${net.toLocaleString()}</strong></div>
+            </div>
+        </div>
+        <p class="ctr-compact-section-title">Recent payouts</p>
+        <div class="ctr-compact-txn-list">
+            ${summary.jobs.length ? summary.jobs.map(j => `
+            <div class="card ctr-compact-txn">
+                <div>
+                    <p class="ctr-compact-txn-title">${j.issue}</p>
+                    <p class="ctr-compact-muted">${j.visitDate || j.assignedDate || '—'}</p>
+                </div>
+                <span class="ctr-compact-txn-amt">+${contractorJobEstimate(j)}</span>
+            </div>`).join('') : `<p class="ctr-compact-muted">Completed jobs appear here.</p>`}
+        </div>
+    </div>`;
+}
+
+function screenContractorJobInvoice() {
+    const job = contractorJob(STATE.contractorJobId);
+    return `${topBar('Invoice & certificates', { back: true, sub: job.issue })}
+    <div class="screen-content screen-enter ctr-compact-page">
         <div class="card p-4">
             <p class="ctr-section-label">Certificates</p>
             ${job.certificates.length ? job.certificates.map(c => `
@@ -2196,7 +2612,7 @@ function screenContractorJobDetail() {
         </div>
         <div class="card p-4">
             <p class="ctr-section-label">System invoice</p>
-            <p class="text-[12px] text-[#64748B] mb-3">Enter details — the app generates a professional PDF invoice. No file upload needed.</p>
+            <p class="text-[12px] text-[#64748B] mb-3">Enter details — the app generates a professional PDF invoice.</p>
             ${job.invoice ? `
             <div class="card p-3 mb-3" style="background:#F8FAFC">
                 <div class="flex items-center justify-between gap-3">
@@ -2217,24 +2633,9 @@ function screenContractorJobDetail() {
         </div>
         ${['in_progress', 'scheduled', 'accepted'].includes(job.status) ? `
         <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[13px] font-semibold">Submit for approval</button>
-        <p class="text-[12px] text-[#64748B] text-center mt-2">Photos optional · system invoice required</p>` : ''}`;
-    const tabBody = { overview, work, invoice };
-    return `${topBar(job.issue, { back: true, sub: locationSub })}
-    <div class="screen-content screen-enter">
-        <div class="flex gap-2 overflow-x-auto pb-1">
-            ${tabs.map(([k, l]) => `
-            <button data-jtab="${k}" class="tab-pill ${tab === k ? 'active' : ''}">${l}</button>`).join('')}
-        </div>
-        <div class="flex gap-2 flex-wrap mt-3">
-            <span class="badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
-            <span class="badge" style="background:${pBg};color:${pColor}">${job.priority}</span>
-            ${communal ? '<span class="badge" style="background:#E0E7FF;color:#4338CA">Communal</span>' : ''}
-        </div>
-        <div class="stack-sm" style="margin-top:12px">${tabBody[tab] || overview}</div>
-        ${tab === 'overview' ? `<div style="margin-top:16px">${actions[job.status] || ''}</div>` : ''}
+        <p class="text-[12px] text-[#64748B] text-center mt-2">Photos optional · system invoice required</p>` : ''}
     </div>
-    ${typeof renderContractorCertUploadModal === 'function' ? renderContractorCertUploadModal() : ''}
-    ${typeof renderMaintMediaPreviewModal === 'function' ? renderMaintMediaPreviewModal() : ''}`;
+    ${renderContractorCertUploadModal()}`;
 }
 
 function screenContractorSchedule() {
@@ -2253,13 +2654,11 @@ function screenContractorSchedule() {
 }
 
 function screenContractorWork() {
-    STATE.contractorJobTab = 'work';
-    return screenContractorJobDetail();
+    return screenContractorCompleteJob();
 }
 
 function screenContractorDocuments() {
-    STATE.contractorJobTab = 'invoice';
-    return screenContractorJobDetail();
+    return screenContractorJobInvoice();
 }
 
 function screenContractorNotifications() {
@@ -2282,32 +2681,97 @@ function screenContractorNotifications() {
     </div>`;
 }
 
+function screenContractorReviews() {
+    const summary = typeof contractorReviewSummary === 'function' ? contractorReviewSummary() : { avg: '—', count: 0 };
+    const reviews = typeof collectContractorReviews === 'function' ? collectContractorReviews() : [];
+    const dist = contractorReviewDistribution(reviews);
+    return `${topBar('Reviews', { back: true })}
+    <div class="screen-content screen-enter ctr-compact-page">
+        <div class="card ctr-compact-block ctr-compact-review-summary">
+            <div class="ctr-compact-review-score">
+                <p class="ctr-compact-earn-amt">${summary.avg}</p>
+                <p class="ctr-compact-stars">${summary.avg !== '—' ? '★'.repeat(Math.round(+summary.avg)) : '—'}</p>
+                <p class="ctr-compact-muted">${summary.count} review${summary.count === 1 ? '' : 's'}</p>
+            </div>
+            <div class="ctr-compact-review-bars">
+                ${dist.map(d => `
+                <div class="ctr-compact-bar-row">
+                    <span>${d.stars}</span>
+                    <span class="ctr-compact-bar-track"><span class="ctr-compact-bar-fill" style="width:${d.pct}%"></span></span>
+                </div>`).join('')}
+            </div>
+        </div>
+        <div class="ctr-compact-review-list">
+            ${reviews.length ? reviews.slice(0, 8).map(r => {
+                const initials = (r.from || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                return `
+            <article class="card ctr-compact-review-card">
+                <div class="ctr-compact-review-card-head">
+                    <span class="ctr-compact-owner-avatar">${initials}</span>
+                    <div class="ctr-compact-owner-body">
+                        <p class="ctr-compact-owner-name">${r.from}</p>
+                        <p class="ctr-compact-stars ctr-compact-stars--sm">${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}</p>
+                    </div>
+                    <span class="ctr-compact-muted">${r.at || ''}</span>
+                </div>
+                <p class="ctr-compact-text">${r.comment || r.job}</p>
+            </article>`;
+            }).join('') : `
+            <div class="card ctr-compact-block">
+                <p class="ctr-compact-text">No reviews yet — they appear after completed jobs.</p>
+            </div>`}
+        </div>
+    </div>`;
+}
+
 function screenContractorProfile() {
+    const u = CONTRACTOR_USER;
+    const name = `${u.firstName} ${u.lastName}`;
+    const trade = contractorTradeFromLabel(u.trade);
+    const certCount = ensureContractorCertificates(u).length;
+    const reviewSummary = typeof contractorReviewSummary === 'function' ? contractorReviewSummary() : { avg: '—', count: 0 };
     return `${topBar('Profile', { hideBell: true })}
-    <div class="screen-content screen-enter">
-        <button data-go="personal-info" class="profile-card">
+    <div class="screen-content screen-content-sm screen-enter profile-page">
+        <button type="button" data-go="personal-info" class="profile-card">
             <img src="${IMG.avatar.plumber}" class="profile-card-avatar" alt="">
             <div class="profile-card-body">
-                <p class="profile-card-name">${CONTRACTOR_USER.firstName} ${CONTRACTOR_USER.lastName}</p>
-                <p class="profile-card-hint">${CONTRACTOR_USER.company || 'Contractor'}</p>
-                <div class="profile-card-trade">${renderContractorTradeBadge(CONTRACTOR_USER, 'profile-card-trade-badge')}</div>
+                <p class="profile-card-name">${name}</p>
+                <p class="profile-card-email">${u.email}</p>
+                <p class="profile-card-hint">${trade.shortLabel} · ${u.company || 'Contractor'}</p>
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
         </button>
-        ${menuList([
-            ['building-2', 'Company Information', 'contractor-company'],
-            ['award', 'Certifications', 'contractor-certifications', `${ensureContractorCertificates(CONTRACTOR_USER).length} on file`],
-            ['bell', 'Alerts & Notifications', 'contractor-notifications'],
-            ['key-round', 'Change Password', 'password'],
-        ])}
-        <p class="section-title">Support</p>
-        ${menuList([
-            ['help-circle', 'Help & Support', 'help-support'],
-            ['shield', 'Privacy Policy', 'privacy'],
-            ['file-text', 'Terms & Conditions', 'terms'],
-            ['info', 'About', 'about'],
-        ])}
-        <button data-action="logout" class="w-full py-3 mt-4 text-[14px] font-semibold text-[#DC2626]">Log Out</button>
+        <div class="profile-section">
+            <p class="section-title">Your account</p>
+            ${menuList([
+                ['bell', 'Notification settings', 'notifications-settings'],
+                ['key-round', 'Change password', 'password'],
+            ])}
+        </div>
+        <div class="profile-section">
+            <p class="section-title">Business</p>
+            ${menuList([
+                ['building-2', 'Company information', 'contractor-company'],
+                ['folder-open', 'Certifications', 'contractor-certifications', `${certCount} on file`],
+            ])}
+        </div>
+        <div class="profile-section">
+            <p class="section-title">Work</p>
+            ${menuList([
+                ['banknote', 'Earnings', 'contractor-earnings'],
+                ['star', 'Reviews', 'contractor-reviews', reviewSummary.count ? `${reviewSummary.avg} · ${reviewSummary.count}` : '—'],
+            ])}
+        </div>
+        <div class="profile-section">
+            <p class="section-title">Support</p>
+            ${menuList([
+                ['help-circle', 'Help & support', 'help-support'],
+                ['shield', 'Privacy policy', 'privacy'],
+                ['file-text', 'Terms & conditions', 'terms'],
+            ])}
+        </div>
+        <button data-action="logout" class="profile-logout">Log out</button>
+        <p class="profile-version">Contractor portal · Demo build</p>
     </div>`;
 }
 
@@ -2341,6 +2805,9 @@ Object.assign(SCREEN_MAP, {
     'contractor-jobs': screenContractorJobs,
     'contractor-job-detail': screenContractorJobDetail,
     'contractor-schedule': screenContractorSchedule,
+    'contractor-schedule-hub': screenContractorScheduleHub,
+    'contractor-earnings': screenContractorEarnings,
+    'contractor-reviews': screenContractorReviews,
     'contractor-work': screenContractorWork,
     'contractor-documents': screenContractorDocuments,
     'contractor-notifications': screenContractorNotifications,
@@ -2358,6 +2825,7 @@ Object.assign(SCREEN_MAP, {
     'tenant-welcome': screenTenantWelcome,
     'tenant-building-info': screenTenantBuildingInfo,
     'tenant-announcements': screenTenantAnnouncements,
+    'tenant-announcement-detail': screenTenantAnnouncementDetail,
     'tenant-house-rules': screenTenantHouseRules,
     'tenant-edit-profile': screenTenantEditProfile,
     'tenant-issues': screenTenantIssues,
@@ -2373,12 +2841,13 @@ Object.assign(SCREEN_MAP, {
 });
 
 const CONTRACTOR_NO_NAV = [
-    'contractor-job-detail', 'contractor-schedule', 'contractor-work', 'contractor-documents',
+    'contractor-job-detail', 'contractor-schedule', 'contractor-schedule-hub', 'contractor-earnings', 'contractor-reviews',
+    'contractor-work', 'contractor-documents',
     'contractor-company', 'contractor-certifications', 'contractor-public-profile', 'contractor-cert-preview',
     'contractor-invite', 'contractor-sign-up', 'contractor-welcome',
     'contractor-landlords', 'contractor-invite-landlord', 'contractor-landlord-invite-sent',
     'tenant-invite', 'tenant-activate', 'tenant-welcome', 'tenant-dashboard',
-    'tenant-building-info', 'tenant-announcements', 'tenant-house-rules', 'tenant-edit-profile',
+    'tenant-building-info', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile',
     'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
     'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance',
     'tenant-communication', 'tenant-checkout',
@@ -2387,6 +2856,12 @@ NO_NAV.push(...CONTRACTOR_NO_NAV);
 
 function bindContractorEvents() {
     const app = document.getElementById('app');
+    app.querySelectorAll('[data-contractor-earn-period]').forEach(el => {
+        el.onclick = () => {
+            STATE.contractorEarnPeriod = el.dataset.contractorEarnPeriod;
+            render();
+        };
+    });
     app.querySelectorAll('[data-action="tenant-pay"]').forEach(el => {
         el.onclick = () => tenantPayBill(el.dataset.kind, el.dataset.iid);
     });

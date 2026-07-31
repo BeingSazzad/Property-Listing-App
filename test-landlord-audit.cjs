@@ -173,7 +173,6 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
     ['share-document', { shareDocId: 0 }],
     ['tenant-add-note', { tenantId: 0 }],
     ['maintenance-history', {}],
-    ['portfolio-overview', {}],
     ['compliance-dashboard', {}],
     ['reminders', {}],
     ['add-reminder', {}],
