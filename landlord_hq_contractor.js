@@ -9,6 +9,7 @@ const CONTRACTOR_BOTTOM_NAV = [
 const CONTRACTOR_DRAWER_NAV = [
     ['layout-dashboard', 'Dashboard', 'contractor-dashboard'],
     ['briefcase', 'Jobs', 'contractor-jobs'],
+    ['building-2', 'Landlords', 'contractor-landlords'],
     ['message-square', 'Messages', 'messages'],
     ['bell', 'Notifications', 'contractor-notifications'],
     ['user', 'Profile', 'contractor-profile'],
@@ -39,7 +40,8 @@ const CONTRACTOR_STATUS = {
     accepted: { label: 'Accepted', bg: '#DBEAFE', color: '#1D4ED8' },
     scheduled: { label: 'Visit Scheduled', bg: '#E0E7FF', color: '#4338CA' },
     in_progress: { label: 'In Progress', bg: '#FEF3C7', color: '#D97706' },
-    waiting_approval: { label: 'Waiting Approval', bg: '#F3E8FF', color: '#7C3AED' },
+    waiting_approval: { label: 'Awaiting Review', bg: '#F3E8FF', color: '#7C3AED' },
+    approved: { label: 'Awaiting Payment', bg: '#DCFCE7', color: '#16A34A' },
     completed: { label: 'Completed', bg: '#D1FAE5', color: '#047857' },
     paid: { label: 'Paid', bg: '#ECFDF5', color: '#059669' },
 };
@@ -136,11 +138,21 @@ function syncContractorJobToMaintenance(job) {
     }
     if (job.status === 'in_progress') pushOnce('Work started', job.visitDate || 'On site');
     if (job.status === 'waiting_approval') {
-        pushOnce('Work submitted', job.invoice?.amount ? `${job.invoice.amount} · awaiting approval` : 'Awaiting landlord approval');
+        item.status = 'progress';
+        pushOnce('Invoice submitted', job.invoice?.amount ? `${job.invoice.amount} · awaiting review` : 'Awaiting landlord review');
     }
-    if (job.status === 'completed' || job.status === 'paid') {
+    if (job.status === 'approved') {
+        item.status = 'progress';
+        item.paymentPending = true;
+        pushOnce('Work approved', job.invoice?.amount ? `Awaiting payment · ${job.invoice.amount}` : 'Awaiting payment');
+    }
+    if (job.status === 'paid') {
         item.status = 'done';
-        pushOnce('Work completed', job.invoice?.amount ? `Paid ${job.invoice.amount}` : 'Marked complete');
+        item.paymentPending = false;
+        pushOnce('Paid via Stripe', job.invoice?.amount ? job.invoice.amount : 'Payment complete');
+    }
+    if (job.status === 'completed') {
+        item.status = 'progress';
     }
 }
 
@@ -195,6 +207,7 @@ const contractorJobCard = (job) => {
                 <p class="ctr-job-title">${job.issue}</p>
                 <p class="ctr-job-prop">${location}</p>
                 <p class="ctr-job-addr">${job.address}</p>
+                <p class="ctr-job-source">Via ${job.landlord} · ${job.property}</p>
                 <div class="ctr-job-meta">
                     <span><i data-lucide="user" class="w-3.5 h-3.5"></i>${job.tenant}</span>
                     <span><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${job.visitDate}</span>
@@ -211,8 +224,8 @@ const contractorTimeline = (status) => {
         ['accepted', 'Accepted'],
         ['scheduled', 'Visit Scheduled'],
         ['in_progress', 'Work Started'],
-        ['waiting_approval', 'Invoice Uploaded'],
-        ['completed', 'Completed'],
+        ['waiting_approval', 'Invoice Submitted'],
+        ['approved', 'Approved'],
         ['paid', 'Paid'],
     ];
     const order = steps.map(s => s[0]);
@@ -316,16 +329,11 @@ function uploadContractorFile(kind) {
 
 function markContractorJobComplete() {
     const job = contractorJob(STATE.contractorJobId);
-    const amount = document.querySelector('[data-field="invoiceAmount"]')?.value?.trim();
-    if (!job.invoice && amount) {
-        job.invoice = {
-            amount: amount.startsWith('£') ? amount : `£${amount}`,
-            file: `INV-${job.id + 100}.pdf`,
-            uploadedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-        };
+    if (!job.invoice) {
+        job.invoice = typeof generateContractorSystemInvoice === 'function' ? generateContractorSystemInvoice(job) : null;
     }
     if (!job.invoice) {
-        toast('Upload your invoice first');
+        toast('Generate your invoice first — amount required');
         return;
     }
     job.status = 'waiting_approval';
@@ -333,7 +341,7 @@ function markContractorJobComplete() {
     submitContractorInvoice(job);
     saveContractorJobs();
     if (typeof AppStore !== 'undefined') AppStore.save();
-    toast('Job submitted — waiting for landlord approval');
+    toast('Invoice submitted — waiting for landlord approval');
     go('contractor-jobs');
 }
 
@@ -343,7 +351,7 @@ const contractorFilterJobs = () => {
         all: () => true,
         assigned: j => j.status === 'assigned',
         accepted: j => ['accepted', 'scheduled'].includes(j.status),
-        in_progress: j => ['in_progress', 'waiting_approval'].includes(j.status),
+        in_progress: j => ['in_progress', 'waiting_approval', 'approved'].includes(j.status),
         completed: j => ['completed', 'paid'].includes(j.status),
     };
     return CONTRACTOR_JOBS.filter(map[f] || map.all);
@@ -747,41 +755,46 @@ function screenContractorPublicProfile() {
     const isLandlord = STATE.userRole === 'landlord';
     const isTenant = STATE.userRole === 'tenant';
     const chatId = typeof ensureContractorConversation === 'function' ? ensureContractorConversation(profile) : null;
-    return `${topBar('Contractor Profile', { back: true })}
-    <div class="screen-content screen-enter">
-        <div class="ctr-public-hero card p-4">
-            <img src="${profile.img || contractorAvatarForTrade(profile.tradeId)}" class="ctr-public-avatar" alt="">
-            <div class="ctr-public-hero-body">
-                <p class="ctr-public-company">${escapeHtml(profile.name)}</p>
-                <p class="ctr-public-person">${escapeHtml(profile.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : profile.category || 'Contractor')}</p>
-                ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(profile) : ''}
-                <p class="ctr-public-jobs-for">For: ${escapeHtml(contractorJobsForLabel(profile))}</p>
+    const openJobs = typeof contractorOpenJobs === 'function' ? contractorOpenJobs(profile.name) : 0;
+    const jobsLine = openJobs ? `${openJobs} open job${openJobs === 1 ? '' : 's'}` : 'No active jobs';
+    return `${topBar('Contractor', { back: true })}
+    <div class="screen-content screen-enter ctr-profile-page">
+        <div class="ctr-profile-hero card">
+            <img src="${profile.img || contractorAvatarForTrade(profile.tradeId)}" class="ctr-profile-avatar" alt="">
+            <div class="ctr-profile-hero-copy min-w-0 flex-1">
+                <h1 class="ctr-profile-name">${escapeHtml(profile.name)}</h1>
+                ${profile.firstName ? `<p class="ctr-profile-person">${escapeHtml(`${profile.firstName} ${profile.lastName || ''}`.trim())}</p>` : ''}
+                <div class="ctr-profile-trade-row">
+                    ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(profile) : ''}
+                </div>
+                <p class="ctr-profile-jobs">${escapeHtml(contractorJobsForLabel(profile))}</p>
+                <p class="ctr-profile-meta">${jobsLine}</p>
             </div>
         </div>
-        <div class="card p-4">
-            <p class="ctr-section-label">Contact</p>
-            ${profile.phone ? `<p class="ctr-public-contact"><i data-lucide="phone" class="w-4 h-4"></i>${escapeHtml(profile.phone)}</p>` : ''}
-            ${profile.email ? `<p class="ctr-public-contact"><i data-lucide="mail" class="w-4 h-4"></i>${escapeHtml(profile.email)}</p>` : ''}
-            ${profile.companyReg ? `<p class="ctr-public-contact"><i data-lucide="building-2" class="w-4 h-4"></i>Reg ${escapeHtml(profile.companyReg)}</p>` : ''}
-        </div>
-        <div class="card p-4">
-            <div class="ctr-public-section-head">
-                <p class="ctr-section-label">Certifications & documents</p>
+        ${(isLandlord || isTenant) ? `
+        <div class="ctr-profile-actions">
+            ${profile.phone ? `<button type="button" data-action="call-contractor" data-phone="${profile.phone.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
+            ${profile.email ? `<button type="button" data-action="email-contractor" data-email="${profile.email.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
+            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="ctr-card-action"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
+        </div>` : ''}
+        <div class="ctr-profile-section card">
+            <div class="ctr-profile-section-head">
+                <p class="ctr-section-label">Certifications</p>
                 <span class="ctr-public-cert-count">${certCount} on file</span>
             </div>
-            <div class="flex flex-wrap gap-2 mt-2 mb-3">
-                ${profile.gasSafe ? '<span class="badge" style="background:#ECFDF5;color:#059669">Gas Safe</span>' : ''}
-                ${profile.liabilityInsurance ? '<span class="badge" style="background:#EFF6FF;color:#2563EB">Insured</span>' : ''}
-                ${visual ? `<span class="badge" style="background:${visual.bg};color:${visual.color}">${escapeHtml(profile.category || visual.shortLabel)}</span>` : ''}
+            <div class="ctr-profile-badges">
+                ${profile.gasSafe ? '<span class="ctr-profile-badge ctr-profile-badge--green">Gas Safe</span>' : ''}
+                ${profile.liabilityInsurance ? '<span class="ctr-profile-badge ctr-profile-badge--blue">Insured</span>' : ''}
+                ${visual ? `<span class="ctr-profile-badge" style="background:${visual.bg};color:${visual.color}">${escapeHtml(profile.category || visual.shortLabel)}</span>` : ''}
             </div>
             ${renderContractorCertList(profile)}
         </div>
-        ${isLandlord ? `
-        <div class="grid grid-cols-2 gap-3">
-            ${profile.phone ? `<button type="button" data-action="call-contractor" data-phone="${profile.phone.replace(/"/g, '')}" class="btn-secondary py-3 text-[13px]"><i data-lucide="phone" class="w-4 h-4 inline-block -mt-px"></i> Call</button>` : ''}
-            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="btn-primary py-3 text-[13px]"><i data-lucide="message-square" class="w-4 h-4 inline-block -mt-px"></i> Message</button>` : ''}
+        ${profile.companyReg ? `
+        <div class="ctr-profile-section card">
+            <p class="ctr-section-label">Company</p>
+            <p class="ctr-profile-reg"><i data-lucide="building-2" class="w-4 h-4"></i> Reg ${escapeHtml(profile.companyReg)}</p>
         </div>` : ''}
-        ${isTenant ? `<p class="text-[12px] text-[#64748B] text-center mt-2">Your landlord assigned this contractor for your maintenance request. Contact your landlord if you need to reschedule.</p>` : ''}
+        ${isTenant ? `<p class="ctr-profile-tenant-note">Your landlord assigned this contractor. Contact your landlord to reschedule.</p>` : ''}
     </div>`;
 }
 
@@ -1297,19 +1310,19 @@ function screenTenantDashboard() {
             <p class="tnt-rent-amount">${rentDue ? pay.balance : (t.rent ? `£${String(t.rent).replace(/^£/, '')}` : '—')}</p>
             <p class="tnt-rent-meta"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${pay?.nextDue || 'Due Apr 1, 2026'}</p>
             ${rentDue
-                ? `<button type="button" data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}" class="tnt-pay-btn">Pay rent now</button>`
+                ? `<button type="button" data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}" class="tnt-pay-btn">Pay rent with Stripe</button>`
                 : `<p class="tnt-rent-paid-note">Rent for this month is up to date.</p>`}
         </div>
 
         ${maintDue ? `
         <div class="tnt-maint-bill card">
             <div class="tnt-rent-card-head">
-                <p class="tnt-rent-label">Maintenance charge</p>
+                <p class="tnt-rent-label">Bill due</p>
                 <span class="tnt-rent-badge tnt-rent-badge--due">Due</span>
             </div>
             <p class="tnt-rent-amount tnt-rent-amount--sm">${pay.maintBalance}</p>
-            <p class="tnt-rent-meta">${pay.nextMaintDue || 'Repair contribution'}</p>
-            <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-secondary w-full py-3 text-[13px] mt-3">Pay maintenance bill</button>
+            <p class="tnt-rent-meta">${pay.nextMaintDue || 'Maintenance or utility charge'}</p>
+            <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-secondary w-full py-3 text-[13px] mt-3">Pay with Stripe</button>
         </div>` : ''}
 
         <button type="button" data-go="tenant-active-tenancy" class="tnt-tenancy-strip card w-full text-left">
@@ -1439,7 +1452,7 @@ function screenTenantPaymentHistory() {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
     const kind = STATE.tenantPayFilter || 'rent';
     const rows = typeof tenantInvoicesByKind === 'function' ? tenantInvoicesByKind(tid, kind) : [];
-    const tabs = [['rent', 'Rent'], ['maintenance', 'Maintenance']];
+    const tabs = [['rent', 'Rent'], ['maintenance', 'Bills']];
     const unpaid = rows.filter(i => i.status !== 'Paid');
     const paid = rows.filter(i => i.status === 'Paid');
     const dueTotal = unpaid.reduce((s, i) => s + (typeof parseRentAmount === 'function' ? parseRentAmount(i.amount) : 0), 0);
@@ -1447,8 +1460,8 @@ function screenTenantPaymentHistory() {
     const listBody = !rows.length ? `
         <div class="fin-empty">
             <div class="fin-empty-icon"><i data-lucide="receipt" class="w-6 h-6"></i></div>
-            <p class="fin-empty-title">No ${kind === 'maintenance' ? 'maintenance bills' : 'rent payments'} yet</p>
-            <p class="fin-empty-sub">${kind === 'maintenance' ? 'Repair bills from your landlord will appear here.' : 'Your rent payment history will show here.'}</p>
+            <p class="fin-empty-title">No ${kind === 'maintenance' ? 'bills' : 'rent payments'} yet</p>
+            <p class="fin-empty-sub">${kind === 'maintenance' ? 'Maintenance and utility bills from your landlord will appear here.' : 'Your rent payment history will show here.'}</p>
         </div>` : `
         ${unpaid.length && dueTotal ? `
         <div class="fin-summary card">
@@ -1485,13 +1498,24 @@ function tenantPayBill(kind, invoiceId) {
         toast('No outstanding bill found');
         return;
     }
-    inv.status = 'Paid';
-    inv.paidOn = typeof formatEventDate === 'function' ? formatEventDate() : 'Today';
-    inv.paymentMethod = 'Card / online';
-    if (typeof syncTransactionsFromInvoices === 'function') syncTransactionsFromInvoices();
-    if (typeof AppStore !== 'undefined') AppStore.save();
-    toast(kind === 'maintenance' ? 'Maintenance payment recorded' : 'Rent payment recorded — thank you!');
-    render();
+    const payFn = typeof openStripeCheckout === 'function' ? openStripeCheckout : (opts) => {
+        toast('Opening Stripe…');
+        setTimeout(() => opts.onSuccess?.(), 700);
+    };
+    payFn({
+        amount: inv.amount,
+        label: kind === 'maintenance' ? 'Maintenance' : 'Rent',
+        onSuccess: () => {
+            inv.status = 'Paid';
+            inv.paidOn = typeof formatEventDate === 'function' ? formatEventDate() : 'Today';
+            inv.paymentMethod = 'Stripe';
+            if (typeof markOveragePaidForInvoice === 'function') markOveragePaidForInvoice(inv);
+            if (typeof syncTransactionsFromInvoices === 'function') syncTransactionsFromInvoices();
+            if (typeof AppStore !== 'undefined') AppStore.save();
+            toast(kind === 'maintenance' ? 'Bill paid — thank you!' : 'Rent paid — thank you!');
+            render();
+        },
+    });
 }
 
 function screenTenantIssues() {
@@ -1517,12 +1541,15 @@ function screenTenantIssues() {
 
 function screenTenantDocuments() {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
-    const docs = typeof getTenantDocuments === 'function' ? getTenantDocuments(tid) : [];
+    const body = typeof renderTenantDocFolderBrowser === 'function'
+        ? renderTenantDocFolderBrowser(tid)
+        : (typeof getTenantDocuments === 'function' && getTenantDocuments(tid).length && typeof renderTenantDocThumbGrid === 'function'
+            ? renderTenantDocThumbGrid(getTenantDocuments(tid), tid)
+            : `<div class="card p-8 text-center text-[13px] text-[#64748B]">No documents shared yet.</div>`);
     return `${topBar('Documents', { back: true, sub: 'Shared with you' })}
     <div class="screen-content screen-enter">
-        <p class="text-[13px] text-[#64748B] mb-3">Lease, compliance certificates and files your landlord has shared. Tap to view or download.</p>
-        ${docs.length ? (typeof renderTenantDocThumbGrid === 'function' ? renderTenantDocThumbGrid(docs, tid) : '') : `
-        <div class="card p-8 text-center text-[13px] text-[#64748B]">No documents shared yet.</div>`}
+        <p class="text-[13px] text-[#64748B] mb-3">Lease, compliance certificates and files your landlord has shared — organised by folder.</p>
+        ${body}
     </div>`;
 }
 
@@ -1862,6 +1889,100 @@ function screenTenantEditProfile() {
     </div>`;
 }
 
+function screenContractorInviteLandlord() {
+    return `${topBar('Invite landlord', { back: true })}
+    <div class="screen-content screen-enter">
+        <p class="text-[13px] text-[#64748B] mb-4">Invite a landlord to connect with you on Landlord HQ. They can assign you maintenance jobs directly.</p>
+        ${formFieldReq('Landlord name', 'invite_landlord_name', '', 'text', 'e.g. John Smith')}
+        ${formFieldReq('Email', 'invite_landlord_email', '', 'email', 'landlord@email.com')}
+        <button type="button" data-action="send-landlord-invite" class="btn-primary w-full py-3.5 text-[14px]">Send invite</button>
+    </div>`;
+}
+
+function sendLandlordInvite() {
+    const name = fieldVal('invite_landlord_name')?.trim();
+    const email = fieldVal('invite_landlord_email')?.trim();
+    if (!name || !email) { toast('Name and email required'); return; }
+    if (!AppStore.landlordInvites) AppStore.landlordInvites = [];
+    const invite = {
+        id: AppStore.nextId(AppStore.landlordInvites),
+        name, email, status: 'pending', sentAt: 'Just now',
+        link: `https://landlordhq.app/landlord-invite?email=${encodeURIComponent(email)}`,
+    };
+    AppStore.landlordInvites.unshift(invite);
+    STATE.lastLandlordInviteId = invite.id;
+    AppStore.save();
+    go('contractor-landlord-invite-sent');
+}
+
+function screenContractorLandlordInviteSent() {
+    const invite = (AppStore.landlordInvites || []).find(i => i.id === STATE.lastLandlordInviteId);
+    if (!invite) {
+        return `${topBar('Invite sent', { back: true })}
+        <div class="screen-content"><p class="text-[13px] text-[#64748B]">Invitation not found.</p></div>`;
+    }
+    return `${topBar('Invite sent', { back: true })}
+    <div class="screen-content screen-enter">
+        <div class="card p-6 text-center">
+            <div class="tenant-invite-icon"><i data-lucide="mail-check" class="w-8 h-8"></i></div>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation sent!</p>
+            <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> to connect with you on Landlord HQ.</p>
+        </div>
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invite link</p>
+            <p class="text-[12px] text-[#2563EB] mt-2 break-all">${invite.link}</p>
+            <button type="button" data-action="copy-landlord-invite-link" class="btn-secondary w-full py-3 text-[13px] mt-3">Copy link</button>
+        </div>
+        <button type="button" data-go="contractor-landlords" class="btn-primary w-full py-3.5 text-[14px]">Back to landlords</button>
+    </div>`;
+}
+
+function copyLandlordInviteLink() {
+    const invite = (AppStore.landlordInvites || []).find(i => i.id === STATE.lastLandlordInviteId);
+    if (!invite?.link) return;
+    navigator.clipboard?.writeText(invite.link).then(() => toast('Link copied')).catch(() => toast(invite.link));
+}
+
+function contractorLandlordRows() {
+    const map = new Map();
+    CONTRACTOR_JOBS.forEach(j => {
+        const key = j.landlord || 'Unknown';
+        if (!map.has(key)) {
+            map.set(key, { name: key, jobs: 0, active: 0, properties: new Set() });
+        }
+        const row = map.get(key);
+        row.jobs += 1;
+        if (['assigned', 'accepted', 'scheduled', 'in_progress', 'waiting_approval', 'approved'].includes(j.status)) row.active += 1;
+        if (j.property) row.properties.add(j.property);
+    });
+    return [...map.values()].map(r => ({ ...r, properties: [...r.properties] }));
+}
+
+function screenContractorLandlords() {
+    const landlords = contractorLandlordRows();
+    return `${topBar('Landlords', { sub: `${landlords.length} connected` })}
+    <div class="screen-content screen-enter">
+        <button type="button" data-go="contractor-invite-landlord" class="btn-primary w-full py-3 text-[13px] mb-3 flex items-center justify-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>Invite landlord
+        </button>
+        ${landlords.length ? landlords.map(l => `
+        <div class="card p-4 mb-2">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[14px] font-bold text-[#0F172A]">${l.name}</p>
+                    <p class="text-[12px] text-[#64748B] mt-1">${l.properties.length} propert${l.properties.length === 1 ? 'y' : 'ies'} · ${l.jobs} job${l.jobs === 1 ? '' : 's'}</p>
+                </div>
+                ${l.active ? `<span class="badge" style="background:#DBEAFE;color:#2563EB">${l.active} active</span>` : ''}
+            </div>
+            <button type="button" data-go="chat" data-chat="${typeof getLandlordChatId === 'function' ? getLandlordChatId() : 1}" class="btn-secondary w-full py-2.5 text-[13px] mt-3">Message</button>
+        </div>`).join('') : `
+        <div class="card p-8 text-center">
+            <p class="text-[14px] font-semibold text-[#0F172A]">No landlords yet</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Invite a landlord or wait for job assignments.</p>
+        </div>`}
+    </div>`;
+}
+
 function screenContractorDashboard() {
     const assigned = CONTRACTOR_JOBS.filter(j => j.status === 'assigned').length;
     const today = CONTRACTOR_JOBS.filter(j => j.visitDate.startsWith('Today')).length;
@@ -1897,7 +2018,7 @@ function screenContractorDashboard() {
         <div class="dash-quick">
             ${[
                 ['briefcase', 'View Jobs', 'contractor-jobs', 'primary'],
-                ['calendar', 'Schedule', 'contractor-jobs', 'indigo'],
+                ['building-2', 'Landlords', 'contractor-landlords', 'indigo'],
                 ['message-square', 'Messages', 'messages', 'success'],
                 ['file-text', 'Invoices', 'contractor-jobs', 'warning'],
             ].map(([ic, label, go, tone]) => `
@@ -1936,9 +2057,37 @@ function screenContractorJobs() {
         ['in_progress', 'In Progress'], ['completed', 'Completed'],
     ];
     const jobs = contractorFilterJobs();
-    const allCount = CONTRACTOR_JOBS.length;
-    return `${topBar('Jobs', { sub: `${allCount} job${allCount === 1 ? '' : 's'}` })}
+    const landlords = [...new Set(CONTRACTOR_JOBS.map(j => j.landlord).filter(Boolean))];
+    const properties = [...new Set(CONTRACTOR_JOBS.map(j => j.property).filter(Boolean))];
+    const landlordF = STATE.contractorLandlordFilter || 'all';
+    const propertyF = STATE.contractorPropertyFilter || 'all';
+    const activeJob = jobs[0];
+    return `${topBar('Jobs', { sub: `${jobs.length} shown` })}
     <div class="screen-content screen-enter ctr-jobs-screen">
+        ${activeJob ? `
+        <div class="card p-4 ctr-context-card">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Current context</p>
+            <p class="text-[14px] font-bold text-[#0F172A] mt-1">${activeJob.landlord}</p>
+            <p class="text-[12px] text-[#64748B]">${activeJob.property}${activeJob.unit ? ` · ${activeJob.unit}` : ''}</p>
+        </div>` : ''}
+        <div class="search-bar mb-2">
+            <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+            <input data-search="contractorJobs" type="text" value="${STATE.search.contractorJobs || ''}" placeholder="Search jobs…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
+        </div>
+        ${landlords.length > 1 ? `
+        <p class="text-[11px] font-semibold text-[#64748B] mb-1">Landlord</p>
+        <div class="ctr-jobs-filter-row mb-2">
+            <button type="button" data-contractor-landlord-filter="all" class="ctr-jobs-filter ${landlordF === 'all' ? 'active' : ''}">All</button>
+            ${landlords.map(l => `
+            <button type="button" data-contractor-landlord-filter="${l.replace(/"/g, '')}" class="ctr-jobs-filter ${landlordF === l ? 'active' : ''}">${l.split(' ')[0]}</button>`).join('')}
+        </div>` : ''}
+        ${properties.length > 1 ? `
+        <p class="text-[11px] font-semibold text-[#64748B] mb-1">Property</p>
+        <div class="ctr-jobs-filter-row mb-2">
+            <button type="button" data-contractor-property-filter="all" class="ctr-jobs-filter ${propertyF === 'all' ? 'active' : ''}">All</button>
+            ${properties.slice(0, 4).map(p => `
+            <button type="button" data-contractor-property-filter="${p.replace(/"/g, '')}" class="ctr-jobs-filter ${propertyF === p ? 'active' : ''}">${p.split(',')[0]}</button>`).join('')}
+        </div>` : ''}
         <div class="ctr-jobs-filter-row">
             ${tabs.map(([k, l]) => `
             <button type="button" data-contractor-filter="${k}" class="ctr-jobs-filter ${f === k ? 'active' : ''}">${l}</button>`).join('')}
@@ -1973,8 +2122,18 @@ function screenContractorJobDetail() {
         scheduled: `<button data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-4 text-[13px] font-semibold">Start Work</button>`,
         in_progress: `
             <button data-contractor-action="work" class="btn-primary w-full py-4 text-[13px] font-semibold">Add Photos & Notes</button>
-            <button data-contractor-action="documents" class="btn-secondary w-full py-3.5 text-[14px] mt-3">Upload Invoice</button>`,
-        waiting_approval: `<div class="card p-4 text-center" style="background:#F5F3FF"><p class="text-[14px] font-semibold text-[#7C3AED]">Waiting for landlord approval</p><p class="text-[13px] text-[#64748B] mt-1">Your invoice of ${job.invoice?.amount || '—'} is being reviewed</p></div>`,
+            <button data-contractor-action="documents" class="btn-secondary w-full py-3.5 text-[14px] mt-3">Create invoice</button>
+            ${!job.milestoneRequest ? `
+            <div class="card p-4 mt-3">
+                <p class="ctr-section-label">Request milestone payment</p>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <input type="text" data-field="milestone_amount" class="form-input" placeholder="Amount">
+                    <input type="text" data-field="milestone_label" class="form-input" placeholder="e.g. Materials">
+                </div>
+                <button type="button" data-action="request-milestone" class="btn-secondary w-full py-3 text-[13px] mt-3">Request from landlord</button>
+            </div>` : `<div class="card p-4 mt-3 text-center"><p class="text-[13px] font-semibold">Milestone ${job.milestoneRequest.amount}</p><p class="text-[12px] text-[#64748B]">${job.milestoneRequest.status}</p></div>`}`,
+        waiting_approval: `<div class="card p-4 text-center" style="background:#F5F3FF"><p class="text-[14px] font-semibold text-[#7C3AED]">Awaiting landlord review</p><p class="text-[13px] text-[#64748B] mt-1">Invoice ${job.invoice?.amount || '—'} submitted for approval</p></div>`,
+        approved: `<div class="card p-4 text-center" style="background:#ECFDF5"><p class="text-[14px] font-semibold text-[#059669]">Approved — awaiting payment</p><p class="text-[13px] text-[#64748B] mt-1">${job.invoice?.amount || '—'} will be paid via Stripe</p></div>`,
         completed: `<div class="card p-4 text-center" style="background:#ECFDF5"><p class="text-[14px] font-semibold text-[#059669]">Job completed — awaiting payment</p></div>`,
         paid: `<div class="card p-4 text-center" style="background:#ECFDF5"><p class="text-[14px] font-semibold text-[#059669]">Payment received</p></div>`,
     };
@@ -2016,7 +2175,9 @@ function screenContractorJobDetail() {
         <div class="grid grid-cols-2 gap-3">
             <button data-go="chat" data-chat="${job.landlordChatId}" class="btn-secondary py-3.5 flex items-center justify-center gap-2 text-[14px]"><i data-lucide="message-square" class="w-4 h-4"></i>Message Landlord</button>
             ${canMessageTenant ? `<button data-go="chat" data-chat="${job.tenantChatId}" class="btn-secondary py-3.5 flex items-center justify-center gap-2 text-[14px]"><i data-lucide="user" class="w-4 h-4"></i>Message Tenant</button>` : `<button disabled class="btn-secondary py-3.5 text-[14px] opacity-50">No tenant</button>`}
-        </div>`;
+        </div>
+        ${job.groupChatId != null ? `
+        <button data-go="chat" data-chat="${job.groupChatId}" class="btn-primary w-full py-3.5 flex items-center justify-center gap-2 text-[14px] mt-3"><i data-lucide="users" class="w-4 h-4"></i>Job group chat</button>` : ''}`;
     const work = `
         ${contractorNotesList(job.notes)}
         <div><label class="form-label">Add work note</label><textarea data-field="workNote" class="form-input min-h-[96px]" placeholder="What did you do? Parts used, findings..."></textarea></div>
@@ -2039,18 +2200,29 @@ function screenContractorJobDetail() {
             <button type="button" data-contractor-upload="certificate" class="ctr-upload-btn mt-3"><i data-lucide="upload" class="w-4 h-4"></i> Upload certificate</button>
         </div>
         <div class="card p-4">
-            <p class="ctr-section-label">Invoice</p>
+            <p class="ctr-section-label">System invoice</p>
+            <p class="text-[12px] text-[#64748B] mb-3">Enter details — the app generates a professional PDF invoice. No file upload needed.</p>
             ${job.invoice ? `
-            <div class="flex items-center justify-between py-2">
-                <div><p class="text-[14px] font-bold">${job.invoice.amount}</p><p class="text-[13px] text-[#64748B]">${job.invoice.file} · ${job.invoice.uploadedAt}</p></div>
-                <i data-lucide="check-circle" class="w-6 h-6 text-[#059669]"></i>
+            <div class="card p-3 mb-3" style="background:#F8FAFC">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[14px] font-bold">${job.invoice.amount}</p>
+                        <p class="text-[13px] text-[#64748B]">${job.invoice.number || job.invoice.file} · ${job.invoice.uploadedAt}</p>
+                        <p class="text-[12px] text-[#64748B] mt-1">${job.invoice.description || job.issue}</p>
+                    </div>
+                    <span class="badge" style="background:#DCFCE7;color:#16A34A">${job.invoice.status || 'Generated'}</span>
+                </div>
+                <button type="button" data-action="preview-contractor-invoice" class="btn-secondary w-full py-2.5 text-[13px] mt-3">Download PDF preview</button>
             </div>` : `
-            ${formField('Invoice amount (£)', job.invoice?.amount?.replace('£', '') || '', 'number', '185', 'invoiceAmount')}
-            <button type="button" data-contractor-upload="invoice" class="ctr-upload-btn mt-2"><i data-lucide="upload" class="w-4 h-4"></i> Upload invoice</button>`}
+            ${formField('Amount (£)', '', 'number', '185', 'invoiceAmount')}
+            ${formField('Description', job.issue, 'text', 'Work completed', 'invoiceDesc')}
+            <div class="form-group"><label class="form-label">Notes (optional)</label>
+            <textarea data-field="invoiceNotes" class="form-input" rows="2" placeholder="Parts, labour breakdown…"></textarea></div>
+            <button type="button" data-action="generate-contractor-invoice" class="btn-primary w-full py-3 text-[13px] mt-2">Generate invoice</button>`}
         </div>
         ${['in_progress', 'scheduled', 'accepted'].includes(job.status) ? `
-        <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[13px] font-semibold">Mark Job Complete</button>
-        <p class="text-[12px] text-[#64748B] text-center mt-2">Upload invoice first, then submit for landlord approval</p>` : ''}`;
+        <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[13px] font-semibold">Submit for approval</button>
+        <p class="text-[12px] text-[#64748B] text-center mt-2">Photos optional · system invoice required</p>` : ''}`;
     const tabBody = { overview, work, invoice };
     return `${topBar(job.issue, { back: true, sub: locationSub })}
     <div class="screen-content screen-enter">
@@ -2182,6 +2354,9 @@ Object.assign(SCREEN_MAP, {
     'contractor-certifications': screenContractorCertifications,
     'contractor-public-profile': screenContractorPublicProfile,
     'contractor-cert-preview': screenContractorCertPreview,
+    'contractor-landlords': screenContractorLandlords,
+    'contractor-invite-landlord': screenContractorInviteLandlord,
+    'contractor-landlord-invite-sent': screenContractorLandlordInviteSent,
     'tenant-invite': screenTenantInvite,
     'tenant-activate': screenTenantActivate,
     'tenant-dashboard': screenTenantDashboard,
@@ -2206,6 +2381,7 @@ const CONTRACTOR_NO_NAV = [
     'contractor-job-detail', 'contractor-schedule', 'contractor-work', 'contractor-documents',
     'contractor-company', 'contractor-certifications', 'contractor-public-profile', 'contractor-cert-preview',
     'contractor-invite', 'contractor-sign-up', 'contractor-welcome',
+    'contractor-landlords', 'contractor-invite-landlord', 'contractor-landlord-invite-sent',
     'tenant-invite', 'tenant-activate', 'tenant-welcome', 'tenant-dashboard',
     'tenant-building-info', 'tenant-announcements', 'tenant-house-rules', 'tenant-edit-profile',
     'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
@@ -2228,6 +2404,13 @@ function bindContractorEvents() {
     app.querySelectorAll('[data-action="confirm-contractor-schedule"]').forEach(el => { el.onclick = confirmContractorSchedule; });
     app.querySelectorAll('[data-action="save-contractor-note"]').forEach(el => { el.onclick = saveContractorNote; });
     app.querySelectorAll('[data-action="mark-contractor-complete"]').forEach(el => { el.onclick = markContractorJobComplete; });
+    app.querySelectorAll('[data-action="request-milestone"]').forEach(el => {
+        el.onclick = () => {
+            if (typeof requestContractorMilestone === 'function') requestContractorMilestone();
+        };
+    });
+    app.querySelectorAll('[data-action="send-landlord-invite"]').forEach(el => { el.onclick = sendLandlordInvite; });
+    app.querySelectorAll('[data-action="copy-landlord-invite-link"]').forEach(el => { el.onclick = copyLandlordInviteLink; });
     app.querySelectorAll('[data-contractor-upload]').forEach(el => {
         el.onclick = () => uploadContractorFile(el.dataset.contractorUpload);
     });
@@ -2288,6 +2471,7 @@ function bindContractorEvents() {
     app.querySelectorAll('[data-action="view-contractor-profile"]').forEach(el => {
         el.onclick = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             STATE.contractorProfileReturn = STATE.screen;
             STATE.contractorViewId = +el.dataset.cid;
             go('contractor-public-profile');

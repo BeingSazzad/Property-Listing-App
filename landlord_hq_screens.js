@@ -327,16 +327,16 @@ const getActiveTenant = () => {
 const makeInviteToken = () => `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
 const MAINTENANCE_ITEMS = [
-    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'progress', propertyId: 0, photos: [IMG.maint[0], IMG.maint[2]], videos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }], desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
-    { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Main Flat', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, photos: [IMG.maint[1]], desc:'Bedroom window latch broken — window cannot be secured. Unit currently vacant.', reportedBy:'landlord' },
-    { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[2]], desc:'Damp patch appearing on bedroom wall near window frame. Getting worse after recent rain.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2d ago' },
-    { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, photos: [IMG.maint[2]], desc:'No hot water or heating. Boiler showing error code E119.', reportedBy:'tenant', tenantName:'David Wilson', reportedAt:'3d ago' },
-    { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, photos: [IMG.maint[1]], desc:'Living room radiator cold while others work. Possible air lock or valve issue.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'4d ago' },
-    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2A', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, photos: [IMG.maint[2]], desc:'Living room ceiling light flickering — resolved with new fitting.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'5d ago' },
-    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, photos: [IMG.maint[0]], desc:'Kitchen tap replaced. No further issues reported.', reportedBy:'landlord', scope:'unit' },
-    { id: 7, issue:'Hallway light out', prop:'12 Park Lane', unit:'Communal', scope:'communal', communalArea:'Hallway', time:'6h ago', priority:'Medium', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[1]], desc:'Main entrance hallway ceiling light not working. Affects all residents.', reportedBy:'landlord' },
-    { id: 8, issue:'Bathroom basin cracked', prop:'12 Park Lane', unit:'Flat 2A', time:'4h ago', priority:'High', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[0], IMG.maint[1]], videos: [{ name: 'basin-crack.mp4', poster: IMG.maint[1], demo: true }], desc:'Crack in the bathroom basin — water pooling on the vanity. Tenant says it worsened overnight.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'4h ago' },
-    { id: 9, issue:'Paint peeling in hallway', prop:'12 Park Lane', unit:'Flat 2A', time:'1d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, photos: [IMG.maint[2]], desc:'Paint peeling along the hallway wall near the front door. Tenant reports it started after recent damp.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'1d ago' },
+    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'progress', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[0], IMG.maint[2]], videos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }], desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
+    { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Main Flat', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, categoryId: 'general', photos: [IMG.maint[1]], desc:'Bedroom window latch broken — window cannot be secured. Unit currently vacant.', reportedBy:'landlord' },
+    { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[2]], desc:'Damp patch appearing on bedroom wall near window frame. Getting worse after recent rain.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2d ago' },
+    { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, categoryId: 'heating', photos: [IMG.maint[2]], desc:'No hot water or heating. Boiler showing error code E119.', reportedBy:'tenant', tenantName:'David Wilson', reportedAt:'3d ago' },
+    { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, categoryId: 'heating', photos: [IMG.maint[1]], desc:'Living room radiator cold while others work. Possible air lock or valve issue.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'4d ago' },
+    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2A', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, categoryId: 'electrical', photos: [IMG.maint[2]], desc:'Living room ceiling light flickering — resolved with new fitting.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'5d ago' },
+    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, categoryId: 'plumbing', photos: [IMG.maint[0]], desc:'Kitchen tap replaced. No further issues reported.', reportedBy:'landlord', scope:'unit' },
+    { id: 7, issue:'Hallway light out', prop:'12 Park Lane', unit:'Communal', scope:'communal', communalArea:'Hallway', time:'6h ago', priority:'Medium', contractor:'—', status:'open', propertyId: 0, categoryId: 'electrical', photos: [IMG.maint[1]], desc:'Main entrance hallway ceiling light not working. Affects all residents.', reportedBy:'landlord' },
+    { id: 8, issue:'Bathroom basin cracked', prop:'12 Park Lane', unit:'Flat 2A', time:'4h ago', priority:'High', contractor:'—', status:'open', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[0], IMG.maint[1]], videos: [{ name: 'basin-crack.mp4', poster: IMG.maint[1], demo: true }], desc:'Crack in the bathroom basin — water pooling on the vanity. Tenant says it worsened overnight.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'4h ago' },
+    { id: 9, issue:'Paint peeling in hallway', prop:'12 Park Lane', unit:'Flat 2A', time:'1d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, categoryId: 'painting', photos: [IMG.maint[2]], desc:'Paint peeling along the hallway wall near the front door. Tenant reports it started after recent damp.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'1d ago' },
 ];
 
 const COMMUNAL_AREAS = ['Hallway', 'Stairwell', 'Roof', 'Garden', 'Boiler room', 'Other'];
@@ -402,7 +402,7 @@ const FAQ_BY_ROLE = {
     tenant: [
         { id: 0, cat: 'Getting Started', q: 'How do I activate my tenant account?', a: 'Tenant accounts are invitation-only. Open the secure link from your landlord, set a password, and your portal will link to your property automatically.' },
         { id: 1, cat: 'Getting Started', q: 'What can I see on my dashboard?', a: 'Your home details, next rent due date, maintenance request status, and quick actions to report issues or message your landlord.' },
-        { id: 2, cat: 'Rent & Payments', q: 'How do I pay rent?', a: 'Your rent due date appears on your dashboard. Pay using the method agreed with your landlord (bank transfer, standing order, etc.). Payment status updates when your landlord records it.' },
+        { id: 2, cat: 'Rent & Payments', q: 'How do I pay rent?', a: 'Your rent due date appears on your dashboard. Tap Pay with Stripe to pay by card. Your landlord is notified when payment completes.' },
         { id: 3, cat: 'Rent & Payments', q: 'Who receives my rent payment?', a: 'Rent is paid directly to your landlord through their configured payment method. Landlord HQ tracks status but does not hold tenant funds.' },
         { id: 4, cat: 'Maintenance', q: 'How do I report a maintenance issue?', a: 'Tap Report Issue on your dashboard or Issues tab. Your property and unit are pre-filled — you report issues inside your flat only. Communal building problems (hallway, roof, garden) are logged by your landlord.' },
         { id: 5, cat: 'Maintenance', q: 'Who handles repairs in my home?', a: 'Your landlord manages repairs and may assign a contractor. You can track progress on your dashboard and message your landlord for updates.' },
@@ -415,7 +415,7 @@ const FAQ_BY_ROLE = {
         { id: 1, cat: 'Jobs', q: 'How do I accept and schedule a visit?', a: 'Open the job → Accept Job → Schedule Visit. Pick a date and time, then confirm. The landlord and tenant are notified of your visit.' },
         { id: 2, cat: 'Jobs', q: 'How do I upload photos and notes?', a: 'On the job detail screen, open Work & Photos. Add before, during, and after photos plus on-site notes so the landlord has a full record.' },
         { id: 3, cat: 'Jobs', q: 'How do I submit an invoice?', a: 'After completing work, go to the Invoice tab, enter the amount, upload your invoice PDF, and mark the job complete. The landlord reviews and pays from their Financial screen.' },
-        { id: 4, cat: 'Payments', q: 'When do I get paid?', a: 'After the landlord approves your invoice, payment is recorded in the app. Bank transfer timing depends on your agreement with the landlord.' },
+        { id: 4, cat: 'Payments', q: 'When do I get paid?', a: 'After the landlord approves your invoice, they pay via Stripe in the app. You will see payment status update on the job.' },
         { id: 5, cat: 'Messages', q: 'Can I message the tenant or landlord?', a: 'Yes. Each job links to the relevant chats. Use Message Tenant for access arrangements and Message Landlord for approvals or scope changes.' },
         { id: 6, cat: 'Jobs', q: 'What if the job is in a communal area?', a: 'Some jobs are in shared parts of the building (hallway, roof, boiler room) rather than a tenant flat. The job will show the property and communal area — contact the landlord for access.' },
         { id: 7, cat: 'Compliance', q: 'What certifications should I keep updated?', a: 'Keep Gas Safe, public liability insurance, and trade certifications current. Upload certificates on the job or in Company Information.' },
@@ -2421,10 +2421,11 @@ function conversationsForRole() {
             CONTRACTOR_JOBS.forEach(j => {
                 if (j.tenantChatId != null) chatIds.add(j.tenantChatId);
                 if (j.landlordChatId != null) chatIds.add(j.landlordChatId);
+                if (j.groupChatId != null) chatIds.add(j.groupChatId);
             });
         }
         if (typeof getLandlordChatId === 'function') chatIds.add(getLandlordChatId());
-        return CONVERSATIONS.filter(c => chatIds.has(c.id));
+        return CONVERSATIONS.filter(c => chatIds.has(c.id) || c.isGroup);
     }
     return CONVERSATIONS;
 }
@@ -2507,8 +2508,8 @@ const INVOICES = [
     { id: 1, num: 'INV-2026-1047', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Overdue', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
     { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
     { id: 5, num: 'INV-2026-1042', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent — group lease' },
-    { id: 3, num: 'INV-2026-1044', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Bank transfer' },
-    { id: 4, num: 'INV-2026-1043', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 3, 2026', paymentMethod: 'Standing order' },
+    { id: 3, num: 'INV-2026-1044', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Stripe' },
+    { id: 4, num: 'INV-2026-1043', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 3, 2026', paymentMethod: 'Stripe' },
 ];
 
 const invoiceStatusStyle = (status) => ({
@@ -2608,7 +2609,7 @@ const TRANSACTIONS = [
 
 const DRAWER_QUICK = [
     ['circle-check', 'Record Rent', 'mark-rent-received'],
-    ['wrench', 'Log Maintenance', 'log-maintenance'],
+    ['wrench', 'Maintenance', 'maintenance'],
     ['user-plus', 'Invite Tenant', 'select-property-invite'],
     ['building-2', 'Add Property', 'add-property'],
 ];
@@ -2971,7 +2972,7 @@ function screenDashboard() {
         <div class="dash-quick">
             ${[
                 ['house-plus', 'Add Property', 'add-property', 'primary'],
-                ['wrench', 'Log Issue', 'log-maintenance', 'warning'],
+                ['wrench', 'Maintenance', 'maintenance', 'warning'],
                 ['credit-card', 'Finances', 'financial', 'success'],
                 ['users', 'Tenants', 'tenants', 'indigo'],
             ].map(([ic, label, go, tone]) => `
@@ -3383,58 +3384,59 @@ const tenantOverview = (t, avatar) => {
     const typePill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
     const tenantMenuKey = `tenant:${listItem.id}`;
     const tenantMenuOpen = STATE.actionMenuKey === tenantMenuKey;
-    const locLabel = listItem.unit ? `${listItem.prop} · ${listItem.unit}` : listItem.prop;
+    const locLabel = listItem.unit ? `${listItem.unit}, ${listItem.prop}` : listItem.prop;
     const locNav = listItem.unit && listItem.propertyId != null
         ? `data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}"`
         : `data-go="property-detail" data-pid="${listItem.propertyId ?? 0}"`;
-    const statusLabel = listItem.status === 'active' ? 'Active' : listItem.status === 'pending' ? 'Pending invite' : 'Inactive';
+    const statusLabel = listItem.status === 'active' ? 'Active tenant' : listItem.status === 'pending' ? 'Pending invite' : 'Inactive';
     const statusClass = listItem.status === 'active' ? 'tenant-profile-status--active' : listItem.status === 'pending' ? 'tenant-profile-status--pending' : 'tenant-profile-status--inactive';
-    const rentLabel = typeof formatTenantRent === 'function' ? formatTenantRent(t.rent) : listItem.rent;
-    const leaseLabel = typeof formatLeaseMonthYear === 'function' ? formatLeaseMonthYear(t.leaseEnd) : listItem.leaseEnd;
+    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(STATE.tenantId) : {};
+    const leaseEndLabel = fin.leaseEnd && typeof formatDisplayDate === 'function'
+        ? formatDisplayDate(fin.leaseEnd) || fin.leaseEnd
+        : (t.leaseEnd || '—');
+    const leaseRemainder = typeof tenantLeaseRemainder === 'function' ? tenantLeaseRemainder(fin.leaseEnd || t.leaseEnd) : '';
     return `
-    <div class="tenant-profile-card card">
-        <div class="tenant-profile-toolbar">
+    <div class="tenant-detail-v2">
+        <div class="tenant-v2-topbar">
             <button type="button" data-action="back" class="tenant-profile-back" aria-label="Back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <div class="tenant-profile-menu-slot${tenantMenuOpen ? ' tenant-profile-menu-slot--open' : ''}">
-                ${typeof renderActionMenuButton === 'function' ? renderActionMenuButton(tenantMenuKey, 'Tenant options') : ''}
-                ${typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function' ? renderActionMenuPopover(tenantMenuKey, tenantActionMenuItems(listItem)) : ''}
-            </div>
-        </div>
-        <div class="tenant-profile-main">
-            <img src="${avatar}" class="tenant-profile-avatar" alt="">
-            <div class="tenant-profile-copy">
-                <h2 class="tenant-profile-name">${t.firstName} ${t.lastName}</h2>
-                <div class="tenant-profile-tags">
-                    <span class="tenant-profile-status ${statusClass}">${statusLabel}</span>
-                    ${typePill}
+            <h1 class="tenant-v2-title">Tenant details</h1>
+            <div class="tenant-v2-topbar-actions">
+                <button type="button" data-go="edit-tenant" class="tenant-v2-edit">Edit</button>
+                <div class="tenant-profile-menu-slot${tenantMenuOpen ? ' tenant-profile-menu-slot--open' : ''}">
+                    ${typeof renderActionMenuButton === 'function' ? renderActionMenuButton(tenantMenuKey, 'Tenant options') : ''}
+                    ${typeof renderActionMenuPopover === 'function' && typeof tenantActionMenuItems === 'function' ? renderActionMenuPopover(tenantMenuKey, tenantActionMenuItems(listItem)) : ''}
                 </div>
-                <button type="button" class="tenant-profile-location" ${locNav} aria-label="View ${locLabel}">
-                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-                    <span>${locLabel}</span>
-                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                </button>
             </div>
         </div>
-        <div class="tenant-profile-stats">
-            <div class="tenant-profile-stat">
-                <span class="tenant-profile-stat-label">Monthly rent</span>
-                <strong>${rentLabel}</strong>
+        <div class="tenant-v2-hero card">
+            <div class="tenant-v2-hero-main">
+                <div class="tenant-v2-avatar-wrap">
+                    <img src="${avatar}" class="tenant-v2-avatar" alt="">
+                    ${listItem.status === 'active' ? '<span class="tenant-v2-avatar-dot"></span>' : ''}
+                </div>
+                <div class="tenant-v2-hero-copy">
+                    <h2 class="tenant-v2-name">${t.firstName} ${t.lastName}</h2>
+                    <div class="tenant-v2-tags">
+                        <span class="tenant-profile-status ${statusClass}">${statusLabel}</span>
+                        ${typePill}
+                    </div>
+                    <button type="button" class="tenant-v2-location" ${locNav}>
+                        <i data-lucide="home" class="w-3.5 h-3.5"></i>
+                        <span>${locLabel}</span>
+                    </button>
+                    <p class="tenant-v2-lease">Lease ends: ${leaseEndLabel}${leaseRemainder ? ` ${leaseRemainder}` : ''}</p>
+                </div>
             </div>
-            <div class="tenant-profile-stat">
-                <span class="tenant-profile-stat-label">Lease ends</span>
-                <strong>${leaseLabel}</strong>
-            </div>
+            ${typeof renderTenantContactQuickActions === 'function' ? renderTenantContactQuickActions(STATE.tenantId) : ''}
         </div>
-        ${typeof renderTenantContactQuickActions === 'function' ? renderTenantContactQuickActions(STATE.tenantId) : ''}
-    </div>
-    ${typeof renderTenantOverviewSummary === 'function' ? renderTenantOverviewSummary(STATE.tenantId) : ''}
-    ${typeof renderTenantNotesPreview === 'function' ? renderTenantNotesPreview(STATE.tenantId) : ''}
-    <div class="tenant-menu-wrap">
-        ${TENANT_MENU.map(g => `
-        <div class="tenant-menu-group">
-            <p class="tenant-menu-group-label">${g.group}</p>
-            <div class="card tenant-menu-card">${g.items.map(([ic, lb, tab]) => tenantMenuItem(ic, lb, tab)).join('')}</div>
-        </div>`).join('')}
+        <div class="tenant-v2-body">
+            ${typeof renderTenantFinanceSplit === 'function' ? renderTenantFinanceSplit(STATE.tenantId) : ''}
+            ${typeof renderTenantMaintPreviewCard === 'function' ? renderTenantMaintPreviewCard(STATE.tenantId) : ''}
+            ${typeof renderTenantFactsList === 'function' ? renderTenantFactsList(STATE.tenantId) : ''}
+            ${typeof renderTenantDocStrip === 'function' ? renderTenantDocStrip(STATE.tenantId) : ''}
+            ${typeof renderTenantNotesPreview === 'function' ? renderTenantNotesPreview(STATE.tenantId) : ''}
+            ${typeof renderTenantProfileFooter === 'function' ? renderTenantProfileFooter(STATE.tenantId) : ''}
+        </div>
     </div>`;
 };
 
@@ -4242,6 +4244,10 @@ function screenInvoiceDetail() {
     if (paid) {
         detailRows.push(['Paid on', inv.paidOn || '—']);
         detailRows.push(['Payment method', inv.paymentMethod || '—']);
+        if (inv.paymentReference) detailRows.push(['Reference', inv.paymentReference]);
+        if (inv.paymentNotes) detailRows.push(['Notes', inv.paymentNotes]);
+        if (inv.receiptSent) detailRows.push(['Receipt', 'Sent to tenant']);
+        if (inv.status === 'Partial') detailRows.push(['Status note', 'Partial payment · balance tracking coming soon']);
     }
     const sc = paid ? '#22C55E' : inv.status === 'Overdue' ? '#EF4444' : '#D97706';
     const tenantItem = TENANT_LIST.find(t => t.id === inv.tenantId || (t.name === inv.tenant && inv.prop.includes(t.prop)));
@@ -4263,12 +4269,12 @@ function screenInvoiceDetail() {
         <button type="button" data-go="tenant-detail" data-tid="${tenantItem.id}" data-tab="payments" class="btn-secondary w-full py-3 text-[13px]">View tenant payment history</button>` : ''}
         ${isTenant ? `
         <div class="grid grid-cols-2 gap-4">
-            <button data-action="toast" data-msg="Receipt downloaded" class="btn-secondary py-3 text-[13px]">Download PDF</button>
-            ${!paid ? `<button type="button" data-action="tenant-pay" data-kind="${payKind}" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Pay now</button>` : `<button data-action="toast" data-msg="Receipt downloaded" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
+            <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-secondary py-3 text-[13px]">Download PDF</button>
+            ${!paid ? `<button type="button" data-action="tenant-pay" data-kind="${payKind}" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Pay with Stripe</button>` : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
         </div>` : `
         <div class="grid grid-cols-2 gap-4">
-            <button data-action="toast" data-msg="Receipt downloaded" class="btn-secondary py-3 text-[13px]">Download PDF</button>
-            ${!paid ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Record payment</button>` : `<button data-action="toast" data-msg="Receipt downloaded" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
+            <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-secondary py-3 text-[13px]">Download PDF</button>
+            ${!paid ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Record payment</button>` : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
         </div>
         ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}`}
     </div>`;
@@ -4640,6 +4646,7 @@ function screenLogMaintenance() {
     <div class="screen-content screen-enter">
         ${propertyField}
         <div class="form-group"><label class="form-label">Issue Title <span class="form-required">*</span></label><input data-field="title" class="form-input" value="${titlePrefill.replace(/"/g, '&quot;')}" placeholder="Brief summary of the issue"></div>
+        ${typeof renderMaintCategoryPicker === 'function' ? renderMaintCategoryPicker() : ''}
         <div><label class="form-label">Priority</label>
         <div class="flex gap-2">${['Low','Medium','High'].map(pr=>`
         <button data-log-priority="${pr}" class="tab-pill ${STATE.logPriority===pr?'active':''}">${pr}</button>`).join('')}</div></div>
@@ -4985,6 +4992,12 @@ function bindEvents() {
     });
     app.querySelectorAll('[data-log-priority]').forEach(el => {
         el.onclick = () => setLogPriority(el.dataset.logPriority);
+    });
+    app.querySelectorAll('[data-maint-cat]').forEach(el => {
+        el.onclick = () => {
+            STATE.logMaintCategoryId = el.dataset.maintCat;
+            render();
+        };
     });
     app.querySelectorAll('[data-toggle]').forEach(el => {
         el.onclick = () => toggleSwitch(el.dataset.toggle);

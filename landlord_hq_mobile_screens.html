@@ -1850,6 +1850,13 @@
         }
         .flat-dt-building-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .flat-dt-log-maint-btn { margin-bottom: 10px; }
+        .flat-dt-log-maint-row { margin-bottom: 10px; }
+        .flat-dt-log-maint-link {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 12px; font-weight: 700; color: #2563EB;
+            background: none; border: none; padding: 0; cursor: pointer;
+        }
+        .flat-dt-log-maint-link:active { color: #1D4ED8; }
         .flat-dt-empty { margin-top: 0; }
         .flat-detail-hero {
             position: relative; height: 176px; flex-shrink: 0; width: 100%;
@@ -3872,26 +3879,71 @@
         .prop-tenant-list { display: flex; flex-direction: column; gap: 8px; }
 
         /* Contractors directory */
+        .ctr-page-header { padding-bottom: 0; }
+        .ctr-title-block { padding: 0 var(--gutter) 12px; }
+        .ctr-page { padding-top: 4px; }
+        .ctr-invite-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 13px 16px; margin-bottom: 12px;
+            border: none; border-radius: 12px; background: #2563EB; color: #fff;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, .28);
+        }
+        .ctr-invite-btn:active { background: #1D4ED8; }
+        .ctr-pending-strip {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 12px; margin-bottom: 12px; border-radius: 10px;
+            border: 1px solid #FDE68A; background: #FFFBEB; color: #B45309;
+            font-size: 12px; font-weight: 600;
+        }
+        .ctr-search { margin-bottom: 8px; }
+        .ctr-list-hint { font-size: 12px; color: #94A3B8; margin: 0 0 10px 2px; }
+        .ctr-list { display: flex; flex-direction: column; gap: 10px; }
+        .ctr-card { padding: 0; overflow: hidden; }
+        .ctr-card-main {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 14px 12px; border: none; background: transparent;
+            cursor: pointer; width: 100%; text-align: left;
+        }
+        .ctr-card-main:active { background: #F8FAFC; }
+        .ctr-card-avatar {
+            width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+        }
+        .ctr-card-body { display: flex; flex-direction: column; min-width: 0; }
+        .ctr-card-name-row { display: flex; align-items: center; gap: 8px; }
+        .ctr-card-name { font-size: 15px; font-weight: 700; color: #0F172A; line-height: 1.2; }
+        .ctr-card-unread {
+            min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+            background: #2563EB; color: #fff; font-size: 10px; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .ctr-card-trade-row { margin-top: 5px; }
+        .ctr-card-jobs {
+            display: block; font-size: 12px; color: #64748B; margin-top: 5px; line-height: 1.35;
+        }
+        .ctr-card-meta {
+            display: block; font-size: 11px; color: #94A3B8; margin-top: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .ctr-card-actions {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+            padding: 0 12px 12px; border-top: 1px solid #F1F5F9;
+        }
+        .ctr-card-actions:has(:nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
+        .ctr-card-action {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            padding: 10px 4px; border: 1px solid #E2E8F0; border-radius: 10px;
+            background: #fff; color: #2563EB; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .ctr-card-action:active { background: #F8FAFC; }
+        .ctr-empty {
+            padding: 40px 20px; text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .ctr-empty-title { font-size: 14px; font-weight: 700; color: #0F172A; margin: 12px 0 0; }
+        .ctr-empty-sub { font-size: 12px; color: #64748B; margin: 0; }
+
         .contractors-list-hint { margin: 0 0 4px; }
-        .contractors-list { margin-top: 4px; }
-        .contractor-card { padding: 0; overflow: hidden; }
-        .contractor-card-main {
-            display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-            border: none; background: transparent; cursor: pointer; width: 100%; text-align: left;
-        }
-        .contractor-card-main:active { background: #F8FAFC; }
-        .contractor-card-avatar {
-            width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
-        }
-        .contractor-card-name { font-size: 14px; font-weight: 600; color: #0F172A; margin: 0; }
-        .contractor-card-trade { font-size: 12px; color: #64748B; margin: 2px 0 0; }
-        .contractor-card-meta {
-            font-size: 11px; color: #94A3B8; margin: 4px 0 0;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
-        .contractor-card-actions {
-            display: flex; gap: 8px; padding: 0 12px 12px;
-        }
         .contractor-row {
             display: flex; align-items: center; gap: 12px;
             padding: 14px 16px; border: none; cursor: pointer;
@@ -3945,8 +3997,180 @@
 
         /* Tenant profile */
         .tenant-detail-page {
-            padding: 12px 0 calc(var(--safe-bottom) + 12px);
+            padding: 0 0 calc(var(--safe-bottom) + 12px);
         }
+        .tenant-detail-v2 { min-height: 100%; background: #F8FAFC; }
+        .tenant-v2-topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px var(--gutter) 8px; gap: 8px;
+        }
+        .tenant-v2-title {
+            flex: 1; text-align: center; font-size: 15px; font-weight: 700;
+            color: #0F172A; margin: 0; letter-spacing: -0.01em;
+        }
+        .tenant-v2-topbar-actions {
+            display: flex; align-items: center; gap: 4px; min-width: 72px; justify-content: flex-end;
+        }
+        .tenant-v2-edit {
+            border: none; background: transparent; color: #16A34A;
+            font-size: 13px; font-weight: 700; padding: 6px 4px; cursor: pointer;
+        }
+        .tenant-v2-hero {
+            margin: 0 var(--gutter) 12px; padding: 14px; overflow: visible;
+        }
+        .tenant-v2-hero-main {
+            display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;
+        }
+        .tenant-v2-avatar-wrap { position: relative; flex-shrink: 0; }
+        .tenant-v2-avatar {
+            width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+            border: 2px solid #F1F5F9;
+        }
+        .tenant-v2-avatar-dot {
+            position: absolute; right: 2px; bottom: 2px; width: 12px; height: 12px;
+            border-radius: 50%; background: #16A34A; border: 2px solid #fff;
+        }
+        .tenant-v2-hero-copy { flex: 1; min-width: 0; }
+        .tenant-v2-name {
+            font-size: 18px; font-weight: 800; color: #0F172A; margin: 0 0 6px;
+            letter-spacing: -0.02em; line-height: 1.2;
+        }
+        .tenant-v2-tags {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px;
+        }
+        .tenant-v2-location {
+            display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+            padding: 0; border: none; background: transparent; cursor: pointer;
+            font-size: 12px; font-weight: 600; color: #64748B;
+        }
+        .tenant-v2-location span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tenant-v2-location:active { color: #2563EB; }
+        .tenant-v2-lease { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
+        .tenant-v2-quick-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+            padding-top: 12px; border-top: 1px solid #F1F5F9;
+        }
+        .tenant-v2-quick-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            border: 1px solid #E2E8F0; border-radius: 12px; background: #fff;
+            padding: 10px 4px; cursor: pointer; font-size: 10px; font-weight: 600; color: #475569;
+        }
+        .tenant-v2-quick-btn:active { background: #F8FAFC; }
+        .tenant-v2-quick-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tenant-v2-quick-icon--call { background: #ECFDF5; color: #16A34A; }
+        .tenant-v2-quick-icon--msg { background: #EFF6FF; color: #2563EB; }
+        .tenant-v2-quick-icon--email { background: #F5F3FF; color: #7C3AED; }
+        .tenant-v2-quick-icon--lease { background: #FEF3C7; color: #D97706; }
+        .tenant-v2-body {
+            padding: 0 var(--gutter) 20px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .tenant-v2-finance {
+            display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; padding: 14px;
+        }
+        .tenant-v2-finance-col { min-width: 0; }
+        .tenant-v2-finance-divider { width: 1px; background: #F1F5F9; margin: 0 10px; }
+        .tenant-v2-finance-label {
+            font-size: 10px; font-weight: 600; color: #94A3B8;
+            text-transform: uppercase; letter-spacing: .03em; margin: 0 0 4px;
+        }
+        .tenant-v2-finance-amount {
+            font-size: 20px; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -0.02em;
+        }
+        .tenant-v2-finance-amount--ok { color: #16A34A; }
+        .tenant-v2-finance-amount--due { color: #DC2626; }
+        .tenant-v2-finance-hint {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 10px; color: #64748B; margin: 6px 0 0;
+        }
+        .tenant-v2-section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 8px; gap: 8px;
+        }
+        .tenant-v2-section-head h3 {
+            font-size: 14px; font-weight: 700; color: #0F172A; margin: 0;
+        }
+        .tenant-v2-link {
+            border: none; background: transparent; color: #2563EB;
+            font-size: 12px; font-weight: 700; cursor: pointer; padding: 0;
+        }
+        .tenant-v2-maint-card { padding: 0; overflow: hidden; }
+        .tenant-v2-maint-row {
+            display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+            border: none; background: transparent; cursor: pointer;
+        }
+        .tenant-v2-maint-row:active { background: #F8FAFC; }
+        .tenant-v2-maint-thumb {
+            width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0;
+        }
+        .tenant-v2-maint-badge {
+            display: inline-flex; font-size: 9px; font-weight: 700;
+            padding: 2px 7px; border-radius: 999px; margin-bottom: 4px;
+        }
+        .tenant-v2-maint-title {
+            font-size: 13px; font-weight: 700; color: #0F172A; margin: 0;
+        }
+        .tenant-v2-maint-meta { font-size: 11px; color: #94A3B8; margin: 2px 0 0; }
+        .tenant-v2-maint-empty {
+            padding: 20px; text-align: center; color: #94A3B8; font-size: 12px;
+        }
+        .tenant-v2-maint-empty p { margin: 8px 0 0; }
+        .tenant-v2-facts { padding: 4px 0; overflow: hidden; }
+        .tenant-v2-fact-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 14px; border-bottom: 1px solid #F1F5F9;
+        }
+        .tenant-v2-fact-row:last-child { border-bottom: none; }
+        .tenant-v2-fact-icon {
+            width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tenant-v2-fact-icon--green { background: #ECFDF5; color: #16A34A; }
+        .tenant-v2-fact-icon--blue { background: #EFF6FF; color: #2563EB; }
+        .tenant-v2-fact-icon--purple { background: #F5F3FF; color: #7C3AED; }
+        .tenant-v2-fact-label {
+            flex: 1; font-size: 12px; font-weight: 600; color: #64748B;
+        }
+        .tenant-v2-fact-value {
+            font-size: 12px; font-weight: 700; color: #0F172A; text-align: right;
+        }
+        .tenant-v2-fact-badge {
+            font-size: 10px; font-weight: 700; color: #16A34A;
+            background: #DCFCE7; padding: 3px 8px; border-radius: 999px;
+        }
+        .tenant-v2-doc-strip {
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+        }
+        .tenant-v2-doc-chip {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            border: none; background: transparent; cursor: pointer; padding: 0; min-width: 0;
+        }
+        .tenant-v2-doc-icon {
+            width: 100%; aspect-ratio: 3/4; max-height: 88px; border-radius: 10px;
+            border: 1px solid #E2E8F0; background: #F8FAFC;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tenant-v2-doc-chip--add .tenant-v2-doc-add {
+            width: 100%; aspect-ratio: 3/4; max-height: 88px; border-radius: 10px;
+            border: 2px dashed #CBD5E1; background: #F8FAFC; color: #94A3B8;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tenant-v2-doc-name {
+            font-size: 10px; font-weight: 600; color: #0F172A; text-align: center;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;
+        }
+        .tenant-v2-doc-type { font-size: 9px; color: #94A3B8; }
+        .tenant-v2-footer { padding-top: 4px; display: flex; flex-direction: column; gap: 10px; }
+        .tenant-v2-msg-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .tenant-v2-remove-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            border: none; background: transparent; color: #DC2626;
+            font-size: 12px; font-weight: 700; padding: 8px; cursor: pointer;
+        }
+        .tenant-notes-preview { margin: 0; }
         .tenant-profile-card {
             margin: 0 var(--gutter) 12px;
             padding: 12px 14px 14px;
@@ -5802,6 +6026,153 @@
         .contractor-card-jobs-for { font-size: 11px; color: #64748B; margin: 4px 0 0; line-height: 1.35; }
         .maint-contractor-jobs-for { font-size: 11px; color: #64748B; margin-top: 4px; line-height: 1.35; }
         .maint-contractor-pick .maint-contractor-jobs-for { font-size: 12px; color: #475569; margin-top: 6px; line-height: 1.4; }
+
+        .maint-paid-by-line { font-size: 12px; font-weight: 600; color: #4338CA; margin: 6px 0 0; }
+        .assign-contractor-page { padding-bottom: 24px; }
+        .assign-issue-card { margin-bottom: 12px; }
+        .assign-issue-title { font-size: 15px; font-weight: 700; color: #0F172A; margin: 0; }
+        .assign-issue-meta { font-size: 12px; color: #64748B; margin: 4px 0 0; }
+        .assign-issue-current { font-size: 12px; color: #D97706; margin: 8px 0 0; }
+        .assign-search-bar { margin: 12px 0 16px; }
+        .assign-contractor-list { display: flex; flex-direction: column; gap: 10px; }
+        .assign-contractor-card {
+            display: flex; align-items: center; gap: 12px; width: 100%;
+            padding: 14px; border: 1px solid #E2E8F0; border-radius: 14px;
+            background: #fff; text-align: left; cursor: pointer;
+        }
+        .assign-contractor-card--suggested { border-color: #BFDBFE; background: #F8FAFF; }
+        .assign-contractor-card:active { background: #F8FAFC; }
+        .assign-contractor-avatar { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+        .assign-contractor-body { flex: 1; min-width: 0; }
+        .assign-contractor-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .assign-contractor-name { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; }
+        .assign-contractor-jobs { font-size: 12px; color: #475569; margin: 6px 0 0; line-height: 1.4; }
+        .assign-contractor-meta { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
+        .assign-contractor-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+        .assign-contractor-assign { font-size: 12px; font-weight: 700; color: #2563EB; }
+        .assign-contractor-assign-btn {
+            font-size: 12px; font-weight: 700; color: #fff; background: #2563EB;
+            border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer;
+        }
+        .assign-contractor-assign-btn:active { background: #1D4ED8; }
+        .maint-detail-v2-page {
+            padding: 12px var(--gutter) 24px; background: #F8FAFC;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .maint-detail-v2-page--footer { padding-bottom: calc(var(--safe-bottom) + 88px); }
+        .maint-v2-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+        .maint-v2-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+        }
+        .maint-v2-badge--priority { background: #FEE2E2; color: #DC2626; }
+        .maint-v2-property-card {
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+        }
+        .maint-v2-property-img {
+            width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0;
+        }
+        .maint-v2-property-addr, .maint-v2-property-tenant, .maint-v2-property-phone {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 12px; font-weight: 600; color: #0F172A; margin: 0 0 3px;
+        }
+        .maint-v2-property-tenant, .maint-v2-property-phone { color: #64748B; font-weight: 500; }
+        .maint-v2-property-msg {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            border: none; background: #F8FAFC; border-radius: 12px; padding: 8px 10px;
+            color: #2563EB; font-size: 9px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+        }
+        .maint-v2-issue-card { padding: 14px; }
+        .maint-v2-cat-badge {
+            display: inline-flex; font-size: 10px; font-weight: 700;
+            padding: 3px 8px; border-radius: 999px; margin-bottom: 10px;
+        }
+        .maint-v2-issue-main { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+        .maint-v2-issue-icon {
+            width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .maint-v2-issue-title { font-size: 17px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.25; }
+        .maint-v2-issue-meta { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
+        .maint-v2-issue-desc { font-size: 13px; color: #475569; line-height: 1.5; margin: 0; }
+        .maint-v2-paid-line { font-size: 11px; color: #64748B; margin: 10px 0 0; }
+        .maint-v2-media { margin-top: 12px; padding-top: 12px; border-top: 1px solid #F1F5F9; }
+        .maint-v2-media-head {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 12px; font-weight: 700; color: #0F172A; margin-bottom: 8px;
+        }
+        .maint-v2-media-hint { font-size: 10px; color: #94A3B8; font-weight: 600; }
+        .maint-v2-media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .maint-v2-media-thumb {
+            border: none; padding: 0; border-radius: 10px; overflow: hidden;
+            aspect-ratio: 1; background: #E2E8F0; cursor: pointer; position: relative;
+        }
+        .maint-v2-media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .maint-v2-media-thumb--video { background: #0F172A; }
+        .maint-v2-media-play {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            color: #fff; background: rgba(15,23,42,.35);
+        }
+        .maint-v2-progress { padding: 14px; }
+        .maint-v2-section-title { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0 0 12px; }
+        .maint-v2-stepper { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .maint-v2-step { text-align: center; min-width: 0; }
+        .maint-v2-step-dot {
+            width: 22px; height: 22px; border-radius: 50%; border: 2px solid #CBD5E1;
+            margin: 0 auto 6px; display: flex; align-items: center; justify-content: center;
+            background: #fff; color: #16A34A;
+        }
+        .maint-v2-step--done .maint-v2-step-dot { border-color: #16A34A; background: #DCFCE7; }
+        .maint-v2-step--current .maint-v2-step-dot { border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+        .maint-v2-step-label { font-size: 9px; font-weight: 700; color: #64748B; margin: 0; line-height: 1.2; }
+        .maint-v2-step--done .maint-v2-step-label, .maint-v2-step--current .maint-v2-step-label { color: #0F172A; }
+        .maint-v2-step-detail { font-size: 8px; color: #94A3B8; margin: 2px 0 0; }
+        .maint-v2-section-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px;
+        }
+        .maint-v2-section-head h3 { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; }
+        .maint-v2-section-sub { font-size: 11px; color: #94A3B8; margin: 2px 0 0; }
+        .maint-v2-link {
+            border: none; background: transparent; color: #2563EB;
+            font-size: 12px; font-weight: 700; cursor: pointer; padding: 0; white-space: nowrap;
+        }
+        .maint-v2-link--green { color: #16A34A; }
+        .maint-v2-contractor-list { display: flex; flex-direction: column; gap: 8px; }
+        .maint-v2-contractor-row {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+        }
+        .maint-v2-contractor-avatar-wrap { position: relative; flex-shrink: 0; }
+        .maint-v2-contractor-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+        .maint-v2-contractor-online {
+            position: absolute; right: 0; bottom: 0; width: 10px; height: 10px;
+            border-radius: 50%; background: #16A34A; border: 2px solid #fff;
+        }
+        .maint-v2-contractor-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .maint-v2-contractor-name { font-size: 13px; font-weight: 700; color: #0F172A; margin: 0; }
+        .maint-v2-contractor-rating {
+            display: inline-flex; align-items: center; gap: 2px;
+            font-size: 10px; font-weight: 700; color: #2563EB;
+            background: #EFF6FF; padding: 2px 6px; border-radius: 999px;
+        }
+        .maint-v2-contractor-trade { font-size: 11px; color: #64748B; margin: 2px 0 0; }
+        .maint-v2-contractor-response { font-size: 10px; color: #94A3B8; margin: 2px 0 0; }
+        .maint-v2-assign-btn {
+            border: none; background: #ECFDF5; color: #16A34A;
+            font-size: 11px; font-weight: 700; padding: 8px 12px; border-radius: 8px; cursor: pointer; flex-shrink: 0;
+        }
+        .maint-v2-footer {
+            position: fixed; left: 50%; transform: translateX(-50%);
+            bottom: calc(var(--safe-bottom) + 12px);
+            width: calc(var(--canvas) - 32px); max-width: 390px; z-index: 20;
+        }
+        .maint-v2-footer-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .maint-cat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .maint-cat-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            border: 1px solid #E2E8F0; background: #fff; color: #64748B;
+            font-size: 11px; font-weight: 600; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+        }
+        .maint-cat-chip.active { border-color: #2563EB; background: #EFF6FF; color: #2563EB; }
         .maint-assign-trade-tip { background: #F0FDF4; border-color: #BBF7D0; }
         .maint-contractor-profile-btn {
             font-size: 11px; font-weight: 700; color: #2563EB; background: #EFF6FF;
@@ -5862,6 +6233,51 @@
         }
         .ctr-public-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .ctr-public-cert-count { font-size: 11px; font-weight: 700; color: #64748B; }
+        /* Contractor profile v2 */
+        .ctr-profile-page { display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+        .ctr-profile-hero { display: flex; gap: 14px; align-items: flex-start; padding: 16px; }
+        .ctr-profile-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .ctr-profile-name { font-size: 18px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2; }
+        .ctr-profile-person { font-size: 13px; color: #64748B; margin: 4px 0 0; }
+        .ctr-profile-trade-row { margin-top: 6px; }
+        .ctr-profile-jobs { font-size: 12px; color: #64748B; margin: 8px 0 0; line-height: 1.4; }
+        .ctr-profile-meta { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
+        .ctr-profile-actions {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+        }
+        .ctr-profile-actions:has(:only-child) { grid-template-columns: 1fr; }
+        .ctr-profile-actions:has(:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
+        .ctr-profile-section { padding: 14px 16px; }
+        .ctr-profile-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+        .ctr-profile-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .ctr-profile-badge {
+            font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+        }
+        .ctr-profile-badge--green { background: #ECFDF5; color: #059669; }
+        .ctr-profile-badge--blue { background: #EFF6FF; color: #2563EB; }
+        .ctr-profile-reg {
+            display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; margin: 6px 0 0;
+        }
+        .ctr-profile-tenant-note { font-size: 12px; color: #64748B; text-align: center; margin: 4px 0 0; line-height: 1.45; }
+        /* Tenant maintenance detail v2 */
+        .maint-v2-property-card--tenant .maint-v2-property-msg { display: none; }
+        .maint-v2-awaiting {
+            display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
+            background: #FFFBEB; border-color: #FDE68A;
+        }
+        .maint-v2-awaiting-icon {
+            width: 40px; height: 40px; border-radius: 12px; background: #FEF3C7; color: #D97706;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .maint-v2-awaiting-title { font-size: 14px; font-weight: 700; color: #92400E; margin: 0; }
+        .maint-v2-awaiting-sub { font-size: 12px; color: #B45309; margin: 4px 0 0; line-height: 1.4; }
+        .maint-v2-tenant-contractor { padding: 14px 16px; }
+        .maint-v2-tenant-contractor-main { display: flex; gap: 12px; align-items: center; margin: 10px 0 12px; }
+        .maint-v2-tenant-contractor-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .maint-v2-tenant-contractor-name { font-size: 15px; font-weight: 700; color: #0F172A; margin: 0 0 4px; }
+        .maint-v2-tenant-contractor-meta { font-size: 12px; color: #64748B; margin: 6px 0 0; }
+        .maint-v2-tenant-contractor-actions { padding: 0; border-top: none; }
+        .maint-v2-tenant-contractor-note { font-size: 11px; color: #94A3B8; text-align: center; margin: 10px 0 0; line-height: 1.4; }
         .ctr-cert-preview-hero { text-align: center; margin-bottom: 12px; }
         .ctr-cert-preview-icon {
             width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto;
@@ -6057,13 +6473,89 @@
         .tnt-attention-sub { font-size: 11px; color: #64748B; margin: 2px 0 0; }
         .tnt-attention-cta { font-size: 11px; font-weight: 700; color: #2563EB; flex-shrink: 0; }
         .tnt-caught-up { background: #F8FAFC; }
+
+        /* Product UX layer */
+        .doc-folder-toolbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .doc-folder-search { margin-bottom: 0; }
+        .doc-folder-sort { font-size: 13px; padding: 10px 12px; }
+        .doc-folder-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: none; background: transparent; }
+        .doc-folder-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .doc-folder-name { display: block; font-size: 14px; font-weight: 600; color: #0F172A; }
+        .doc-folder-sub { display: block; font-size: 12px; color: #64748B; margin-top: 2px; }
+        .doc-folder-body { padding: 0 16px 14px; border-top: 1px solid #F1F5F9; }
+        .doc-year-label { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: .04em; margin: 12px 0 6px; }
+        .doc-folder-add { width: 100%; margin-top: 8px; padding: 10px; font-size: 12px; font-weight: 600; color: #2563EB; background: #EFF6FF; border: 1px dashed #BFDBFE; border-radius: 10px; }
+        .doc-folder-empty { font-size: 12px; color: #94A3B8; padding: 8px 0; }
+        /* Records tab — clutter-free */
+        .prop-records-page { padding-top: 4px; }
+        .records-quick-links {
+            display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .records-quick-links::-webkit-scrollbar { display: none; }
+        .records-quick-link {
+            display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+            padding: 8px 12px; border-radius: 999px; border: 1px solid #E2E8F0;
+            background: #fff; font-size: 12px; font-weight: 600; color: #475569;
+        }
+        .records-quick-link:active { background: #F8FAFC; }
+        .records-doc-toolbar {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        }
+        .records-doc-search { flex: 1; margin-bottom: 0; min-width: 0; }
+        .records-add-btn {
+            flex-shrink: 0; padding: 10px 14px; border-radius: 10px;
+            font-size: 13px; font-weight: 700; color: #2563EB;
+            background: #EFF6FF; border: none;
+        }
+        .records-add-btn:active { background: #DBEAFE; }
+        .doc-folder--compact .doc-folder-head { padding: 12px 14px; }
+        .doc-folder--compact .doc-folder-icon { width: 36px; height: 36px; border-radius: 10px; }
+        .doc-folder--compact .doc-folder-body { padding: 0 10px 10px; }
+        .doc-row-compact {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 4px; border: none; background: transparent; width: 100%;
+        }
+        .doc-row-compact:active { background: #F8FAFC; border-radius: 10px; }
+        .doc-row-compact-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .doc-row-compact-name {
+            display: block; font-size: 13px; font-weight: 600; color: #0F172A;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .doc-row-compact-name--upload { color: #2563EB; }
+        .doc-row-compact-sub {
+            display: block; font-size: 11px; color: #94A3B8; margin-top: 1px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .doc-folder--compact .doc-year-label { margin: 8px 4px 4px; font-size: 10px; }
+        .charge-type-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+        .charge-type-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 12px; border: 1.5px solid #E2E8F0; background: #fff; font-size: 12px; font-weight: 600; color: #475569; }
+        .charge-type-card.active { border-color: #2563EB; background: #EFF6FF; color: #2563EB; }
+        .charge-target-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; margin-bottom: 8px; cursor: pointer; }
+        .charge-target-row--active { border-color: #2563EB; background: #F8FAFF; }
+        .charge-target-label { display: block; font-size: 14px; font-weight: 600; color: #0F172A; }
+        .charge-target-hint { display: block; font-size: 12px; color: #64748B; margin-top: 2px; }
+        .pay-future-strip { padding: 14px 16px; margin-bottom: 12px; }
+        .pay-future-title { font-size: 12px; font-weight: 700; color: #64748B; margin-bottom: 8px; }
+        .pay-future-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pay-future-chip { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #F1F5F9; color: #475569; }
+        .pay-future-chip--soon { background: #FEF3C7; color: #B45309; }
+        .pay-mode-tag { font-size: 10px; color: #94A3B8; margin-left: 4px; }
+        .ctr-context-card { background: #F8FAFC; border-color: #E2E8F0; }
+        .ctr-job-source { font-size: 11px; color: #94A3B8; margin-top: 4px; }
+        .notif-cat-segments { overflow-x: auto; flex-wrap: nowrap; }
+        .notif-cat-segments .fin-segment { flex-shrink: 0; }
     </style>
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=63"></script>
-    <script src="landlord_hq_contractor.js?v=61"></script>
-    <script src="landlord_hq_features.js?v=61"></script>
+    <script src="landlord_hq_screens.js?v=74"></script>
+    <script src="landlord_hq_contractor.js?v=74"></script>
+    <script src="landlord_hq_features.js?v=74"></script>
+    <script src="landlord_hq_product.js?v=74"></script>
     <script>
     (function () {
         function showBootError(msg) {
