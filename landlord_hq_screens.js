@@ -3048,7 +3048,7 @@ function screenDashboard() {
         <div class="dash-quick">
             ${[
                 ['circle-check', 'Record rent', 'mark-rent-received', 'success'],
-                ['megaphone', 'Send notice', 'broadcast-notices', 'indigo'],
+                ['megaphone', 'Send announcement', 'broadcast-notices', 'indigo'],
                 ['wrench', 'Maintenance', 'maintenance', 'warning'],
                 ['wallet', 'Finance', 'financial', 'primary'],
             ].map(([ic, label, go, tone]) => `
