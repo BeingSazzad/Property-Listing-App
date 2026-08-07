@@ -1964,17 +1964,28 @@
         }
         .flat-dt-quicklinks { padding: 14px 16px; }
         .flat-dt-quicklinks-grid {
-            margin-top: 10px;
-            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+            margin-top: 12px;
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
         }
         .flat-dt-quicklink-tile {
-            display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
-            padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9;
-            background: #FAFBFC; cursor: pointer; text-align: left; min-width: 0;
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 14px; border: 1px solid #E2E8F0;
+            background: #fff; cursor: pointer; text-align: left; min-width: 0;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+            transition: all 0.15s ease;
         }
-        .flat-dt-quicklink-tile:active { background: #F1F5F9; }
-        .flat-dt-quicklink-tile .flat-dt-grid-icon { width: 32px; height: 32px; border-radius: 10px; }
-        .flat-dt-quicklink-tile .flat-dt-quicklink-title { font-size: 12px; line-height: 1.25; }
+        .flat-dt-quicklink-tile:active { background: #F8FAFC; transform: scale(0.98); }
+        .flat-dt-quicklink-tile .flat-dt-grid-icon {
+            width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .flat-dt-quicklink-tile .flat-dt-quicklink-title {
+            font-size: 13px; font-weight: 700; color: #0F172A; line-height: 1.2;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .flat-dt-quicklink-tile:last-child:nth-child(odd) {
+            grid-column: span 2;
+        }
         .flat-dt-quicklinks-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
         .flat-dt-quicklink {
             display: flex; align-items: center; gap: 10px;
