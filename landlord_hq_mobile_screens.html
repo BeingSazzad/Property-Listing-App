@@ -222,6 +222,24 @@
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 14px;
         }
+        .dash-header-top--brand { margin-bottom: 4px; }
+        .dash-brand {
+            display: flex; align-items: center; gap: 8px;
+            flex: 1; min-width: 0; justify-content: center;
+            padding: 0 8px;
+        }
+        .dash-brand-logo {
+            width: 34px; height: 34px; object-fit: contain; flex-shrink: 0;
+        }
+        .dash-brand-text { min-width: 0; text-align: left; }
+        .dash-brand-name {
+            font-size: 15px; font-weight: 800; color: var(--color-text);
+            letter-spacing: -0.02em; line-height: 1.15; margin: 0;
+        }
+        .dash-brand-tag {
+            font-size: 10px; font-weight: 600; color: var(--color-text-secondary);
+            margin: 1px 0 0; line-height: 1.2;
+        }
         .dash-greeting-row {
             display: flex; align-items: center; gap: var(--stack-gap-sm);
         }
@@ -315,7 +333,8 @@
             font-size: var(--text-caption); color: #B91C1C; margin: 2px 0 0; line-height: 1.35;
         }
         .dash-alert-chevron { color: var(--color-danger); flex-shrink: 0; }
-        .dash-attention { margin-top: 14px; }
+        .dash-attention { margin-top: 18px; }
+        .dash-attention-heading { margin: 0 0 10px 2px; }
         .dash-attention-label {
             font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase;
             letter-spacing: .04em; margin: 0 0 8px 4px;
@@ -409,6 +428,56 @@
             padding: 14px 8px 12px;
         }
         .dash-quick--grid .dash-quick-btn::after { display: none; }
+        .dash-quick--three {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .dash-fin-card {
+            margin-top: 14px;
+            padding: 16px;
+            border: none;
+            cursor: pointer;
+            display: block;
+        }
+        .dash-fin-card:active { background: #F8FAFC; }
+        .dash-fin-title {
+            font-size: 15px; font-weight: 700; color: #0F172A;
+            margin: 0 0 14px; letter-spacing: -0.01em;
+        }
+        .dash-fin-body {
+            display: flex; align-items: center; gap: 18px;
+        }
+        .dash-fin-ring-wrap {
+            position: relative; width: 108px; height: 108px; flex-shrink: 0;
+        }
+        .dash-fin-ring-svg { width: 100%; height: 100%; display: block; }
+        .dash-fin-ring-label {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; pointer-events: none;
+        }
+        .dash-fin-ring-label strong {
+            font-size: 18px; font-weight: 800; color: #0F172A; line-height: 1.1;
+        }
+        .dash-fin-ring-label span {
+            font-size: 10px; font-weight: 600; color: #64748B; margin-top: 2px;
+        }
+        .dash-fin-lines { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+        .dash-fin-line { display: flex; align-items: center; gap: 8px; }
+        .dash-fin-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .dash-fin-dot--paid { background: #10B981; }
+        .dash-fin-dot--pending { background: #F59E0B; }
+        .dash-fin-dot--overdue { background: #EF4444; }
+        .dash-fin-line-label {
+            font-size: 13px; font-weight: 600; color: #334155; flex: 1;
+        }
+        .dash-fin-line-val {
+            font-size: 13px; font-weight: 700; color: #0F172A;
+        }
+        .dash-reminder-section { margin-top: 18px; }
         .dash-section-sub {
             font-size: var(--text-label); color: var(--color-text-muted); margin: 3px 0 0; font-weight: var(--font-medium);
         }
@@ -664,34 +733,39 @@
             border-bottom: 1px solid #E2E8F0;
         }
         .prop-section-nav-tabs {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            display: flex;
+            align-items: stretch;
             width: 100%;
         }
         .prop-section-tab-item {
+            flex: 1;
+            min-width: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-            gap: 5px; min-height: 60px; padding: 8px 4px 10px;
+            gap: 6px; min-height: 64px; padding: 10px 6px 0;
             border: none; background: transparent;
             cursor: pointer; position: relative;
             -webkit-tap-highlight-color: transparent;
         }
         .prop-section-tab-icon {
-            display: inline-flex; align-items: center; justify-content: center;
-            height: 22px; color: #9CA3AF;
+            display: flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; flex-shrink: 0; color: #9CA3AF;
         }
-        .prop-section-tab-icon svg { stroke-width: 1.75; }
+        .prop-section-tab-icon svg { width: 20px; height: 20px; stroke-width: 1.75; }
+        .prop-section-tab-label-wrap {
+            display: flex; flex-direction: column; align-items: center;
+            width: 100%; min-height: 22px; padding-bottom: 8px;
+        }
         .prop-section-tab-label {
             font-size: 10px; font-weight: 500; color: #9CA3AF;
-            line-height: 1.2; white-space: nowrap;
+            line-height: 1.2; white-space: nowrap; text-align: center;
+        }
+        .prop-section-tab-indicator {
+            display: block; width: 100%; height: 3px; margin-top: 5px;
+            border-radius: 3px 3px 0 0; background: #2563EB;
         }
         .prop-section-tab-item--active .prop-section-tab-icon { color: #2563EB; }
         .prop-section-tab-item--active .prop-section-tab-label {
             font-weight: 700; color: #2563EB;
-        }
-        .prop-section-tab-item--active::after {
-            content: ''; position: absolute; left: 50%; transform: translateX(-50%);
-            bottom: 0; width: 44px; height: 3px;
-            border-radius: 3px 3px 0 0; background: #2563EB;
         }
         .prop-section-tab-item:active { opacity: .88; }
         .prop-hub-summary {
@@ -865,16 +939,35 @@
         }
 
         /* Properties page — portfolio list */
-        .properties-page-header .page-subtitle { margin-top: 2px; }
-        .properties-title-row {
-            display: flex; align-items: flex-start; justify-content: space-between;
-            gap: 12px; margin-top: 4px;
+        .properties-page-header { padding-bottom: 10px; }
+        .properties-page-header .page-subtitle { margin-top: 2px; font-size: 12px; }
+        .list-page-header {
+            display: flex; align-items: flex-start; gap: 10px;
         }
+        .list-page-header-copy { padding-top: 1px; }
+        .list-page-header-copy .page-title { font-size: 22px; line-height: 1.15; }
+        .list-page-header-actions {
+            display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding-top: 1px;
+        }
+        .list-page-header-btn {
+            width: 40px; height: 40px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid #E2E8F0; border-radius: 12px;
+            background: #fff; color: #0F172A; cursor: pointer;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+            position: relative;
+        }
+        .list-page-header-btn:active { background: #F8FAFC; }
+        .list-page-header-actions .notif-badge { top: -3px; right: -3px; border: 2px solid #fff; }
         .properties-add-btn {
             display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
             padding: 10px 14px; border-radius: 12px; border: none;
             background: #2563EB; color: #fff; font-size: 12px; font-weight: 700;
             cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,.25);
+        }
+        .properties-add-btn--header {
+            width: 100%; justify-content: center; margin-top: 12px;
+            padding: 12px 16px; font-size: 13px;
         }
         .properties-add-btn:active { background: #1D4ED8; }
         .properties-page { padding-bottom: 8px; }
@@ -1638,20 +1731,73 @@
         .flat-dt-grid-icon--notes { background: #FEF9C3; color: #CA8A04; }
         .flat-dt-global-alert { padding-top: 8px; padding-bottom: 0; }
         .flat-dt-global-alert .flat-rent-alert { margin: 0; }
+        .flat-dt-inline-alert { margin-bottom: 12px; }
+        .flat-dt-inline-alert .flat-rent-alert { margin: 0; }
         .flat-dt-tenant-actions {
-            display: flex; flex-wrap: wrap; gap: 8px;
+            display: flex; flex-direction: column; gap: 8px;
+            margin-bottom: 14px;
         }
+        .flat-dt-tenant-actions-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .flat-dt-tenant-actions-row--solo { grid-template-columns: 1fr; }
         .flat-dt-tenant-action {
-            flex: 1 1 calc(50% - 4px); min-width: 0;
             display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            padding: 11px 12px; border-radius: 12px;
+            padding: 12px 14px; border-radius: 12px;
             border: 1px solid #E2E8F0; background: #fff;
-            font-size: 13px; font-weight: 600; color: #475569; cursor: pointer;
+            font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;
+            min-width: 0;
+        }
+        .flat-dt-tenant-action--wide { width: 100%; }
+        .flat-dt-tenant-action--record {
+            background: #fff; border-color: #E2E8F0; color: #0F172A;
+            font-weight: 700;
         }
         .flat-dt-tenant-action--primary {
             background: #EFF6FF; border-color: #BFDBFE; color: #2563EB;
         }
         .flat-dt-tenant-action:active { background: #F8FAFC; }
+        .flat-dt-tenant-section { padding: 0; overflow: hidden; }
+        .flat-dt-tenant-section-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+            padding: 14px 16px 10px; border-bottom: 1px solid #F1F5F9;
+        }
+        .flat-dt-tenant-section-title {
+            font-size: 15px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.2;
+        }
+        .flat-dt-tenant-section-meta {
+            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+        }
+        .flat-dt-tenant-lease {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap;
+        }
+        .flat-dt-tenant-lease-btn {
+            font-size: 11px; font-weight: 700; color: #2563EB;
+            background: #EFF6FF; border: 1px solid #DBEAFE;
+            padding: 5px 10px; border-radius: 999px; cursor: pointer; flex-shrink: 0;
+        }
+        .flat-dt-tenant-lease-btn:active { background: #DBEAFE; }
+        .flat-dt-tenant-section-body { padding: 12px 16px 14px; }
+        .flat-dt-tenant-people {
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .flat-dt-tenant-people--solo .member-row--tenant-tab {
+            border: 1px solid #F1F5F9; border-radius: 14px; background: #FAFBFC;
+            padding: 14px;
+        }
+        .member-row--tenant-tab {
+            display: flex; align-items: center; gap: 12px;
+            width: 100%; padding: 12px 14px; border: 1px solid #F1F5F9;
+            border-radius: 14px; background: #FAFBFC; cursor: pointer; text-align: left;
+        }
+        .member-row--tenant-tab:active { background: #F1F5F9; }
+        .member-row-hint {
+            display: block; font-size: 11px; color: #94A3B8; margin-top: 4px; font-weight: 500;
+        }
+        .flat-dt-tenant-hint {
+            font-size: 11px; color: #94A3B8; margin: 10px 0 0; line-height: 1.45;
+        }
         .flat-dt-grid-body { flex: 1; min-width: 0; }
         .flat-dt-grid-title {
             display: block; font-size: 13px; font-weight: 700; color: #0F172A; line-height: 1.25;
@@ -1758,24 +1904,33 @@
         }
         .flat-dt-tabs::-webkit-scrollbar { display: none; }
         .flat-dt-tab {
-            flex: 1 0 auto; min-width: 72px;
+            flex: 1; min-width: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-            gap: 4px; min-height: 56px; padding: 8px 10px 10px;
+            gap: 5px; min-height: 64px; padding: 10px 6px 0;
             border: none; background: transparent; cursor: pointer; position: relative;
         }
-        .flat-dt-tab-icon { color: #9CA3AF; height: 20px; display: flex; align-items: center; }
+        .flat-dt-tab-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; color: #9CA3AF; flex-shrink: 0;
+        }
+        .flat-dt-tab-icon svg { width: 18px; height: 18px; }
+        .flat-dt-tab-label-wrap {
+            position: relative;
+            display: flex; flex-direction: column; align-items: center;
+            width: 100%; min-height: 22px; padding-bottom: 8px;
+        }
         .flat-dt-tab-label {
             font-size: 10px; font-weight: 600; color: #9CA3AF; line-height: 1.2; white-space: nowrap;
+        }
+        .flat-dt-tab-indicator {
+            display: block; width: 100%; height: 3px; margin-top: 5px;
+            border-radius: 3px 3px 0 0; background: #2563EB;
         }
         .flat-dt-tab--active .flat-dt-tab-icon,
         .flat-dt-tab--active .flat-dt-tab-label { color: #2563EB; }
         .flat-dt-tab--active .flat-dt-tab-label { font-weight: 700; }
-        .flat-dt-tab--active::after {
-            content: ''; position: absolute; left: 50%; transform: translateX(-50%);
-            bottom: 0; width: 36px; height: 3px; border-radius: 3px 3px 0 0; background: #2563EB;
-        }
         .flat-dt-tab-badge {
-            position: absolute; top: 6px; right: 8px;
+            position: absolute; top: -18px; right: -2px;
             min-width: 16px; height: 16px; padding: 0 4px;
             border-radius: 999px; background: #EF4444; color: #fff;
             font-size: 9px; font-weight: 800; line-height: 16px; text-align: center;
@@ -2588,40 +2743,53 @@
             display: block; padding: 0; overflow: hidden;
         }
         .maint-inbox-card--assign { border-color: #E2E8F0; }
-        .maint-inbox-card-inner { padding: 12px; }
+        .maint-inbox-card-inner { padding: 10px; }
+        .maint-inbox-card-layout {
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .maint-inbox-card-stack { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
         .maint-inbox-card-main {
-            display: flex; align-items: flex-start; gap: 12px; width: 100%;
+            display: block; width: 100%;
             padding: 0; border: none; background: transparent; cursor: pointer; text-align: left;
         }
         .maint-inbox-card-main:active { opacity: 0.85; }
         .maint-inbox-card-photo {
-            width: 56px; height: 56px; border-radius: 12px; object-fit: cover; flex-shrink: 0;
+            width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0;
             background: #F1F5F9;
         }
         .maint-inbox-card-photo-icon {
             display: flex; align-items: center; justify-content: center;
+            width: 48px; height: 48px; border-radius: 10px;
+        }
+        .maint-inbox-card-footer .maint-priority-pill,
+        .maint-inbox-card-footer .maint-inbox-status-pill {
+            font-size: 9px; padding: 2px 7px; line-height: 1.2;
         }
         .maint-inbox-card-body { flex: 1; min-width: 0; }
         .maint-inbox-card-head {
             display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
         }
         .maint-inbox-card-title {
-            font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.3;
+            font-size: 13px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.25;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
         }
         .maint-inbox-card-time {
-            font-size: 11px; font-weight: 600; color: #94A3B8; flex-shrink: 0; white-space: nowrap;
+            font-size: 10px; font-weight: 600; color: #94A3B8; flex-shrink: 0; white-space: nowrap;
         }
         .maint-inbox-card-loc {
-            font-size: 11px; color: #64748B; margin: 4px 0 0;
+            font-size: 11px; color: #64748B; margin: 2px 0 0;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .maint-inbox-card-footer {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            min-height: 0;
         }
         .maint-inbox-card-bottom {
             display: flex; align-items: center; justify-content: space-between; gap: 10px;
             margin-top: 8px; padding-left: 68px; min-height: 28px;
         }
         .maint-inbox-card-meta {
-            display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap;
+            display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; flex-wrap: wrap;
         }
         .maint-inbox-card-meta-name {
             font-size: 11px; font-weight: 600; color: #64748B;
@@ -2634,8 +2802,8 @@
             font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; line-height: 1.3;
         }
         .maint-inbox-card-assign {
-            flex-shrink: 0; padding: 6px 14px; border-radius: 10px; border: none;
-            background: #EFF6FF; color: #2563EB; font-size: 12px; font-weight: 700;
+            flex-shrink: 0; padding: 4px 10px; border-radius: 8px; border: none;
+            background: #EFF6FF; color: #2563EB; font-size: 11px; font-weight: 700;
             cursor: pointer; line-height: 1.2;
         }
         .maint-inbox-card-assign:active { background: #DBEAFE; }
@@ -2937,14 +3105,44 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             box-shadow: var(--shadow-sm);
         }
+        .flat-dt-gallery-panel { gap: 14px; }
+        .flat-unit-photo-picker--gallery .flat-unit-photo-hero { height: 200px; }
+        .flat-unit-photo-card-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 14px 16px 0;
+        }
+        .flat-unit-photo-card-title {
+            font-size: 15px; font-weight: 700; color: #0F172A; margin: 0;
+        }
+        .flat-unit-photo-card-count {
+            font-size: 11px; font-weight: 700; color: #64748B;
+            background: #F1F5F9; padding: 4px 8px; border-radius: 999px;
+        }
+        .flat-unit-photo-actions { padding: 0 12px 14px; }
         .flat-unit-photo-picker .flat-edit-photo-btn {
-            position: static; margin: 8px 12px 0; width: calc(100% - 24px);
-            border-radius: 10px; border: 1px dashed #CBD5E1; background: #F8FAFC;
-            padding: 10px 12px; text-align: center;
+            position: static; margin: 10px 0 0; width: 100%;
+            border-radius: 12px; border: 1px dashed #CBD5E1; background: #F8FAFC;
+            padding: 12px 14px; text-align: center;
         }
+        .flat-edit-photo-btn--gallery {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            border-style: solid; border-color: #BFDBFE; background: #EFF6FF;
+            color: #2563EB; font-size: 13px; font-weight: 700;
+        }
+        .flat-edit-photo-btn--gallery:active { background: #DBEAFE; }
         .flat-unit-photo-hint {
-            font-size: 11px; color: #94A3B8; margin: 8px 12px 12px; line-height: 1.45; text-align: center;
+            font-size: 11px; color: #94A3B8; margin: 8px 0 0; line-height: 1.45; text-align: center;
         }
+        .flat-dt-building-title {
+            font-size: 15px; font-weight: 700; color: #0F172A; margin: 0;
+        }
+        .flat-dt-building-link-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; margin-top: 12px; padding: 12px 14px;
+            border-radius: 12px; border: 1px solid #E2E8F0; background: #fff;
+            font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;
+        }
+        .flat-dt-building-link-btn:active { background: #F8FAFC; }
         .flat-edit-page { gap: 18px; padding-bottom: 32px; }
         .edit-prop-units { margin-top: 4px; }
         .edit-prop-units-head {
@@ -3063,7 +3261,30 @@
         .member-list-detail .member-row--detail + .member-row--detail { border-top: 1px solid #F1F5F9; }
         .member-list-detail .member-row--detail { padding: 12px 14px; }
         .member-list-detail .member-row-avatar { width: 40px; height: 40px; flex-shrink: 0; }
+        .member-row-avatar {
+            width: 40px; height: 40px; flex-shrink: 0;
+            border-radius: 50%; object-fit: cover;
+        }
+        .member-row-avatar--sm { width: 32px; height: 32px; }
         .notify-tenant-section { margin-top: 4px; }
+        .notify-tenant-section--compact { margin-top: 0; }
+        .notify-tenant-section--compact .form-label { margin-bottom: 6px; }
+        .notify-tenant-section--compact .notify-tenant-head { margin-bottom: 6px; }
+        .notify-tenant-section--compact .notify-tenant-row { padding: 8px 12px; gap: 8px; }
+        .notify-tenant-section--compact .member-row-name { font-size: 13px; }
+        .notify-tenant-section--compact .member-row-meta { font-size: 11px; margin: 0; }
+        .notify-tenant-section--compact .form-helper { font-size: 11px; margin-top: 6px; }
+        .notify-tenant-section--compact .notify-all-toggle { font-size: 11px; gap: 6px; }
+        .notify-tenant-list.member-list-human { background: #fff; border-radius: 12px; }
+        .notify-tenant-list .notify-tenant-row + .notify-tenant-row { border-top: 1px solid #F1F5F9; }
+        .insp-schedule-page .form-group { margin-bottom: 14px; }
+        .insp-schedule-property {
+            padding: 10px 12px; margin-bottom: 14px;
+            border-radius: 12px; background: #F8FAFC; border: 1px solid #E2E8F0;
+        }
+        .insp-schedule-property-name { font-size: 13px; font-weight: 600; color: #0F172A; margin: 0; }
+        .insp-schedule-property-meta { font-size: 11px; color: #64748B; margin: 2px 0 0; }
+        .form-input--compact { min-height: 64px; }
         .notify-tenant-head {
             display: flex; align-items: center; justify-content: space-between; gap: 12px;
             margin-bottom: 8px;
@@ -3416,7 +3637,8 @@
         .fab-menu { position: absolute; bottom: calc(var(--nav-height) + var(--safe-bottom) + 76px); right: 20px; transform: scale(.9); opacity: 0; pointer-events: none; transition: all .25s; z-index: 35; }
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background: #0F172A; border-radius: 100px; opacity: 0.2; z-index: 31; pointer-events: none; }
         .screen-full { height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-        .screen-full .screen-body-inner { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: var(--safe-bottom); }
+        .screen-full .screen-body-inner { flex: 1; min-height: 0; overflow-y: auto; }
+        .chat-screen .screen-body-inner { padding-bottom: calc(16px + var(--safe-bottom)); }
         .fab-menu.open { transform: scale(1); opacity: 1; pointer-events: auto; }
         .screen-enter { animation: fadeSlide .3s ease; }
         @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -3507,11 +3729,24 @@
         .inbox-empty { text-align: center; padding: 48px 0; }
 
         /* Chat */
-        .chat-screen { background: #F1F5F9; }
+        .chat-screen { background: #F1F5F9; min-height: 100%; }
         .chat-header {
             display: flex; align-items: center; gap: var(--stack-gap-sm);
-            padding: var(--header-pt) var(--gutter) var(--header-pb);
+            padding: calc(var(--safe-top) + 6px) var(--gutter) 10px;
             background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+        }
+        .chat-header-name {
+            font-size: var(--text-title-sm); font-weight: 700; color: #0F172A; line-height: 1.25;
+            margin: 0; display: flex; align-items: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .chat-header-sub {
+            font-size: var(--text-caption); color: #64748B; font-weight: 500; margin: 2px 0 0;
+            display: flex; align-items: center; gap: 5px; line-height: 1.35;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .chat-header-online {
+            width: 6px; height: 6px; border-radius: 50%; background: #22C55E; flex-shrink: 0;
         }
         .chat-header-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
         .chat-header-info--btn {
@@ -3519,60 +3754,65 @@
         }
         .chat-header-info--btn:active { opacity: 0.85; }
         .chat-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .chat-header-avatar { width: 40px; height: 40px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+        .chat-header-avatar { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
         .chat-header-avatar--group {
             display: flex; align-items: center; justify-content: center;
             background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;
         }
         .chat-header-action {
-            width: 38px; height: 38px; border-radius: 10px;
+            width: 36px; height: 36px; border-radius: 10px;
             background: var(--color-bg); border: 1px solid #E2E8F0;
             display: flex; align-items: center; justify-content: center;
             color: #64748B; cursor: pointer; flex-shrink: 0;
         }
-        .chat-messages { display: flex; flex-direction: column; gap: 10px; }
-        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 82%; }
+        .chat-screen .screen-body-inner {
+            flex: 1; min-height: 0; overflow-y: auto;
+            padding-top: 12px;
+            padding-bottom: calc(16px + var(--safe-bottom));
+        }
+        .chat-messages { display: flex; flex-direction: column; gap: 6px; }
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; gap: 3px; }
         .chat-bubble-wrap--out { align-self: flex-end; align-items: flex-end; }
         .chat-bubble-wrap--in { align-self: flex-start; align-items: flex-start; }
         .chat-sender {
-            font-size: 10px; font-weight: 700; color: #64748B; margin: 0 0 4px 4px;
+            font-size: var(--text-caption); font-weight: 700; color: #64748B; margin: 0 0 2px 4px;
         }
         .chat-system-msg {
-            align-self: center; max-width: 90%; text-align: center;
-            padding: 8px 12px; border-radius: 12px; background: #E2E8F0; color: #64748B;
+            align-self: center; max-width: 88%; text-align: center;
+            padding: 6px 10px; border-radius: 10px; background: #E2E8F0; color: #64748B;
         }
-        .chat-system-msg p { margin: 0; font-size: 11px; line-height: 1.45; font-weight: 500; }
-        .chat-system-time { display: block; font-size: 9px; margin-top: 4px; color: #94A3B8; }
+        .chat-system-msg p { margin: 0; font-size: var(--text-caption); line-height: 1.4; font-weight: 500; }
+        .chat-system-time { display: block; font-size: var(--text-caption); margin-top: 3px; color: #94A3B8; }
         .chat-ended-banner {
             display: flex; align-items: center; justify-content: center; gap: 6px;
-            padding: 8px 12px; border-radius: 10px; background: #F1F5F9; color: #64748B;
-            font-size: 11px; font-weight: 600; margin-bottom: 4px;
+            padding: 6px 10px; border-radius: 10px; background: #F1F5F9; color: #64748B;
+            font-size: var(--text-caption); font-weight: 600; margin-bottom: 2px;
         }
         .chat-date-label {
-            text-align: center; font-size: 11px; font-weight: 600;
-            color: #94A3B8; margin: 4px 0 8px;
+            text-align: center; font-size: var(--text-caption); font-weight: 600;
+            color: #94A3B8; margin: 2px 0 6px;
         }
         .chat-bubble-in, .chat-bubble-out {
-            max-width: 82%; padding: 10px 14px; border-radius: 18px;
-            font-size: 13px; line-height: 1.5; position: relative;
+            padding: 10px 14px; border-radius: 16px;
+            font-size: var(--text-body); line-height: 1.45; position: relative;
         }
         .chat-bubble-in {
-            align-self: flex-start; background: #fff;
-            border-bottom-left-radius: 6px;
-            box-shadow: 0 1px 2px rgba(15,23,42,.06);
+            background: #fff;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 1px 2px rgba(15,23,42,.05);
             color: #0F172A;
         }
         .chat-bubble-out {
-            align-self: flex-end; background: #2563EB; color: #fff;
-            border-bottom-right-radius: 6px;
-            box-shadow: 0 2px 8px rgba(37,99,235,.25);
+            background: #2563EB; color: #fff;
+            border-bottom-right-radius: 5px;
+            box-shadow: 0 1px 6px rgba(37,99,235,.2);
         }
         .chat-bubble-in p, .chat-bubble-out p { margin: 0; }
         .chat-time {
-            display: block; font-size: 10px; margin-top: 4px;
+            display: block; font-size: var(--text-caption); line-height: 1.3; padding: 0 4px;
         }
-        .chat-bubble-in .chat-time { color: #94A3B8; }
-        .chat-bubble-out .chat-time { color: rgba(255,255,255,.7); }
+        .chat-bubble-wrap--in .chat-time { color: #94A3B8; }
+        .chat-bubble-wrap--out .chat-time { color: #94A3B8; text-align: right; }
         .chat-bubble-btn {
             border: none; cursor: pointer; font: inherit; text-align: left;
             display: block; width: fit-content; max-width: 100%;
@@ -3582,32 +3822,77 @@
             opacity: 0.85; background: #F1F5F9 !important; color: #94A3B8 !important;
             box-shadow: none !important; border: 1px dashed #E2E8F0;
         }
-        .chat-bubble--deleted p { font-size: 12px; font-style: italic; margin: 0; color: #94A3B8; }
+        .chat-bubble--deleted p { font-size: var(--text-caption); font-style: italic; margin: 0; color: #94A3B8; }
         .chat-empty-hint {
-            text-align: center; font-size: 12px; color: #94A3B8; margin: 24px 0;
+            text-align: center; font-size: var(--text-body); color: #94A3B8; margin: 20px 0;
         }
         .chat-action-sheet .photo-action-item { font-size: 14px; }
+        .chat-options-sheet {
+            width: 100%; max-width: var(--canvas); margin: 0 auto;
+            background: #fff; border-radius: 20px 20px 0 0;
+            padding: 0 0 calc(8px + var(--safe-bottom));
+            position: absolute; left: 50%; transform: translateX(-50%); bottom: 0;
+        }
+        .chat-options-head {
+            padding: 16px var(--gutter) 12px; border-bottom: 1px solid #F1F5F9;
+        }
+        .chat-options-title { font-size: 16px; font-weight: 800; color: #0F172A; margin: 0; }
+        .chat-options-sub { font-size: 12px; color: #64748B; margin: 4px 0 0; line-height: 1.4; }
+        .chat-opt-section { padding: 8px var(--gutter) 0; }
+        .chat-opt-section-title {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+            color: #94A3B8; margin: 0 0 4px 4px;
+        }
+        .chat-opt-section-body {
+            background: #F8FAFC; border-radius: 14px; overflow: hidden;
+            border: 1px solid #F1F5F9;
+        }
+        .chat-opt-item {
+            display: flex; align-items: center; gap: 12px; width: 100%;
+            padding: 12px 14px; border: none; background: #fff; cursor: pointer; text-align: left;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .chat-opt-item:last-child { border-bottom: none; }
+        .chat-opt-item:active { background: #F8FAFC; }
+        .chat-opt-item--danger .chat-opt-label { color: #DC2626; }
+        .chat-opt-item--danger .chat-opt-icon { background: #FEF2F2; color: #DC2626; }
+        .chat-opt-icon {
+            width: 36px; height: 36px; border-radius: 10px; background: #EFF6FF; color: #2563EB;
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .chat-opt-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .chat-opt-label { font-size: 14px; font-weight: 600; color: #0F172A; line-height: 1.25; }
+        .chat-opt-sub { font-size: 11px; color: #94A3B8; line-height: 1.35; }
+        .chat-opt-cancel {
+            display: block; width: calc(100% - var(--gutter) * 2); margin: 10px auto 0;
+            padding: 14px; border: none; background: transparent; color: #64748B;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+        }
+        .chat-header-muted {
+            display: inline-flex; align-items: center; margin-left: 6px; color: #94A3B8; vertical-align: middle; flex-shrink: 0;
+        }
+        .inbox-muted { color: #94A3B8; display: inline-flex; margin-right: 4px; }
         .chat-input-bar {
-            display: flex; align-items: center; gap: var(--stack-gap-sm);
-            padding: var(--stack-gap-sm) var(--gutter) calc(var(--stack-gap-sm) + var(--safe-bottom));
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px var(--gutter) calc(10px + var(--safe-bottom));
             background: #fff; border-top: 1px solid #E2E8F0; flex-shrink: 0;
         }
         .chat-input-icon {
-            width: 38px; height: 38px; border-radius: 10px;
+            width: 36px; height: 36px; border-radius: 10px;
             background: var(--color-bg); border: none; color: #64748B;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
         }
         .chat-input-field {
             flex: 1; padding: 10px 14px; background: #F8FAFC;
-            border-radius: 22px; font-size: 16px; font-weight: 400; color: #0F172A;
-            border: 1px solid #E2E8F0;
+            border-radius: 20px; font-size: var(--text-body); font-weight: 400; color: #0F172A;
+            border: 1px solid #E2E8F0; min-width: 0;
         }
         .chat-input-field::placeholder { color: #94A3B8; font-weight: 400; opacity: 1; }
         .chat-send-btn {
-            width: 38px; height: 38px; border-radius: 50%;
+            width: 36px; height: 36px; border-radius: 50%;
             background: #2563EB; color: #fff; border: none;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 2px 8px rgba(37,99,235,.3);
+            cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,.25); flex-shrink: 0;
         }
         .chat-input-bar--disabled { opacity: 0.65; pointer-events: none; }
         .chat-members-sheet {
@@ -4103,6 +4388,26 @@
 
         /* Tenant — modern list & profile */
         .tenant-list-page { padding-bottom: 88px; }
+        .tenant-list-page--minimal { padding-bottom: 16px; }
+        .tenant-list-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .tenant-list-count { font-size: var(--text-caption); color: var(--color-text-secondary); font-weight: 500; }
+        .tenant-filter-row {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
+        }
+        .tenant-filter-row .filter-chip { padding: 6px 14px; min-height: 32px; font-size: 12px; }
+        .tenant-list--minimal { display: flex; flex-direction: column; gap: 8px; }
+        .tenant-row--minimal {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border: none; cursor: pointer; text-align: left;
+        }
+        .tenant-row--minimal:active { opacity: 0.92; }
+        .tenant-row--minimal .tenant-row-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .tenant-row--minimal .tenant-row-name { font-size: var(--text-body); font-weight: 600; }
+        .tenant-row--minimal .tenant-row-prop { margin: 2px 0 0; }
+        .tenant-row--minimal .tenant-status-pill { font-size: 10px; padding: 2px 8px; }
         .tenant-search-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
         .tenant-search-bar { flex: 1; margin: 0; }
         .tenant-filter-btn {
@@ -7259,19 +7564,41 @@
         .ctr-public-cert-count { font-size: 11px; font-weight: 700; color: #64748B; }
         /* Contractor profile v2 */
         .ctr-profile-page { display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+        .ctr-profile-page--minimal { gap: 10px; }
         .ctr-profile-hero { display: flex; gap: 14px; align-items: flex-start; padding: 16px; }
+        .ctr-profile-hero--minimal { padding: 14px 16px; }
         .ctr-profile-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .ctr-profile-hero--minimal .ctr-profile-avatar { width: 64px; height: 64px; }
         .ctr-profile-name { font-size: 18px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2; }
         .ctr-profile-person { font-size: 13px; color: #64748B; margin: 4px 0 0; }
         .ctr-profile-trade-row { margin-top: 6px; }
-        .ctr-profile-jobs { font-size: 12px; color: #64748B; margin: 8px 0 0; line-height: 1.4; }
+        .ctr-profile-trust { font-size: 12px; font-weight: 600; color: #059669; margin: 6px 0 0; }
+        .ctr-profile-jobs { font-size: 12px; color: #64748B; margin: 6px 0 0; line-height: 1.45; }
         .ctr-profile-meta { font-size: 11px; color: #94A3B8; margin: 4px 0 0; }
+        .ctr-profile-contact { padding: 14px 16px; }
+        .ctr-profile-contact .ctr-section-label { margin-bottom: 10px; }
+        .ctr-profile-contact-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 10px 0; border-top: 1px solid #F1F5F9;
+        }
+        .ctr-profile-contact-row:first-of-type { border-top: none; padding-top: 0; }
+        .ctr-profile-contact-label {
+            display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #64748B; flex-shrink: 0;
+        }
+        .ctr-profile-contact-value {
+            font-size: 13px; font-weight: 600; color: #0F172A; text-align: right; background: none; border: none;
+            padding: 0; cursor: pointer; word-break: break-all;
+        }
+        .ctr-profile-contact-value:active { color: #2563EB; }
+        .ctr-profile-contact-hint { font-size: 11px; color: #94A3B8; margin: 8px 0 0; line-height: 1.4; }
+        .ctr-profile-msg-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .ctr-profile-actions {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
         }
         .ctr-profile-actions:has(:only-child) { grid-template-columns: 1fr; }
         .ctr-profile-actions:has(:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
         .ctr-profile-section { padding: 14px 16px; }
+        .ctr-profile-section--certs .ctr-section-label { margin-bottom: 8px; }
         .ctr-profile-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
         .ctr-profile-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
         .ctr-profile-badge {
@@ -7283,6 +7610,17 @@
             display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; margin: 6px 0 0;
         }
         .ctr-profile-tenant-note { font-size: 12px; color: #64748B; text-align: center; margin: 4px 0 0; line-height: 1.45; }
+        .ctr-cert-compact-list { display: flex; flex-direction: column; }
+        .ctr-cert-compact-row {
+            display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #F1F5F9;
+        }
+        .ctr-cert-compact-row:first-child { border-top: none; padding-top: 0; }
+        .ctr-cert-compact-name { font-size: 13px; font-weight: 600; color: #0F172A; margin: 0; }
+        .ctr-cert-compact-meta { font-size: 11px; color: #94A3B8; margin: 2px 0 0; }
+        .ctr-cert-compact-view {
+            flex-shrink: 0; font-size: 12px; font-weight: 700; color: #2563EB; background: #EFF6FF;
+            border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer;
+        }
         /* Tenant maintenance detail v2 */
         .maint-v2-property-card--tenant .maint-v2-property-msg { display: none; }
         .maint-v2-awaiting {
@@ -7705,8 +8043,88 @@
         .doc-year-label { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: .04em; margin: 12px 0 6px; }
         .doc-folder-add { width: 100%; margin-top: 8px; padding: 10px; font-size: 12px; font-weight: 600; color: #2563EB; background: #EFF6FF; border: 1px dashed #BFDBFE; border-radius: 10px; }
         .doc-folder-empty { font-size: 12px; color: #94A3B8; padding: 8px 0; }
-        /* Records tab — clutter-free */
+        /* Records tab */
         .prop-records-page { padding-top: 4px; }
+        .records-segments {
+            display: flex; align-items: stretch;
+            border-bottom: 1px solid #E2E8F0;
+            margin-bottom: 14px; overflow-x: auto;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .records-segments::-webkit-scrollbar { display: none; }
+        .records-segment {
+            flex: 1; min-width: 72px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 2px; padding: 10px 6px 9px;
+            border: none; background: transparent; cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 11px; font-weight: 600; color: #64748B;
+        }
+        .records-segment--active {
+            color: #2563EB; border-bottom-color: #2563EB; font-weight: 700;
+        }
+        .records-segment-meta {
+            font-size: 9px; font-weight: 600; color: #94A3B8; line-height: 1.2;
+            max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .records-segment--active .records-segment-meta { color: #60A5FA; }
+        .records-panel { display: flex; flex-direction: column; gap: 12px; }
+        .records-notices-link {
+            display: flex; align-items: center; gap: 8px; width: 100%;
+            padding: 12px 14px; border-radius: 12px;
+            border: 1px solid #E2E8F0; background: #fff;
+            font-size: 13px; font-weight: 600; color: #334155;
+            cursor: pointer; text-align: left;
+        }
+        .records-notices-link:active { background: #F8FAFC; }
+        .records-notices-chevron { margin-left: auto; color: #CBD5E1; }
+        .records-status-banner {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 16px; border: 1px solid #E2E8F0;
+        }
+        .records-status-banner--ok { background: #F0FDF4; border-color: #BBF7D0; color: #16A34A; }
+        .records-status-banner--warn { background: #FEF2F2; border-color: #FECACA; color: #DC2626; }
+        .records-status-banner--neutral { background: #F8FAFC; color: #475569; }
+        .records-status-title { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.3; }
+        .records-status-sub { font-size: 12px; color: #64748B; margin: 4px 0 0; line-height: 1.4; }
+        .records-mini-list { padding: 0; overflow: hidden; }
+        .records-mini-list--flush .insp-row {
+            border-radius: 0; box-shadow: none; margin: 0;
+            border-top: 1px solid #F1F5F9;
+        }
+        .records-mini-list--flush .insp-row:first-child { border-top: none; }
+        .records-mini-row {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 12px 14px; border: none; background: transparent;
+            border-top: 1px solid #F1F5F9; cursor: pointer; text-align: left;
+        }
+        .records-mini-row:first-child { border-top: none; }
+        .records-mini-row:active { background: #F8FAFC; }
+        .records-mini-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .records-mini-icon {
+            width: 32px; height: 32px; border-radius: 10px;
+            background: #F8FAFC; color: #64748B;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .records-mini-body { flex: 1; min-width: 0; }
+        .records-mini-title { display: block; font-size: 13px; font-weight: 600; color: #0F172A; }
+        .records-mini-sub { display: block; font-size: 11px; color: #64748B; margin-top: 2px; }
+        .records-panel-eyebrow {
+            font-size: 11px; font-weight: 700; color: #64748B;
+            text-transform: uppercase; letter-spacing: .04em; margin: 4px 0 0;
+        }
+        .records-panel-cta { margin-top: 0; }
+        .records-insp-next { padding: 14px 16px; }
+        .records-insp-label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: .04em; margin: 0; }
+        .records-insp-title { font-size: 15px; font-weight: 700; color: #0F172A; margin: 6px 0 0; }
+        .records-insp-date { font-size: 12px; color: #64748B; margin: 4px 0 0; }
+        .records-insp-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .records-insp-empty { padding: 20px 16px; text-align: center; }
+        .records-insp-empty-title { font-size: 14px; font-weight: 700; color: #0F172A; margin: 10px 0 0; }
+        .records-insp-empty-sub { font-size: 12px; color: #64748B; margin: 6px 0 0; line-height: 1.45; }
+        .records-docs-empty { padding: 28px 20px; text-align: center; }
+        .records-docs-empty-title { font-size: 14px; font-weight: 700; color: #0F172A; margin: 12px 0 0; }
+        .records-docs-empty-sub { font-size: 12px; color: #64748B; margin: 6px 0 0; line-height: 1.45; }
         .records-quick-links {
             display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; flex-wrap: nowrap;
             -webkit-overflow-scrolling: touch; scrollbar-width: none;
@@ -7719,11 +8137,13 @@
         }
         .records-quick-link:active { background: #F8FAFC; }
         .records-doc-toolbar {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+            display: flex; align-items: stretch; gap: 8px; margin-bottom: 12px;
         }
         .records-doc-search { flex: 1; margin-bottom: 0; min-width: 0; }
         .records-add-btn {
-            flex-shrink: 0; padding: 10px 14px; border-radius: 10px;
+            flex-shrink: 0; align-self: stretch;
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0 14px; border-radius: 10px;
             font-size: 13px; font-weight: 700; color: #2563EB;
             background: #EFF6FF; border: none;
         }
@@ -7767,14 +8187,27 @@
         .ctr-job-source { font-size: 11px; color: #94A3B8; margin-top: 4px; }
         .notif-cat-segments { overflow-x: auto; flex-wrap: nowrap; }
         .notif-cat-segments .fin-segment { flex-shrink: 0; }
+        .notif-filter-row {
+            display: inline-flex; gap: 6px; margin-bottom: 14px;
+            padding: 3px; border-radius: 10px; background: #F1F5F9;
+        }
+        .notif-filter-chip {
+            padding: 7px 14px; border-radius: 8px; border: none;
+            background: transparent; font-size: 12px; font-weight: 600;
+            color: #64748B; cursor: pointer;
+        }
+        .notif-filter-chip--active {
+            background: #fff; color: #2563EB;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+        }
     </style>
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=116"></script>
-    <script src="landlord_hq_contractor.js?v=116"></script>
-    <script src="landlord_hq_features.js?v=116"></script>
-    <script src="landlord_hq_product.js?v=116"></script>
+    <script src="landlord_hq_screens.js?v=140"></script>
+    <script src="landlord_hq_contractor.js?v=140"></script>
+    <script src="landlord_hq_features.js?v=140"></script>
+    <script src="landlord_hq_product.js?v=140"></script>
     <script>
     (function () {
         function showBootError(msg) {

@@ -181,6 +181,7 @@ function renderDocFolderBrowser(propertyId, contextKey = `property-${propertyId}
     }
     const folders = DOC_FOLDER_DEFS.map(folder => {
         const files = sortDocList(docsForFolder(filtered, folder.id), sort);
+        if (opts.recordsMode && compact && !files.length && !q) return null;
         if (!files.length && !primaryFolderIds.has(folder.id)) return null;
         const years = [...new Set(files.map(d => docYearFromDate(d.date)))].sort((a, b) => b.localeCompare(a));
         const openKey = `${contextKey}-${folder.id}`;
@@ -214,13 +215,16 @@ function renderDocFolderBrowser(propertyId, contextKey = `property-${propertyId}
             </div>` : ''}
         </div>`;
     }).filter(Boolean);
+    const emptyDocs = !folders.length && !q;
     return `
     ${renderDocFolderToolbar(contextKey, opts)}
-    <div class="doc-folder-list stack-sm">${folders.length ? folders.join('') : `
-        <div class="fin-empty">
-            <p class="fin-empty-title">No documents match</p>
-            <p class="fin-empty-sub">Try another search or add a file.</p>
-        </div>`}
+    <div class="doc-folder-list stack-sm">${emptyDocs ? `
+        <div class="records-docs-empty card">
+            <i data-lucide="folder-open" class="w-9 h-9 text-[#CBD5E1]"></i>
+            <p class="records-docs-empty-title">No documents yet</p>
+            <p class="records-docs-empty-sub">Upload gas, EICR, EPC and tenancy files for this property.</p>
+            <button type="button" data-action="open-add-document-flow" class="btn-primary w-full py-3 text-[13px] mt-3">+ Add document</button>
+        </div>` : folders.join('')}
     </div>
     ${compact ? '' : `<button type="button" data-action="open-add-document-flow" class="btn-primary w-full py-3.5 text-[14px] mt-3">+ Upload document</button>`}`;
 }
@@ -562,10 +566,9 @@ function saveCertificateAssign() {
 }
 
 function screenNotificationsListProduct() {
-    const cat = STATE.notifCategory || 'all';
+    const showUnreadOnly = !!STATE.notifUnreadOnly;
     let items = typeof notificationsForRole === 'function' ? notificationsForRole() : NOTIFICATIONS;
-    items = items.map(n => ({ ...n, category: n.category || inferNotifCategory(n) }));
-    if (cat !== 'all') items = items.filter(n => n.category === cat);
+    if (showUnreadOnly) items = items.filter(n => n.unread);
     const unread = items.filter(n => n.unread).length;
     const unreadItems = items.filter(n => n.unread);
     const readItems = items.filter(n => !n.unread);
@@ -586,11 +589,11 @@ function screenNotificationsListProduct() {
         </div>
     </div>
     <div class="screen-content screen-enter">
-        <div class="fin-segments txn-segments notif-cat-segments">
-            ${NOTIFICATION_CATEGORIES.map(c => `
-            <button type="button" data-notif-category="${c.id}" class="fin-segment ${cat === c.id ? 'active' : ''}"><span class="fin-segment-label">${c.label}</span></button>`).join('')}
+        <div class="notif-filter-row">
+            <button type="button" data-notif-unread-only="0" class="notif-filter-chip${!showUnreadOnly ? ' notif-filter-chip--active' : ''}">All</button>
+            <button type="button" data-notif-unread-only="1" class="notif-filter-chip${showUnreadOnly ? ' notif-filter-chip--active' : ''}">Unread</button>
         </div>
-        ${!items.length ? `<div class="fin-empty"><p class="fin-empty-title">No notifications</p><p class="fin-empty-sub">Updates for rent, maintenance, and certificates appear here.</p></div>` : ''}
+        ${!items.length ? `<div class="fin-empty"><p class="fin-empty-title">No notifications</p><p class="fin-empty-sub">${showUnreadOnly ? 'You are all caught up.' : 'Updates for rent, maintenance, and certificates appear here.'}</p></div>` : ''}
         ${section('Today', unreadItems)}
         ${section('Earlier', readItems)}
     </div>`;
@@ -703,8 +706,8 @@ function bindProductEvents() {
         el.onclick = () => { STATE.certAssignType = el.dataset.certAssignType; render(); };
     });
     app.querySelectorAll('[data-action="save-cert-assign"]').forEach(el => { el.onclick = saveCertificateAssign; });
-    app.querySelectorAll('[data-notif-category]').forEach(el => {
-        el.onclick = () => { STATE.notifCategory = el.dataset.notifCategory; render(); };
+    app.querySelectorAll('[data-notif-unread-only]').forEach(el => {
+        el.onclick = () => { STATE.notifUnreadOnly = el.dataset.notifUnreadOnly === '1'; render(); };
     });
     app.querySelectorAll('[data-contractor-landlord-filter]').forEach(el => {
         el.onclick = () => { STATE.contractorLandlordFilter = el.dataset.contractorLandlordFilter; render(); };

@@ -810,10 +810,23 @@ function renderContractorCertUploadModal() {
     </div>`;
 }
 
-function renderContractorCertList(profile, { editable = false } = {}) {
+function renderContractorCertList(profile, { editable = false, compact = false } = {}) {
     const certs = ensureContractorCertificates(profile);
     if (!certs.length) {
         return `<p class="text-[13px] text-[#64748B]">No certificates uploaded yet${editable ? ' — add your Gas Safe, insurance, and trade documents.' : '.'}</p>`;
+    }
+    if (compact) {
+        return `
+    <div class="ctr-cert-compact-list">
+        ${certs.map(cert => `
+        <div class="ctr-cert-compact-row">
+            <div class="ctr-cert-compact-body min-w-0">
+                <p class="ctr-cert-compact-name">${escapeHtml(cert.name)}</p>
+                <p class="ctr-cert-compact-meta">${cert.validUntil ? `Valid until ${escapeHtml(cert.validUntil)}` : `Uploaded ${escapeHtml(cert.uploadedAt)}`}</p>
+            </div>
+            <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" data-contractor-view="${profile.id ?? ''}" class="ctr-cert-compact-view">View</button>
+        </div>`).join('')}
+    </div>`;
     }
     return `
     <div class="ctr-cert-list">
@@ -862,51 +875,51 @@ function screenContractorPublicProfile() {
     if (!profile) {
         return `${topBar('Contractor', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Contractor not found</p></div>`;
     }
-    const visual = typeof resolveContractorTrade === 'function' ? resolveContractorTrade(profile) : null;
     const certCount = ensureContractorCertificates(profile).length;
     const isLandlord = STATE.userRole === 'landlord';
     const isTenant = STATE.userRole === 'tenant';
     const chatId = typeof ensureContractorConversation === 'function' ? ensureContractorConversation(profile) : null;
-    const openJobs = typeof contractorOpenJobs === 'function' ? contractorOpenJobs(profile.name) : 0;
-    const jobsLine = openJobs ? `${openJobs} open job${openJobs === 1 ? '' : 's'}` : 'No active jobs';
+    const trustBits = [
+        profile.gasSafe ? 'Gas Safe' : '',
+        profile.liabilityInsurance ? 'Insured' : '',
+    ].filter(Boolean).join(' · ');
+    const jobsLine = escapeHtml(contractorJobsForLabel(profile));
     return `${topBar('Contractor', { back: true })}
-    <div class="screen-content screen-enter ctr-profile-page">
-        <div class="ctr-profile-hero card">
+    <div class="screen-content screen-enter ctr-profile-page ctr-profile-page--minimal">
+        <div class="ctr-profile-hero card ctr-profile-hero--minimal">
             <img src="${profile.img || contractorAvatarForTrade(profile.tradeId)}" class="ctr-profile-avatar" alt="">
             <div class="ctr-profile-hero-copy min-w-0 flex-1">
                 <h1 class="ctr-profile-name">${escapeHtml(profile.name)}</h1>
-                ${profile.firstName ? `<p class="ctr-profile-person">${escapeHtml(`${profile.firstName} ${profile.lastName || ''}`.trim())}</p>` : ''}
                 <div class="ctr-profile-trade-row">
                     ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(profile) : ''}
                 </div>
-                <p class="ctr-profile-jobs">${escapeHtml(contractorJobsForLabel(profile))}</p>
-                <p class="ctr-profile-meta">${jobsLine}</p>
+                ${trustBits ? `<p class="ctr-profile-trust">${escapeHtml(trustBits)}</p>` : ''}
+                <p class="ctr-profile-jobs">${jobsLine}</p>
             </div>
         </div>
-        ${(isLandlord || isTenant) ? `
-        <div class="ctr-profile-actions">
-            ${profile.phone ? `<button type="button" data-action="call-contractor" data-phone="${profile.phone.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
-            ${profile.email ? `<button type="button" data-action="email-contractor" data-email="${profile.email.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
-            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="ctr-card-action"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
+        ${(isLandlord || isTenant) && (profile.phone || profile.email) ? `
+        <div class="ctr-profile-contact card">
+            <p class="ctr-section-label">Contact</p>
+            ${profile.phone ? `
+            <div class="ctr-profile-contact-row">
+                <span class="ctr-profile-contact-label"><i data-lucide="phone" class="w-4 h-4"></i>Phone</span>
+                <button type="button" class="ctr-profile-contact-value" data-action="copy-contact" data-text="${profile.phone.replace(/"/g, '')}">${escapeHtml(profile.phone)}</button>
+            </div>` : ''}
+            ${profile.email ? `
+            <div class="ctr-profile-contact-row">
+                <span class="ctr-profile-contact-label"><i data-lucide="mail" class="w-4 h-4"></i>Email</span>
+                <button type="button" class="ctr-profile-contact-value" data-action="copy-contact" data-text="${profile.email.replace(/"/g, '')}">${escapeHtml(profile.email)}</button>
+            </div>` : ''}
+            <p class="ctr-profile-contact-hint">Tap to copy · use your phone to call or email</p>
         </div>` : ''}
-        <div class="ctr-profile-section card">
-            <div class="ctr-profile-section-head">
-                <p class="ctr-section-label">Certifications</p>
-                <span class="ctr-public-cert-count">${certCount} on file</span>
-            </div>
-            <div class="ctr-profile-badges">
-                ${profile.gasSafe ? '<span class="ctr-profile-badge ctr-profile-badge--green">Gas Safe</span>' : ''}
-                ${profile.liabilityInsurance ? '<span class="ctr-profile-badge ctr-profile-badge--blue">Insured</span>' : ''}
-                ${visual ? `<span class="ctr-profile-badge" style="background:${visual.bg};color:${visual.color}">${escapeHtml(profile.category || visual.shortLabel)}</span>` : ''}
-            </div>
-            ${renderContractorCertList(profile)}
-        </div>
-        ${profile.companyReg ? `
-        <div class="ctr-profile-section card">
-            <p class="ctr-section-label">Company</p>
-            <p class="ctr-profile-reg"><i data-lucide="building-2" class="w-4 h-4"></i> Reg ${escapeHtml(profile.companyReg)}</p>
+        ${(isLandlord || isTenant) && chatId != null ? `
+        <button type="button" data-go="chat" data-chat="${chatId}" class="btn-primary w-full py-3.5 text-[14px] ctr-profile-msg-btn"><i data-lucide="message-square" class="w-4 h-4"></i> Message</button>` : ''}
+        ${certCount ? `
+        <div class="ctr-profile-section card ctr-profile-section--certs">
+            <p class="ctr-section-label">Certifications</p>
+            ${renderContractorCertList(profile, { compact: true })}
         </div>` : ''}
-        ${isTenant ? `<p class="ctr-profile-tenant-note">Your landlord assigned this contractor. Contact your landlord to reschedule.</p>` : ''}
+        ${isTenant ? `<p class="ctr-profile-tenant-note">Contact your landlord to reschedule or change contractor.</p>` : ''}
     </div>`;
 }
 

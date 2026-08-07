@@ -1512,8 +1512,14 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
     const uploadAction = opts.uploadAction || 'upload-pending-flat-photo';
     const uploadLabel = opts.uploadLabel || (list.length ? 'Add more photos' : 'Add unit photos (optional)');
     const hint = opts.hint || 'Add multiple photos and tap ★ to choose which shows on the home screen.';
+    const isGallery = opts.variant === 'gallery';
     return `
-    <div class="flat-unit-photo-picker card overflow-hidden">
+    <div class="flat-unit-photo-picker card overflow-hidden${isGallery ? ' flat-unit-photo-picker--gallery' : ''}">
+        ${isGallery ? `
+        <div class="flat-unit-photo-card-head">
+            <h3 class="flat-unit-photo-card-title">Unit photos</h3>
+            <span class="flat-unit-photo-card-count">${list.length} photo${list.length === 1 ? '' : 's'}</span>
+        </div>` : ''}
         <div class="flat-unit-photo-hero">
             <img src="${hero}" alt="" class="img-cover">
             ${list.length ? '<span class="flat-unit-photo-cover-tag">Cover photo</span>' : ''}
@@ -1529,8 +1535,12 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
                 <button type="button" data-action="${removeAction}" data-photo-idx="${i}" class="photo-preview-remove" aria-label="Remove photo"><i data-lucide="x" class="w-3 h-3"></i></button>
             </div>`).join('')}
         </div>` : ''}
-        <button type="button" data-action="${uploadAction}" class="flat-edit-photo-btn">${uploadLabel}</button>
-        <p class="flat-unit-photo-hint">${hint}</p>
+        <div class="flat-unit-photo-actions">
+            <button type="button" data-action="${uploadAction}" class="flat-edit-photo-btn${isGallery ? ' flat-edit-photo-btn--gallery' : ''}">
+                <i data-lucide="image-plus" class="w-4 h-4"></i><span>${uploadLabel}</span>
+            </button>
+            <p class="flat-unit-photo-hint">${hint}</p>
+        </div>
     </div>`;
 }
 
@@ -1835,7 +1845,7 @@ function showScreenSkeleton(screen) {
 }
 
 function renderDashboardSkeleton() {
-    return `${topBar('Home')}
+    return `${topBar('Home', { homeChrome: true })}
     <div class="screen-content skeleton-screen">
         <div class="skel-block skel-hero"></div>
         <div class="skel-grid-3">
@@ -2674,50 +2684,59 @@ function getPropertyNotifyTargets(propertyId) {
             unit: t.unit || '—',
             email: TENANTS[t.id]?.email || '',
             status: t.status,
-            img: t.img || IMG.avatar.sarah,
+            img: (typeof tenantAvatarUrl === 'function' ? tenantAvatarUrl(t.id) : null) || t.img || IMG.avatar.sarah,
         }));
 }
 
 function renderTenantNotifySection(propertyId, opts = {}) {
+    const compact = !!opts.compact;
     const title = opts.title || 'Notify tenants';
-    const hint = opts.hint || 'Selected tenants receive an in-app alert. No need to pick one email for the whole building.';
+    const hint = opts.hint || (compact
+        ? 'Uncheck anyone who should not be notified.'
+        : 'Selected tenants receive an in-app alert. No need to pick one email for the whole building.');
     const targets = getPropertyNotifyTargets(propertyId);
+    const avatarSize = compact ? 'sm' : 'md';
+    const renderAvatar = (t) => {
+        if (typeof renderMemberAvatar === 'function') {
+            return renderMemberAvatar({ name: t.name, img: t.img, listId: t.id }, avatarSize);
+        }
+        if (typeof renderPersonAvatar === 'function') return renderPersonAvatar(t.name, t.id, avatarSize);
+        return t.img ? `<img src="${t.img}" class="member-row-avatar member-row-avatar--${avatarSize}" alt="">` : '';
+    };
     if (!targets.length) {
         return `
-        <div class="notify-tenant-section">
+        <div class="notify-tenant-section${compact ? ' notify-tenant-section--compact' : ''}">
             <p class="form-label">${title}</p>
-            <div class="ux-tip">
-                <p class="ux-tip-text">No tenants on this property yet. You can still schedule — invite tenants when you are ready.</p>
-            </div>
+            <p class="form-helper">No tenants on this property yet.</p>
         </div>`;
     }
     const rows = targets.map(t => `
-        <label class="member-row card cursor-pointer notify-tenant-row">
+        <label class="member-row notify-tenant-row cursor-pointer">
             <input type="checkbox" data-notify-target="${t.id}" class="accent-[#2563EB]" checked>
-            ${t.img ? `<img src="${t.img}" class="member-row-avatar" alt="">` : ''}
+            ${renderAvatar(t)}
             <div class="member-row-body min-w-0">
                 <p class="member-row-name">${escapeHtml(t.name)}</p>
-                <p class="member-row-meta">${escapeHtml(t.unit)} · ${t.status === 'active' ? 'Active' : 'Pending invite'}</p>
+                <p class="member-row-meta">${escapeHtml(t.unit)} · ${t.status === 'active' ? 'Active' : 'Pending'}</p>
             </div>
         </label>`).join('');
     if (targets.length === 1) {
         return `
-        <div class="notify-tenant-section">
+        <div class="notify-tenant-section${compact ? ' notify-tenant-section--compact' : ''}">
             <p class="form-label">${title}</p>
-            <div class="notify-tenant-list stack-sm">${rows}</div>
+            <div class="notify-tenant-list member-list-human">${rows}</div>
             <p class="form-helper">${hint}</p>
         </div>`;
     }
     return `
-    <div class="notify-tenant-section">
+    <div class="notify-tenant-section${compact ? ' notify-tenant-section--compact' : ''}">
         <div class="notify-tenant-head">
             <p class="form-label">${title}</p>
             <label class="notify-all-toggle">
                 <input type="checkbox" data-notify-all class="accent-[#2563EB]" checked>
-                <span>Notify all (${targets.length})</span>
+                <span>All (${targets.length})</span>
             </label>
         </div>
-        <div class="notify-tenant-list stack-sm">${rows}</div>
+        <div class="notify-tenant-list member-list-human">${rows}</div>
         <p class="form-helper">${hint}</p>
     </div>`;
 }
@@ -3344,6 +3363,7 @@ function renderActionMenuPopover(key, items) {
 
 function propertyActionMenuItems(propertyId) {
     return [
+        { label: LANDLORD_MAINT_CREATE_LABEL, icon: 'wrench', action: 'action-menu-go', attrs: `data-go="log-maintenance" data-pid="${propertyId}"` },
         { label: 'Send notice', icon: 'megaphone', action: 'action-menu-go', attrs: `data-go="send-broadcast" data-pid="${propertyId}"` },
         { label: 'Edit property', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-property" data-pid="${propertyId}"` },
         { label: 'Add unit', icon: 'plus', action: 'action-menu-go', attrs: `data-go="add-flat" data-pid="${propertyId}"` },
@@ -3684,9 +3704,6 @@ function renderPropertyHubSummaryCard(propertyId) {
                 <span class="prop-hub-income-lbl">Total rent</span>
                 <span class="prop-hub-income-val"><i data-lucide="wallet" class="w-4 h-4"></i>${incomeLabel}</span>
             </div>
-            <button type="button" data-go="edit-property" data-pid="${propertyId}" class="prop-hub-edit-btn">
-                <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit Property
-            </button>
         </div>
     </div>`;
 }
@@ -4206,7 +4223,6 @@ function resolveMemberIdentity(member, propertyId, unitName, tenancy) {
     if (listItem?.status === 'active') accountStatus = 'active';
     else if (listItem?.status === 'pending' || pendingInvite) accountStatus = 'pending';
   const isLead = member.role === 'lead' || tenancy?.leadName === member.name || tenancy?.tenantId === tenantId;
-    const avatars = [IMG.avatar.sarah, IMG.avatar.david, IMG.avatar.michael];
     return {
         name: member.name || listItem?.name || 'Occupant',
         email: member.email || record?.email || pendingInvite?.email || '',
@@ -4214,7 +4230,7 @@ function resolveMemberIdentity(member, propertyId, unitName, tenancy) {
         tenantId: listItem?.status === 'active' ? tenantId : null,
         listId: listItem?.id,
         accountStatus,
-        img: listItem?.img || avatars[(tenantId ?? 0) % avatars.length],
+        img: listItem?.img || (typeof tenantAvatarUrl === 'function' ? tenantAvatarUrl(tenantId) : IMG.avatar.sarah),
         isLead,
         inviteToken: pendingInvite?.token,
     };
@@ -4338,12 +4354,13 @@ function memberActionMenuItems(propertyId, unitName, member) {
 }
 
 function renderMemberRow(member, propertyId, unitName, opts = {}) {
-    const canOpenProfile = member.tenantId != null;
+    const profileId = member.listId ?? member.tenantId;
+    const canOpenProfile = profileId != null;
     const nameParts = (member.name || '').trim().split(/\s+/);
     const inviteFirst = nameParts[0] || '';
     const inviteLast = nameParts.slice(1).join(' ') || '';
     const action = canOpenProfile
-        ? `data-go="tenant-detail" data-tid="${member.tenantId}"`
+        ? `data-go="tenant-detail" data-tid="${profileId}"`
         : member.inviteToken
             ? `data-go="tenant-invite-sent" data-invite-token="${member.inviteToken}"`
             : `data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unitName}" data-invite-email="${member.email || ''}" data-invite-first="${inviteFirst}" data-invite-last="${inviteLast}" data-invite-phone="${member.phone || ''}"`;
@@ -4362,6 +4379,21 @@ function renderMemberRow(member, propertyId, unitName, opts = {}) {
                 ${renderActionMenuPopover(menuKey, memberActionMenuItems(propertyId, unitName, member))}
             </div>
         </div>`;
+    }
+    if (opts.tenantTab) {
+        const hint = opts.isGroup && !member.isLead && canOpenProfile
+            ? '<span class="member-row-hint">Message from profile</span>'
+            : '';
+        return `
+    <button type="button" ${action} class="member-row member-row--tenant-tab">
+        ${renderMemberAvatar(member, 'md')}
+        <div class="member-row-body">
+            <p class="member-row-name">${member.name}</p>
+            <div class="member-row-tags">${memberStatusPill(member)}</div>
+            ${hint}
+        </div>
+        <i data-lucide="chevron-right" class="member-row-chevron w-4 h-4"></i>
+    </button>`;
     }
     return `
     <button type="button" ${action} class="member-row member-row--simple">
@@ -4587,43 +4619,13 @@ function ensureContractorConversation(contractor) {
 }
 
 function ensureMaintGroupChat(item, contractor, tenant) {
-    if (!item || !contractor) return null;
+    if (!item) return null;
     const key = `maint-${item.id}`;
-    if (!AppStore.maintGroupChats) AppStore.maintGroupChats = {};
-    if (AppStore.maintGroupChats[key] != null) {
+    if (AppStore.maintGroupChats?.[key] != null) {
         item.groupChatId = AppStore.maintGroupChats[key];
         return item.groupChatId;
     }
-    const members = [`${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`, contractor.name];
-    if (tenant?.name) members.push(tenant.name);
-    const id = CONVERSATIONS.length ? Math.max(...CONVERSATIONS.map(c => c.id)) + 1 : 0;
-    CONVERSATIONS.unshift({
-        id,
-        isGroup: true,
-        img: contractor.img || IMG.avatar.plumber,
-        name: `${item.issue} · Job chat`,
-        issueName: item.issue,
-        sub: `${(item.prop || '').split(',')[0]}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}`,
-        preview: 'Job chat started',
-        time: 'Just now',
-        unread: 0,
-        online: false,
-        members,
-        maintId: item.id,
-        messages: [{
-            type: 'system',
-            text: `Job chat started for "${item.issue}". Coordinate access and updates here.`,
-            time: 'Just now',
-        }],
-    });
-    AppStore.maintGroupChats[key] = id;
-    item.groupChatId = id;
-    if (typeof CONTRACTOR_JOBS !== 'undefined') {
-        const job = CONTRACTOR_JOBS.find(j => j.maintId === item.id);
-        if (job) job.groupChatId = id;
-    }
-    syncConversationsToStore();
-    return id;
+    return null;
 }
 
 function contractorBusinessName() {
@@ -4949,21 +4951,7 @@ function copyContractorInviteLink() {
 }
 
 function backfillMaintGroupChats() {
-    MAINTENANCE_ITEMS.forEach(item => {
-        if (!item.contractor || item.contractor === '—') return;
-        if (item.groupChatId != null) return;
-        const contractor = CONTRACTORS.find(c => c.name === item.contractor);
-        if (!contractor) return;
-        const tenant = getMaintTenantForItem(item);
-        ensureMaintGroupChat(item, contractor, tenant);
-    });
-    if (typeof CONTRACTOR_JOBS !== 'undefined') {
-        CONTRACTOR_JOBS.forEach(job => {
-            if (job.groupChatId != null || job.maintId == null) return;
-            const item = MAINTENANCE_ITEMS.find(m => m.id === job.maintId);
-            if (item?.groupChatId) job.groupChatId = item.groupChatId;
-        });
-    }
+    /* Job group chats removed — maintenance uses direct 1:1 chats only. */
 }
 
 function screenInviteContractor() {
@@ -5043,19 +5031,16 @@ function resetContractorFilters() {
 }
 
 function renderContractorsPageHeader() {
-    const unreadBell = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
     return `
     <div class="screen-header ctr-page-header">
-        <div class="dash-header-top">
-            <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
-            <button type="button" data-go="notifications-list" class="top-icon-btn relative" aria-label="Notifications">
-                <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-                ${unreadBell ? `<span class="notif-badge">${unreadBell}</span>` : ''}
-            </button>
-        </div>
-        <div class="ctr-title-block">
-            <h1 class="page-title">Contractors</h1>
-            <p class="page-subtitle">Find and manage trusted contractors</p>
+        <div class="sub-header-row">
+            <div class="sub-header-left">
+                <button type="button" data-action="back" class="back-btn" aria-label="Back"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="min-w-0">
+                    <h1 class="sub-header-title">Contractors</h1>
+                    <p class="sub-header-sub">Find and manage trusted contractors</p>
+                </div>
+            </div>
         </div>
         <div class="ctr-header-actions">
             <button type="button" data-go="invite-contractor" class="ctr-header-invite">
@@ -5332,8 +5317,9 @@ function resolveScreenForRole(screen, opts = {}) {
 
 function tenantAvatarUrl(tenantId) {
     const tid = tenantId != null ? tenantId : (typeof activeTenantListId === 'function' ? activeTenantListId() : 0);
-    const avatars = { 0: IMG.avatar.sarah, 1: IMG.avatar.david, 2: IMG.avatar.michael, 4: IMG.avatar.priya };
-    return avatars[tid] || IMG.avatar.sarah;
+    const listItem = TENANT_LIST.find(t => t.id === tid) || TENANT_LIST[tid];
+    if (listItem?.img) return listItem.img;
+    return IMG.avatar.sarah;
 }
 
 function tenantHomeAttentionItems(tenant, pay, tenantId) {
@@ -5611,7 +5597,8 @@ function tenantContractorChatIds(tenant) {
     if (!tenant) return [];
     const ids = tenantMaintenanceForAccount(tenant)
         .filter(m => m.contractor && m.contractor !== '—')
-        .flatMap(m => [getContractorChatId(m.contractor), m.groupChatId].filter(id => id != null));
+        .map(m => getContractorChatId(m.contractor))
+        .filter(id => id != null);
     return [...new Set(ids)];
 }
 
@@ -5619,15 +5606,17 @@ function getTenantCheckout(tenantId) {
     if (!AppStore.tenantCheckout) AppStore.tenantCheckout = {};
     if (!AppStore.tenantCheckout[tenantId]) {
         const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tenantId) : null;
-        const dep = typeof getTenantDepositProtection === 'function' ? getTenantDepositProtection(tenantId) : {};
+        const listItem = TENANT_LIST.find(t => t.id === tenantId) || TENANT_LIST[tenantId];
+        const tenancy = listItem && typeof getTenancyForTenantListItem === 'function'
+            ? getTenancyForTenantListItem(listItem) : null;
         AppStore.tenantCheckout[tenantId] = {
             checklist: Object.fromEntries(TENANT_CHECKOUT_CHECKLIST.map(([k]) => [k, false])),
             meters: { electricity: '', gas: '', water: '' },
             photos: [],
-            depositStatus: dep.status || 'protected',
-            depositScheme: dep.scheme !== '—' ? dep.scheme : 'MyDeposits',
+            depositStatus: tenancy?.depositStatus || 'protected',
+            depositScheme: tenancy?.depositScheme || 'MyDeposits',
             depositAmount: fin?.deposit || '—',
-            protectionRef: dep.protectionRef || '',
+            protectionRef: tenancy?.protectionRef || '',
         };
     }
     return AppStore.tenantCheckout[tenantId];
@@ -5750,13 +5739,13 @@ function syncTransactionsFromInvoices() {
 function upsertTenantFromInvite(invite, activated = false) {
     const fullName = `${invite.firstName} ${invite.lastName}`;
     const p = PROPERTIES[invite.propertyId];
-    const avatars = [IMG.avatar.sarah, IMG.avatar.david, IMG.avatar.michael];
     let listItem = TENANT_LIST.find(t =>
         t.propertyId === invite.propertyId && t.unit === invite.unit &&
         (t.name === fullName || t.status === 'pending')
     );
     const tid = listItem?.id ?? nextTenantListId();
-    const chatId = ensureTenantConversation(fullName, p?.name || '', avatars[tid % avatars.length]);
+    const avatarImg = listItem?.img || (typeof tenantAvatarUrl === 'function' ? tenantAvatarUrl(tid) : IMG.avatar.sarah);
+    const chatId = ensureTenantConversation(fullName, p?.name || '', avatarImg);
     const rentRaw = String(invite.rent || p?.rent || '').replace(/[^\d]/g, '');
     const rentFmt = invite.rent?.startsWith('£') ? invite.rent : `£${parseInt(rentRaw || '0', 10).toLocaleString()}`;
     const depositFmt = formatMoneyField(invite.deposit || rentRaw);
@@ -5771,7 +5760,7 @@ function upsertTenantFromInvite(invite, activated = false) {
             prop: p?.name || '', unit: invite.unit,
             lease: formatLeaseRange(invite.leaseStart, invite.leaseEnd),
             leaseEnd: typeof formatLeaseMonthYear === 'function' ? formatLeaseMonthYear(invite.leaseEnd) : invite.leaseEnd,
-            img: avatars[tid % avatars.length],
+            img: avatarImg,
             status: activated ? 'active' : 'pending',
             rent: rentFmt.includes('/mo') ? rentFmt : `${rentFmt}/mo`,
         };
@@ -5946,7 +5935,6 @@ function isPropertyInfoSection(tab) {
 
 function propertyPrimaryNavTab(tab) {
     if (tab === 'tenant') return 'tenant';
-    if (tab === 'maintenance') return 'maintenance';
     if (tab === 'records' || tab === 'more' || isPropertyRecordsSection(tab)) return 'records';
     if (tab === 'info' || tab === 'details' || isPropertyBuildingSection(tab)) return 'info';
     return 'units';
@@ -5996,37 +5984,191 @@ function propertyRecordsSummaryLine(propertyId) {
     return `${docPart} · ${compliancePart} · ${inspPart}`;
 }
 
-function renderPropertyRecordsHub(propertyId) {
-    const quickLinks = `
-    <div class="records-quick-links">
-        <button type="button" data-go="send-broadcast" data-pid="${propertyId}" class="records-quick-link">
-            <i data-lucide="megaphone" class="w-3.5 h-3.5"></i>
-            <span>Notices</span>
-        </button>
-        <button type="button" data-tab="compliance" class="records-quick-link">
-            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-            <span>Compliance</span>
-        </button>
-        <button type="button" data-tab="inspection" class="records-quick-link">
-            <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
-            <span>Inspections</span>
-        </button>
-        <button type="button" data-tab="inventory" class="records-quick-link">
-            <i data-lucide="package" class="w-3.5 h-3.5"></i>
-            <span>Inventory</span>
-        </button>
-        <button type="button" data-tab="timeline" class="records-quick-link">
-            <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-            <span>Activity</span>
-        </button>
+function propertyInventoryHubLabel(propertyId) {
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(propertyId) : [];
+    if (!rooms.length) return 'No rooms';
+    const flagged = rooms.filter(r => r[1] && r[1] !== 'Good').length;
+    return flagged ? `${rooms.length} rooms · ${flagged} to review` : `${rooms.length} rooms`;
+}
+
+function propertyComplianceCertRows(propertyId) {
+    const p = PROPERTIES[propertyId];
+    const certKey = (cid) => `${propertyId}-${cid}`;
+    const info = AppStore.meta(propertyId).info || {};
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const parseExpiry = (val) => {
+        if (!val) return null;
+        const d = new Date(val);
+        return Number.isNaN(d.getTime()) ? null : d;
+    };
+    const itemStatus = (cid, displayExp) => {
+        if (!p?.compliance) return { tone: 'bad', label: 'Action needed' };
+        const saved = AppStore.complianceCerts[certKey(cid)];
+        const raw = saved?.expiryDate || displayExp;
+        const exp = parseExpiry(raw);
+        if (!exp) return { tone: 'ok', label: 'Valid' };
+        if (exp < today) return { tone: 'bad', label: 'Expired' };
+        const days = Math.ceil((exp - today) / 86400000);
+        if (days <= 30) return { tone: 'warn', label: `${days}d left` };
+        return { tone: 'ok', label: 'Valid' };
+    };
+    return COMPLIANCE_ITEMS.map(([ic, n, exp], cid) => {
+        const saved = AppStore.complianceCerts[certKey(cid)];
+        const cfg = COMPLIANCE_ITEM_CONFIG[cid];
+        const alarm = cfg?.alarmKey ? AppStore.meta(propertyId).alarms?.[cfg.alarmKey] : null;
+        let displayExp = saved?.expiryDate
+            ? (typeof formatDisplayDate === 'function' ? formatDisplayDate(saved.expiryDate) : saved.expiryDate)
+            : alarm?.expiry
+                ? (typeof formatDisplayDate === 'function' ? formatDisplayDate(alarm.expiry) : alarm.expiry)
+                : exp;
+        if (cid === 7 && info.epcExpiry) {
+            displayExp = typeof formatDisplayDate === 'function' ? formatDisplayDate(info.epcExpiry) : info.epcExpiry;
+        } else if (cid === 5 && info.insuranceExpiry) {
+            displayExp = typeof formatDisplayDate === 'function' ? formatDisplayDate(info.insuranceExpiry) : info.insuranceExpiry;
+        } else if (cid === 6 && info.mortgageRenewal) {
+            displayExp = typeof formatDisplayDate === 'function' ? formatDisplayDate(info.mortgageRenewal) : info.mortgageRenewal;
+        }
+        const st = itemStatus(cid, saved?.expiryDate || alarm?.expiry);
+        const action = cfg?.renewScreen
+            ? `data-go="${cfg.renewScreen}" data-pid="${propertyId}"`
+            : `data-go="renew-compliance" data-pid="${propertyId}" data-cid="${cid}"`;
+        return { ic, n, displayExp, st, action };
+    });
+}
+
+function renderRecordsSegmentNav(propertyId, activeView) {
+    const segments = [
+        ['documents', 'Documents', null],
+        ['compliance', 'Compliance', propertyComplianceHubLabel(propertyId)],
+        ['inspections', 'Inspections', propertyInspectionHubLabel(propertyId)],
+        ['inventory', 'Inventory', propertyInventoryHubLabel(propertyId)],
+    ];
+    return `
+    <div class="records-segments" role="tablist" aria-label="Records sections">
+        ${segments.map(([id, label, meta]) => `
+        <button type="button" data-records-view="${id}" role="tab" aria-selected="${activeView === id}" class="records-segment${activeView === id ? ' records-segment--active' : ''}">
+            <span>${label}</span>
+            ${meta ? `<span class="records-segment-meta">${meta}</span>` : ''}
+        </button>`).join('')}
     </div>`;
+}
+
+function renderRecordsDocumentsPanel(propertyId) {
     const docs = typeof renderDocFolderBrowser === 'function'
-        ? renderDocFolderBrowser(propertyId, `records-${propertyId}`, { compact: true })
+        ? renderDocFolderBrowser(propertyId, `records-${propertyId}`, { compact: true, recordsMode: true })
         : '';
     return `
+    <div class="records-panel">
+        <button type="button" data-go="send-broadcast" data-pid="${propertyId}" class="records-notices-link">
+            <i data-lucide="megaphone" class="w-4 h-4"></i>
+            <span>Send notice to tenants</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 records-notices-chevron"></i>
+        </button>
+        ${docs}
+    </div>`;
+}
+
+function renderRecordsCompliancePanel(propertyId) {
+    const p = PROPERTIES[propertyId];
+    const rows = propertyComplianceCertRows(propertyId);
+    const issues = rows.filter(r => r.st.tone !== 'ok');
+    const toneColor = { ok: '#22C55E', warn: '#F59E0B', bad: '#EF4444' };
+    return `
+    <div class="records-panel">
+        <div class="records-status-banner card${!p?.compliance || issues.length ? ' records-status-banner--warn' : ' records-status-banner--ok'}">
+            <i data-lucide="${!p?.compliance || issues.length ? 'alert-circle' : 'shield-check'}" class="w-5 h-5"></i>
+            <div>
+                <p class="records-status-title">${!p?.compliance ? 'Action needed' : issues.length ? `${issues.length} certificate${issues.length === 1 ? '' : 's'} need attention` : 'All certificates valid'}</p>
+                <p class="records-status-sub">Track gas, EICR, EPC and safety renewals for this property.</p>
+            </div>
+        </div>
+        <div class="card records-mini-list">
+            ${rows.map(({ ic, n, displayExp, st, action }) => `
+            <button type="button" ${action} class="records-mini-row">
+                <span class="records-mini-dot" style="background:${toneColor[st.tone]}"></span>
+                <span class="records-mini-icon"><i data-lucide="${ic}" class="w-4 h-4"></i></span>
+                <span class="records-mini-body">
+                    <span class="records-mini-title">${n}</span>
+                    <span class="records-mini-sub">${displayExp} · ${st.label}</span>
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>`).join('')}
+        </div>
+        <button type="button" data-go="certificate-assign" data-pid="${propertyId}" class="records-panel-cta btn-secondary w-full py-3 text-[13px]">+ Assign certificate</button>
+    </div>`;
+}
+
+function renderRecordsInspectionsPanel(propertyId) {
+    const upcoming = getScheduledInspection(propertyId);
+    const past = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
+    const nextDateLabel = upcoming
+        ? (typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date)
+        : null;
+    return `
+    <div class="records-panel">
+        ${upcoming ? `
+        <div class="card records-insp-next">
+            <p class="records-insp-label">Next visit</p>
+            <p class="records-insp-title">${upcoming.type || 'Property inspection'}</p>
+            <p class="records-insp-date">${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}</p>
+            <div class="records-insp-actions">
+                <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-secondary py-2.5 text-[12px] flex-1">Reschedule</button>
+                <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="btn-primary py-2.5 text-[12px] flex-1">Conduct</button>
+            </div>
+        </div>` : `
+        <div class="card records-insp-empty">
+            <i data-lucide="clipboard-list" class="w-8 h-8 text-[#CBD5E1]"></i>
+            <p class="records-insp-empty-title">No inspection scheduled</p>
+            <p class="records-insp-empty-sub">Book a visit, then rate condition and save photos after you go.</p>
+            <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-primary w-full py-2.5 text-[13px] mt-3">Schedule inspection</button>
+        </div>`}
+        ${past.length ? `
+        <p class="records-panel-eyebrow">Past reports (${past.length})</p>
+        <div class="card records-mini-list records-mini-list--flush">
+            ${past.slice(0, 3).map(i => typeof inspReportRow === 'function' ? inspReportRow(i) : '').join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+function renderRecordsInventoryPanel(propertyId) {
+    const rooms = getInventoryRooms(propertyId);
+    const flagged = rooms.filter(r => r[1] && r[1] !== 'Good').length;
+    return `
+    <div class="records-panel">
+        <div class="records-status-banner card records-status-banner--neutral">
+            <i data-lucide="package" class="w-5 h-5"></i>
+            <div>
+                <p class="records-status-title">${rooms.length} room checklist${rooms.length === 1 ? '' : 's'}</p>
+                <p class="records-status-sub">${flagged ? `${flagged} room${flagged === 1 ? '' : 's'} need review` : 'Check-in / check-out condition for each room.'}</p>
+            </div>
+        </div>
+        <div class="card records-mini-list">
+            ${rooms.map(([r, c, n, icon, idx]) => `
+            <button type="button" data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="records-mini-row">
+                <span class="records-mini-icon"><i data-lucide="${icon || 'package'}" class="w-4 h-4"></i></span>
+                <span class="records-mini-body">
+                    <span class="records-mini-title">${r}</span>
+                    <span class="records-mini-sub">${n}</span>
+                </span>
+                <span class="badge shrink-0 ${inventoryConditionBadgeClass(c)}">${c}</span>
+            </button>`).join('')}
+        </div>
+        <button type="button" data-action="toggle-inventory-layout-edit" class="records-panel-cta btn-secondary w-full py-3 text-[13px]">Edit property layout</button>
+    </div>`;
+}
+
+function renderPropertyRecordsHub(propertyId) {
+    const view = STATE.recordsView || 'documents';
+    const panels = {
+        documents: renderRecordsDocumentsPanel(propertyId),
+        compliance: renderRecordsCompliancePanel(propertyId),
+        inspections: renderRecordsInspectionsPanel(propertyId),
+        inventory: renderRecordsInventoryPanel(propertyId),
+    };
+    return `
     <div class="screen-content screen-content-sm prop-records-page">
-        ${quickLinks}
-        ${docs || `<div class="card p-8 text-center text-[13px] text-[#64748B]">No records yet.</div>`}
+        ${renderRecordsSegmentNav(propertyId, view)}
+        ${panels[view] || panels.documents}
     </div>`;
 }
 
@@ -6045,7 +6187,6 @@ function renderPropertySectionNav(activeTab) {
     const tabs = [
         ['units', 'Overview', 'layout-dashboard'],
         ['tenant', 'Tenants', 'users'],
-        ['maintenance', 'Maintenance', 'wrench'],
         ['info', 'Info', 'building-2'],
         ['records', 'Records', 'folder-open'],
     ];
@@ -6057,7 +6198,10 @@ function renderPropertySectionNav(activeTab) {
                 return `
             <button type="button" data-tab="${tab}" role="tab" aria-selected="${active}" class="prop-section-tab-item ${active ? 'prop-section-tab-item--active' : ''}">
                 <span class="prop-section-tab-icon"><i data-lucide="${icon}" class="w-[20px] h-[20px]"></i></span>
-                <span class="prop-section-tab-label">${label}</span>
+                <span class="prop-section-tab-label-wrap">
+                    <span class="prop-section-tab-label">${label}</span>
+                    ${active ? '<span class="prop-section-tab-indicator" aria-hidden="true"></span>' : ''}
+                </span>
             </button>`;
             }).join('')}
         </div>
@@ -6205,25 +6349,12 @@ function renderPropertyUnitsTab(propertyId) {
             </div>`;
         }).join('')
         : `<div class="unit-floor-block card"><div class="unit-floor-panel unit-floor-panel--solo">${units.map(u => renderFlatRow(u, false)).join('')}</div></div>`;
-    const filterActive = unitFilter !== 'all';
     const summary = typeof renderPropertyHubSummaryCard === 'function'
         ? renderPropertyHubSummaryCard(propertyId)
         : '';
     return `
     <div class="screen-content screen-content-sm prop-hub-page prop-units-page prop-overview-page">
         ${summary ? `<div class="prop-overview-summary-wrap">${summary}</div>` : ''}
-        <div class="unit-list-toolbar">
-            <h2 class="unit-section-title">Units</h2>
-            <div class="unit-list-toolbar-actions">
-                <button type="button" data-action="toggle-unit-filters" class="unit-filter-btn ${filterActive ? 'unit-filter-btn--active' : ''}" aria-label="Filter units">
-                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-                    <span>Filter</span>
-                </button>
-                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="unit-add-btn unit-add-btn--round" title="Add unit" aria-label="Add unit">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                </button>
-            </div>
-        </div>
         <div class="unit-status-chips">
             <button type="button" data-unit-filter="all" class="unit-status-chip unit-status-chip--total ${unitFilter === 'all' ? 'active' : ''}">
                 <i data-lucide="building-2" class="w-3.5 h-3.5"></i><span>All</span>
@@ -6328,21 +6459,21 @@ function renderFlatPeopleSection(propertyId, unit, { occ, tenancy, members, coun
         ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.start) : tenancy.start} – ${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.end) : tenancy.end}`
         : '—';
     const membersLabel = isGroup ? 'Members' : 'Tenant';
-    const previewMembers = members.slice(0, 3);
+    const rowOpts = { tenantTab: true, isGroup: isGroup && count > 1 };
     return `
-    <section class="card flat-hub-section flat-hub-section--compact">
-        <div class="flat-hub-section-head">
-            <div class="min-w-0">
-                <h2 class="flat-hub-section-title">${membersLabel}</h2>
-                ${tenancy ? `<p class="flat-people-sub"><i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>${leaseLine}</p>` : ''}
-            </div>
-            <div class="flat-people-head-links">
-                ${count > 1 ? `<button type="button" data-go="flat-members" data-pid="${propertyId}" data-unit="${unit}" class="flat-hub-link-btn">View all</button>` : ''}
-                ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-hub-link-btn">Lease</button>` : ''}
+    <section class="card flat-dt-tenant-section">
+        <div class="flat-dt-tenant-section-head">
+            <h3 class="flat-dt-tenant-section-title">${membersLabel}</h3>
+            <div class="flat-dt-tenant-section-meta">
+                ${tenancy ? `<span class="flat-dt-tenant-lease"><i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>${leaseLine}</span>` : ''}
+                ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-lease-btn">Lease</button>` : ''}
             </div>
         </div>
-        <div class="flat-hub-section-body flat-hub-section-body--tight">
-            ${count ? `<div class="member-list-human">${previewMembers.map(m => renderMemberRow(m, propertyId, unit)).join('')}</div>` : `<p class="flat-people-empty-desc">No one on the lease yet.</p>`}
+        <div class="flat-dt-tenant-section-body">
+            ${count
+                ? `<div class="flat-dt-tenant-people${count === 1 ? ' flat-dt-tenant-people--solo' : ''}">${members.map(m => renderMemberRow(m, propertyId, unit, rowOpts)).join('')}</div>`
+                : `<p class="flat-people-empty-desc">No one on the lease yet.</p>`}
+            ${isGroup && count > 1 ? `<p class="flat-dt-tenant-hint">Message the tenant above. For other members, open their profile.</p>` : ''}
             ${pendingInvite ? `
             <button data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-invite-banner flat-invite-banner--inline w-full text-left">
                 <div class="flat-invite-banner-icon"><i data-lucide="mail" class="w-4 h-4"></i></div>
@@ -6352,36 +6483,6 @@ function renderFlatPeopleSection(propertyId, unit, { occ, tenancy, members, coun
                 </div>
                 <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
             </button>` : ''}
-        </div>
-    </section>`;
-}
-
-function renderFlatMaintenancePreview(propertyId, unit) {
-    const items = maintenanceForUnit(propertyId, unit);
-    const openCount = items.filter(m => m.status === 'open' || m.status === 'progress').length;
-    const preview = [...items.filter(m => m.status !== 'done'), ...items.filter(m => m.status === 'done')].slice(0, 2);
-    if (!preview.length) return '';
-    const link = openCount
-        ? `<button type="button" data-go="property-detail" data-pid="${propertyId}" data-tab="maintenance" data-unit="${unit}" class="flat-hub-link-btn">View all</button>`
-        : `<button type="button" data-go="maintenance-history" class="flat-hub-link-btn">History</button>`;
-    return `
-    <section class="card flat-hub-section flat-hub-section--compact">
-        ${renderFlatHubSectionHead('Maintenance', openCount ? `${openCount} open` : 'All resolved', link)}
-        <div class="flat-hub-section-body">
-            <div class="flat-hub-maint-list">
-                ${preview.map(m => {
-                    const [sBg, sColor] = maintStatusStyle[m.status];
-                    return `
-                <button type="button" data-go="maintenance-detail" data-mid="${m.id}" class="flat-hub-maint-row w-full text-left">
-                    <span class="flat-hub-maint-icon" style="background:${sBg};color:${sColor}"><i data-lucide="wrench" class="w-4 h-4"></i></span>
-                    <span class="flat-hub-maint-body">
-                        <span class="flat-hub-maint-title">${escapeHtml(m.issue)}</span>
-                        <span class="flat-hub-maint-meta">${maintStatusLabel[m.status]} · ${m.time}</span>
-                    </span>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-                </button>`;
-                }).join('')}
-            </div>
         </div>
     </section>`;
 }
@@ -6558,13 +6659,11 @@ function flatDetailActivityEvents(propertyId, unit) {
     return events;
 }
 
-function flatDetailActivityListHtml(propertyId, unit, maxItems = 4) {
-    const items = flatDetailActivityEvents(propertyId, unit)
-        .sort((a, b) => (b.sort || 0) - (a.sort || 0))
-        .slice(0, maxItems);
-    if (!items.length) {
-        return '<p class="flat-dt-activity-empty">No recent activity for this unit yet.</p>';
-    }
+function flatDetailActivityListHtml(propertyId, unit, maxItems = 4, opts = {}) {
+    let items = flatDetailActivityEvents(propertyId, unit);
+    if (opts.excludeMaintenance) items = items.filter(ev => ev.icon !== 'wrench');
+    items = items.sort((a, b) => (b.sort || 0) - (a.sort || 0)).slice(0, maxItems);
+    if (!items.length) return '';
     return `
     <div class="flat-dt-activity-list">
         ${items.map(ev => `
@@ -6594,10 +6693,9 @@ function flatDetailRecentActivity(propertyId, unit, opts = {}) {
 }
 
 function flatDetailQuickLinks(propertyId, unit, members) {
-    const openMaint = maintenanceForUnit(propertyId, unit).filter(m => m.status === 'open' || m.status === 'progress').length;
     const links = [
-        { icon: 'wrench', tone: 'maint', title: 'Maintenance', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="maintenance" data-unit="${unit}"`, badge: openMaint || '' },
-        { icon: 'folder', tone: 'docs', title: 'Documents', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="documents"` },
+        { icon: 'wrench', tone: 'maint', title: 'Log issue', go: 'log-maintenance', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'folder', tone: 'docs', title: 'Records', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="records"` },
         { icon: 'package', tone: 'inventory', title: 'Inventory', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inventory"` },
         { icon: 'shield-check', tone: 'inspect', title: 'Inspection', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inspection"` },
         { icon: 'droplets', tone: 'util', title: 'Utilities', go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
@@ -6616,12 +6714,10 @@ function flatDetailQuickLinks(propertyId, unit, members) {
 }
 
 function flatDetailTabBadges(propertyId, unit, pendingInvite) {
-    const openMaint = maintenanceForUnit(propertyId, unit).filter(m => m.status === 'open' || m.status === 'progress').length;
     const overdue = invoicesForUnit(propertyId, unit).some(i => i.status === 'Overdue');
     return {
         tenant: pendingInvite ? '!' : '',
         payments: overdue ? '!' : '',
-        activity: openMaint ? String(openMaint) : '',
     };
 }
 
@@ -6631,7 +6727,6 @@ function renderFlatDetailTabNav(activeTab, badges = {}) {
         ['tenant', 'Tenant', 'users'],
         ['payments', 'Payments', 'pound-sterling'],
         ['gallery', 'Gallery', 'images'],
-        ['activity', 'Activity', 'activity'],
     ];
     return `
     <div class="flat-dt-tabs" role="tablist" aria-label="Unit sections">
@@ -6641,8 +6736,11 @@ function renderFlatDetailTabNav(activeTab, badges = {}) {
             return `
         <button type="button" data-ftab="${tab}" role="tab" aria-selected="${active}" class="flat-dt-tab ${active ? 'flat-dt-tab--active' : ''}">
             <span class="flat-dt-tab-icon"><i data-lucide="${icon}" class="w-[18px] h-[18px]"></i></span>
-            <span class="flat-dt-tab-label">${label}</span>
-            ${badge ? `<span class="flat-dt-tab-badge">${badge}</span>` : ''}
+            <span class="flat-dt-tab-label-wrap">
+                <span class="flat-dt-tab-label">${label}</span>
+                ${active ? '<span class="flat-dt-tab-indicator" aria-hidden="true"></span>' : ''}
+                ${badge ? `<span class="flat-dt-tab-badge">${badge}</span>` : ''}
+            </span>
         </button>`;
         }).join('')}
     </div>`;
@@ -6663,39 +6761,73 @@ function renderFlatDetailOverviewCard(propertyId, u, tenancy, coverPhoto, photoC
     </div>`;
 }
 
+function renderFlatDetailOverviewRecent(propertyId, unit) {
+    const listHtml = flatDetailActivityListHtml(propertyId, unit, 3, { excludeMaintenance: true });
+    if (!listHtml) return '';
+    return `
+        <section class="card flat-dt-activity flat-dt-activity--compact">
+            <div class="flat-dt-activity-head">
+                <h3 class="flat-dt-block-title">Recent</h3>
+                <button type="button" data-go="property-detail" data-pid="${propertyId}" data-tab="records" class="flat-dt-activity-link">Records</button>
+            </div>
+            ${listHtml}
+        </section>`;
+}
+
 function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
     return `
     <div class="flat-dt-tab-panel">
         ${renderFlatDetailOverviewCard(propertyId, u, tenancy, coverPhoto, photoCount)}
         ${flatDetailQuickLinks(propertyId, unit, members)}
-        <section class="card flat-dt-activity flat-dt-activity--compact">
-            <div class="flat-dt-activity-head">
-                <h3 class="flat-dt-block-title">Recent activity</h3>
-                <button type="button" data-ftab="activity" class="flat-dt-activity-link">View all</button>
-            </div>
-            ${flatDetailRecentActivity(propertyId, unit, { compact: true, maxItems: 3 })}
-        </section>
+        ${renderFlatDetailOverviewRecent(propertyId, unit)}
     </div>`;
 }
 
+function getFlatPrimaryTenantContact(ctx) {
+    const { members, tenancy } = ctx || {};
+    if (!members?.length) return null;
+    const lead = members.find(m => m.isLead)
+        || members.find(m => m.listId != null && TENANT_LIST[m.listId]?.status === 'active')
+        || members.find(m => m.accountStatus === 'active')
+        || members[0];
+    const listId = lead?.listId ?? lead?.tenantId;
+    const listItem = listId != null ? TENANT_LIST[listId] : null;
+    return { lead, listItem, listId, chatId: listItem?.chatId ?? null };
+}
+
 function renderFlatDetailTenantActions(propertyId, unit, ctx) {
-    const { occ, tenancy, members, pendingInvite } = ctx;
+    const { occ, tenancy, pendingInvite } = ctx;
     if (!occ && !tenancy && !pendingInvite) return '';
-    const lead = members.find(m => m.isLead) || members[0];
-    const listItem = lead?.listId != null ? TENANT_LIST[lead.listId] : null;
     const unpaid = invoicesForUnit(propertyId, unit).filter(i => i.status === 'Overdue');
     if (!occ && !tenancy && pendingInvite) {
         return `
     <div class="flat-dt-tenant-actions">
-        <button type="button" data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-dt-tenant-action flat-dt-tenant-action--primary"><i data-lucide="mail" class="w-4 h-4"></i>View invite</button>
-        <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-action"><i data-lucide="user-plus" class="w-4 h-4"></i>Resend invite</button>
+        <div class="flat-dt-tenant-actions-row">
+            <button type="button" data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-dt-tenant-action flat-dt-tenant-action--primary"><i data-lucide="mail" class="w-4 h-4"></i>View invite</button>
+            <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-action"><i data-lucide="user-plus" class="w-4 h-4"></i>Resend</button>
+        </div>
     </div>`;
     }
+    const primary = getFlatPrimaryTenantContact(ctx);
+    const isGroup = tenancy?.type === 'group' && ctx.count > 1;
+    const msgLabel = isGroup ? 'Message tenant' : 'Message';
+    const msgBtn = primary?.chatId != null
+        ? `<button type="button" data-go="chat" data-chat="${primary.chatId}" class="flat-dt-tenant-action"><i data-lucide="message-square" class="w-4 h-4"></i>${msgLabel}</button>`
+        : primary?.listId != null
+            ? `<button type="button" data-go="tenant-detail" data-tid="${primary.listId}" class="flat-dt-tenant-action"><i data-lucide="message-square" class="w-4 h-4"></i>${msgLabel}</button>`
+            : '';
+    const leaseBtn = tenancy
+        ? `<button type="button" data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-action"><i data-lucide="file-text" class="w-4 h-4"></i>View lease</button>`
+        : '';
+    const topRow = [msgBtn, leaseBtn].filter(Boolean).join('');
+    const recordBtn = unpaid.length
+        ? `<button type="button" data-go="mark-rent-received" data-iid="${unpaid[0].id}" class="flat-dt-tenant-action flat-dt-tenant-action--wide flat-dt-tenant-action--record"><i data-lucide="pound-sterling" class="w-4 h-4"></i>Record rent</button>`
+        : '';
+    if (!topRow && !recordBtn) return '';
     return `
     <div class="flat-dt-tenant-actions">
-        ${listItem?.chatId != null ? `<button type="button" data-go="chat" data-chat="${listItem.chatId}" class="flat-dt-tenant-action"><i data-lucide="message-square" class="w-4 h-4"></i>Message</button>` : ''}
-        ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-action"><i data-lucide="file-text" class="w-4 h-4"></i>View lease</button>` : ''}
-        ${unpaid.length ? `<button type="button" data-go="mark-rent-received" data-iid="${unpaid[0].id}" class="flat-dt-tenant-action flat-dt-tenant-action--primary"><i data-lucide="pound-sterling" class="w-4 h-4"></i>Record rent</button>` : occ ? `<button type="button" data-ftab="payments" class="flat-dt-tenant-action"><i data-lucide="pound-sterling" class="w-4 h-4"></i>Payments</button>` : ''}
+        ${topRow ? `<div class="flat-dt-tenant-actions-row${!leaseBtn || !msgBtn ? ' flat-dt-tenant-actions-row--solo' : ''}">${topRow}</div>` : ''}
+        ${recordBtn}
     </div>`;
 }
 
@@ -6730,9 +6862,25 @@ function renderFlatDetailPaymentsTab(propertyId, unit) {
     </div>`;
 }
 
-function renderFlatBuildingPhotosSection(propertyId) {
+function renderFlatBuildingPhotosSection(propertyId, opts = {}) {
     const meta = AppStore.meta(propertyId);
     const photos = meta.photos?.length ? meta.photos : [IMG.props[propertyId] || IMG.fallback];
+    if (opts.variant === 'card') {
+        return `
+        <section class="card flat-dt-building-photos">
+            <div class="flat-dt-building-head">
+                <h3 class="flat-dt-building-title">Building photos</h3>
+                <span class="flat-dt-building-count">${photos.length}</span>
+            </div>
+            <p class="flat-dt-building-desc">Shared photos for the whole property — not just this unit.</p>
+            <div class="flat-dt-building-grid">
+                ${photos.slice(0, 3).map(src => `<div class="flat-dt-building-thumb"><img src="${src}" alt=""></div>`).join('')}
+            </div>
+            <button type="button" data-go="property-photos" data-pid="${propertyId}" class="flat-dt-building-link-btn">
+                <i data-lucide="building-2" class="w-4 h-4"></i>View all building photos
+            </button>
+        </section>`;
+    }
     return `
     <button type="button" data-go="property-photos" data-pid="${propertyId}" class="btn-secondary w-full py-3 text-[13px] mt-3 flat-dt-building-link">
         <i data-lucide="building-2" class="w-4 h-4 inline align-[-2px] mr-1"></i>View building photos (${photos.length})
@@ -6745,25 +6893,16 @@ function renderFlatDetailGalleryTab(propertyId, unit) {
     const photos = gal?.photos?.length ? gal.photos : [getFlatCoverPhoto(propertyId, unit)];
     const cover = gal?.cover ?? 0;
     return `
-    <div class="flat-dt-tab-panel">
-        <p class="flat-section-eyebrow flat-dt-eyebrow-inset">Unit photos</p>
+    <div class="flat-dt-tab-panel flat-dt-gallery-panel">
         ${renderFlatUnitPhotoPicker(photos, cover, {
+            variant: 'gallery',
             coverAction: 'set-flat-cover',
             removeAction: 'remove-flat-photo',
             uploadAction: 'upload-flat-photo',
             uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
-            hint: 'Tap ★ on any photo to set it as the cover. This shows in Overview and unit lists.',
+            hint: 'Tap the star on a thumbnail to set the cover for Overview and unit lists.',
         })}
-        ${renderFlatBuildingPhotosSection(propertyId)}
-    </div>`;
-}
-
-function renderFlatDetailActivityTab(propertyId, unit) {
-    const maint = renderFlatMaintenancePreview(propertyId, unit);
-    return `
-    <div class="flat-dt-tab-panel">
-        ${maint || `<div class="card p-5 text-center flat-dt-empty"><i data-lucide="wrench" class="w-8 h-8 text-[#CBD5E1] mx-auto"></i><p class="text-[13px] font-semibold mt-2 text-[#0F172A]">No maintenance issues</p><p class="text-[12px] text-[#64748B] mt-1">Use ⋯ menu → Log issue, or Property → Maintenance tab.</p></div>`}
-        ${flatDetailRecentActivity(propertyId, unit, { maxItems: 8 })}
+        ${renderFlatBuildingPhotosSection(propertyId, { variant: 'card' })}
     </div>`;
 }
 
@@ -6772,7 +6911,6 @@ function renderFlatDetailTabContent(tab, propertyId, unit, u, p, tenancy, member
         case 'tenant': return renderFlatDetailTenantTab(propertyId, unit, ctx);
         case 'payments': return renderFlatDetailPaymentsTab(propertyId, unit);
         case 'gallery': return renderFlatDetailGalleryTab(propertyId, unit);
-        case 'activity': return renderFlatDetailActivityTab(propertyId, unit);
         default: return renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor);
     }
 }
@@ -6795,7 +6933,7 @@ function screenFlatDetail() {
     const unitMenuKey = actionMenuKeyFor('unit', propertyId, unit);
     const unitMenuOpen = isActionMenuOpen(unitMenuKey);
     const name = unitName(u);
-    const flatTab = STATE.flatTab || 'overview';
+    const flatTab = (STATE.flatTab === 'activity' ? 'overview' : STATE.flatTab) || 'overview';
     const tabBadges = flatDetailTabBadges(propertyId, unit, pendingInvite);
     const peopleCtx = { occ, tenancy, members, count, pendingInvite };
     const rentAlert = renderFlatRentAlert(propertyId, unit);
@@ -6816,9 +6954,9 @@ function screenFlatDetail() {
                 ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, unit, { fromDetail: true }))}
             </div>
         </header>
-        ${rentAlert ? `<div class="flat-dt-global-alert screen-content screen-content-sm">${rentAlert}</div>` : ''}
         ${renderFlatDetailTabNav(flatTab, tabBadges)}
         <div class="flat-dt-scroll flat-dt-scroll--tabbed screen-content screen-content-sm">
+            ${rentAlert ? `<div class="flat-dt-inline-alert">${rentAlert}</div>` : ''}
             ${renderFlatDetailTabContent(flatTab, propertyId, unit, u, p, tenancy, members, peopleCtx, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
         </div>
         <footer class="flat-dt-footer">
@@ -7183,35 +7321,24 @@ function dashAttentionItems() {
     if (overdue.length) {
         const amt = overdue.reduce((s, i) => s + parseInt(String(i.amount).replace(/[^\d]/g, ''), 10), 0);
         items.push({
-            icon: 'banknote', bg: '#FEE2E2', color: '#DC2626',
+            icon: 'link-2', bg: '#FEE2E2', color: '#DC2626',
             title: `${overdue.length} overdue rent`,
             sub: `£${amt.toLocaleString()} to collect`,
             go: 'mark-rent-received',
         });
     }
-    const unassignedTenant = MAINTENANCE_ITEMS.filter(m =>
-        isTenantMaintReport(m) && maintNeedsContractor(m)
-    );
-    if (unassignedTenant.length) {
-        const preview = unassignedTenant.slice(0, 2).map(m => m.issue).join(', ');
+    const tenantNeeds = (MAINTENANCE_ITEMS || []).filter(m =>
+        typeof maintNeedsContractor === 'function' && maintNeedsContractor(m)
+        && typeof isTenantMaintReport === 'function' && isTenantMaintReport(m));
+    if (tenantNeeds.length) {
+        const preview = tenantNeeds.slice(0, 2).map(m => m.issue).join(', ');
         items.push({
             icon: 'wrench', bg: '#FEF3C7', color: '#D97706',
-            title: `${unassignedTenant.length} tenant report${unassignedTenant.length === 1 ? '' : 's'} need contractor`,
-            sub: preview + (unassignedTenant.length > 2 ? '…' : ''),
+            title: `${tenantNeeds.length} tenant report${tenantNeeds.length === 1 ? '' : 's'} need contractor`,
+            sub: preview.length > 52 ? `${preview.slice(0, 49)}…` : preview,
             go: 'maintenance',
             maintSourceFilter: 'tenant',
-            maintFilter: 'open',
         });
-    } else {
-        const openMaint = MAINTENANCE_ITEMS.filter(m => m.status === 'open' || m.status === 'progress');
-        if (openMaint.length) {
-            items.push({
-                icon: 'wrench', bg: '#FEF3C7', color: '#D97706',
-                title: `${openMaint.length} open issue${openMaint.length === 1 ? '' : 's'}`,
-                sub: 'Review maintenance queue',
-                go: 'maintenance',
-            });
-        }
     }
     const unreadChats = (CONVERSATIONS || []).filter(c => c.unread > 0).length;
     if (unreadChats) {
@@ -7235,12 +7362,40 @@ function dashAttentionItems() {
     return items.slice(0, 3);
 }
 
+function renderDashFinancialOverview(fin) {
+    if (!fin) return '';
+    const pct = fin.pct || 0;
+    const r = 42;
+    const c = 2 * Math.PI * r;
+    const offset = c - (pct / 100) * c;
+    return `
+    <button type="button" data-go="financial" class="card dash-fin-card w-full text-left">
+        <h3 class="dash-fin-title">Financial Overview</h3>
+        <div class="dash-fin-body">
+            <div class="dash-fin-ring-wrap">
+                <svg viewBox="0 0 100 100" class="dash-fin-ring-svg" aria-hidden="true">
+                    <circle cx="50" cy="50" r="${r}" fill="none" stroke="#E2E8F0" stroke-width="10"/>
+                    <circle cx="50" cy="50" r="${r}" fill="none" stroke="#2563EB" stroke-width="10"
+                        stroke-dasharray="${c}" stroke-dashoffset="${offset}"
+                        stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                </svg>
+                <div class="dash-fin-ring-label"><strong>${pct}%</strong><span>Collected</span></div>
+            </div>
+            <div class="dash-fin-lines">
+                <div class="dash-fin-line"><span class="dash-fin-dot dash-fin-dot--paid"></span><span class="dash-fin-line-label">Paid</span><span class="dash-fin-line-val">£${fin.collected.toLocaleString()}</span></div>
+                <div class="dash-fin-line"><span class="dash-fin-dot dash-fin-dot--pending"></span><span class="dash-fin-line-label">Pending</span><span class="dash-fin-line-val">£${fin.pending.toLocaleString()}</span></div>
+                <div class="dash-fin-line"><span class="dash-fin-dot dash-fin-dot--overdue"></span><span class="dash-fin-line-label">Overdue</span><span class="dash-fin-line-val">£${fin.overdue.toLocaleString()}</span></div>
+            </div>
+        </div>
+    </button>`;
+}
+
 function dashAttentionStrip() {
     const items = dashAttentionItems();
     if (!items.length) return '';
     return `
     <div class="dash-attention">
-        <p class="dash-attention-label">Needs attention</p>
+        <h3 class="screen-section-title dash-attention-heading">Needs attention</h3>
         ${items.map(item => `
         <button type="button" data-go="${item.go}"${item.maintSourceFilter ? ` data-maint-source-on-nav="${item.maintSourceFilter}"` : ''}${item.maintFilter ? ` data-maint-filter-on-nav="${item.maintFilter}"` : ''} class="dash-attention-row">
             <span class="dash-attention-icon" style="background:${item.bg};color:${item.color}"><i data-lucide="${item.icon}" class="w-5 h-5"></i></span>
@@ -7273,7 +7428,7 @@ function tenantListQuickActions(t) {
 function screenDashboardEnhanced() {
     if (showScreenSkeleton('dashboard')) return renderDashboardSkeleton();
     const stats = portfolioStats();
-    const landlordName = LANDLORD_USER.firstName || 'John';
+    const occupiedProps = stats.occupiedProperties ?? PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).length;
     const reminders = AppStore.reminders.slice(0, 3).map(r => {
         const prop = PROPERTIES[r.propertyId];
         const rt = REMINDER_TYPES.find(t => t[0] === r.type) || ['custom', r.title, 'bell', '#EFF6FF', '#2563EB'];
@@ -7284,76 +7439,62 @@ function screenDashboardEnhanced() {
     const finStats = typeof financialStats === 'function' ? financialStats() : null;
     return `
 <div class="screen-header dash-header">
-    <div class="dash-header-top">
+    <div class="dash-header-top dash-header-top--brand">
         <button data-action="drawer" class="top-icon-btn"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
-        <div class="flex items-center gap-2">
-            <button data-go="global-search" class="top-icon-btn"><i data-lucide="search" class="w-[20px] h-[20px]"></i></button>
-            <button data-go="notifications-list" class="top-icon-btn relative">
-                <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-                ${unreadBell ? `<span class="notif-badge">${unreadBell}</span>` : ''}
-            </button>
+        <div class="dash-brand">
+            <img src="${IMG.onboarding.splashLogo}" alt="" class="dash-brand-logo">
+            <div class="dash-brand-text">
+                <p class="dash-brand-name">Landlord HQ</p>
+                <p class="dash-brand-tag">Manage. Track. Grow.</p>
+            </div>
         </div>
-    </div>
-    <div class="dash-greeting-row">
-        <img src="${IMG.avatar.john}" class="dash-avatar" alt="">
-        <div>
-            <p class="dash-greeting">${dashGreeting()}, ${landlordName}</p>
-            <p class="dash-date">${dashDateLabel()}</p>
-        </div>
+        <button data-go="notifications-list" class="top-icon-btn relative">
+            <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
+            ${unreadBell ? `<span class="notif-badge">${unreadBell}</span>` : ''}
+        </button>
     </div>
 </div>
     <div class="screen-content screen-enter">
         <div class="dash-hero">
             <div class="dash-hero-glow"></div>
             ${buildingSvg}
-            <div class="dash-hero-top">
-                <span class="dash-hero-label">Monthly income</span>
-                <button data-go="properties" class="dash-hero-link">View portfolio</button>
-            </div>
+            <span class="dash-hero-label">Monthly income</span>
             <p class="dash-hero-amount">£${stats.monthlyRent.toLocaleString()}</p>
-            <p class="dash-hero-sub">From ${stats.occupiedUnits} occupied unit${stats.occupiedUnits === 1 ? '' : 's'} across ${stats.buildingCount} building${stats.buildingCount === 1 ? '' : 's'}</p>
-            ${finStats ? `
-            <button type="button" data-go="financial" class="dash-hero-rent">
-                <div class="dash-hero-rent-col">
-                    <span class="dash-hero-rent-label">Collected</span>
-                    <span class="dash-hero-rent-val dash-hero-rent-val--green">£${finStats.collected.toLocaleString()}</span>
-                </div>
-                <div class="dash-hero-rent-divider"></div>
-                <div class="dash-hero-rent-col">
-                    <span class="dash-hero-rent-label">Outstanding</span>
-                    <span class="dash-hero-rent-val${finStats.outstanding ? ' dash-hero-rent-val--amber' : ''}">£${finStats.outstanding.toLocaleString()}</span>
-                </div>
-                <i data-lucide="chevron-right" class="dash-hero-rent-chevron w-4 h-4"></i>
-            </button>` : ''}
+            <p class="dash-hero-sub">From ${occupiedProps} occupied propert${occupiedProps === 1 ? 'y' : 'ies'}</p>
             <div class="dash-hero-stats">
-                <button data-go="properties" class="dash-hero-stat"><strong>${stats.buildingCount}</strong><span>Buildings</span></button>
+                <button data-go="properties" class="dash-hero-stat"><strong>${stats.buildingCount}</strong><span>Properties</span></button>
                 <div class="dash-hero-divider"></div>
                 <button data-go="tenants" class="dash-hero-stat"><strong>${stats.activeTenants}</strong><span>Tenants</span></button>
                 <div class="dash-hero-divider"></div>
                 <button data-go="properties" class="dash-hero-stat"><strong>${stats.occupancy}%</strong><span>Occupied</span></button>
             </div>
         </div>
-        ${dashAttentionStrip()}
-        <div class="dash-quick">
-            ${[['circle-check','Record rent','mark-rent-received','success'],['megaphone','Send notice','broadcast-notices','indigo'],['wrench','Maintenance','maintenance','warning'],['wallet','Finance','financial','primary']].map(([ic,l,go,tone])=>`
+        ${finStats ? renderDashFinancialOverview(finStats) : ''}
+        <div class="dash-quick dash-quick--grid dash-quick--three">
+            ${[['megaphone','Announcement','broadcast-notices','indigo'],['wrench','Maintenance','maintenance','warning'],['wallet','Finance','financial','primary']].map(([ic,l,go,tone])=>`
             <button data-go="${go}" class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${l}</span>
             </button>`).join('')}
         </div>
+        ${dashAttentionStrip()}
         ${reminders.length ? `
-        <div>
+        <div class="dash-reminder-section">
             <div class="dash-section-head">
-                <h3 class="screen-section-title">Coming up</h3>
+                <h3 class="screen-section-title">Reminder</h3>
                 <button data-go="reminders" class="dash-view-all">View all</button>
             </div>
-            ${reminders.slice(0, 2).map(([ic,title,sub,time,bg,color,pid,tab])=>`
-            <button data-go="property-detail" data-pid="${pid}" data-tab="${tab}" class="dash-reminder-row card w-full text-left p-4 mb-2">
-                <div class="flex items-center gap-3">
-                    <div class="dash-reminder-icon" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></div>
-                    <div class="flex-1"><p class="text-[13px] font-semibold">${title}</p><p class="text-[11px] text-[#64748B]">${sub} · ${time}</p></div>
-                </div>
-            </button>`).join('')}
+            <div class="card dash-reminder-list">
+                ${reminders.slice(0, 2).map(([ic,title,sub,time,bg,color,pid,tab,urgency])=>`
+                <button type="button" data-go="property-detail" data-pid="${pid}" data-tab="${tab}" class="dash-reminder-row${urgency === 'high' ? ' urgency-high' : urgency === 'medium' ? ' urgency-medium' : ''}">
+                    <span class="dash-reminder-icon" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></span>
+                    <span class="dash-reminder-body">
+                        <span class="dash-reminder-title">${title}</span>
+                        <span class="dash-reminder-prop">${sub} · ${time}</span>
+                    </span>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] flex-shrink-0"></i>
+                </button>`).join('')}
+            </div>
         </div>` : ''}
     </div>`;
 }
@@ -7373,20 +7514,23 @@ function screenTenantsEnhanced() {
         pending: pendingTenantInviteCount(),
     };
     const defaultPid = PROPERTIES.find(p => p.status === 'Vacant')?.id ?? PROPERTIES[0]?.id ?? 0;
-  return `${topBar('Tenants', { sub: `${counts.active} active · ${counts.pending} pending invite${counts.pending === 1 ? '' : 's'}` })}
-    <div class="screen-content screen-enter">
+  return `${topBar('Tenants', { back: true })}
+    <div class="screen-content screen-enter tenant-list-page tenant-list-page--minimal">
+        <div class="tenant-list-toolbar">
+            <span class="tenant-list-count">${counts.active} active tenant${counts.active === 1 ? '' : 's'}</span>
+            <button type="button" data-go="select-property-invite" class="header-text-link">+ Invite</button>
+        </div>
         <div class="search-bar">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
             <input data-search="tenants" type="text" value="${STATE.search.tenants}" placeholder="Search tenants..." class="flex-1 text-[13px] bg-transparent border-none outline-none">
         </div>
-        <div class="filter-tabs">
-            ${[['all','All',counts.all],['active','Active',counts.active],['pending','Pending',counts.pending],['inactive','Inactive',counts.inactive]].map(([k,l,n])=>`
-            <button type="button" data-tenant-filter="${k}" class="filter-chip ${f===k?'active':''}">${l} (${n})</button>`).join('')}
+        <div class="tenant-filter-row">
+            ${[['all', 'All'], ['active', 'Active'], ['pending', 'Pending'], ['inactive', 'Inactive']].map(([k, l]) => `
+            <button type="button" data-tenant-filter="${k}" class="filter-chip ${f === k ? 'active' : ''}">${l}</button>`).join('')}
         </div>
-        <div class="stack-sm mt-2">
-            ${filtered.length ? filtered.map(t => tenantListRow(t)).join('') : emptyState('users', 'No tenants yet', 'Invite a tenant to get started.', 'Invite Tenant', null, 'select-property-invite')}
+        <div class="tenant-list tenant-list--minimal">
+            ${filtered.length ? filtered.map(t => tenantListRow(t, { minimal: true })).join('') : emptyState('users', 'No tenants yet', 'Invite a tenant to get started.', 'Invite Tenant', null, 'select-property-invite')}
         </div>
-        <button type="button" data-go="select-property-invite" class="btn-primary tenant-add-btn"><i data-lucide="plus" class="w-5 h-5"></i> Invite Tenant</button>
     </div>`;
 }
 
@@ -7996,6 +8140,7 @@ function portfolioStats() {
         totalUnits,
         vacantUnits,
         occupiedUnits,
+        occupiedProperties: PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).length,
         monthlyRent,
         occupancy: totalUnits ? Math.round((occupiedUnits / totalUnits) * 100) : 0,
         activeTenants: TENANT_LIST.filter(t => t.status === 'active').length,
@@ -8150,6 +8295,7 @@ function renderMaintTenantPropertyCard(item) {
     const p = PROPERTIES[pid];
     const cover = typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(pid) : IMG.props[pid];
     const unitLabel = item.unit && item.unit !== '—' ? item.unit : 'Your unit';
+    const landlordChatId = typeof getActiveTenantLandlordChatId === 'function' ? getActiveTenantLandlordChatId() : null;
     return `
     <div class="card maint-v2-property-card maint-v2-property-card--tenant">
         <img src="${cover}" alt="" class="maint-v2-property-img">
@@ -8158,6 +8304,11 @@ function renderMaintTenantPropertyCard(item) {
             <p class="maint-v2-property-tenant"><i data-lucide="home" class="w-3.5 h-3.5"></i> ${escapeHtml(unitLabel)}</p>
             <p class="maint-v2-property-phone"><i data-lucide="building-2" class="w-3.5 h-3.5"></i> ${escapeHtml(p?.address || '')}</p>
         </div>
+        ${landlordChatId != null ? `
+        <button type="button" data-go="chat" data-chat="${landlordChatId}" class="maint-v2-property-msg">
+            <i data-lucide="message-circle" class="w-5 h-5"></i>
+            <span>Message landlord</span>
+        </button>` : ''}
     </div>`;
 }
 
@@ -8191,10 +8342,9 @@ function renderMaintTenantContractorCard(item, contractorJob, chatId) {
         </div>
         <div class="ctr-card-actions maint-v2-tenant-contractor-actions">
             ${contractor ? `<button type="button" data-action="view-contractor-profile" data-cid="${contractor.id}" class="ctr-card-action"><i data-lucide="user" class="w-4 h-4"></i><span>Profile</span></button>` : ''}
-            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="ctr-card-action"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
-            ${item.groupChatId != null ? `<button type="button" data-go="chat" data-chat="${item.groupChatId}" class="ctr-card-action"><i data-lucide="users" class="w-4 h-4"></i><span>Job chat</span></button>` : ''}
+            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="ctr-card-action"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message contractor</span></button>` : ''}
         </div>
-        <p class="maint-v2-tenant-contractor-note">Contact your landlord if you need to reschedule.</p>
+        <p class="maint-v2-tenant-contractor-note">Message your landlord to reschedule or change contractor.</p>
     </div>`;
 }
 
@@ -8222,7 +8372,7 @@ function renderMaintPropertyContactCard(item) {
         ${tenant && msgAttrs ? `
         <button type="button" ${msgAttrs} class="maint-v2-property-msg">
             <i data-lucide="message-circle" class="w-5 h-5"></i>
-            <span>Message</span>
+            <span>Message tenant</span>
         </button>` : ''}
     </div>`;
 }
@@ -8592,7 +8742,6 @@ function renderMaintContractorCard(item, contractorJob, chatId) {
     const visitLine = contractorJob?.visitDate && contractorJob.visitDate !== 'Not scheduled'
         ? `Visit ${contractorJob.visitDate}`
         : 'Visit not scheduled';
-    const hasGroup = item.groupChatId != null;
     return `
     <div class="maint-contractor-card card">
         <button type="button" data-action="view-contractor-profile" data-cid="${contractor?.id ?? ''}" class="maint-contractor-card-top w-full text-left">
@@ -8607,8 +8756,7 @@ function renderMaintContractorCard(item, contractorJob, chatId) {
             <i data-lucide="chevron-right" class="maint-contractor-chevron w-4 h-4"></i>
         </button>
         <div class="maint-contractor-bar">
-            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="maint-contractor-bar-btn maint-contractor-bar-btn--primary"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
-            ${hasGroup ? `<button type="button" data-go="chat" data-chat="${item.groupChatId}" class="maint-contractor-bar-btn"><i data-lucide="users" class="w-4 h-4"></i><span>Job chat</span></button>` : ''}
+            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="maint-contractor-bar-btn maint-contractor-bar-btn--primary"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message contractor</span></button>` : ''}
             ${contractor?.phone ? `<button type="button" data-action="call-contractor" data-phone="${contractor.phone.replace(/"/g, '')}" class="maint-contractor-bar-btn"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
         </div>
     </div>`;
@@ -8721,6 +8869,66 @@ function getChatSenderName() {
 function getJobChatMaintItem(conv) {
     if (conv?.maintId == null) return null;
     return MAINTENANCE_ITEMS.find(m => m.id === conv.maintId) || null;
+}
+
+function isJobChatMaintComplete(conv) {
+    const item = getJobChatMaintItem(conv);
+    return item?.status === 'done';
+}
+
+function endJobGroupChatForMaint(maintId, { auto = false, silent = false } = {}) {
+    const c = CONVERSATIONS.find(conv => conv.isGroup && conv.maintId === maintId);
+    if (!c || c.ended) return;
+    c.ended = true;
+    ensureChatMessageIds(c);
+    c.messages.push({
+        id: `m-${c.id}-sys-${Date.now()}`,
+        type: 'system',
+        text: auto
+            ? 'This job is complete. The chat is now read-only.'
+            : 'This job chat has been ended. You can read messages but cannot send new ones.',
+        time: formatEventTime(),
+    });
+    c.preview = auto ? 'Job complete · chat ended' : 'Job chat ended';
+    syncConversationsToStore();
+    AppStore.save();
+    if (!silent) toast(auto ? 'Job chat closed — job complete' : 'Job chat ended');
+}
+
+function ensureJobChatEndedIfComplete(conv) {
+    if (!isJobGroupChat(conv) || chatIsEnded(conv) || conv.maintId == null) return;
+    if (isJobChatMaintComplete(conv)) endJobGroupChatForMaint(conv.maintId, { auto: true, silent: true });
+}
+
+function restoreJobChatAccess(conv) {
+    if (!conv?.isGroup) return;
+    const key = chatViewerKey();
+    if (conv.leftFor?.length) conv.leftFor = conv.leftFor.filter(k => k !== key);
+}
+
+function hideChatFromInbox(conv) {
+    const key = chatViewerKey();
+    if (!conv.leftFor) conv.leftFor = [];
+    if (!conv.leftFor.includes(key)) conv.leftFor.push(key);
+}
+
+function chatOptionRow(action, icon, label, sub = '', { danger = false } = {}) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `<button type="button" data-action="${action}" class="chat-opt-item${danger ? ' chat-opt-item--danger' : ''}">
+        <span class="chat-opt-icon"><i data-lucide="${icon}" class="w-[18px] h-[18px]"></i></span>
+        <span class="chat-opt-copy">
+            <span class="chat-opt-label">${esc(label)}</span>
+            ${sub ? `<span class="chat-opt-sub">${esc(sub)}</span>` : ''}
+        </span>
+    </button>`;
+}
+
+function chatOptionsSection(title, rowsHtml) {
+    if (!rowsHtml) return '';
+    return `<div class="chat-opt-section">
+        ${title ? `<p class="chat-opt-section-title">${title}</p>` : ''}
+        <div class="chat-opt-section-body">${rowsHtml}</div>
+    </div>`;
 }
 
 function chatHeaderDisplayName(conv) {
@@ -8882,32 +9090,40 @@ function clearChatHistoryForMe() {
 
 function leaveJobGroupChat() {
     const c = conversation(STATE.chatId);
-    if (!isJobGroupChat(c) || chatIsEnded(c) || STATE.userRole === 'landlord') return;
-    const key = chatViewerKey();
-    if (!c.leftFor) c.leftFor = [];
-    if (!c.leftFor.includes(key)) c.leftFor.push(key);
+    if (!isJobGroupChat(c)) return;
+    if (STATE.userRole === 'landlord' && !chatIsEnded(c)) return;
+    hideChatFromInbox(c);
     syncConversationsToStore();
     AppStore.save();
     closeChatOptionsMenu();
-    toast('You left the job chat');
+    toast(chatIsEnded(c) ? 'Chat removed from your inbox' : 'You left the job chat');
+    go('messages');
+}
+
+function deleteChatForMe() {
+    const c = conversation(STATE.chatId);
+    if (!c) return;
+    hideChatFromInbox(c);
+    if (c.messages?.length) {
+        const key = chatViewerKey();
+        c.messages.forEach(m => {
+            if (!m.deletedFor) m.deletedFor = [];
+            if (!m.deletedFor.includes(key)) m.deletedFor.push(key);
+        });
+        refreshConversationPreview(c);
+    }
+    syncConversationsToStore();
+    AppStore.save();
+    closeChatOptionsMenu();
+    toast('Chat deleted');
     go('messages');
 }
 
 function endJobGroupChat() {
     const c = conversation(STATE.chatId);
     if (!isJobGroupChat(c) || chatIsEnded(c) || STATE.userRole !== 'landlord') return;
-    c.ended = true;
-    c.messages.push({
-        id: `m-${c.id}-sys-${Date.now()}`,
-        type: 'system',
-        text: 'This job chat has been ended. You can read messages but cannot send new ones.',
-        time: formatEventTime(),
-    });
-    c.preview = 'Job chat ended';
-    syncConversationsToStore();
-    AppStore.save();
+    endJobGroupChatForMaint(c.maintId, { auto: false, silent: true });
     closeChatOptionsMenu();
-    toast('Job chat ended');
     render();
 }
 
@@ -8918,10 +9134,10 @@ function toggleJobChatMute(mute) {
     if (!c.mutedFor) c.mutedFor = [];
     if (mute) {
         if (!c.mutedFor.includes(key)) c.mutedFor.push(key);
-        toast('Job chat muted');
+        toast('Notifications muted');
     } else {
         c.mutedFor = c.mutedFor.filter(k => k !== key);
-        toast('Job chat unmuted');
+        toast('Notifications unmuted');
     }
     syncConversationsToStore();
     AppStore.save();
@@ -8959,13 +9175,14 @@ function renderChatMessageBubble(m, flipped = chatMessageFlipped(), conv = null)
         return `<div class="chat-bubble-wrap chat-bubble-wrap--${displayType}"><div class="chat-bubble-${displayType} chat-bubble--deleted"><p>This message was deleted</p></div></div>`;
     }
     const showSender = conv?.isGroup && displayType === 'in' && m.sender;
+    const timeLabel = (m.time || '').replace(' · Sent', '');
     return `
     <div class="chat-bubble-wrap chat-bubble-wrap--${displayType}">
         ${showSender ? `<p class="chat-sender">${esc(m.sender)}</p>` : ''}
         <button type="button" data-action="chat-message-menu" data-msg-id="${esc(m.id)}" class="chat-bubble-${displayType} chat-bubble-btn">
             <p>${esc(m.text)}</p>
-            <span class="chat-time">${esc(m.time)}</span>
         </button>
+        <span class="chat-time">${esc(timeLabel)}${displayType === 'out' ? ' · Sent' : ''}</span>
     </div>`;
 }
 
@@ -9023,23 +9240,62 @@ const chatMembersSheet = () => {
 const chatOptionsActionSheet = () => {
     if (!STATE.chatOptionsOpen || STATE.screen !== 'chat') return '';
     const c = conversation(STATE.chatId);
+    if (!c) return '';
     const isGroup = isJobGroupChat(c);
-    const ended = chatIsEnded(c);
+    const ended = chatIsEnded(c) || (isGroup && isJobChatMaintComplete(c));
     const muted = chatIsMuted(c);
     const role = STATE.userRole;
-    const items = [];
+    const maintItem = isGroup ? getJobChatMaintItem(c) : null;
+    const jobComplete = maintItem?.status === 'done';
+    const sheetTitle = isGroup ? 'Job chat' : 'Chat options';
+    const sheetSub = isGroup
+        ? (ended ? (jobComplete ? 'Job complete · read-only' : 'Chat ended · read-only') : 'Coordinate access and updates')
+        : '';
+
+    const sections = [];
+
     if (isGroup) {
-        if (c.maintId != null) items.push(`<button type="button" data-action="open-job-from-chat" class="photo-action-item">View maintenance issue</button>`);
-        items.push(`<button type="button" data-action="chat-members" class="photo-action-item">View members (${(c.members || []).length})</button>`);
-        items.push(`<button type="button" data-action="${muted ? 'unmute-job-chat' : 'mute-job-chat'}" class="photo-action-item">${muted ? 'Unmute notifications' : 'Mute notifications'}</button>`);
-        if (role === 'landlord' && !ended) items.push(`<button type="button" data-action="end-job-chat" class="photo-action-item danger">End job chat</button>`);
-        if (role !== 'landlord' && !ended) items.push(`<button type="button" data-action="leave-job-chat" class="photo-action-item danger">Leave chat</button>`);
+        const jobRows = [];
+        if (maintItem) {
+            const statusLabel = jobComplete ? 'Completed' : (maintItem.status === 'progress' ? 'In progress' : 'Open');
+            jobRows.push(chatOptionRow('open-job-from-chat', 'wrench', 'View maintenance issue', statusLabel));
+        }
+        jobRows.push(chatOptionRow('chat-members', 'users', `Members (${(c.members || []).length})`, 'Landlord, tenant & contractor'));
+        sections.push(chatOptionsSection('Job', jobRows.join('')));
     }
-    items.push(`<button type="button" data-action="clear-chat-history" class="photo-action-item">Clear chat for me</button>`);
-    items.push(`<button type="button" data-action="close-chat-options" class="photo-action-item cancel">Cancel</button>`);
+
+    sections.push(chatOptionsSection('Notifications', chatOptionRow(
+        muted ? 'unmute-job-chat' : 'mute-job-chat',
+        muted ? 'bell' : 'bell-off',
+        muted ? 'Unmute notifications' : 'Mute notifications',
+        muted ? 'Alerts are off for this chat' : 'Silence alerts from this chat',
+    )));
+
+    const manageRows = [
+        chatOptionRow('clear-chat-history', 'eraser', 'Clear messages for me', 'Hide message history on this device'),
+    ];
+    if (isGroup) {
+        if (role === 'landlord' && !ended) {
+            manageRows.push(chatOptionRow('end-job-chat', 'lock', 'End job chat', 'Mark read-only for everyone', { danger: true }));
+        }
+        if (role !== 'landlord') {
+            manageRows.push(chatOptionRow('leave-job-chat', 'log-out', 'Leave chat', ended ? 'Remove from your inbox' : 'Hide from inbox — reopen from the job', { danger: true }));
+        }
+        if (role === 'landlord' && ended) {
+            manageRows.push(chatOptionRow('leave-job-chat', 'archive', 'Remove from inbox', 'Hide this ended chat', { danger: true }));
+        }
+    }
+    manageRows.push(chatOptionRow('delete-chat', 'trash-2', 'Delete chat', 'Remove from inbox and clear messages', { danger: true }));
+    sections.push(chatOptionsSection('Manage', manageRows.join('')));
+
     return `<div class="modal-overlay open" data-action="close-chat-options">
-        <div class="photo-action-sheet chat-action-sheet">
-            ${items.join('')}
+        <div class="chat-options-sheet">
+            <div class="chat-options-head">
+                <p class="chat-options-title">${sheetTitle}</p>
+                ${sheetSub ? `<p class="chat-options-sub">${sheetSub}</p>` : ''}
+            </div>
+            ${sections.join('')}
+            <button type="button" data-action="close-chat-options" class="chat-opt-cancel">Cancel</button>
         </div>
     </div>`;
 };
@@ -9049,6 +9305,7 @@ function sendChatMessage() {
     const text = (input?.value || STATE.chatDraft || '').trim();
     if (!text) return;
     const c = conversation(STATE.chatId);
+    if (!c) return;
     if (isJobGroupChat(c) && chatIsEnded(c)) {
         toast('This job chat has ended');
         return;
@@ -9555,20 +9812,17 @@ function screenTransactionHistoryEnhanced() {
 }
 
 function renderFinancialPageHeader() {
-    const unreadBell = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
     const stats = typeof financialStats === 'function' ? financialStats() : null;
     return `
     <div class="screen-header fin-page-header">
-        <div class="dash-header-top">
-            <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
-            <button type="button" data-go="notifications-list" class="top-icon-btn relative" aria-label="Notifications">
-                <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-                ${unreadBell ? `<span class="notif-badge">${unreadBell}</span>` : ''}
-            </button>
-        </div>
-        <div class="fin-title-block">
-            <h1 class="page-title">Finances</h1>
-            ${stats ? `<p class="page-subtitle">£${stats.collected.toLocaleString()} collected · ${stats.pct}% this month</p>` : ''}
+        <div class="sub-header-row">
+            <div class="sub-header-left">
+                <button type="button" data-action="back" class="back-btn" aria-label="Back"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="min-w-0">
+                    <h1 class="sub-header-title">Finances</h1>
+                    ${stats ? `<p class="sub-header-sub">£${stats.collected.toLocaleString()} collected · ${stats.pct}% this month</p>` : ''}
+                </div>
+            </div>
         </div>
     </div>`;
 }
@@ -9842,6 +10096,7 @@ function payMaintViaStripe(cid) {
                 item.status = 'done';
                 item.paymentPending = false;
                 if (typeof addMaintHistoryEvent === 'function') addMaintHistoryEvent(item, 'Paid via Stripe', inv.amount);
+                if (typeof endJobGroupChatForMaint === 'function') endJobGroupChatForMaint(item.id, { auto: true, silent: true });
             }
             pushNotification({
                 icon: 'credit-card', color: ['#ECFDF5', '#16A34A'],
@@ -9952,47 +10207,43 @@ function renderMaintInboxCard(item, opts = {}) {
     return `
     <div class="maint-inbox-card card${showAssign ? ' maint-inbox-card--assign' : ''}">
         <div class="maint-inbox-card-inner">
-            <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="maint-inbox-card-main w-full text-left">
+            <div class="maint-inbox-card-layout">
                 ${thumb}
-                <div class="maint-inbox-card-body min-w-0">
-                    <div class="maint-inbox-card-head">
-                        <p class="maint-inbox-card-title">${escapeHtml(item.issue)}</p>
-                        <span class="maint-inbox-card-time">${escapeHtml(when)}</span>
+                <div class="maint-inbox-card-stack min-w-0">
+                    <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="maint-inbox-card-main w-full text-left">
+                        <div class="maint-inbox-card-body min-w-0">
+                            <div class="maint-inbox-card-head">
+                                <p class="maint-inbox-card-title">${escapeHtml(item.issue)}</p>
+                                <span class="maint-inbox-card-time">${escapeHtml(when)}</span>
+                            </div>
+                            <p class="maint-inbox-card-loc">${escapeHtml(location)}</p>
+                        </div>
+                    </button>
+                    <div class="maint-inbox-card-footer">
+                        <div class="maint-inbox-card-meta">
+                            <span class="maint-priority-pill ${priority.cls}">${priority.label}</span>
+                            ${metaName}
+                            ${showStatusPill && !showAssign ? `<span class="maint-inbox-status-pill" style="background:${sBg};color:${sColor}">${statusLabel}</span>` : ''}
+                        </div>
+                        ${actionHtml}
                     </div>
-                    <p class="maint-inbox-card-loc">${escapeHtml(location)}</p>
                 </div>
-            </button>
-            <div class="maint-inbox-card-bottom">
-                <div class="maint-inbox-card-meta">
-                    <span class="maint-priority-pill ${priority.cls}">${priority.label}</span>
-                    ${metaName}
-                    ${showStatusPill && !showAssign ? `<span class="maint-inbox-status-pill" style="background:${sBg};color:${sColor}">${statusLabel}</span>` : ''}
-                </div>
-                ${actionHtml}
             </div>
         </div>
     </div>`;
 }
 
 function renderMaintenancePageHeader(subtitle = '') {
-    const unreadBell = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
     return `
     <div class="screen-header maint-page-header">
-        <div class="dash-header-top">
-            <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu"><i data-lucide="menu" class="w-[22px] h-[22px]"></i></button>
-            <div class="flex items-center gap-1">
-                <button type="button" data-go="maintenance-history" class="top-icon-btn" aria-label="Maintenance history" title="History">
-                    <i data-lucide="history" class="w-[20px] h-[20px]"></i>
-                </button>
-                <button type="button" data-go="notifications-list" class="top-icon-btn relative" aria-label="Notifications">
-                    <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-                    ${unreadBell ? `<span class="notif-badge">${unreadBell}</span>` : ''}
-                </button>
+        <div class="sub-header-row">
+            <div class="sub-header-left">
+                <button type="button" data-action="back" class="back-btn" aria-label="Back"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="min-w-0">
+                    <h1 class="sub-header-title">Maintenance</h1>
+                    ${subtitle ? `<p class="sub-header-sub">${subtitle}</p>` : ''}
+                </div>
             </div>
-        </div>
-        <div class="maint-title-block">
-            <h1 class="page-title">Maintenance</h1>
-            ${subtitle ? `<p class="page-subtitle">${subtitle}</p>` : ''}
         </div>
     </div>`;
 }
@@ -11262,20 +11513,16 @@ function screenRescheduleInspectionEnhanced() {
     const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM'];
     const selectedSlot = upcoming?.timeSlot || '10:00 AM';
     return `${topBar(title, { back: true })}
-    <div class="screen-content screen-enter">
-        ${uxTip('You conduct the visit and record the rating afterwards. A reminder is added to your Dashboard and Notifications.', 'How it works')}
-        <div class="card p-4 bg-[#EFF6FF]">
-            <p class="text-[13px] font-semibold text-[#0F172A]">${p.name}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">${currentLine}</p>
+    <div class="screen-content screen-enter insp-schedule-page">
+        <div class="insp-schedule-property">
+            <p class="insp-schedule-property-name">${p.name}</p>
+            <p class="insp-schedule-property-meta">${currentLine}</p>
         </div>
         ${formField('Inspection Date', dateVal, 'date', 'Select inspection date', 'inspDate')}
         ${formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
         ${formSelect('Type', selectedType, types, 'inspType')}
-        ${formTextarea('Access notes', upcoming?.notes || '', 'Parking, keys, tenant availability...', 'inspNotes')}
-        ${renderTenantNotifySection(STATE.propertyId, {
-            title: 'Notify tenants',
-            hint: 'Each flat has its own tenants — notify everyone who needs to know, or uncheck individuals.',
-        })}
+        ${formTextarea('Access notes', upcoming?.notes || '', 'Parking, keys, tenant availability...', 'inspNotes', '', 'form-input--compact')}
+        ${renderTenantNotifySection(STATE.propertyId, { compact: true })}
         ${saveBtn(upcoming ? 'Confirm reschedule' : 'Schedule inspection', 'Inspection rescheduled')}
     </div>`;
 }
@@ -12355,6 +12602,14 @@ function savePersonalInfo() {
         CONTRACTOR_USER.lastName = fieldVal('lastName');
         CONTRACTOR_USER.email = fieldVal('email');
         CONTRACTOR_USER.phone = fieldVal('phone') || CONTRACTOR_USER.phone;
+        const ctrAccount = typeof contractorAccountByEmail === 'function' ? contractorAccountByEmail(CONTRACTOR_USER.email) : null;
+        if (ctrAccount) {
+            ctrAccount.firstName = CONTRACTOR_USER.firstName;
+            ctrAccount.lastName = CONTRACTOR_USER.lastName;
+            ctrAccount.email = CONTRACTOR_USER.email;
+            ctrAccount.phone = CONTRACTOR_USER.phone;
+            if (typeof saveContractorAccounts === 'function') saveContractorAccounts();
+        }
         withLoading(() => { AppStore.save(); toast('Profile updated'); back(); });
         return;
     }
@@ -12363,6 +12618,13 @@ function savePersonalInfo() {
     LANDLORD_USER.email = fieldVal('email');
     LANDLORD_USER.phone = fieldVal('phone') || LANDLORD_USER.phone;
     LANDLORD_USER.address = fieldVal('address') || LANDLORD_USER.address;
+    const landlordAccount = typeof landlordAccountByEmail === 'function' ? landlordAccountByEmail(LANDLORD_USER.email) : null;
+    if (landlordAccount) {
+        landlordAccount.firstName = LANDLORD_USER.firstName;
+        landlordAccount.lastName = LANDLORD_USER.lastName;
+        landlordAccount.email = LANDLORD_USER.email;
+        if (typeof saveLandlordAccounts === 'function') saveLandlordAccounts();
+    }
     withLoading(() => { AppStore.save(); toast('Profile updated'); back(); });
 }
 
@@ -12515,7 +12777,7 @@ function assignContractorToJob(cid) {
         addMaintHistoryEvent(item, 'Contractor reassigned', c.name);
     }
     createContractorJobFromMaintenance(item, c, tenant);
-    ensureMaintGroupChat(item, c, tenant);
+    if (typeof ensureContractorConversation === 'function') ensureContractorConversation(c);
     if (tenant) {
         pushNotification({
             icon: 'wrench', color: ['#DBEAFE', '#2563EB'],
@@ -13658,6 +13920,17 @@ function bindFeatureEvents() {
             const email = el.dataset.email;
             if (email) window.location.href = `mailto:${email}`;
             else toast('No email on file');
+        };
+    });
+    app.querySelectorAll('[data-action="copy-contact"]').forEach(el => {
+        el.onclick = () => {
+            const text = el.dataset.text || el.textContent?.trim();
+            if (!text) return;
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(text).then(() => toast('Copied')).catch(() => toast(text));
+            } else {
+                toast(text);
+            }
         };
     });
 }
