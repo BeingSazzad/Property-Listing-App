@@ -162,9 +162,21 @@ const AppStore = {
         ];
         this.documents = [
             { id: 0, propertyId: 0, type: 'Tenancy Agreement', name: 'Lease Agreement.pdf', date: 'Jan 15, 2024', shared: true, signed: true },
-            { id: 1, propertyId: 0, type: 'Gas Certificate', name: 'Gas Safety 2025.pdf', date: 'Mar 2025', shared: true, signed: false },
-            { id: 2, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report.pdf', date: 'Apr 2024', shared: true, signed: false },
-            { id: 3, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B.pdf', date: '2023', shared: true, signed: false },
+            { id: 1, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2029', date: 'Mar 2029', shared: true, signed: false },
+            { id: 6, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2028', date: 'Mar 2028', shared: true, signed: false },
+            { id: 7, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2027', date: 'Mar 2027', shared: true, signed: false },
+            { id: 8, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2026', date: 'Mar 2026', shared: true, signed: false },
+            { id: 9, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2025', date: 'Mar 2025', shared: true, signed: false },
+            { id: 2, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2024', date: 'Apr 2024', shared: true, signed: false },
+            { id: 10, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2023', date: 'Apr 2023', shared: true, signed: false },
+            { id: 11, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2022', date: 'Apr 2022', shared: true, signed: false },
+            { id: 3, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B', date: 'Jun 2023', shared: true, signed: false },
+            { id: 12, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B (renewal)', date: 'Jun 2020', shared: true, signed: false },
+            { id: 13, propertyId: 0, type: 'Custom Document', name: 'Fire Risk Assessment 2025', date: 'Jan 2025', shared: true, signed: false },
+            { id: 14, propertyId: 0, type: 'Custom Document', name: 'Smoke Alarm Test Log', date: 'Feb 2025', shared: true, signed: false },
+            { id: 15, propertyId: 0, type: 'Custom Document', name: 'Fire Door Inspection', date: 'Mar 2025', shared: true, signed: false },
+            { id: 16, propertyId: 0, type: 'Custom Document', name: 'Emergency Lighting Check', date: 'Apr 2025', shared: true, signed: false },
+            { id: 17, propertyId: 0, type: 'Custom Document', name: 'Landlord Insurance Policy', date: 'Jan 2025', shared: false, signed: false },
             { id: 4, propertyId: 0, type: 'Deposit Certificate', name: 'Deposit Protection.pdf', date: 'Jan 2024', shared: true, signed: true },
             { id: 5, propertyId: 1, type: 'How to Rent Guide', name: 'How to Rent.pdf', date: 'Jun 2023', shared: true, signed: false },
         ];
@@ -1809,6 +1821,17 @@ const formFieldReq = (label, key, value = '', type = 'text', ph = '', helper = '
     </div>`;
 };
 
+function formFieldInlineReq(label, key, value = '', type = 'text', ph = '') {
+    const err = STATE.formErrors[key];
+    const placeholder = inputPlaceholder(ph, label, type);
+    const valAttr = value !== '' && value != null ? ` value="${String(value).replace(/"/g, '&quot;')}"` : '';
+    return `<div class="unit-util-meter-row ${err ? 'form-group-error' : ''}">
+        <label class="form-label unit-util-meter-label">${requiredLabel(label)}</label>
+        <input type="${type}" data-field="${key}" class="form-input${err ? ' form-input-error' : ''}"${valAttr} placeholder="${placeholder}">
+        ${err ? `<p class="form-error-msg unit-util-meter-error"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${err}</p>` : ''}
+    </div>`;
+}
+
 function memberField(label, attr, type = 'text', ph = '') {
     const placeholder = inputPlaceholder(ph, label, type);
     return `<div class="form-group mb-2">
@@ -2114,11 +2137,6 @@ function saveAddDocumentAction() {
     const replaceId = STATE.addDocumentReplaceId;
     if (replaceId != null) {
         AppStore.documents = AppStore.documents.filter(d => d.id !== replaceId);
-    } else if (STATE.addDocumentType !== 'Custom Document') {
-        const existing = AppStore.documents.find(d =>
-            d.propertyId === STATE.propertyId && d.type === STATE.addDocumentType
-        );
-        if (existing) AppStore.documents = AppStore.documents.filter(d => d.id !== existing.id);
     }
     const id = AppStore.nextId(AppStore.documents);
     const doc = {
@@ -2163,13 +2181,16 @@ const addDocumentModal = () => {
     const step = STATE.addDocumentStep || 'type';
     const typeOpt = STATE.addDocumentType ? addDocumentTypeOption(STATE.addDocumentType) : null;
     const replacing = STATE.addDocumentReplaceId != null;
-    const stepTitle = step === 'type' ? 'Add document'
+    const typeOptions = typeof getRecordsDocumentUploadOptions === 'function'
+        ? getRecordsDocumentUploadOptions()
+        : ADD_DOC_TYPE_OPTIONS;
+    const stepTitle = step === 'type' ? 'Upload document'
         : step === 'file' ? (replacing ? 'Replace file' : 'Upload file')
         : (replacing ? 'Confirm replace' : 'Review & save');
     const stepBody = step === 'type'
-        ? `<p class="modal-body">What type of document is this?</p>
+        ? `<p class="modal-body">Choose a folder for this file.</p>
             <div class="add-doc-type-list">
-                ${ADD_DOC_TYPE_OPTIONS.map(o => `
+                ${typeOptions.map(o => `
                 <button type="button" data-action="select-doc-type" data-doc-type="${o.type}" class="add-doc-type-row">
                     <span class="add-doc-type-icon" style="color:${o.color};background:${o.bg}"><i data-lucide="${o.icon}" class="w-5 h-5"></i></span>
                     <span class="add-doc-type-label">${o.label}</span>
@@ -3382,7 +3403,6 @@ function unitActionMenuItems(propertyId, unitName, opts = {}) {
     if (opts.fromDetail) {
         items.push(
             { label: 'Manage photos', icon: 'images', action: 'action-menu-go', attrs: `data-go="flat-detail" data-pid="${propertyId}" data-unit="${unitName}" data-flat-tab="gallery"` },
-            { label: LANDLORD_MAINT_CREATE_LABEL, icon: 'wrench', action: 'action-menu-go', attrs: `data-go="log-maintenance" data-pid="${propertyId}" data-unit="${unitName}"` },
         );
     }
     if (!occ) {
@@ -6597,17 +6617,27 @@ function flatInspectionSubline(propertyId) {
     return 'Not scheduled';
 }
 
-function flatDetailExtraLine(propertyId, u) {
+function flatDetailBuildingMeta(propertyId, u) {
     const info = AppStore.meta(propertyId).info || {};
     const parts = [];
     const unitType = u.unitType || info.type;
     if (unitType && unitType !== '—') parts.push(unitType);
-    if (u.furnished) parts.push(u.furnished);
     const yearBuilt = u.yearBuilt || info.built;
     if (yearBuilt) parts.push(`Built ${yearBuilt}`);
-    if (u.floorNote) parts.push(u.floorNote);
     if (!parts.length) return '';
-    return `<p class="flat-dt-extra-line">${parts.map(p => escapeHtml(p)).join(' · ')}</p>`;
+    return parts.map(p => escapeHtml(p)).join(' · ');
+}
+
+function flatDetailSpecSection(propertyId, u) {
+    const chips = flatDetailSpecChips(u);
+    if (!chips) return '';
+    return `<div class="flat-dt-spec-row flat-dt-spec-row--unit">${chips}</div>`;
+}
+
+function flatDetailExtraLine(propertyId, u) {
+    const meta = flatDetailBuildingMeta(propertyId, u);
+    if (!meta) return '';
+    return `<p class="flat-dt-extra-line">${meta}</p>`;
 }
 
 function flatDetailActivityEvents(propertyId, unit) {
@@ -6625,22 +6655,8 @@ function flatDetailActivityEvents(propertyId, unit) {
             sort: inv.uploadedAt || 0,
         });
     });
-    maintenanceForUnit(propertyId, unit).forEach(m => {
-        const [sBg, sColor] = maintStatusStyle[m.status];
-        events.push({
-            icon: 'wrench',
-            iconBg: '#F3E8FF', iconColor: '#7C3AED',
-            title: 'Maintenance',
-            desc: `Maintenance request · ${m.issue}`,
-            date: m.time || '—',
-            badge: maintStatusLabel[m.status],
-            badgeBg: sBg, badgeColor: sColor,
-            go: 'maintenance-detail', attrs: `data-mid="${m.id}"`,
-            sort: m.uploadedAt || 0,
-        });
-    });
     AppStore.docsForProperty(propertyId)
-        .filter(d => !d.unit || d.unit === unit)
+        .filter(d => d.unit === unit)
         .forEach(doc => {
             const signed = doc.signed || /signed|agreement/i.test(doc.name || '');
             events.push({
@@ -6692,22 +6708,58 @@ function flatDetailRecentActivity(propertyId, unit, opts = {}) {
     </section>`;
 }
 
-function flatDetailQuickLinks(propertyId, unit, members) {
+function flatQuickActionMeta(propertyId, unit) {
+    const stats = unitRentStats(propertyId, unit);
+    const { count } = getFlatMemberRoster(propertyId, unit);
+    const util = AppStore.meta(propertyId).unitUtilities?.[unit];
+    const utilCount = util ? ['electricity', 'gas', 'water', 'internet'].filter(k => util[k]?.provider).length + (util.customUtilities?.length || 0) : 0;
+    return {
+        pay: stats.outstanding ? `£${stats.outstanding.toLocaleString()} due` : 'Up to date',
+        members: `${count || 0} tenant${count === 1 ? '' : 's'}`,
+        records: 'Docs, certs & inventory',
+        utilities: utilCount ? `${utilCount} meter${utilCount === 1 ? '' : 's'} set` : 'Set up meters',
+    };
+}
+
+function memberRentOverview(propertyId, unit, member, tenancy) {
+    const invs = invoicesForUnit(propertyId, unit).filter(i => i.type === 'rent' || !i.type);
+    let inv = invs.find(i => i.tenantId === member.listId || i.tenantId === member.tenantId);
+    if (!inv) inv = invs.find(i => i.tenant === member.name);
+    if (!inv && member.isLead) inv = invs.find(i => i.status !== 'Paid') || invs[0];
+    const rentAmt = flatEffectiveRentAmount(getUnitByName(propertyId, unit), tenancy);
+    const rosterCount = getFlatMemberRoster(propertyId, unit).count || 1;
+    const amount = inv?.amount || (rentAmt && rosterCount > 1
+        ? formatRentAmount(Math.round(rentAmt / rosterCount))
+        : rentAmt ? formatRentAmount(rentAmt) : '—');
+    let payLabel = '—';
+    let payTone = 'muted';
+    if (inv) {
+        if (inv.status === 'Paid') { payLabel = 'Paid'; payTone = 'paid'; }
+        else if (inv.status === 'Overdue') { payLabel = 'Overdue'; payTone = 'overdue'; }
+        else { payLabel = 'Pending'; payTone = 'pending'; }
+    }
+    return { amount, payLabel, payTone };
+}
+
+function flatDetailQuickLinks(propertyId, unit) {
+    const meta = flatQuickActionMeta(propertyId, unit);
     const links = [
-        { icon: 'wrench', tone: 'maint', title: 'Log issue', go: 'log-maintenance', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
-        { icon: 'folder', tone: 'docs', title: 'Records', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="records"` },
-        { icon: 'package', tone: 'inventory', title: 'Inventory', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inventory"` },
-        { icon: 'shield-check', tone: 'inspect', title: 'Inspection', go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="inspection"` },
-        { icon: 'droplets', tone: 'util', title: 'Utilities', go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'banknote', tone: 'pay', title: 'Payments', sub: meta.pay, ftab: 'payments' },
+        { icon: 'users', tone: 'util', title: 'Members', sub: meta.members, go: 'flat-members', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'droplets', tone: 'util', title: 'Utilities', sub: meta.utilities, go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'folder-open', tone: 'docs', title: 'Property records', sub: meta.records, go: 'property-detail', attrs: `data-pid="${propertyId}" data-tab="records" data-records-view="documents"` },
     ];
     return `
-    <section class="card flat-dt-quicklinks">
-        <h3 class="flat-dt-block-title">Property</h3>
-        <div class="flat-dt-quicklinks-grid">
+    <section class="card flat-dt-quicklinks flat-dt-quicklinks--overview">
+        <h3 class="flat-dt-block-title flat-dt-quicklinks-title">This unit</h3>
+        <div class="flat-dt-quicklinks-grid flat-dt-quicklinks-grid--4">
             ${links.map(l => `
             <button type="button" ${l.ftab ? `data-ftab="${l.ftab}"` : `data-go="${l.go}" ${l.attrs}`} class="flat-dt-quicklink-tile">
                 <span class="flat-dt-grid-icon flat-dt-grid-icon--${l.tone}"><i data-lucide="${l.icon}" class="w-[16px] h-[16px]"></i></span>
-                <span class="flat-dt-quicklink-title">${l.title}${l.badge ? ` (${l.badge})` : ''}</span>
+                <span class="flat-dt-quicklink-copy">
+                    <span class="flat-dt-quicklink-title">${l.title}</span>
+                    <span class="flat-dt-quicklink-sub">${l.sub}</span>
+                </span>
             </button>`).join('')}
         </div>
     </section>`;
@@ -6746,40 +6798,119 @@ function renderFlatDetailTabNav(activeTab, badges = {}) {
     </div>`;
 }
 
-function renderFlatDetailOverviewCard(propertyId, u, tenancy, coverPhoto, photoCount) {
+function renderFlatOverviewStatsRow(u, tenancy, memberCount) {
+    const rentAmt = flatEffectiveRentAmount(u, tenancy);
+    const rentLabel = rentAmt ? formatRentAmount(rentAmt) : '—';
+    const stats = [
+        { label: 'Monthly Rent', value: rentLabel, tone: 'rent' },
+        { label: 'Tenants', value: String(memberCount || 0) },
+        { label: 'Beds', value: u.beds ? String(u.beds) : '—' },
+        { label: 'Baths', value: u.baths ? String(u.baths) : '—' },
+        { label: 'Area', value: u.sqft ? `${u.sqft} ft²` : '—' },
+    ];
     return `
-    <div class="card flat-dt-overview-card">
+    <div class="flat-overview-stats">
+        ${stats.map(s => `
+        <div class="flat-overview-stat">
+            <span class="flat-overview-stat-label">${s.label}</span>
+            <span class="flat-overview-stat-val${s.tone === 'rent' ? ' flat-overview-stat-val--rent' : ''}">${escapeHtml(s.value)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderFlatOverviewTenantsList(propertyId, unit, ctx) {
+    const { members, count, tenancy, pendingInvite } = ctx;
+    if (!count && !pendingInvite) return '';
+    const rows = members.map((m, i) => {
+        const profileId = m.listId ?? m.tenantId;
+        const action = profileId != null
+            ? `data-go="tenant-detail" data-tid="${profileId}"`
+            : m.inviteToken
+                ? `data-go="tenant-invite-sent" data-invite-token="${m.inviteToken}"`
+                : `data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}"`;
+        const role = m.isLead ? 'Lead tenant' : 'Tenant';
+        const { amount, payLabel, payTone } = memberRentOverview(propertyId, unit, m, tenancy);
+        return `
+        <button type="button" ${action} class="flat-overview-tenant-row w-full text-left${i < members.length - 1 ? ' flat-overview-tenant-row--border' : ''}">
+            ${renderMemberAvatar(m, 'sm')}
+            <span class="flat-overview-tenant-body min-w-0 flex-1">
+                <span class="flat-overview-tenant-top">
+                    <span class="flat-overview-tenant-name">${escapeHtml(m.name)}</span>
+                    <span class="flat-overview-tenant-rent">${amount}</span>
+                </span>
+                <span class="flat-overview-tenant-meta">
+                    <span>${role}</span>
+                    ${payLabel !== '—' ? `<span class="flat-overview-pay-badge flat-overview-pay-badge--${payTone}">${payLabel}</span>` : ''}
+                </span>
+            </span>
+        </button>`;
+    }).join('');
+    const totalLabel = count ? `Tenants (${count})` : 'Tenants';
+    return `
+    <section class="card flat-overview-tenants">
+        <div class="flat-overview-tenants-head">
+            <h3 class="flat-dt-block-title">${totalLabel}</h3>
+            <button type="button" data-go="flat-members" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-activity-link">View all</button>
+        </div>
+        <div class="flat-overview-tenants-list">${rows}</div>
+    </section>`;
+}
+
+function renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
+    return `
+    <div class="card flat-dt-overview-card flat-dt-overview-card--hero">
         <button type="button" data-ftab="gallery" class="flat-dt-overview-photo w-full text-left" aria-label="Open gallery">
             <img src="${coverPhoto}" alt="" class="flat-dt-overview-photo-img">
-            <span class="flat-dt-carousel-badge">${photoCount} photo${photoCount === 1 ? '' : 's'}</span>
+            ${photoCount > 1 ? `<span class="flat-dt-carousel-badge">${photoCount} photos</span>` : ''}
         </button>
         <div class="flat-dt-overview-body">
-            ${flatDetailSpecChips(u)}
-            ${flatDetailExtraLine(propertyId, u)}
+            ${flatDetailSpecSection(propertyId, u)}
             ${flatDetailFinanceRow(u, tenancy)}
         </div>
     </div>`;
 }
 
 function renderFlatDetailOverviewRecent(propertyId, unit) {
-    const listHtml = flatDetailActivityListHtml(propertyId, unit, 3, { excludeMaintenance: true });
+    const listHtml = flatDetailActivityListHtml(propertyId, unit, 3);
     if (!listHtml) return '';
     return `
         <section class="card flat-dt-activity flat-dt-activity--compact">
             <div class="flat-dt-activity-head">
-                <h3 class="flat-dt-block-title">Recent</h3>
-                <button type="button" data-go="property-detail" data-pid="${propertyId}" data-tab="records" class="flat-dt-activity-link">Records</button>
+                <h3 class="flat-dt-block-title">Unit activity</h3>
+                <button type="button" data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="documents" class="flat-dt-activity-link">Property records</button>
             </div>
             ${listHtml}
         </section>`;
 }
 
 function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
+    const roster = getFlatMemberRoster(propertyId, unit);
+    const peopleCtx = { occ: u.status === 'occupied', tenancy, members: roster.members, count: roster.count, pendingInvite: pendingInvitesForProperty(propertyId).find(i => i.unit === unit) };
     return `
-    <div class="flat-dt-tab-panel">
-        ${renderFlatDetailOverviewCard(propertyId, u, tenancy, coverPhoto, photoCount)}
-        ${flatDetailQuickLinks(propertyId, unit, members)}
+    <div class="flat-dt-tab-panel flat-dt-tab-panel--overview">
+        ${renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
+        ${flatDetailQuickLinks(propertyId, unit)}
+        ${renderFlatOverviewTenantsList(propertyId, unit, peopleCtx)}
         ${renderFlatDetailOverviewRecent(propertyId, unit)}
+    </div>`;
+}
+
+function renderFlatDetailActivityTab(propertyId, unit) {
+    const listHtml = flatDetailActivityListHtml(propertyId, unit, 8);
+    return `
+    <div class="flat-dt-tab-panel flat-dt-tab-panel--activity">
+        ${listHtml ? `
+        <section class="card flat-dt-activity flat-dt-activity--tab">
+            <div class="flat-dt-activity-head">
+                <h3 class="flat-dt-block-title">Recent activity</h3>
+            </div>
+            ${listHtml}
+        </section>` : `
+        <div class="card flat-dt-empty p-8 text-center">
+            <i data-lucide="activity" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
+            <p class="text-[13px] font-semibold mt-3 text-[#0F172A]">No activity yet</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Rent, maintenance and inspections for this unit appear here.</p>
+        </div>`}
     </div>`;
 }
 
@@ -6798,7 +6929,6 @@ function getFlatPrimaryTenantContact(ctx) {
 function renderFlatDetailTenantActions(propertyId, unit, ctx) {
     const { occ, tenancy, pendingInvite } = ctx;
     if (!occ && !tenancy && !pendingInvite) return '';
-    const unpaid = invoicesForUnit(propertyId, unit).filter(i => i.status === 'Overdue');
     if (!occ && !tenancy && pendingInvite) {
         return `
     <div class="flat-dt-tenant-actions">
@@ -6820,14 +6950,10 @@ function renderFlatDetailTenantActions(propertyId, unit, ctx) {
         ? `<button type="button" data-go="tenancy-detail" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-tenant-action"><i data-lucide="file-text" class="w-4 h-4"></i>View lease</button>`
         : '';
     const topRow = [msgBtn, leaseBtn].filter(Boolean).join('');
-    const recordBtn = unpaid.length
-        ? `<button type="button" data-go="mark-rent-received" data-iid="${unpaid[0].id}" class="flat-dt-tenant-action flat-dt-tenant-action--wide flat-dt-tenant-action--record"><i data-lucide="pound-sterling" class="w-4 h-4"></i>Record rent</button>`
-        : '';
-    if (!topRow && !recordBtn) return '';
+    if (!topRow) return '';
     return `
     <div class="flat-dt-tenant-actions">
-        ${topRow ? `<div class="flat-dt-tenant-actions-row${!leaseBtn || !msgBtn ? ' flat-dt-tenant-actions-row--solo' : ''}">${topRow}</div>` : ''}
-        ${recordBtn}
+        <div class="flat-dt-tenant-actions-row${!leaseBtn || !msgBtn ? ' flat-dt-tenant-actions-row--solo' : ''}">${topRow}</div>
     </div>`;
 }
 
@@ -6902,7 +7028,7 @@ function renderFlatDetailGalleryTab(propertyId, unit) {
             uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
             hint: 'Tap the star on a thumbnail to set the cover for Overview and unit lists.',
         })}
-        ${renderFlatBuildingPhotosSection(propertyId, { variant: 'card' })}
+        ${renderFlatBuildingPhotosSection(propertyId)}
     </div>`;
 }
 
@@ -6911,6 +7037,7 @@ function renderFlatDetailTabContent(tab, propertyId, unit, u, p, tenancy, member
         case 'tenant': return renderFlatDetailTenantTab(propertyId, unit, ctx);
         case 'payments': return renderFlatDetailPaymentsTab(propertyId, unit);
         case 'gallery': return renderFlatDetailGalleryTab(propertyId, unit);
+        case 'activity': return renderFlatDetailActivityTab(propertyId, unit);
         default: return renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor);
     }
 }
@@ -6937,6 +7064,21 @@ function screenFlatDetail() {
     const tabBadges = flatDetailTabBadges(propertyId, unit, pendingInvite);
     const peopleCtx = { occ, tenancy, members, count, pendingInvite };
     const rentAlert = renderFlatRentAlert(propertyId, unit);
+    const unpaid = invoicesForUnit(propertyId, unit).filter(i => i.status !== 'Paid');
+    const overviewFooter = flatTab === 'overview' ? `
+        <footer class="flat-dt-footer flat-dt-footer--actions">
+            <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-action-btn flat-dt-action-btn--primary">
+                <i data-lucide="user-plus" class="w-4 h-4"></i>Add Tenant
+            </button>
+            <button type="button" data-go="mark-rent-received"${unpaid.length === 1 ? ` data-iid="${unpaid[0].id}"` : ''} class="flat-dt-action-btn flat-dt-action-btn--outline">
+                <i data-lucide="circle-check" class="w-4 h-4"></i>Record Payment
+            </button>
+        </footer>` : `
+        <footer class="flat-dt-footer">
+            <button type="button" data-go="edit-flat" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-edit-btn">
+                <i data-lucide="pencil" class="w-4 h-4"></i>Edit Unit Details
+            </button>
+        </footer>`;
     return `
     <div class="flat-detail-page flat-detail-page--v2 flat-detail-page--tabs screen-enter">
         <header class="flat-dt-header">
@@ -6955,15 +7097,11 @@ function screenFlatDetail() {
             </div>
         </header>
         ${renderFlatDetailTabNav(flatTab, tabBadges)}
-        <div class="flat-dt-scroll flat-dt-scroll--tabbed screen-content screen-content-sm">
+        <div class="flat-dt-scroll flat-dt-scroll--tabbed screen-content screen-content-sm${flatTab === 'overview' ? ' flat-dt-scroll--overview' : ''}">
             ${rentAlert ? `<div class="flat-dt-inline-alert">${rentAlert}</div>` : ''}
             ${renderFlatDetailTabContent(flatTab, propertyId, unit, u, p, tenancy, members, peopleCtx, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
         </div>
-        <footer class="flat-dt-footer">
-            <button type="button" data-go="edit-flat" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-edit-btn">
-                <i data-lucide="pencil" class="w-4 h-4"></i>Edit Unit Details
-            </button>
-        </footer>
+        ${overviewFooter}
     </div>`;
 }
 
@@ -9848,6 +9986,7 @@ function screenFinancialEnhanced() {
         overdue: INVOICES.filter(i => i.status === 'Overdue').length,
     };
     const stats = financialStats();
+    const outstandingCount = counts.pending + counts.overdue;
     return `${renderFinancialPageHeader()}
     <div class="screen-content screen-enter financial-page">
         ${counts.overdue ? `
@@ -9884,6 +10023,11 @@ function screenFinancialEnhanced() {
                 <i data-lucide="plus" class="w-5 h-5"></i>
                 <span>Add bill / charge</span>
             </button>
+            ${outstandingCount ? `
+            <button type="button" data-go="send-payment-reminder" class="fin-btn-remind">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span>Send payment reminder</span>
+            </button>` : ''}
         </div>
         ${renderFinanceHistoryEntry(counts)}
         ${renderFinanceRentDueList()}
@@ -11126,34 +11270,28 @@ function screenCheckoutTenancy() {
 }
 
 function renderAssignContractorRow(c, item, isSuggested) {
-    const tenant = getMaintTenantForItem(item);
     const certCount = ensureContractorCertificates(c).length;
-    const metaLine = [
-        tenant ? `Contacts ${tenant.name.split(' ')[0]}` : (isCommunalMaint(item) ? 'Communal job' : 'Landlord job'),
-        certCount ? `${certCount} cert${certCount === 1 ? '' : 's'}` : '',
-    ].filter(Boolean).join(' · ');
+    const phoneLine = c.phone ? escapeHtml(c.phone) : '';
+    const certLine = certCount ? `${certCount} cert${certCount === 1 ? '' : 's'}` : '';
+    const subLine = [phoneLine, certLine].filter(Boolean).join(' · ');
     return `
-    <article class="ctr-card card assign-ctr-card${isSuggested ? ' assign-ctr-card--suggested' : ''}">
-        <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="ctr-card-main w-full text-left">
-            <img src="${c.img}" class="ctr-card-avatar" alt="">
-            <span class="ctr-card-body min-w-0 flex-1">
-                <span class="ctr-card-name-row">
-                    <span class="ctr-card-name">${escapeHtml(c.name)}</span>
+    <article class="assign-ctr-card card${isSuggested ? ' assign-ctr-card--suggested' : ''}">
+        <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="assign-ctr-card-main w-full text-left">
+            <img src="${c.img}" class="assign-ctr-card-avatar" alt="">
+            <span class="assign-ctr-card-body min-w-0 flex-1">
+                <span class="assign-ctr-card-name-row">
+                    <span class="assign-ctr-card-name">${escapeHtml(c.name)}</span>
                     ${isSuggested ? '<span class="assign-suggested-pill">Suggested</span>' : ''}
                 </span>
-                <span class="ctr-card-trade-row">
+                <span class="assign-ctr-card-trade-row">
                     ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(c) : ''}
                 </span>
-                <span class="ctr-card-jobs">${escapeHtml(contractorJobsForLabel(c))}</span>
-                <span class="ctr-card-meta">${escapeHtml(metaLine)}</span>
+                <span class="assign-ctr-card-jobs">${escapeHtml(contractorJobsForLabel(c))}</span>
+                ${subLine ? `<span class="assign-ctr-card-sub">${subLine}</span>` : ''}
             </span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>
-        <div class="ctr-card-actions assign-ctr-card-actions">
-            <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="ctr-card-action"><i data-lucide="user" class="w-4 h-4"></i><span>Profile</span></button>
-            ${c.phone ? `<button type="button" data-action="call-contractor" data-phone="${c.phone.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
-            <button type="button" data-action="assign-contractor" data-cid="${c.id}" class="ctr-card-action ctr-card-action--primary"><i data-lucide="user-plus" class="w-4 h-4"></i><span>Assign</span></button>
-        </div>
+        <button type="button" data-action="assign-contractor" data-cid="${c.id}" class="assign-ctr-assign-btn">Assign</button>
     </article>`;
 }
 
@@ -11698,73 +11836,93 @@ function screenUnitUtilities() {
     const p = PROPERTIES[STATE.propertyId];
     const util = getUnitUtilityMeta(STATE.propertyId, unit);
     const billOptions = ['Electricity', 'Gas', 'Water', 'Internet', 'Council Tax', 'TV Licence', 'Oil / LPG', 'Communal heating'];
-  const customList = util.customUtilities || [];
+    const customList = util.customUtilities || [];
     return `${topBar('Unit Utilities', { back: true, sub: `${p?.name || ''} · ${unit}` })}
-    <div class="screen-content screen-enter">
-        <div><label class="form-label">Who pays utilities?</label>
-        <select data-field="util_responsibility" class="form-input form-select">
-            <option value="landlord" ${util.responsibility === 'landlord' ? 'selected' : ''}>Landlord pays all</option>
-            <option value="tenant" ${util.responsibility === 'tenant' ? 'selected' : ''}>Tenant pays all</option>
-            <option value="split" ${util.responsibility === 'split' ? 'selected' : ''}>Split / partial</option>
-        </select></div>
+    <div class="screen-content screen-content-sm screen-enter unit-util-page">
+        <div class="unit-util-row">
+            <label class="form-label unit-util-row-label">Who pays utilities?</label>
+            <select data-field="util_responsibility" class="form-input form-select">
+                <option value="landlord" ${util.responsibility === 'landlord' ? 'selected' : ''}>Landlord pays all</option>
+                <option value="tenant" ${util.responsibility === 'tenant' ? 'selected' : ''}>Tenant pays all</option>
+                <option value="split" ${util.responsibility === 'split' ? 'selected' : ''}>Split / partial</option>
+            </select>
+        </div>
         ${util.responsibility === 'split' ? `
-        <div class="card p-4">
-            <p class="text-[13px] font-bold mb-2">Bills included for tenant</p>
+        <div class="card unit-util-card">
+            <p class="unit-util-card-title">Bills included for tenant</p>
+            <div class="unit-util-bill-grid">
             ${billOptions.map(b => `
-            <label class="flex items-center gap-2 py-2 text-[13px] text-[#475569]">
+            <label class="unit-util-bill-item">
                 <input type="checkbox" data-util-bill="${b}" class="accent-[#2563EB]" ${util.includedBills?.includes(b) ? 'checked' : ''}> ${b}
             </label>`).join('')}
-            <div class="mt-3 pt-3 border-t border-[#F1F5F9]">
+            </div>
+            <div class="unit-util-allowance">
                 <label class="form-label">Monthly utility allowance</label>
                 <input type="text" data-field="util_allowance" class="form-input" placeholder="e.g. £150" value="${util.monthlyAllowance || ''}">
                 <p class="form-helper">Tenant pays bills; over this amount can be charged via Stripe</p>
             </div>
         </div>` : ''}
-        <p class="screen-section-title">Custom utility types</p>
-        <p class="text-[12px] text-[#64748B] mb-2">Add non-standard bills for this unit (e.g. parking, cleaning).</p>
-        ${customList.length ? customList.map((u, i) => `
-        <div class="card p-3 mb-2 flex items-center justify-between gap-2">
-            <div><p class="text-[13px] font-semibold">${u.name}</p><p class="text-[11px] text-[#64748B]">${u.paidBy === 'landlord' ? 'Landlord pays' : 'Tenant pays'}</p></div>
-            <button type="button" data-action="remove-custom-utility" data-util-idx="${i}" class="text-[12px] font-semibold text-[#EF4444]">Remove</button>
-        </div>`).join('') : `<div class="card p-4 text-center text-[12px] text-[#64748B] mb-2">No custom utilities yet</div>`}
-        <div class="grid grid-cols-2 gap-2 mb-3">
-            <input type="text" data-field="custom_util_name" class="form-input" placeholder="e.g. Parking">
-            <select data-field="custom_util_payer" class="form-input form-select">
-                <option value="tenant">Tenant pays</option>
-                <option value="landlord">Landlord pays</option>
-            </select>
+        <div class="unit-util-block">
+            <div class="unit-util-block-head">
+                <p class="screen-section-title">Custom utility types</p>
+                <p class="unit-util-hint">Add non-standard bills (e.g. parking, cleaning).</p>
+            </div>
+            <div class="card unit-util-card unit-util-custom-card">
+                ${customList.length ? customList.map((u, i) => `
+                <div class="unit-util-custom-item">
+                    <div><p class="unit-util-custom-name">${u.name}</p><p class="unit-util-custom-meta">${u.paidBy === 'landlord' ? 'Landlord pays' : 'Tenant pays'}</p></div>
+                    <button type="button" data-action="remove-custom-utility" data-util-idx="${i}" class="unit-util-remove">Remove</button>
+                </div>`).join('') : `<p class="unit-util-empty">No custom utilities yet</p>`}
+                <div class="unit-util-add-row">
+                    <input type="text" data-field="custom_util_name" class="form-input" placeholder="e.g. Parking">
+                    <select data-field="custom_util_payer" class="form-input form-select">
+                        <option value="tenant">Tenant pays</option>
+                        <option value="landlord">Landlord pays</option>
+                    </select>
+                </div>
+                <button type="button" data-action="add-custom-utility" class="btn-secondary unit-util-add-btn">Add custom utility</button>
+            </div>
         </div>
-        <button type="button" data-action="add-custom-utility" class="btn-secondary w-full py-2.5 text-[13px] mb-3">Add custom utility</button>
         ${util.responsibility === 'split' && util.monthlyAllowance ? `
-        <div class="card p-4 mb-3" style="background:#FFFBEB;border-color:#FDE68A">
-            <p class="text-[13px] font-semibold text-[#92400E]">Utility overage</p>
-            <p class="text-[12px] text-[#B45309] mt-1">Charge tenant when bills exceed ${util.monthlyAllowance} allowance.</p>
-            <div class="grid grid-cols-2 gap-2 mt-3">
+        <div class="card unit-util-card unit-util-overage">
+            <p class="unit-util-card-title unit-util-overage-title">Utility overage</p>
+            <p class="unit-util-hint">Charge tenant when bills exceed ${util.monthlyAllowance} allowance.</p>
+            <div class="unit-util-add-row">
                 <input type="text" data-field="overage_amount" class="form-input" placeholder="Overage £">
                 <input type="text" data-field="overage_period" class="form-input" placeholder="e.g. Mar 2026">
             </div>
-            <button type="button" data-action="charge-utility-overage" class="btn-primary w-full py-2.5 text-[13px] mt-3">Send bill to tenant</button>
+            <button type="button" data-action="charge-utility-overage" class="btn-primary unit-util-add-btn">Send bill to tenant</button>
         </div>
         ${(util.overageCharges || []).length ? `
-        <p class="screen-section-title">Overage history</p>
-        ${util.overageCharges.map(o => `
-        <div class="card p-3 mb-2 flex justify-between items-center">
-            <div><p class="text-[13px] font-semibold">${o.amount}</p><p class="text-[11px] text-[#64748B]">${o.period} · ${o.status}</p></div>
-            <span class="badge" style="background:${o.status === 'Paid' ? '#DCFCE7' : '#FEF3C7'};color:${o.status === 'Paid' ? '#16A34A' : '#D97706'}">${o.status}</span>
-        </div>`).join('')}` : ''}` : ''}
-        <p class="screen-section-title">Meter Numbers</p>
-        ${formFieldReq('Electricity Meter', 'meter_electricity', util.meters?.electricity || '', 'text')}
-        ${formFieldReq('Gas Meter', 'meter_gas', util.meters?.gas || '', 'text')}
-        ${formFieldReq('Water Meter', 'meter_water', util.meters?.water || '', 'text')}
-        <p class="screen-section-title">Shared Uploads</p>
-        <p class="text-[12px] text-[#64748B] mb-2">Upload utility documents here. Overage bills are sent to the tenant to pay via Stripe.</p>
-        ${util.uploads?.length ? util.uploads.map(u => `
-        <div class="card p-3 mb-2 flex items-center justify-between">
-            <div><p class="text-[13px] font-semibold">${u.name}</p><p class="text-[11px] text-[#64748B]">${u.by} · ${u.date}</p></div>
-            <button data-action="toast" data-msg="Downloaded ${u.name}" class="text-[12px] font-semibold text-[#2563EB]">View</button>
-        </div>`).join('') : `<div class="card p-4 text-center text-[12px] text-[#64748B]">No utility documents uploaded yet</div>`}
-        <button data-action="upload-unit-utility" class="btn-secondary w-full py-3 text-[13px]">Upload Bill / Document</button>
-        <button data-action="save-unit-utilities" class="btn-primary w-full py-3.5 text-[14px] mt-2">Save Utilities</button>
+        <div class="unit-util-block">
+            <p class="screen-section-title">Overage history</p>
+            ${util.overageCharges.map(o => `
+            <div class="card unit-util-card unit-util-history-row">
+                <div><p class="unit-util-custom-name">${o.amount}</p><p class="unit-util-custom-meta">${o.period} · ${o.status}</p></div>
+                <span class="badge" style="background:${o.status === 'Paid' ? '#DCFCE7' : '#FEF3C7'};color:${o.status === 'Paid' ? '#16A34A' : '#D97706'}">${o.status}</span>
+            </div>`).join('')}
+        </div>` : ''}` : ''}
+        <div class="unit-util-block">
+            <p class="screen-section-title">Meter numbers</p>
+            <div class="card unit-util-card unit-util-meters">
+                ${formFieldInlineReq('Electricity', 'meter_electricity', util.meters?.electricity || '', 'text')}
+                ${formFieldInlineReq('Gas', 'meter_gas', util.meters?.gas || '', 'text')}
+                ${formFieldInlineReq('Water', 'meter_water', util.meters?.water || '', 'text')}
+            </div>
+        </div>
+        <div class="unit-util-block">
+            <div class="unit-util-block-head">
+                <p class="screen-section-title">Shared uploads</p>
+                <p class="unit-util-hint">Upload utility documents. Overage bills go to tenant via Stripe.</p>
+            </div>
+            ${util.uploads?.length ? util.uploads.map(u => `
+            <div class="card unit-util-card unit-util-history-row">
+                <div><p class="unit-util-custom-name">${u.name}</p><p class="unit-util-custom-meta">${u.by} · ${u.date}</p></div>
+                <button data-action="toast" data-msg="Downloaded ${u.name}" class="unit-util-view">View</button>
+            </div>`).join('') : `<div class="card unit-util-card"><p class="unit-util-empty">No utility documents uploaded yet</p></div>`}
+            <button data-action="upload-unit-utility" class="btn-secondary unit-util-upload-btn">Upload bill / document</button>
+            <button data-action="save-unit-utilities" class="btn-primary unit-util-save-btn">Save utilities</button>
+        </div>
     </div>`;
 }
 
@@ -13498,6 +13656,7 @@ const FEATURE_BACK_MAP = {
     'invite-contractor': 'contractors',
     'contractor-invite-sent': 'contractors',
     'inspection-detail': 'property-detail',
+    'property-doc-folder': 'property-detail',
     'tenant-invite-sent': 'property-detail',
     'tenants': 'dashboard',
     'profile': 'dashboard',
@@ -14104,6 +14263,15 @@ function goFeature(screen, opts = {}) {
         if (opts.invoiceId != null) {
             STATE.rentReceiveIds = [opts.invoiceId];
         }
+    } else if (screen === 'send-payment-reminder') {
+        if (typeof initRentReminderSelection === 'function') initRentReminderSelection();
+        if (opts.invoiceId != null) {
+            STATE.rentReminderIds = [opts.invoiceId];
+        }
+    } else if (screen === 'property-doc-folder') {
+        STATE.propertyId = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
+        if (opts.folder) STATE.docFolderId = opts.folder;
+        if (!STATE.docFolderId) STATE.docFolderId = 'gas';
     } else if (screen === 'flat-rent-history' || screen === 'flat-members') {
         STATE.propertyId = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
         if (opts.unit) STATE.selectedUnit = opts.unit;

@@ -90,6 +90,7 @@ const STATE = {
     },
     drawer: false, fab: false, faqId: 0, faqOpenId: null, complianceId: 0, prefKey: '', paymentId: 0, noteId: 0,
     helpReturnScreen: 'dashboard', faqReturnScreen: 'help-support',
+    docFolderId: 'gas',
     docReturnScreen: 'property-detail', legalReturnScreen: 'profile',
     contractorJobId: 0, contractorJobFilter: 'all', contractorJobTab: 'overview',
     tenantFilter: 'all', unitFilter: 'all', showUnitFilters: false, showPropertyMore: false,
@@ -127,6 +128,8 @@ const STATE = {
     rentPaymentMethod: 'bank',
     rentReturnScreen: null,
     rentReceiveUnitFilter: null,
+    rentReminderIds: [],
+    rentReminderChannel: 'both',
     txnReturnScreen: null,
     flatReturn: null,
     propertyMaintUnit: null,
@@ -642,7 +645,7 @@ const NAV_MAIN_TABS = new Set([
 ]);
 
 const FLAT_QUICK_ACTION_SCREENS = new Set([
-    'log-maintenance', 'flat-rent-history', 'unit-utilities', 'flat-members',
+    'flat-rent-history', 'unit-utilities', 'flat-members',
     'property-detail', 'mark-rent-received', 'maintenance-detail', 'invite-tenant',
     'create-tenancy', 'conduct-inspection',
 ]);
@@ -1815,6 +1818,7 @@ function go(screen, opts = {}) {
         const legacyTabs = { details: 'info', more: 'records' };
         const tab = legacyTabs[opts.tab] ?? opts.tab ?? 'units';
         STATE.tab = tab;
+        if (tab === 'records' && opts.recordsView) STATE.recordsView = opts.recordsView;
         if (opts.propertyId !== undefined && opts.propertyId !== STATE.propertyId) STATE.unitFilter = 'all';
         if (opts.unit && tab === 'maintenance') {
             STATE.propertyMaintUnit = opts.unit;
@@ -2030,6 +2034,7 @@ function navigateBackFallback() {
         'tenant-checkout': 'personal-info',
         'broadcast-notices': 'dashboard',
         'send-broadcast': 'broadcast-notices',
+        'property-doc-folder': 'property-detail',
         'broadcast-detail': 'broadcast-notices',
     };
     const tabMap = {
@@ -2189,9 +2194,15 @@ function back() {
         }
         if (STATE.docReturnScreen === 'tenant-detail') {
             go('tenant-detail', { tenantId: STATE.tenantId, tenantTab: STATE.tenantTab || 'lease', noHistory: true });
+        } else if (STATE.docReturnScreen === 'property-doc-folder') {
+            go('property-doc-folder', { propertyId: STATE.propertyId, folder: STATE.docFolderId, noHistory: true });
         } else {
-            go('property-detail', { propertyId: STATE.propertyId, tab: 'documents', noHistory: true });
+            go('property-detail', { propertyId: STATE.propertyId, tab: 'records', recordsView: 'documents', noHistory: true });
         }
+        return;
+    }
+    if (STATE.screen === 'property-doc-folder') {
+        go('property-detail', { propertyId: STATE.propertyId, tab: 'records', recordsView: 'documents', noHistory: true });
         return;
     }
     if (STATE.screen === 'privacy' || STATE.screen === 'terms') {
@@ -3536,6 +3547,10 @@ const tenantOverview = (t, avatar) => {
                         <span>${locLabel}</span>
                     </button>
                     <p class="tenant-v2-lease">Lease ends: ${leaseEndLabel}${leaseRemainder ? ` ${leaseRemainder}` : ''}</p>
+                    <div class="tenant-v2-contact-lines">
+                        ${t.phone ? `<button type="button" data-action="call-tenant" data-tid="${STATE.tenantId}" class="tenant-v2-contact-line"><i data-lucide="phone" class="w-3.5 h-3.5"></i><span>${escapeHtml(t.phone)}</span></button>` : ''}
+                        ${t.email ? `<button type="button" data-action="email-tenant" data-tid="${STATE.tenantId}" class="tenant-v2-contact-line"><i data-lucide="mail" class="w-3.5 h-3.5"></i><span class="tenant-v2-contact-line--truncate">${escapeHtml(t.email)}</span></button>` : ''}
+                    </div>
                 </div>
             </div>
             ${typeof renderTenantContactQuickActions === 'function' ? renderTenantContactQuickActions(STATE.tenantId) : ''}
@@ -4830,6 +4845,7 @@ function collectGoOptions(el) {
     if (el.dataset.pref) opts.prefKey = el.dataset.pref;
     if (el.dataset.pmid !== undefined) opts.paymentId = +el.dataset.pmid;
     if (el.dataset.tab) opts.tab = el.dataset.tab;
+    if (el.dataset.recordsView) opts.recordsView = el.dataset.recordsView;
     if (el.dataset.tenantTab) opts.tenantTab = el.dataset.tenantTab;
     else if (el.getAttribute('data-tenant-tab')) opts.tenantTab = el.getAttribute('data-tenant-tab');
     if (el.dataset.flatTab) opts.flatTab = el.dataset.flatTab;
@@ -4845,6 +4861,7 @@ function collectGoOptions(el) {
     if (el.dataset.job !== undefined) opts.jobId = +el.dataset.job;
     if (el.dataset.jtab) opts.jobTab = el.dataset.jtab;
     if (el.dataset.doc !== undefined) opts.docId = +el.dataset.doc;
+    if (el.dataset.folder) opts.folder = el.dataset.folder;
     if (el.dataset.previewIdx !== undefined) opts.previewDocIdx = +el.dataset.previewIdx;
     if (el.dataset.previewSource) opts.previewDocSource = el.dataset.previewSource;
     if (el.dataset.invoicePreset) opts.invoiceFilter = el.dataset.invoicePreset;
@@ -4884,7 +4901,9 @@ function handleDelegatedAction(e, el) {
             if (isModalBackdropMiss(e, el)) return false;
             return run(() => { STATE.renameDocId = null; render(); });
         case 'confirm-rename-doc': return run(() => { if (typeof confirmRenameDoc === 'function') confirmRenameDoc(); });
-        case 'open-add-document': return run(() => { if (typeof openAddDocumentFlow === 'function') openAddDocumentFlow(); });
+        case 'open-add-document':
+        case 'open-add-document-flow':
+            return run(() => { if (typeof openAddDocumentFlow === 'function') openAddDocumentFlow(); });
         case 'open-add-document-slot': return run(() => { if (typeof openAddDocumentSlot === 'function') openAddDocumentSlot(el.dataset.docType); });
         case 'replace-document-slot': return run(() => { if (typeof replaceDocumentSlot === 'function') replaceDocumentSlot(+el.dataset.doc); });
         case 'close-add-document':
