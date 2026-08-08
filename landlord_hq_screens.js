@@ -1983,7 +1983,10 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail') {
+        if (opts.unit) STATE.selectedUnit = opts.unit;
+    }
     if (screen === 'certificate-assign') {
         if (from === 'property-detail' && STATE.tab === 'records' && STATE.recordsView === 'compliance') {
             STATE.certAssignReturn = { tab: 'records', recordsView: 'compliance' };
@@ -2045,7 +2048,7 @@ function navigateBackFallback() {
         'property-detail': 'properties', 'tenant-detail': 'tenants', 'chat': 'messages',
         'maintenance-detail': STATE.userRole === 'tenant' ? 'tenant-issues' : 'maintenance',
         'invoice-detail': STATE.userRole === 'tenant' ? 'transaction-history' : 'financial',
-        'inventory-room': 'property-detail',
+        'inventory-room': 'property-inventory',
         'personal-info': profileParent, 'notifications-settings': profileParent,
         'security': profileParent, 'password': profileParent, 'preferences': profileParent,
         'payment-methods': profileParent, 'subscription': profileParent, 'subscription-billing': 'subscription',
@@ -2054,7 +2057,7 @@ function navigateBackFallback() {
         'edit-property': 'property-detail', 'add-flat': 'property-detail', 'invite-tenant': 'property-detail',
         'edit-flat': 'flat-detail', 'flat-detail': 'property-detail', 'flat-members': 'flat-detail', 'flat-rent-history': 'flat-detail', 'tenancy-detail': 'flat-detail',
         'edit-tenant': 'tenant-detail', 'reschedule-inspection': 'property-detail',
-        'inspection-detail': 'property-detail',
+        'inspection-detail': 'property-inspections',
         'renew-compliance': 'property-detail', 'edit-inventory-room': 'inventory-room',
         'add-payment-method': 'payment-methods', 'edit-payment-method': 'payment-methods',
         'edit-preference': 'preferences',
@@ -2093,6 +2096,8 @@ function navigateBackFallback() {
         'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
         'property-utilities': 'property-detail', 'property-parking': 'property-detail',
         'property-info': 'property-detail', 'unit-utilities': 'property-detail',
+        'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
+        'edit-tenancy-deposit': 'tenancy-detail',
         'maintenance-history': 'maintenance', 'select-property-invite': 'tenants',
         'global-search': 'dashboard',
         'contractors': 'dashboard',
@@ -3938,6 +3943,7 @@ function screenProfile() {
             <div class="profile-card-body">
                 <p class="profile-card-name">${u.firstName} ${u.lastName}</p>
                 <p class="profile-card-email">${u.email}</p>
+                ${u.phone ? `<p class="profile-card-phone">${u.phone}</p>` : ''}
             </div>
             <span class="profile-card-plan">${plan.name}</span>
         </button>
@@ -4064,16 +4070,16 @@ function screenSecurity() {
                 <div class="flex-1"><p class="text-[14px] font-semibold">Change Password</p><p class="text-[12px] text-[#64748B]">Update your sign-in password</p></div>
                 <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
             </button>
-            <button data-action="toast" data-msg="Two-factor authentication enabled" class="p-4 flex items-center gap-3 w-full text-left">
-                <div class="w-10 h-10 rounded-xl bg-[#ECFDF5] flex items-center justify-center"><i data-lucide="shield-check" class="w-5 h-5 text-[#059669]"></i></div>
-                <div class="flex-1"><p class="text-[14px] font-semibold">Two-Factor Authentication</p><p class="text-[12px] text-[#64748B]">Enabled via authenticator app</p></div>
-                <span class="badge bg-[#DCFCE7] text-[#16A34A]">On</span>
-            </button>
-            <button data-action="toast" data-msg="Biometric login toggled" class="p-4 flex items-center gap-3 w-full text-left">
+            <div class="p-4 flex items-center gap-3 opacity-70">
+                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center"><i data-lucide="shield-check" class="w-5 h-5 text-[#64748B]"></i></div>
+                <div class="flex-1"><p class="text-[14px] font-semibold">Two-Factor Authentication</p><p class="text-[12px] text-[#64748B]">Available in a future release</p></div>
+                <span class="badge bg-[#F1F5F9] text-[#64748B]">Demo</span>
+            </div>
+            <div class="p-4 flex items-center gap-3 opacity-70">
                 <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center"><i data-lucide="fingerprint" class="w-5 h-5 text-[#64748B]"></i></div>
                 <div class="flex-1"><p class="text-[14px] font-semibold">Biometric Login</p><p class="text-[12px] text-[#64748B]">Use Face ID or fingerprint</p></div>
-                <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
-            </button>
+                <span class="badge bg-[#F1F5F9] text-[#64748B]">Demo</span>
+            </div>
         </div>
         <p class="section-title">Active Sessions</p>
         <div class="card p-4 flex items-center gap-3">
@@ -4081,7 +4087,7 @@ function screenSecurity() {
             <div class="flex-1"><p class="text-[14px] font-semibold">This device</p><p class="text-[12px] text-[#64748B]">London · Active now</p></div>
             <span class="badge bg-[#DCFCE7] text-[#16A34A]">Current</span>
         </div>
-        <button data-action="toast" data-msg="Signed out of other devices" class="btn-secondary w-full py-3.5 text-[14px]">Sign Out Other Devices</button>
+        <button data-action="toast" data-msg="Signed out of other devices" class="btn-secondary w-full py-3.5 text-[14px] opacity-70" disabled>Sign Out Other Devices (demo)</button>
     </div>`;
 }
 
@@ -4710,6 +4716,7 @@ function screenEditProperty() {
         </div>
         <div><label class="form-label">Property Name</label><input data-field="name" type="text" class="form-input" value="${p.name.replace(/"/g, '&quot;')}"></div>
         <div><label class="form-label">Address</label><input data-field="address" type="text" class="form-input" value="${p.address.replace(/"/g, '&quot;')}"></div>
+        <p class="form-helper">For property type, EPC, council tax and more, use <button type="button" data-go="property-info" data-pid="${STATE.propertyId}" class="header-text-link">full property details</button>.</p>
         <p class="form-helper">This screen is for the building only. Units, rent, and tenants are managed separately.</p>
         <div class="card p-4 flex items-center justify-between gap-3">
             <div class="min-w-0">
@@ -4790,6 +4797,7 @@ function screenEditTenant() {
         ${formField('Phone', t.phone, 'tel', '', 'phone')}
         ${formField('Emergency Contact', t.emergency && t.emergency !== '—' ? t.emergency : '', 'text', 'Name', 'emergency')}
         ${formField('Emergency Phone', t.emergencyPhone && t.emergencyPhone !== '—' ? t.emergencyPhone : '', 'tel', 'Phone number', 'emergencyPhone')}
+        ${formField('Previous / home address', t.homeAddress || '', 'text', 'Last rented address (optional)', 'homeAddress')}
         </div>
         ${saveBtn('Save Tenant', 'Tenant details updated')}
         ${(TENANT_LIST[STATE.tenantId] || {}).status === 'active' ? `

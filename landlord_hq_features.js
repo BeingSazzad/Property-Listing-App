@@ -931,12 +931,16 @@ function renderTenantDepositSection(tenantId) {
         dep.protectionRef ? { label: 'Ref', value: dep.protectionRef } : null,
         depositReturn ? { label: 'Deposit return', value: depositReturn } : null,
     ].filter(Boolean);
+    const listItem = TENANT_LIST[tenantId];
+    const canEditScheme = listItem?.status === 'active' && listItem?.unit;
     if (!amounts.length && !metaItems.length) return '';
     return `
     <div class="tenant-v2-section">
         <div class="tenant-v2-section-head">
             <h3>Deposit & move-in</h3>
-            <button type="button" data-ttab="property" class="tenant-v2-link">Tenancy</button>
+            ${canEditScheme
+                ? `<button type="button" data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit scheme</button>`
+                : `<button type="button" data-ttab="property" class="tenant-v2-link">Tenancy</button>`}
         </div>
         <div class="card tenant-deposit-card">
             ${amounts.length ? `<p class="tenant-deposit-line">${escapeHtml(amounts.join(' · '))}</p>` : ''}
@@ -3559,7 +3563,7 @@ function propertyActionMenuItems(propertyId) {
     return [
         { label: LANDLORD_MAINT_CREATE_LABEL, icon: 'wrench', action: 'action-menu-go', attrs: `data-go="log-maintenance" data-pid="${propertyId}"` },
         { label: 'Send announcement', icon: 'megaphone', action: 'action-menu-go', attrs: `data-go="send-broadcast" data-pid="${propertyId}"` },
-        { label: 'Edit property', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-property" data-pid="${propertyId}"` },
+        { label: 'Edit property', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="property-info" data-pid="${propertyId}"` },
         { label: 'Add unit', icon: 'plus', action: 'action-menu-go', attrs: `data-go="add-flat" data-pid="${propertyId}"` },
         { label: 'View property', icon: 'eye', action: 'action-menu-go', attrs: `data-go="property-detail" data-pid="${propertyId}" data-tab="units"` },
         { label: 'Delete property', icon: 'trash-2', action: 'action-menu-delete-property', danger: true, attrs: `data-pid="${propertyId}"` },
@@ -4696,9 +4700,49 @@ function screenTenancyDetail() {
     return `${topBar('Tenancy', { back: true, sub: `${p?.name || ''} · ${unit}` })}
     <div class="screen-content screen-enter tenancy-detail-page">
         ${renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead)}
+        <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mb-3">Edit deposit scheme</button>
         ${renderTenancyMembersSection(propertyId, unit, tenancy, members)}
         <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full">Back to unit</button>
     </div>`;
+}
+
+function screenEditTenancyDeposit() {
+    const propertyId = STATE.propertyId;
+    const unit = STATE.selectedUnit || '';
+    const { tenancy } = getFlatMemberRoster(propertyId, unit);
+    if (!tenancy) {
+        return `${topBar('Deposit scheme', { back: true })}
+        <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenancy for this unit.</p></div>`;
+    }
+    const schemes = ['MyDeposits', 'DPS', 'TDS', 'Not yet registered'];
+    return `${topBar('Deposit scheme', { back: true, sub: unit })}
+    <div class="screen-content screen-content-sm screen-enter">
+        <p class="form-helper mb-3">Update the deposit protection scheme and reference for this tenancy.</p>
+        ${formSelectField('Deposit scheme', 'depositScheme', schemes, tenancy.depositScheme || 'MyDeposits', { blankLabel: 'Select scheme' })}
+        ${formField('Protection reference', tenancy.protectionRef || '', 'text', 'Optional scheme reference number', 'protectionRef')}
+        <button type="button" data-action="save-tenancy-deposit" class="btn-primary w-full py-3.5 text-[14px] mt-2">Save deposit details</button>
+    </div>`;
+}
+
+function saveTenancyDeposit() {
+    const propertyId = STATE.propertyId;
+    const unit = STATE.selectedUnit || '';
+    const { tenancy } = getFlatMemberRoster(propertyId, unit);
+    if (!tenancy) {
+        toast('Tenancy not found');
+        return true;
+    }
+    const depositScheme = fieldVal('depositScheme') || 'MyDeposits';
+    const protectionRef = (fieldVal('protectionRef') || '').trim();
+    tenancy.depositScheme = depositScheme;
+    tenancy.protectionRef = protectionRef;
+    tenancy.depositStatus = depositScheme === 'Not yet registered' ? 'pending' : (protectionRef ? 'protected' : 'pending');
+    withLoading(() => {
+        AppStore.save();
+        toast('Deposit scheme updated');
+        go('tenancy-detail', { propertyId, unit, noHistory: true });
+    });
+    return true;
 }
 
 function screenFlatMembers() {
@@ -6297,7 +6341,8 @@ function propertyComplianceCertRows(propertyId) {
         const action = cfg?.renewScreen
             ? `data-go="${cfg.renewScreen}" data-pid="${propertyId}"`
             : `data-go="renew-compliance" data-pid="${propertyId}" data-cid="${cid}"`;
-        return { ic, n, displayExp, st, action };
+        const label = cid === 7 && info.epc ? `EPC (${formatEpcDisplay(info.epc)})` : n;
+        return { ic, n: label, displayExp, st, action };
     });
 }
 
@@ -6489,7 +6534,7 @@ function renderRecordsHubInventoryCard(propertyId) {
     const flagged = rooms.filter(r => r[1] && r[1] !== 'Good').length;
     const hubLabel = propertyInventoryHubLabel(propertyId);
     return `
-    <button type="button" data-go="inventory-room" data-pid="${propertyId}" data-room="0" class="records-hub-summary card w-full text-left">
+    <button type="button" data-go="property-inventory" data-pid="${propertyId}" class="records-hub-summary card w-full text-left">
         <span class="records-hub-summary-icon"><i data-lucide="package" class="w-5 h-5"></i></span>
         <span class="records-hub-summary-title">Inventory${hubLabel ? ` · ${hubLabel}` : ''}${flagged ? ' · review' : ''}</span>
         <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
@@ -6524,17 +6569,15 @@ function renderRecordsHubInspectionRow(propertyId) {
     const upcoming = getScheduledInspection(propertyId);
     const past = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
     let meta = 'Not scheduled';
-    let attrs = `data-go="reschedule-inspection" data-pid="${propertyId}"`;
     if (upcoming) {
         const nextDateLabel = typeof formatDisplayDate === 'function'
             ? formatDisplayDate(upcoming.date) || upcoming.date
             : upcoming.date;
         meta = `Next · ${nextDateLabel}`;
-        attrs = `data-go="conduct-inspection" data-pid="${propertyId}"`;
     } else if (past.length) {
         meta = `${past.length} past report${past.length === 1 ? '' : 's'}`;
     }
-    return renderRecordsHubNavRow('clipboard-list', 'Inspections', attrs, meta);
+    return renderRecordsHubNavRow('clipboard-list', 'Inspections', `data-go="property-inspections" data-pid="${propertyId}"`, meta);
 }
 
 function renderRecordsHubInventoryRow(propertyId) {
@@ -6543,12 +6586,28 @@ function renderRecordsHubInventoryRow(propertyId) {
     const meta = rooms.length
         ? `${rooms.length} room${rooms.length === 1 ? '' : 's'}${flagged ? ` · ${flagged} to review` : ''}`
         : 'Not set up';
-    return renderRecordsHubNavRow('package', 'Inventory', `data-go="inventory-room" data-pid="${propertyId}" data-room="0"`, meta);
+    return renderRecordsHubNavRow('package', 'Inventory', `data-go="property-inventory" data-pid="${propertyId}"`, meta);
 }
 
 function propertyFlatDocumentCount(propertyId) {
     const unitNames = new Set(getPropertyUnits(propertyId).map(u => unitName(u)));
     return AppStore.docsForProperty(propertyId).filter(d => d.unit && unitNames.has(d.unit)).length;
+}
+
+function screenPropertyInspections() {
+    const propertyId = STATE.propertyId ?? 0;
+    const p = PROPERTIES[propertyId];
+    const sub = p?.name?.split(',')[0] || '';
+    return `${topBar('Inspections', { back: true, sub })}
+    ${renderPropertyInspectionTab(propertyId)}`;
+}
+
+function screenPropertyInventory() {
+    const propertyId = STATE.propertyId ?? 0;
+    const p = PROPERTIES[propertyId];
+    const sub = p?.name?.split(',')[0] || '';
+    return `${topBar('Inventory', { back: true, sub })}
+    ${renderPropertyInventoryTab(propertyId)}`;
 }
 
 function screenPropertyFlatDocuments() {
@@ -7419,13 +7478,41 @@ function renderFlatDetailTenantTab(propertyId, unit, ctx) {
     </div>`;
 }
 
+function renderFlatDepositContext(propertyId, unit) {
+    const { tenancy } = getFlatMemberRoster(propertyId, unit);
+    if (!tenancy) return '';
+    const schemeLine = [tenancy.depositScheme, tenancy.protectionRef].filter(Boolean).join(' · ');
+    const rows = [
+        ['Deposit held', tenancy.deposit || '—'],
+        tenancy.advancePaid && tenancy.advancePaid !== tenancy.deposit ? ['Advance paid', tenancy.advancePaid] : null,
+        schemeLine ? ['Deposit scheme', schemeLine] : null,
+    ].filter(Boolean);
+    if (!rows.length) return '';
+    return `
+    <section class="card flat-pay-deposit">
+        <div class="flat-dt-section-head">
+            <h3 class="flat-dt-section-title">Deposit & scheme</h3>
+            <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-section-link">Edit</button>
+        </div>
+        <div class="flat-pay-deposit-rows">
+            ${rows.map(([label, value]) => `
+            <div class="flat-pay-deposit-row">
+                <span class="flat-pay-deposit-label">${escapeHtml(label)}</span>
+                <span class="flat-pay-deposit-value">${escapeHtml(value)}</span>
+            </div>`).join('')}
+        </div>
+    </section>`;
+}
+
 function renderFlatDetailPaymentsTab(propertyId, unit) {
     const stats = unitRentStats(propertyId, unit);
     const unpaid = stats.unpaid;
     const hasOverdue = unpaid.some(i => i.status === 'Overdue');
     const history = renderUnitRentHistory(propertyId, unit);
+    const depositBlock = renderFlatDepositContext(propertyId, unit);
     return `
     <div class="flat-dt-tab-panel flat-dt-payments-v2">
+        ${depositBlock}
         ${stats.outstanding || stats.collected ? `
         <div class="flat-pay-summary card${hasOverdue ? ' flat-pay-summary--overdue' : stats.collected && !hasOverdue ? ' flat-pay-summary--ok' : ''}">
             <p class="flat-pay-summary-label">${hasOverdue ? 'Overdue' : stats.outstanding ? 'Outstanding' : 'This month'}</p>
@@ -7880,6 +7967,14 @@ function screenDocumentPreviewEnhanced() {
         const tid = STATE.tenantId ?? 0;
         const proof = getTenantNidProof(tid);
         if (proof) { name = proof.name; meta = proof.date; }
+    } else if (STATE.previewDocSource === 'unit-util') {
+        const util = getUnitUtilityMeta(STATE.propertyId, STATE.selectedUnit);
+        const row = util.uploads?.[STATE.previewUtilDocIdx ?? 0];
+        if (row) {
+            name = row.name;
+            meta = row.date || 'Uploaded';
+            doc = { name: row.name, fileUrl: row.fileUrl, mime: row.mime, date: row.date };
+        }
     } else if (STATE.previewDocSource === 'tenant') {
         const docs = getTenantDocuments(STATE.tenantId ?? 0);
         const row = docs[STATE.previewDocIdx ?? 0];
@@ -7932,7 +8027,7 @@ function screenDocumentPreviewEnhanced() {
                 </button>
                 ${docId != null
                     ? `<button data-action="share-doc" data-doc="${docId}" class="btn-primary doc-preview-action-btn"><i data-lucide="share-2" class="w-4 h-4"></i><span>Share</span></button>`
-                    : `<button data-action="toast" data-msg="Document saved" class="btn-primary doc-preview-action-btn"><span>Save</span></button>`}
+                    : `<button type="button" data-action="back" class="btn-primary doc-preview-action-btn"><span>Done</span></button>`}
             </div>
             ${docId != null ? `
             <button type="button" data-action="delete-document" data-doc="${docId}" class="doc-preview-delete">
@@ -12996,10 +13091,10 @@ function screenUnitUtilities() {
                 <p class="screen-section-title">Shared uploads</p>
                 <p class="unit-util-hint">Upload utility documents. Overage bills go to tenant via Stripe.</p>
             </div>
-            ${util.uploads?.length ? util.uploads.map(u => `
+            ${util.uploads?.length ? util.uploads.map((u, idx) => `
             <div class="card unit-util-card unit-util-history-row">
                 <div><p class="unit-util-custom-name">${u.name}</p><p class="unit-util-custom-meta">${u.by} · ${u.date}</p></div>
-                <button data-action="toast" data-msg="Downloaded ${u.name}" class="unit-util-view">View</button>
+                <button type="button" data-action="preview-unit-util-doc" data-idx="${idx}" class="unit-util-view">View</button>
             </div>`).join('') : `<div class="card unit-util-card"><p class="unit-util-empty">No utility documents uploaded yet</p></div>`}
             <button data-action="upload-unit-utility" class="btn-secondary unit-util-upload-btn">Upload bill / document</button>
         </div>
@@ -13270,6 +13365,7 @@ function handleFeatureSave(el) {
     if (screen === 'conduct-inspection') return saveInspection();
     if (screen === 'invite-tenant') return sendTenantInvitation();
     if (screen === 'edit-tenant') return saveEditTenant();
+    if (screen === 'edit-tenancy-deposit') return saveTenancyDeposit();
     if (screen === 'renew-compliance') return saveRenewCompliance();
     if (screen === 'edit-inventory-room') return saveEditInventoryRoom();
     if (screen === 'reschedule-inspection') return saveRescheduleInspection();
@@ -13780,6 +13876,7 @@ function saveEditTenant() {
     t.phone = fieldVal('phone') || t.phone;
     t.emergency = fieldVal('emergency')?.trim() || '';
     t.emergencyPhone = fieldVal('emergencyPhone')?.trim() || '';
+    t.homeAddress = fieldVal('homeAddress')?.trim() || '';
     const draft = {
         nidProofFrontName: STATE.nidProofFrontName || t.nidProofFront || '',
         nidProofBackName: STATE.nidProofBackName || t.nidProofBack || '',
@@ -14406,6 +14503,20 @@ async function uploadUnitUtilityDoc() {
     render();
 }
 
+function previewUnitUtilDocAction(idx) {
+    const unit = STATE.selectedUnit;
+    if (!unit || idx == null) return;
+    const util = getUnitUtilityMeta(STATE.propertyId, unit);
+    if (!util.uploads?.[idx]) {
+        toast('Document not found');
+        return;
+    }
+    STATE.previewDocSource = 'unit-util';
+    STATE.previewUtilDocIdx = idx;
+    STATE.previewDocId = null;
+    go('document-preview', { propertyId: STATE.propertyId, unit, noHistory: false });
+}
+
 function uploadFlatPhotoAction() {
     const unit = STATE.selectedUnit;
     if (!unit || STATE.propertyId == null) return;
@@ -14846,7 +14957,7 @@ const FEATURE_SCREENS = [
     'broadcast-notices', 'send-broadcast', 'broadcast-detail',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
-    'property-photos', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info', 'property-flat-documents', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'tenancy-detail',
+    'property-photos', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'tenancy-detail', 'edit-tenancy-deposit',
     'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'global-search', 'contractors', 'invite-contractor', 'contractor-invite-sent', 'inspection-detail',
 ];
 
@@ -14874,6 +14985,9 @@ Object.assign(SCREEN_MAP, {
     'property-parking': () => screenPropertyDetailsEdit('parking'),
     'property-info': () => screenPropertyDetailsEdit('info'),
     'property-flat-documents': screenPropertyFlatDocuments,
+    'property-inspections': screenPropertyInspections,
+    'property-inventory': screenPropertyInventory,
+    'edit-tenancy-deposit': screenEditTenancyDeposit,
     'unit-utilities': screenUnitUtilities,
     'edit-flat': screenEditFlat,
     'add-flat': screenAddFlat,
@@ -14927,6 +15041,9 @@ const FEATURE_BACK_MAP = {
     'property-parking': 'property-detail',
     'property-info': 'property-detail',
     'property-flat-documents': 'property-detail',
+    'property-inspections': 'property-detail',
+    'property-inventory': 'property-detail',
+    'edit-tenancy-deposit': 'tenancy-detail',
     'unit-utilities': 'property-detail',
     'edit-flat': 'flat-detail',
     'add-flat': 'property-detail',
@@ -14942,7 +15059,8 @@ const FEATURE_BACK_MAP = {
     'contractors': 'dashboard',
     'invite-contractor': 'contractors',
     'contractor-invite-sent': 'contractors',
-    'inspection-detail': 'property-detail',
+    'inspection-detail': 'property-inspections',
+    'inventory-room': 'property-inventory',
     'property-doc-folder': 'property-detail',
     'tenant-invite-sent': 'property-detail',
     'tenants': 'dashboard',
@@ -15067,6 +15185,10 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="save-unit-utilities"]').forEach(el => { el.onclick = saveUnitUtilities; });
     app.querySelectorAll('[data-action="upload-unit-utility"]').forEach(el => { el.onclick = uploadUnitUtilityDoc; });
+    app.querySelectorAll('[data-action="preview-unit-util-doc"]').forEach(el => {
+        el.onclick = () => previewUnitUtilDocAction(+el.dataset.idx);
+    });
+    app.querySelectorAll('[data-action="save-tenancy-deposit"]').forEach(el => { el.onclick = () => saveTenancyDeposit(); });
     app.querySelectorAll('[data-action="upload-flat-photo"]').forEach(el => { el.onclick = uploadFlatPhotoAction; });
     app.querySelectorAll('[data-action="add-appliance"]').forEach(el => {
         el.onclick = addApplianceRow;
@@ -15609,8 +15731,9 @@ function goFeature(screen, opts = {}) {
         STATE.propertyId = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
         if (opts.folder) STATE.docFolderId = opts.folder;
         if (!STATE.docFolderId) STATE.docFolderId = 'gas';
-    } else if (screen === 'property-flat-documents') {
+    } else if (screen === 'property-flat-documents' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit') {
         STATE.propertyId = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
+        if (opts.unit) STATE.selectedUnit = opts.unit;
     } else if (screen === 'flat-rent-history' || screen === 'flat-members') {
         STATE.propertyId = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
         if (opts.unit) STATE.selectedUnit = opts.unit;
