@@ -352,6 +352,7 @@ const AppStore = {
         }
         if (!Array.isArray(this.propertyMeta[pid].appliances)) this.propertyMeta[pid].appliances = [];
         if (!this.propertyMeta[pid].alarms) this.propertyMeta[pid].alarms = {};
+        if (!Array.isArray(this.propertyMeta[pid].customAlarms)) this.propertyMeta[pid].customAlarms = [];
         if (!this.propertyMeta[pid].utilities) this.propertyMeta[pid].utilities = {};
         if (!this.propertyMeta[pid].parking) this.propertyMeta[pid].parking = {};
         if (!Array.isArray(this.propertyMeta[pid].photos)) this.propertyMeta[pid].photos = [IMG.props[pid]];
@@ -1002,7 +1003,6 @@ function renderTenantContactQuickActions(tenantId) {
     const actions = [
         ['phone', 'Call', `data-action="call-tenant" data-tid="${tenantId}"`, 'tenant-v2-quick-icon--call'],
         ['message-square', 'Message', msgAttrs, 'tenant-v2-quick-icon--msg'],
-        ['mail', 'Email', `data-action="email-tenant" data-tid="${tenantId}"`, 'tenant-v2-quick-icon--email'],
         ['file-text', 'View lease', leaseAttrs, 'tenant-v2-quick-icon--lease'],
     ];
     return `
@@ -1169,26 +1169,24 @@ function renderTenantPersonalIdCard(tenantId, opts = {}) {
     return `
     <div class="tenant-v2-section">
         <div class="tenant-v2-section-head"><h3>Personal & ID</h3></div>
-        <div class="card tenant-info-compact">
-            <div class="tenant-info-row">
-                <div class="tenant-info-cell">
+        <div class="card tenant-info-compact tenant-info-compact--personal">
+            <div class="tenant-info-row tenant-info-row--stack">
+                <div class="tenant-info-cell tenant-info-cell--full">
                     <span class="tenant-info-icon"><i data-lucide="cake" class="w-4 h-4"></i></span>
                     <span class="tenant-info-copy">
                         <span class="tenant-info-label">Date of birth</span>
                         <span class="tenant-info-value">${escapeHtml(formatTenantDob(t.dob))}</span>
                     </span>
                 </div>
-                <div class="tenant-info-cell">
+                <div class="tenant-info-cell tenant-info-cell--full">
                     <span class="tenant-info-icon"><i data-lucide="id-card" class="w-4 h-4"></i></span>
                     <span class="tenant-info-copy">
                         <span class="tenant-info-label">NID</span>
                         <span class="tenant-info-value">${escapeHtml(t.idNumber || '—')}</span>
                     </span>
                 </div>
-            </div>
-            <div class="tenant-info-row">
                 ${nidDoc && canViewDoc ? `
-                <button type="button" data-go="document-preview" data-preview-source="tenant-nid" data-tid="${tenantId}" class="tenant-info-cell tenant-info-cell--link">
+                <button type="button" data-go="document-preview" data-preview-source="tenant-nid" data-tid="${tenantId}" class="tenant-info-cell tenant-info-cell--link tenant-info-cell--full">
                     <span class="tenant-info-icon"><i data-lucide="file-badge" class="w-4 h-4"></i></span>
                     <span class="tenant-info-copy">
                         <span class="tenant-info-label">ID document</span>
@@ -1196,28 +1194,20 @@ function renderTenantPersonalIdCard(tenantId, opts = {}) {
                     </span>
                     <i data-lucide="chevron-right" class="tenant-info-chevron w-3.5 h-3.5"></i>
                 </button>` : `
-                <div class="tenant-info-cell">
+                <div class="tenant-info-cell tenant-info-cell--full">
                     <span class="tenant-info-icon"><i data-lucide="file-badge" class="w-4 h-4"></i></span>
                     <span class="tenant-info-copy">
                         <span class="tenant-info-label">ID document</span>
                         <span class="tenant-info-value">${escapeHtml(docStatus)}</span>
                     </span>
                 </div>`}
-                ${prevAddress ? `
-                <div class="tenant-info-cell">
+                <div class="tenant-info-cell tenant-info-cell--full">
                     <span class="tenant-info-icon"><i data-lucide="map-pin" class="w-4 h-4"></i></span>
                     <span class="tenant-info-copy">
                         <span class="tenant-info-label">Last rented address</span>
-                        <span class="tenant-info-value">${escapeHtml(prevAddress)}</span>
+                        <span class="tenant-info-value tenant-info-value--wrap">${escapeHtml(prevAddress || '—')}</span>
                     </span>
-                </div>` : `
-                <div class="tenant-info-cell">
-                    <span class="tenant-info-icon"><i data-lucide="map-pin" class="w-4 h-4"></i></span>
-                    <span class="tenant-info-copy">
-                        <span class="tenant-info-label">Last rented address</span>
-                        <span class="tenant-info-value">—</span>
-                    </span>
-                </div>`}
+                </div>
             </div>
         </div>
     </div>`;
@@ -1637,7 +1627,19 @@ function propertyParkingSummary(meta) {
 }
 
 function alarmHasData(alarm) {
-    return !!(alarm && (alarm.location || alarm.expiry || alarm.lastCheck));
+    return !!(alarm && (alarm.location || alarm.expiry || alarm.lastCheck || alarm.name));
+}
+
+function propertyCustomAlarmItems(meta) {
+    return (meta.customAlarms || [])
+        .filter(alarmHasData)
+        .map(a => {
+            const parts = [
+                a.location || '',
+                a.expiry ? `Expires ${formatInfoDate(a.expiry)}` : '',
+            ].filter(Boolean);
+            return { icon: 'bell-ring', label: a.name || 'Custom alarm', sub: parts.join(' · ') };
+        });
 }
 
 function propertyUtilityDisplayItems(meta) {
@@ -3926,16 +3928,19 @@ function renderPropertyOverviewDetails(propertyId) {
         label: a.name,
         sub: [a.brand, a.condition && a.condition !== 'Good' ? a.condition : ''].filter(Boolean).join(' · '),
     }));
-    const alarmItems = ALARM_CATALOG
-        .filter(a => alarmHasData(meta.alarms?.[a.key]))
-        .map(a => {
-            const alarm = meta.alarms[a.key];
-            const parts = [
-                alarm.location || '',
-                alarm.expiry ? `Expires ${formatInfoDate(alarm.expiry)}` : '',
-            ].filter(Boolean);
-            return { icon: a.icon, label: `${a.label} Alarm`, sub: parts.join(' · ') };
-        });
+    const alarmItems = [
+        ...ALARM_CATALOG
+            .filter(a => alarmHasData(meta.alarms?.[a.key]))
+            .map(a => {
+                const alarm = meta.alarms[a.key];
+                const parts = [
+                    alarm.location || '',
+                    alarm.expiry ? `Expires ${formatInfoDate(alarm.expiry)}` : '',
+                ].filter(Boolean);
+                return { icon: a.icon, label: `${a.label} Alarm`, sub: parts.join(' · ') };
+            }),
+        ...propertyCustomAlarmItems(meta),
+    ];
     const featureItems = [...applianceItems, ...alarmItems];
     const infoRows = [
         ['map-pin', 'Address', p.address || '—'],
@@ -6533,7 +6538,7 @@ function renderPropertyRecordsHub(propertyId) {
     const flatDocCount = propertyFlatDocumentCount(propertyId);
     return `
     <div class="screen-content screen-content-sm prop-records-page prop-records-unified">
-        <section class="records-hub-section" id="records-compliance">
+        <section class="records-hub-section records-hub-section--cert" id="records-compliance">
             <div class="records-hub-section-head records-hub-section-head--cert">
                 <div class="records-hub-section-copy">
                     <h3 class="records-hub-section-title">Certificates</h3>
@@ -10019,6 +10024,15 @@ function syncSmartReminders(persist = true) {
                 type, propertyId: p.id, title: label, due: alarm.expiry,
             });
         });
+        (meta.customAlarms || []).forEach(alarm => {
+            if (!alarm?.expiry) return;
+            upsertSmartReminder({
+                type: 'custom',
+                propertyId: p.id,
+                title: `${alarm.name || 'Custom alarm'} expiry`,
+                due: alarm.expiry,
+            });
+        });
         const info = meta.info || {};
         if (info.epcExpiry) {
             upsertSmartReminder({
@@ -12889,6 +12903,24 @@ function isCustomApplianceName(name) {
     return !APPLIANCE_NAME_OPTIONS.slice(0, -1).includes(name);
 }
 
+function renderCustomAlarmEditCard(a, i) {
+    const title = a.name?.trim() || `Additional alarm ${i + 1}`;
+    return `
+        <div class="card p-4 mb-3 alarm-edit-card">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="feature-pick-chip-icon"><i data-lucide="bell-ring" class="w-4 h-4"></i></span>
+                    <p class="text-[13px] font-bold text-[#0F172A] truncate mb-0">${escapeHtml(title)}</p>
+                </div>
+                <button type="button" data-action="remove-custom-alarm" data-alarm-idx="${i}" class="row-icon-btn row-icon-btn--danger" title="Remove"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+            <div><label class="form-label">Alarm name</label><input data-field="custom_alarm_name_${i}" class="form-input" value="${escapeHtml(a.name || '')}" placeholder="e.g. Heat detector, Smoke alarm (landing)"></div>
+            <div><label class="form-label">Location</label><input data-field="custom_alarm_location_${i}" class="form-input" value="${escapeHtml(a.location || '')}" placeholder="e.g. Landing"></div>
+            <div><label class="form-label">Expiry Date</label><input data-field="custom_alarm_expiry_${i}" type="date" class="form-input" value="${a.expiry || ''}"></div>
+            <div><label class="form-label">Last Check</label><input data-field="custom_alarm_check_${i}" type="date" class="form-input" value="${a.lastCheck || ''}"></div>
+        </div>`;
+}
+
 function renderApplianceEditCard(a, i) {
     const isCustom = isCustomApplianceName(a.name);
     const icon = applianceIcon(isCustom ? '' : a.name);
@@ -12935,7 +12967,10 @@ function screenPropertyDetailsEdit(section) {
         ${formSelectField('Council Tax Band', 'info_council', COUNCIL_TAX_BAND_OPTIONS, info.councilTax, { blankLabel: 'Select band' })}
         <div><label class="form-label">Notes</label><textarea data-field="info_notes" class="form-input min-h-[96px] resize-none" placeholder="Access codes, parking notes...">${escapeHtml(info.notes || '')}</textarea></div>`;
     } else if (section === 'alarms') {
-        body = ALARM_CATALOG.map(({ key, label, icon }) => {
+        const customAlarms = meta.customAlarms || [];
+        body = `
+        <p class="form-helper mb-2">Standard UK alarms are listed below. Add more if this property has extra detectors.</p>
+        ${ALARM_CATALOG.map(({ key, label, icon }) => {
             const a = meta.alarms[key] || { expiry: '', lastCheck: '', location: '' };
             return `<div class="card p-4 mb-3">
                 <div class="flex items-center gap-2 mb-3">
@@ -12946,7 +12981,10 @@ function screenPropertyDetailsEdit(section) {
                 <div><label class="form-label">Expiry Date</label><input data-field="${key}_expiry" type="date" class="form-input" value="${a.expiry || ''}"></div>
                 <div><label class="form-label">Last Check</label><input data-field="${key}_check" type="date" class="form-input" value="${a.lastCheck || ''}"></div>
             </div>`;
-        }).join('');
+        }).join('')}
+        ${customAlarms.length ? `<p class="screen-section-title">Additional alarms</p>` : ''}
+        ${customAlarms.map((a, i) => renderCustomAlarmEditCard(a, i)).join('')}
+        <button type="button" data-action="add-custom-alarm" class="btn-secondary w-full py-3 text-[13px] mb-2">+ Add alarm</button>`;
     } else if (section === 'appliances') {
         const appliances = meta.appliances || [];
         body = `${renderApplianceQuickPick(meta)}
@@ -13012,6 +13050,15 @@ function savePropertyMeta(section) {
                 lastCheck: fieldVal(`${k}_check`),
             };
         });
+        const customIndices = [...document.querySelectorAll('[data-field^="custom_alarm_name_"]')]
+            .map(el => +String(el.dataset.field).replace('custom_alarm_name_', ''))
+            .filter(n => !Number.isNaN(n));
+        meta.customAlarms = customIndices.map(i => ({
+            name: fieldVal(`custom_alarm_name_${i}`).trim(),
+            location: fieldVal(`custom_alarm_location_${i}`).trim(),
+            expiry: fieldVal(`custom_alarm_expiry_${i}`),
+            lastCheck: fieldVal(`custom_alarm_check_${i}`),
+        })).filter(a => a.name || a.location || a.expiry || a.lastCheck);
         syncSmartReminders(false);
     } else if (section === 'appliances') {
         const indices = [...document.querySelectorAll('[data-field^="app_name_"]')]
@@ -14230,6 +14277,58 @@ function removeFlatPhotoAction(idx) {
     render();
 }
 
+function captureAlarmDraftFromForm(meta) {
+    if (!meta.alarms) meta.alarms = {};
+    ['smoke', 'heat', 'co'].forEach(k => {
+        meta.alarms[k] = {
+            location: fieldVal(`${k}_location`),
+            expiry: fieldVal(`${k}_expiry`),
+            lastCheck: fieldVal(`${k}_check`),
+        };
+    });
+    const customIndices = [...document.querySelectorAll('[data-field^="custom_alarm_name_"]')]
+        .map(el => +String(el.dataset.field).replace('custom_alarm_name_', ''))
+        .filter(n => !Number.isNaN(n));
+    meta.customAlarms = customIndices.map(i => ({
+        name: fieldVal(`custom_alarm_name_${i}`).trim(),
+        location: fieldVal(`custom_alarm_location_${i}`).trim(),
+        expiry: fieldVal(`custom_alarm_expiry_${i}`),
+        lastCheck: fieldVal(`custom_alarm_check_${i}`),
+    }));
+}
+
+function addCustomAlarmRow() {
+    if (STATE.propertyId == null) return;
+    const meta = AppStore.meta(STATE.propertyId);
+    captureAlarmDraftFromForm(meta);
+    if (!meta.customAlarms) meta.customAlarms = [];
+    meta.customAlarms.push({ name: '', location: '', expiry: '', lastCheck: '' });
+    AppStore.save();
+    toast('New alarm added — enter details below');
+    render();
+    requestAnimationFrame(() => {
+        const inputs = document.querySelectorAll('.alarm-edit-card [data-field^="custom_alarm_name_"]');
+        const last = inputs[inputs.length - 1];
+        last?.focus?.();
+        last?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    });
+}
+
+function removeCustomAlarmRow(idx) {
+    const meta = AppStore.meta(STATE.propertyId);
+    if (!meta.customAlarms?.[idx]) return;
+    const doRemove = () => {
+        captureAlarmDraftFromForm(meta);
+        meta.customAlarms.splice(idx, 1);
+        AppStore.save();
+        toast('Alarm removed');
+        render();
+    };
+    if (typeof confirmAction === 'function') {
+        confirmAction('Remove this alarm?', doRemove);
+    } else doRemove();
+}
+
 function addApplianceRow() {
     if (STATE.propertyId == null) return;
     const meta = AppStore.meta(STATE.propertyId);
@@ -14794,6 +14893,12 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="upload-flat-photo"]').forEach(el => { el.onclick = uploadFlatPhotoAction; });
     app.querySelectorAll('[data-action="add-appliance"]').forEach(el => {
         el.onclick = addApplianceRow;
+    });
+    app.querySelectorAll('[data-action="add-custom-alarm"]').forEach(el => {
+        el.onclick = addCustomAlarmRow;
+    });
+    app.querySelectorAll('[data-action="remove-custom-alarm"]').forEach(el => {
+        el.onclick = () => removeCustomAlarmRow(+el.dataset.alarmIdx);
     });
     app.querySelectorAll('[data-action="quick-add-appliance"]').forEach(el => {
         el.onclick = () => quickAddAppliance(el.dataset.pickValue);

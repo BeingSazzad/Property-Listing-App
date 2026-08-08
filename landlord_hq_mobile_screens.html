@@ -5681,6 +5681,18 @@
         .tenant-profile-action:active { background: #F8FAFC; }
 
         .tenant-info-compact { padding: 6px; overflow: hidden; }
+        .tenant-info-compact--personal { padding: 8px; }
+        .tenant-info-compact--personal .tenant-info-row--stack { gap: 6px; margin-bottom: 0; }
+        .tenant-info-compact--personal .tenant-info-cell {
+            padding: 10px 12px; align-items: center;
+        }
+        .tenant-info-compact--personal .tenant-info-icon {
+            width: 28px; height: 28px; border-radius: 8px;
+        }
+        .tenant-info-compact--personal .tenant-info-value {
+            font-size: 12px; font-weight: 600; margin-top: 3px;
+        }
+        .tenant-info-compact--personal .tenant-info-chevron { margin-top: 0; }
         .tenant-info-row {
             display: grid; grid-template-columns: 1fr 1fr;
             gap: 6px; margin-bottom: 6px;
@@ -8971,12 +8983,15 @@
         .records-scope-copy { font-size: 12px; line-height: 1.45; color: #64748B; margin: 0; }
         .records-scope-copy strong { color: #334155; font-weight: 700; }
         .records-hub-section { display: flex; flex-direction: column; gap: 10px; }
+        .records-hub-section--cert { gap: 0; }
         .records-hub-section--split { gap: 8px; }
         .records-hub-section-head {
             display: flex; align-items: center; justify-content: space-between; gap: 10px;
         }
         .records-hub-section-head--cert {
-            align-items: flex-start;
+            align-items: center;
+            padding: 8px 2px 14px;
+            margin-bottom: 2px;
         }
         .records-hub-section-copy {
             display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px;
@@ -8996,11 +9011,13 @@
         .records-hub-section-badge--warn { background: #FEF3C7; color: #D97706; }
         .records-hub-upload-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-            flex-shrink: 0; padding: 7px 12px; border-radius: 999px;
+            flex-shrink: 0; padding: 8px 14px; border-radius: 999px;
             border: 1px solid #BFDBFE; background: #EFF6FF; color: #2563EB;
             font-size: 12px; font-weight: 700; cursor: pointer; line-height: 1;
+            margin-top: 0;
         }
         .records-hub-upload-btn:active { background: #DBEAFE; }
+        .records-hub-section--cert .cert-tile-grid { margin-top: 0; }
         .records-hub-text-btn {
             align-self: flex-start; border: none; background: transparent; padding: 0;
             font-size: 12px; font-weight: 700; color: #2563EB; cursor: pointer;
@@ -9521,7 +9538,7 @@
     <div id="app"></div>
     <script src="landlord_hq_screens.js?v=221"></script>
     <script src="landlord_hq_contractor.js?v=196"></script>
-    <script src="landlord_hq_features.js?v=225"></script>
+    <script src="landlord_hq_features.js?v=229"></script>
     <script src="landlord_hq_product.js?v=213"></script>
     <script>
     (function () {

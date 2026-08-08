@@ -1610,16 +1610,19 @@ function screenTenantBuildingInfo() {
         sub: [a.brand, a.condition && a.condition !== 'Good' ? a.condition : ''].filter(Boolean).join(' · '),
     }));
     const alarmItems = typeof ALARM_CATALOG !== 'undefined' && typeof alarmHasData === 'function'
-        ? ALARM_CATALOG
-            .filter(a => alarmHasData(meta.alarms?.[a.key]))
-            .map(a => {
-                const alarm = meta.alarms[a.key];
-                const parts = [
-                    alarm.location || '',
-                    alarm.expiry && typeof formatInfoDate === 'function' ? `Expires ${formatInfoDate(alarm.expiry)}` : '',
-                ].filter(Boolean);
-                return { icon: a.icon, label: `${a.label} Alarm`, sub: parts.join(' · ') };
-            })
+        ? [
+            ...ALARM_CATALOG
+                .filter(a => alarmHasData(meta.alarms?.[a.key]))
+                .map(a => {
+                    const alarm = meta.alarms[a.key];
+                    const parts = [
+                        alarm.location || '',
+                        alarm.expiry && typeof formatInfoDate === 'function' ? `Expires ${formatInfoDate(alarm.expiry)}` : '',
+                    ].filter(Boolean);
+                    return { icon: a.icon, label: `${a.label} Alarm`, sub: parts.join(' · ') };
+                }),
+            ...(typeof propertyCustomAlarmItems === 'function' ? propertyCustomAlarmItems(meta) : []),
+        ]
         : [];
     const featureItems = [...applianceItems, ...alarmItems];
     const renderIcon = typeof renderBuildingIconItem === 'function'
