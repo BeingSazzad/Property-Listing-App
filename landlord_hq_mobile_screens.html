@@ -428,14 +428,15 @@
         }
         .dash-quick--compact { margin-top: 14px; }
         .dash-quick--grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-            background: transparent; box-shadow: none; padding: 14px 0 0;
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+            background: transparent; box-shadow: none; padding: 0; margin-top: 0;
         }
         .dash-quick--grid .dash-quick-btn {
             background: #fff; border-radius: 14px; box-shadow: var(--shadow-card);
             padding: 14px 8px 12px;
         }
         .dash-quick--grid .dash-quick-btn::after { display: none; }
+        .dash-quick--four { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
         /* Dashboard Financial Analytics Cards & Charts */
         .dash-analytics-card {
@@ -761,6 +762,42 @@
         }
         .dash-reminder-prop {
             font-size: var(--text-caption); color: var(--color-text-secondary); margin: 2px 0 0; line-height: 1.35;
+        }
+        .reminder-filter-row {
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .reminder-filter-row::-webkit-scrollbar { display: none; }
+        .reminder-filter-pill {
+            flex-shrink: 0; padding: 8px 14px; border-radius: 999px; border: 1px solid #E2E8F0;
+            background: #fff; font-size: 12px; font-weight: 700; color: #64748B; cursor: pointer;
+        }
+        .reminder-filter-pill.is-active {
+            background: #2563EB; color: #fff; border-color: #2563EB;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, .22);
+        }
+        .reminder-detail-hero { border-left: 4px solid #E2E8F0; }
+        .reminder-detail-hero.urgency-high { border-left-color: #DC2626; }
+        .reminder-detail-hero.urgency-medium { border-left-color: #D97706; }
+        .reminder-detail-type {
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+            color: #64748B; margin: 0;
+        }
+        .reminder-detail-title {
+            font-size: 18px; font-weight: 800; color: #0F172A; margin: 4px 0 0; line-height: 1.25;
+        }
+        .reminder-detail-prop { font-size: 12px; color: #64748B; margin: 4px 0 0; }
+        .reminder-detail-meta {
+            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+            margin-top: 14px; padding-top: 14px; border-top: 1px solid #F1F5F9;
+        }
+        .reminder-detail-meta-item { min-width: 0; }
+        .reminder-detail-meta-label {
+            display: block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .03em; color: #94A3B8;
+        }
+        .reminder-detail-meta-value {
+            display: block; font-size: 12px; font-weight: 700; color: #0F172A; margin-top: 4px; line-height: 1.3;
         }
         .dash-view-all {
             font-size: var(--text-label); font-weight: var(--font-semibold); color: var(--color-primary);
@@ -3859,6 +3896,10 @@
         .form-stack .form-label { margin-bottom: 4px; }
         .profile-form-page { gap: 12px; padding-top: 4px; }
         .profile-form-page .profile-form-photo { margin-bottom: 2px; }
+        .profile-form-photo-hint {
+            margin: 10px 0 0; font-size: 12px; color: #94A3B8; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
         .form-helper {
             font-size: 12px; line-height: 1.4; font-weight: 400;
             color: var(--color-text-muted); margin: 4px 0 0;
@@ -7835,10 +7876,11 @@
             background: #fff; color: #2563EB; font-size: 12px; font-weight: 800;
             border-radius: 999px; padding: 8px 14px; position: relative; z-index: 1;
         }
-        .ctr-overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .ctr-overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--stack-gap-sm, 10px); }
         .ctr-overview-card {
-            border: 1px solid #E8EDF3; border-radius: 12px; padding: 10px; text-align: left;
-            background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.04);
+            border: 1px solid #E8EDF3; border-radius: 12px; padding: 12px; text-align: left;
+            background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.04); min-height: 88px;
+            display: flex; flex-direction: column;
         }
         .ctr-overview-card--blue { background: #EFF6FF; border-color: #DBEAFE; }
         .ctr-overview-card--amber { background: #FFFBEB; border-color: #FDE68A; }
@@ -7851,9 +7893,9 @@
         .ctr-overview-card--amber .ctr-overview-icon { color: #D97706; }
         .ctr-overview-card--green .ctr-overview-icon { color: #16A34A; }
         .ctr-overview-card--rose .ctr-overview-icon { color: #DC2626; }
-        .ctr-overview-value { font-size: 17px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1; }
-        .ctr-overview-label { font-size: 11px; font-weight: 700; color: #334155; margin: 4px 0 0; }
-        .ctr-overview-sub { font-size: 9px; font-weight: 600; color: #64748B; margin: 2px 0 0; }
+        .ctr-overview-value { font-size: 20px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1; }
+        .ctr-overview-label { font-size: 11px; font-weight: 700; color: #334155; margin: 6px 0 0; line-height: 1.2; }
+        .ctr-overview-sub { font-size: 10px; font-weight: 600; color: #64748B; margin: 3px 0 0; line-height: 1.2; }
         .ctr-home-jobs-list { display: flex; flex-direction: column; gap: 8px; }
         .ctr-home-job-row {
             display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #E8EDF3;
@@ -7863,14 +7905,15 @@
         .ctr-home-job-title { font-size: 13px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.3; }
         .ctr-home-job-loc { font-size: 11px; color: #64748B; margin: 4px 0 6px; }
         .ctr-home-job-badge { display: inline-flex; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
-        .ctr-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .ctr-tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--stack-gap-sm, 10px); }
         .ctr-tool-btn {
-            border: 1px solid #E8EDF3; border-radius: 14px; background: #fff; padding: 12px 6px;
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            font-size: 10px; font-weight: 700; color: #334155; text-align: center; line-height: 1.2;
+            border: 1px solid #E8EDF3; border-radius: 14px; background: #fff; padding: 16px 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            font-size: 11px; font-weight: 700; color: #334155; text-align: center; line-height: 1.2;
+            min-height: 88px; justify-content: center;
         }
         .ctr-tool-icon {
-            width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
         }
         .ctr-tool-btn--blue .ctr-tool-icon { background: #EFF6FF; color: #2563EB; }
         .ctr-tool-btn--green .ctr-tool-icon { background: #ECFDF5; color: #16A34A; }
@@ -8041,24 +8084,25 @@
         }
         .ctr-v2-filter-row::-webkit-scrollbar { display: none; }
         .ctr-v2-filter-pill {
-            flex-shrink: 0; border: none; border-radius: 999px; padding: 6px 12px;
-            font-size: 11px; font-weight: 700; background: #E2E8F0; color: #64748B; cursor: pointer;
+            flex-shrink: 0; border: 1px solid transparent; border-radius: 999px; padding: 8px 14px;
+            font-size: 12px; font-weight: 700; background: #E2E8F0; color: #64748B; cursor: pointer;
+            transition: background .15s ease, color .15s ease, box-shadow .15s ease;
         }
-        .ctr-v2-filter-pill.is-active { background: #2563EB; color: #fff; box-shadow: 0 4px 12px rgba(37,99,235,.22); }
+        .ctr-v2-filter-pill.is-active { background: #2563EB; color: #fff; border-color: #2563EB; box-shadow: 0 4px 12px rgba(37,99,235,.22); }
         .ctr-jobs-search { margin-bottom: 2px; }
-        .ctr-v2-jobs-list { display: flex; flex-direction: column; gap: 8px; }
+        .ctr-v2-jobs-list { display: flex; flex-direction: column; gap: var(--stack-gap-sm, 10px); }
         .ctr-v2-job-card {
-            display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #E8EDF3;
-            box-shadow: none; cursor: pointer; text-align: left;
+            display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #E8EDF3;
+            box-shadow: var(--shadow-card); cursor: pointer; text-align: left;
         }
         .ctr-v2-job-thumb { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: #F1F5F9; }
         .ctr-v2-job-body { flex: 1; min-width: 0; }
-        .ctr-v2-job-title { font-size: 13px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.25; }
-        .ctr-v2-job-addr { font-size: 11px; color: #64748B; margin: 2px 0 6px; }
-        .ctr-v2-job-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .ctr-v2-job-badge { display: inline-flex; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
-        .ctr-v2-job-time { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 600; color: #94A3B8; }
-        .ctr-v2-job-price { font-size: 11px; font-weight: 700; color: #2563EB; margin: 6px 0 0; }
+        .ctr-v2-job-title { font-size: 14px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.25; }
+        .ctr-v2-job-addr { font-size: 11px; color: #64748B; margin: 3px 0 0; line-height: 1.35; }
+        .ctr-v2-job-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+        .ctr-v2-job-badge { display: inline-flex; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+        .ctr-v2-job-time { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #94A3B8; }
+        .ctr-v2-job-price { font-size: 12px; font-weight: 700; color: #2563EB; margin: 6px 0 0; }
         .ctr-v2-job-chevron { color: #CBD5E1; flex-shrink: 0; width: 16px; height: 16px; }
         .ctr-v2-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .ctr-v2-job-id { font-size: 12px; font-weight: 600; color: #94A3B8; }
@@ -8760,6 +8804,12 @@
         .tnt-home-hi { font-size: 18px; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2; }
         .tnt-home-sub { font-size: 12px; color: #64748B; margin: 2px 0 0; }
         .tnt-home-page { display: flex; flex-direction: column; gap: var(--stack-gap); padding-bottom: 0; }
+        .tnt-home-page .dash-section-head { margin-top: 2px; }
+        .tnt-quick-links-grid {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--stack-gap-sm, 10px);
+        }
+        .tnt-issues-page { display: flex; flex-direction: column; gap: var(--stack-gap-sm, 10px); }
+        .tnt-issues-empty .empty-state-desc { max-width: 260px; }
         .tnt-home-v2 { gap: 12px; }
         .tnt-home-hero {
             display: flex; align-items: stretch; gap: 0; padding: 0; overflow: hidden;
@@ -8794,31 +8844,34 @@
             -webkit-mask-image: linear-gradient(to left, #000 75%, transparent);
         }
         .tnt-rent-strip {
-            display: flex; align-items: stretch; padding: 14px 8px; gap: 0;
+            display: flex; align-items: stretch; padding: 14px 10px; gap: 0;
             border: 1px solid #F1F5F9;
         }
         .tnt-rent-strip-col {
-            flex: 1; min-width: 0; padding: 0 6px; text-align: center;
+            flex: 1; min-width: 0; padding: 0 8px; text-align: left;
+        }
+        .tnt-rent-strip-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 6px;
         }
         .tnt-rent-strip-label {
-            font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase;
+            font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase;
             letter-spacing: .03em; margin: 0; line-height: 1.2;
         }
         .tnt-rent-strip-amt {
-            font-size: 15px; font-weight: 800; color: #16A34A; margin: 4px 0 0; line-height: 1.1;
+            font-size: 17px; font-weight: 800; color: #16A34A; margin: 6px 0 0; line-height: 1.1;
         }
         .tnt-rent-strip-amt--due { color: #B45309; }
         .tnt-rent-strip-amt--sm { font-size: 13px; color: #0F172A; }
         .tnt-rent-strip-sub {
-            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-            font-size: 10px; color: #94A3B8; margin: 4px 0 0; line-height: 1.2;
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 10px; color: #94A3B8; margin: 5px 0 0; line-height: 1.2;
         }
         .tnt-rent-strip-div {
             width: 1px; background: #E2E8F0; align-self: stretch; flex-shrink: 0; margin: 4px 0;
         }
         .tnt-rent-strip-action {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 4px; padding: 0 8px; min-width: 64px; border: none; background: transparent;
+            gap: 5px; padding: 0 10px; min-width: 68px; border: none; background: transparent;
             cursor: pointer; flex-shrink: 0;
         }
         .tnt-rent-strip-action:active { opacity: 0.7; }
@@ -9795,9 +9848,9 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=222"></script>
-    <script src="landlord_hq_contractor.js?v=196"></script>
-    <script src="landlord_hq_features.js?v=237"></script>
+    <script src="landlord_hq_screens.js?v=224"></script>
+    <script src="landlord_hq_contractor.js?v=198"></script>
+    <script src="landlord_hq_features.js?v=240"></script>
     <script src="landlord_hq_product.js?v=213"></script>
     <script>
     (function () {

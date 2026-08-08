@@ -1445,9 +1445,11 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
     return `
     <div class="tnt-rent-strip card">
         <div class="tnt-rent-strip-col">
-            <p class="tnt-rent-strip-label">Next rent due</p>
+            <div class="tnt-rent-strip-head">
+                <p class="tnt-rent-strip-label">Next rent due</p>
+                <span class="tnt-rent-badge ${rentDue ? 'tnt-rent-badge--due' : 'tnt-rent-badge--ok'}">${rentDue ? 'Pending' : 'Paid'}</span>
+            </div>
             <p class="tnt-rent-strip-amt${rentDue ? ' tnt-rent-strip-amt--due' : ''}">${esc(rentAmt)}</p>
-            <span class="tnt-rent-badge ${rentDue ? 'tnt-rent-badge--due' : 'tnt-rent-badge--ok'}">${rentDue ? 'Pending' : 'Paid'}</span>
             <p class="tnt-rent-strip-sub"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(dueMeta)}</p>
         </div>
         <div class="tnt-rent-strip-div" aria-hidden="true"></div>
@@ -1566,7 +1568,13 @@ function screenTenantDashboard() {
         ${renderTenantHomeRentStrip(t, pay, rentDue)}
         ${renderTenantHomeChargeCard(pay)}
         ${renderTenantHomeMaintBill(pay)}
-        <div class="dash-quick">
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Quick actions</h3>
+                <p class="dash-section-sub">Report issues, documents &amp; payments</p>
+            </div>
+        </div>
+        <div class="dash-quick dash-quick--grid">
             ${[
                 ['wrench', 'Report issue', 'log-maintenance', 'warning'],
                 ['scroll-text', 'My lease', 'tenant-active-tenancy', 'indigo'],
@@ -1810,19 +1818,22 @@ function screenTenantIssues() {
     const issues = typeof tenantMaintenanceForAccount === 'function' ? tenantMaintenanceForAccount(t) : [];
     const openCount = issues.filter(m => m.status !== 'done').length;
     return `${topBar('Maintenance', { sub: `${openCount} open` })}
-    <div class="screen-content screen-enter">
+    <div class="screen-content screen-enter tnt-issues-page">
         <div class="dash-section-head">
             <div>
                 <h3 class="screen-section-title">Your requests</h3>
                 <p class="dash-section-sub">${openCount} open · track status with your landlord</p>
             </div>
+            ${issues.length ? `<button type="button" data-go="log-maintenance" class="dash-view-all">Report issue</button>` : ''}
         </div>
+        ${issues.length ? `
         <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3 text-[13px]">Report new issue</button>
-        ${issues.length ? `<div class="maint-list stack-sm">${issues.map(m => typeof maintCard === 'function' ? maintCard(m, { hideProperty: true }) : '').join('')}</div>` : `
-        <div class="empty-state card">
+        <div class="maint-list stack-sm">${issues.map(m => typeof maintCard === 'function' ? maintCard(m, { hideProperty: true }) : '').join('')}</div>` : `
+        <div class="empty-state card tnt-issues-empty">
             <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1]"></i>
             <p class="empty-state-title">No issues yet</p>
             <p class="empty-state-desc">Report maintenance inside your flat — communal areas are handled by your landlord.</p>
+            <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3 text-[13px] mt-3">Report new issue</button>
         </div>`}
     </div>`;
 }
@@ -1942,7 +1953,13 @@ function screenTenantActiveTenancy() {
             ['Property', p?.name || '—'],
             ['Unit', t?.unit || '—'],
         ]) : ''}
-        <div class="grid grid-cols-2 gap-3">
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Quick links</h3>
+                <p class="dash-section-sub">Building, documents &amp; more</p>
+            </div>
+        </div>
+        <div class="tnt-quick-links-grid">
             <button type="button" data-go="tenant-building-info" class="btn-secondary py-3 text-[13px]">Building info</button>
             <button type="button" data-go="tenant-house-rules" class="btn-secondary py-3 text-[13px]">House rules</button>
             <button type="button" data-go="tenant-compliance" class="btn-secondary py-3 text-[13px]">Compliance</button>
@@ -1971,26 +1988,79 @@ function screenTenantContact() {
 function screenTenantReminders() {
     const t = getActiveTenant();
     const rows = typeof tenantSmartReminders === 'function' ? tenantSmartReminders(t) : [];
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `${topBar('Reminders', { back: true, sub: 'For your home' })}
     <div class="screen-content screen-enter stack-sm">
         ${rows.length ? rows.map(r => {
             const urg = r.urgency === 'high' ? ['#FEE2E2', '#DC2626'] : r.urgency === 'medium' ? ['#FEF3C7', '#D97706'] : ['#EFF6FF', '#2563EB'];
+            const key = r.id != null ? String(r.id) : `${r.type}-${r.title}`;
+            const dueLabel = typeof formatReminderDue === 'function' ? formatReminderDue(r.due) : (r.due || '—');
             return `
-        <div class="tnt-reminder card p-4">
+        <button type="button" data-go="tenant-reminder-detail" data-reminder-key="${esc(key)}" class="tnt-reminder card p-4 w-full text-left">
             <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-[13px] font-bold text-[#0F172A]">${typeof escapeHtml === 'function' ? escapeHtml(r.title) : r.title}</p>
-                    <p class="text-[12px] text-[#64748B] mt-1">Due ${r.due || '—'}</p>
+                <div class="min-w-0">
+                    <p class="text-[13px] font-bold text-[#0F172A]">${esc(r.title)}</p>
+                    <p class="text-[12px] text-[#64748B] mt-1">Due ${esc(dueLabel)}</p>
                 </div>
                 <span class="badge shrink-0" style="background:${urg[0]};color:${urg[1]}">${r.urgency === 'high' ? 'Urgent' : r.urgency === 'medium' ? 'Soon' : 'Upcoming'}</span>
             </div>
-        </div>`;
+        </button>`;
         }).join('') : `
         <div class="empty-state card">
             <i data-lucide="bell" class="w-10 h-10 text-[#CBD5E1]"></i>
             <p class="empty-state-title">No reminders right now</p>
             <p class="empty-state-desc">Lease dates and compliance deadlines will appear here.</p>
         </div>`}
+    </div>`;
+}
+
+function screenTenantReminderDetail() {
+    const t = getActiveTenant();
+    const rows = typeof tenantSmartReminders === 'function' ? tenantSmartReminders(t) : [];
+    const key = STATE.tenantReminderKey;
+    const r = rows.find(x => String(x.id) === key || `${x.type}-${x.title}` === key);
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    if (!r) {
+        return `${topBar('Reminder', { back: true })}
+        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Reminder not found.</p></div>`;
+    }
+    const dueLabel = typeof formatReminderDue === 'function' ? formatReminderDue(r.due) : (r.due || '—');
+    const urg = r.urgency === 'high' ? ['Urgent', '#FEE2E2', '#DC2626'] : r.urgency === 'medium' ? ['Due soon', '#FEF3C7', '#D97706'] : ['Upcoming', '#EFF6FF', '#2563EB'];
+    const hint = r.id === 'rent-due'
+        ? 'Pay rent from your home screen or payment history.'
+        : r.id === 'lease-end'
+            ? 'Your landlord manages lease renewals. Message them if you have questions.'
+            : 'Your landlord is responsible for keeping compliance items up to date.';
+    return `${topBar('Reminder', { back: true })}
+    <div class="screen-content screen-enter stack-sm">
+        <div class="reminder-detail-hero card p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="reminder-detail-type">For your home</p>
+                    <h2 class="reminder-detail-title">${esc(r.title)}</h2>
+                </div>
+                <span class="badge shrink-0" style="background:${urg[1]};color:${urg[2]}">${urg[0]}</span>
+            </div>
+            <div class="reminder-detail-meta">
+                <div class="reminder-detail-meta-item">
+                    <span class="reminder-detail-meta-label">Due</span>
+                    <span class="reminder-detail-meta-value">${esc(dueLabel)}</span>
+                </div>
+                <div class="reminder-detail-meta-item">
+                    <span class="reminder-detail-meta-label">Property</span>
+                    <span class="reminder-detail-meta-value">${esc(PROPERTIES[t?.propertyId]?.name || '—')}</span>
+                </div>
+                <div class="reminder-detail-meta-item">
+                    <span class="reminder-detail-meta-label">Unit</span>
+                    <span class="reminder-detail-meta-value">${esc(t?.unit || '—')}</span>
+                </div>
+            </div>
+        </div>
+        <p class="text-[13px] text-[#64748B] leading-relaxed">${hint}</p>
+        ${r.id === 'rent-due' ? `
+        <button type="button" data-go="transaction-history" class="btn-primary w-full py-3 text-[13px]">View payments</button>` : `
+        <button type="button" data-go="tenant-active-tenancy" class="btn-primary w-full py-3 text-[13px]">View my tenancy</button>`}
+        <button type="button" data-go="tenant-compliance" class="btn-secondary w-full py-3 text-[13px]">Building compliance</button>
     </div>`;
 }
 
@@ -2131,6 +2201,7 @@ function screenTenantAccount() {
             <div class="profile-card-body">
                 <p class="profile-card-name">${esc(displayName)}</p>
                 <p class="profile-card-email">${esc(rec?.email || t.email)}</p>
+                ${(rec?.phone || t.phone) ? `<p class="profile-card-phone">${esc(rec?.phone || t.phone)}</p>` : ''}
             </div>
             <span class="profile-card-plan">${esc(t.unit || 'Tenant')}</span>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
@@ -2162,9 +2233,12 @@ function screenTenantEditProfile() {
     }
     return `${topBar('Personal Information', { back: true })}
     <div class="screen-content screen-content-sm profile-form-page screen-enter">
-        <div class="flex justify-center profile-form-photo">
-            <div class="relative"><img src="${IMG.avatar.sarah}" class="w-20 h-20 rounded-2xl object-cover" alt="">
-            <button type="button" data-action="toast" data-msg="Profile photo updated" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button></div>
+        <div class="flex flex-col items-center profile-form-photo">
+            <div class="relative">
+                <img src="${IMG.avatar.sarah}" class="w-20 h-20 rounded-2xl object-cover" alt="">
+                <button type="button" data-action="toast" data-msg="Profile photo updated" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button>
+            </div>
+            <p class="profile-form-photo-hint">Profile photo <span class="badge bg-[#F1F5F9] text-[#64748B]">Demo</span></p>
         </div>
         <p class="text-[13px] text-[#64748B]">Update contact details. Lease and deposit are managed by your landlord.</p>
         <div class="form-stack">
@@ -2300,24 +2374,23 @@ function contractorHomeHeader(name, company) {
     const first = (name || 'Mike').split(' ')[0];
     const greeting = typeof dashGreeting === 'function' ? dashGreeting() : 'Good morning';
     return `
-<div class="screen-header ctr-home-header">
-    <div class="ctr-home-header-top">
+<div class="screen-header dash-header">
+    <div class="dash-header-top">
         <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu">
             <i data-lucide="menu" class="w-[22px] h-[22px]"></i>
         </button>
-        <div class="ctr-home-header-actions">
-            <button type="button" data-go="contractor-notifications" class="top-icon-btn relative" aria-label="Notifications">
-                <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-                ${unread ? `<span class="notif-badge">${unread}</span>` : ''}
-            </button>
-            <button type="button" data-go="contractor-profile" class="ctr-home-avatar-btn" aria-label="Profile">
-                <img src="${IMG.avatar.plumber}" class="ctr-home-avatar" alt="">
-            </button>
+        <button type="button" data-go="contractor-notifications" class="top-icon-btn relative" aria-label="Notifications">
+            <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
+            ${unread ? `<span class="notif-badge">${unread}</span>` : ''}
+        </button>
+    </div>
+    <div class="dash-greeting-row">
+        <img src="${IMG.avatar.plumber}" class="dash-avatar" alt="">
+        <div class="min-w-0">
+            <p class="dash-greeting">${greeting}, ${first}</p>
+            <p class="dash-date">${company}</p>
         </div>
     </div>
-    <h1 class="ctr-home-greeting">${greeting}, ${first} 👋</h1>
-    <p class="ctr-home-sub">Here's your work overview for today.</p>
-    <p class="ctr-home-company">${company}</p>
 </div>`;
 }
 
@@ -2387,8 +2460,11 @@ function screenContractorDashboard() {
     return `${contractorHomeHeader('Mike Thompson', 'Plumber Pro Ltd')}
     <div class="screen-content screen-enter ctr-home-page">
         ${renderCtrScheduleHero(nextVisit)}
-        <div class="ctr-home-section-head">
-            <h3 class="screen-section-title">Work overview</h3>
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Work overview</h3>
+                <p class="dash-section-sub">Snapshot for this week</p>
+            </div>
             <span class="ctr-home-week-pill">This week</span>
         </div>
         <div class="ctr-overview-grid">
@@ -2397,8 +2473,11 @@ function screenContractorDashboard() {
             ${renderCtrOverviewCard('check-circle', 'Completed', stats.completed, 'This month', 'green')}
             ${renderCtrOverviewCard('clock', 'Pending review', stats.pendingReview, stats.pendingReview ? 'Needs action' : 'All clear', 'rose')}
         </div>
-        <div class="ctr-home-section-head">
-            <h3 class="screen-section-title">Recent jobs</h3>
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Recent jobs</h3>
+                <p class="dash-section-sub">${recent.length ? `${recent.length} active` : 'No recent activity'}</p>
+            </div>
             <button type="button" data-go="contractor-jobs" class="dash-view-all">View all</button>
         </div>
         <div class="ctr-home-jobs-list">
@@ -2409,8 +2488,11 @@ function screenContractorDashboard() {
                 <p class="empty-state-desc">New assignments from landlords appear here.</p>
             </div>`}
         </div>
-        <div class="ctr-home-section-head">
-            <h3 class="screen-section-title">Tools &amp; quick actions</h3>
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Tools &amp; quick actions</h3>
+                <p class="dash-section-sub">Jobs, schedule &amp; earnings</p>
+            </div>
         </div>
         <div class="ctr-tools-grid">
             ${[
@@ -2424,8 +2506,11 @@ function screenContractorDashboard() {
                 <span>${label}</span>
             </button>`).join('')}
         </div>
-        <div class="ctr-home-section-head">
-            <h3 class="screen-section-title">Announcements</h3>
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Announcements</h3>
+                <p class="dash-section-sub">Platform updates &amp; training</p>
+            </div>
             <button type="button" data-go="contractor-notifications" class="dash-view-all">View all</button>
         </div>
         <button type="button" data-go="contractor-notifications" class="ctr-announce-card card w-full text-left">
@@ -2471,6 +2556,12 @@ function screenContractorJobs() {
     const jobs = contractorFilterJobs();
     return `${topBar('Jobs', { hideBell: true })}
     <div class="screen-content screen-enter ctr-compact-page ctr-v2-jobs-page">
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Your jobs</h3>
+                <p class="dash-section-sub">${counts.all} total · filter by status</p>
+            </div>
+        </div>
         <div class="ctr-v2-filter-row">
             ${tabs.map(([k, l, n]) => `
             <button type="button" data-contractor-filter="${k}" class="ctr-v2-filter-pill ${f === k ? 'is-active' : ''}">${l} (${n})</button>`).join('')}
@@ -2831,6 +2922,7 @@ function screenContractorProfile() {
             <div class="profile-card-body">
                 <p class="profile-card-name">${name}</p>
                 <p class="profile-card-email">${u.email}</p>
+                ${u.phone ? `<p class="profile-card-phone">${u.phone}</p>` : ''}
                 <p class="profile-card-hint">${trade.shortLabel} · ${u.company || 'Contractor'}</p>
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
@@ -2840,6 +2932,7 @@ function screenContractorProfile() {
             ${menuList([
                 ['bell', 'Notification settings', 'notifications-settings'],
                 ['key-round', 'Change password', 'password'],
+                ['shield', 'Security', 'security'],
             ])}
         </div>
         <div class="profile-section">
@@ -2964,6 +3057,7 @@ Object.assign(SCREEN_MAP, {
     'tenant-active-tenancy': screenTenantActiveTenancy,
     'tenant-contact': screenTenantContact,
     'tenant-reminders': screenTenantReminders,
+    'tenant-reminder-detail': screenTenantReminderDetail,
     'tenant-compliance': screenTenantCompliance,
     'tenant-communication': screenTenantCommunication,
     'tenant-checkout': screenTenantCheckout,
@@ -2978,7 +3072,7 @@ const CONTRACTOR_NO_NAV = [
     'tenant-invite', 'tenant-activate', 'tenant-welcome', 'tenant-dashboard',
     'tenant-building-info', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile',
     'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
-    'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance',
+    'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
     'tenant-communication', 'tenant-checkout',
 ];
 NO_NAV.push(...CONTRACTOR_NO_NAV);

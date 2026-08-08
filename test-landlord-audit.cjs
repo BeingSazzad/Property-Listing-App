@@ -176,6 +176,8 @@ const log = (s, a, m) => (s === 'FAIL' ? issues : passes).push({ s, a, m });
     ['compliance-dashboard', {}],
     ['reminders', {}],
     ['add-reminder', {}],
+    ['reminder-detail', { reminderId: 0 }],
+    ['edit-reminder', { reminderId: 0 }],
   ];
   for (const [screen, opts] of detailScreens) {
     await page.evaluate(({ screen, opts }) => go(screen, opts), { screen, opts });

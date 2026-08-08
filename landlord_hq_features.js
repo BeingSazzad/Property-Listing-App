@@ -8271,12 +8271,14 @@ function screenDashboardEnhanced() {
     if (showScreenSkeleton('dashboard')) return renderDashboardSkeleton();
     const stats = portfolioStats();
     const occupiedProps = stats.occupiedProperties ?? PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).length;
-    const reminders = AppStore.reminders.slice(0, 3).map(r => {
-        const prop = PROPERTIES[r.propertyId];
-        const rt = REMINDER_TYPES.find(t => t[0] === r.type) || ['custom', r.title, 'bell', '#EFF6FF', '#2563EB'];
-        const tab = r.type === 'inspection' ? 'inspection' : r.type === 'rent-review' ? 'units' : 'compliance';
-        return [rt[2], r.title, prop?.name || '', formatReminderDaysLeft(r.daysLeft), rt[3], rt[4], r.propertyId, tab, r.urgency];
-    });
+    const reminders = AppStore.reminders.slice().map(r => recalcReminderMeta({ ...r }))
+        .sort((a, b) => (a.daysLeft ?? 99) - (b.daysLeft ?? 99))
+        .slice(0, 3)
+        .map(r => {
+            const prop = PROPERTIES[r.propertyId];
+            const rt = reminderTypeMeta(r.type);
+            return { id: r.id, ic: rt[2], title: r.title, sub: prop?.name || '', time: formatReminderDaysLeft(r.daysLeft), bg: rt[3], color: rt[4], urgency: r.urgency };
+        });
     const unreadBell = getUnreadNotifCount();
     const finStats = typeof financialStats === 'function' ? financialStats() : null;
     return `
@@ -8326,12 +8328,12 @@ function screenDashboardEnhanced() {
                 <button data-go="reminders" class="dash-view-all">View all</button>
             </div>
             <div class="card dash-reminder-list">
-                ${reminders.slice(0, 2).map(([ic,title,sub,time,bg,color,pid,tab,urgency])=>`
-                <button type="button" data-go="property-detail" data-pid="${pid}" data-tab="${tab}" class="dash-reminder-row${urgency === 'high' ? ' urgency-high' : urgency === 'medium' ? ' urgency-medium' : ''}">
-                    <span class="dash-reminder-icon" style="background:${bg};color:${color}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></span>
+                ${reminders.slice(0, 2).map(r => `
+                <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="dash-reminder-row${r.urgency === 'high' ? ' urgency-high' : r.urgency === 'medium' ? ' urgency-medium' : ''}">
+                    <span class="dash-reminder-icon" style="background:${r.bg};color:${r.color}"><i data-lucide="${r.ic}" class="w-[18px] h-[18px]"></i></span>
                     <span class="dash-reminder-body">
-                        <span class="dash-reminder-title">${title}</span>
-                        <span class="dash-reminder-prop">${sub} · ${time}</span>
+                        <span class="dash-reminder-title">${r.title}</span>
+                        <span class="dash-reminder-prop">${r.sub} · ${r.time}</span>
                     </span>
                     <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] flex-shrink-0"></i>
                 </button>`).join('')}
@@ -10271,6 +10273,150 @@ function upsertSmartReminder(spec) {
     };
     if (idx >= 0) Object.assign(AppStore.reminders[idx], entry);
     else AppStore.reminders.push({ id: AppStore.nextId(AppStore.reminders), ...entry });
+}
+
+const REMINDER_TYPE_COMPLIANCE_CID = {
+    gas: 0, electrical: 1, smoke: 2, heat: 3, co2: 4, insurance: 5, mortgage: 6, epc: 7,
+};
+
+function reminderDueInputValue(due) {
+    if (!due) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(due)) return due;
+    const parsed = new Date(due);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function reminderTypeMeta(type) {
+    return REMINDER_TYPES.find(t => t[0] === type) || REMINDER_TYPES[11];
+}
+
+function formatReminderDue(due) {
+    if (!due) return '—';
+    return typeof formatDisplayDate === 'function' ? (formatDisplayDate(due) || due) : due;
+}
+
+function recalcReminderMeta(r) {
+    const left = daysUntil(r.due);
+    if (left != null) {
+        r.daysLeft = left;
+        r.urgency = left < 0 ? 'high' : left <= 7 ? 'high' : left <= 30 ? 'medium' : 'low';
+    }
+    return r;
+}
+
+function reminderStatusBadge(r) {
+    const left = r.daysLeft ?? daysUntil(r.due) ?? 0;
+    const rt = reminderTypeMeta(r.type);
+    let text;
+    if (left < 0) text = `${Math.abs(left)}d overdue`;
+    else if (left === 0) text = 'Today';
+    else text = `${left}d`;
+    return { text, bg: rt[3], color: rt[4] };
+}
+
+function reminderSourceLabel(r) {
+    if (!r.auto) return 'Custom reminder';
+    const labels = {
+        gas: 'Gas certificate', electrical: 'Electrical certificate', epc: 'EPC record',
+        smoke: 'Smoke alarm', heat: 'Heat alarm', co2: 'CO alarm',
+        insurance: 'Landlord insurance', mortgage: 'Mortgage record',
+        inspection: 'Inspection schedule', 'rent-review': 'Active lease',
+        leasehold: 'Leasehold record',
+    };
+    return labels[r.type] || 'Property records';
+}
+
+function reminderPrimaryAction(r) {
+    const pid = r.propertyId;
+    const cid = REMINDER_TYPE_COMPLIANCE_CID[r.type];
+    const cfg = cid != null ? COMPLIANCE_ITEM_CONFIG[cid] : null;
+    if (r.type === 'inspection') {
+        return { label: 'Reschedule inspection', go: 'reschedule-inspection', opts: { propertyId: pid } };
+    }
+    if (r.type === 'rent-review') {
+        const unitMatch = r.title.match(/Lease ending · (.+)$/);
+        if (unitMatch) {
+            return { label: 'View lease', go: 'flat-detail', opts: { propertyId: pid, unit: unitMatch[1].trim() } };
+        }
+        return { label: 'View tenants', go: 'tenants', opts: {} };
+    }
+    if (cfg?.renewScreen === 'property-alarms') {
+        return { label: 'Update alarm expiry', go: 'property-alarms', opts: { propertyId: pid } };
+    }
+    if (cfg?.cert) {
+        return { label: 'Renew certificate', go: 'renew-compliance', opts: { propertyId: pid, complianceId: cid } };
+    }
+    if (cfg?.manual) {
+        return { label: 'Update property info', go: 'property-info', opts: { propertyId: pid } };
+    }
+    return { label: 'Change due date', go: 'edit-reminder', opts: { reminderId: r.id } };
+}
+
+function reminderGoAttrs(action) {
+    if (!action?.go) return '';
+    const o = action.opts || {};
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const parts = [`data-go="${action.go}"`];
+    if (o.propertyId != null) parts.push(`data-pid="${o.propertyId}"`);
+    if (o.complianceId != null) parts.push(`data-cid="${o.complianceId}"`);
+    if (o.unit) parts.push(`data-unit="${esc(o.unit)}"`);
+    if (o.reminderId != null) parts.push(`data-rid="${o.reminderId}"`);
+    if (o.tab) parts.push(`data-tab="${o.tab}"`);
+    if (o.recordsView) parts.push(`data-records-view="${o.recordsView}"`);
+    return parts.join(' ');
+}
+
+function filteredReminders(filter) {
+    const f = filter || STATE.reminderFilter || 'all';
+    const list = AppStore.reminders.map(r => recalcReminderMeta({ ...r }));
+    list.sort((a, b) => (a.daysLeft ?? 999) - (b.daysLeft ?? 999));
+    if (f === 'soon') return list.filter(r => (r.daysLeft ?? 99) <= 30 && (r.daysLeft ?? -99) >= 0);
+    if (f === 'overdue') return list.filter(r => (r.daysLeft ?? 0) < 0);
+    if (f === 'custom') return list.filter(r => !r.auto);
+    return list;
+}
+
+function applyReminderDueToSource(reminder, dueRaw) {
+    const pid = reminder.propertyId;
+    const meta = AppStore.meta(pid);
+    const type = reminder.type;
+    const cid = REMINDER_TYPE_COMPLIANCE_CID[type];
+    if (cid != null) {
+        const cfg = COMPLIANCE_ITEM_CONFIG[cid];
+        if (cfg?.alarmKey) {
+            if (!meta.alarms) meta.alarms = {};
+            if (!meta.alarms[cfg.alarmKey]) meta.alarms[cfg.alarmKey] = {};
+            meta.alarms[cfg.alarmKey].expiry = dueRaw;
+        } else if (cfg?.manual) {
+            if (!meta.info) meta.info = {};
+            if (type === 'insurance') meta.info.insuranceExpiry = dueRaw;
+            if (type === 'mortgage') meta.info.mortgageRenewal = dueRaw;
+        } else if (cfg?.cert) {
+            const key = `${pid}-${cid}`;
+            if (!AppStore.complianceCerts[key]) AppStore.complianceCerts[key] = {};
+            AppStore.complianceCerts[key].expiryDate = dueRaw;
+            if (COMPLIANCE_ITEMS[cid]) {
+                const display = typeof formatDisplayDate === 'function' ? formatDisplayDate(dueRaw) : dueRaw;
+                COMPLIANCE_ITEMS[cid][2] = display || COMPLIANCE_ITEMS[cid][2];
+            }
+        }
+    }
+    if (type === 'rent-review') {
+        const unitMatch = reminder.title.match(/Lease ending · (.+)$/);
+        const unit = unitMatch?.[1]?.trim();
+        const ten = unit
+            ? AppStore.tenancies.find(t => t.propertyId === pid && t.unit === unit && t.status === 'active')
+            : AppStore.tenancies.find(t => t.propertyId === pid && t.status === 'active');
+        if (ten) ten.end = dueRaw;
+    }
+    if (type === 'inspection') {
+        const insp = AppStore.inspections.find(i => i.propertyId === pid && (i.scheduled || i.date));
+        if (insp) insp.date = dueRaw;
+    }
 }
 
 function syncSmartReminders(persist = true) {
@@ -12237,39 +12383,142 @@ function screenComplianceDashboard() {
 }
 
 function screenReminders() {
-    const list = AppStore.reminders.sort((a, b) => a.daysLeft - b.daysLeft);
-    return `${topBar('Reminders', { back: true })}
+    const filter = STATE.reminderFilter || 'all';
+    const tabs = [
+        ['all', 'All'],
+        ['soon', 'Due soon'],
+        ['overdue', 'Overdue'],
+        ['custom', 'Custom'],
+    ];
+    const list = filteredReminders(filter);
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `${topBar('Reminders', { back: true, sub: `${list.length} item${list.length === 1 ? '' : 's'}` })}
     <div class="screen-content screen-enter">
+        <div class="reminder-filter-row">
+            ${tabs.map(([k, l]) => `
+            <button type="button" data-reminder-filter="${k}" class="reminder-filter-pill${filter === k ? ' is-active' : ''}">${l}</button>`).join('')}
+        </div>
         ${list.length ? list.map(r => {
             const p = PROPERTIES[r.propertyId];
-            const rt = REMINDER_TYPES.find(t => t[0] === r.type) || REMINDER_TYPES[11];
+            const rt = reminderTypeMeta(r.type);
+            const badge = reminderStatusBadge(r);
+            const dueLabel = formatReminderDue(r.due);
             return `
             <div class="card p-4 mb-2 urgency-${r.urgency}">
                 <div class="flex items-center gap-3">
-                    <button data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="compliance" class="flex items-center gap-3 flex-1 min-w-0 text-left">
+                    <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="flex items-center gap-3 flex-1 min-w-0 text-left">
                         <div class="dash-reminder-icon" style="background:${rt[3]};color:${rt[4]}"><i data-lucide="${rt[2]}" class="w-[18px] h-[18px]"></i></div>
-                        <div class="flex-1 min-w-0"><p class="text-[13px] font-semibold">${r.title}</p><p class="text-[11px] text-[#64748B]">${p?.name} · Due ${r.due}</p></div>
-                        <span class="badge shrink-0" style="background:${rt[3]};color:${rt[4]}">${r.daysLeft < 0 ? `${Math.abs(r.daysLeft)}d overdue` : r.daysLeft === 0 ? 'Today' : `${r.daysLeft}d`}</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[13px] font-semibold">${esc(r.title)}</p>
+                            <p class="text-[11px] text-[#64748B]">${esc(p?.name || '—')} · Due ${esc(dueLabel)}</p>
+                            ${r.auto ? '<p class="text-[10px] text-[#94A3B8] mt-0.5">Synced from property records</p>' : ''}
+                        </div>
+                        <span class="badge shrink-0" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>
                     </button>
-                    <button type="button" data-action="delete-reminder" data-rid="${r.id}" class="row-icon-btn row-icon-btn--danger" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button type="button" data-action="edit-reminder" data-rid="${r.id}" class="row-icon-btn row-icon-btn--primary" title="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                    ${!r.auto ? `<button type="button" data-action="delete-reminder" data-rid="${r.id}" class="row-icon-btn row-icon-btn--danger" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                 </div>
             </div>`;
-        }).join('') : emptyState('bell', 'No reminders', 'Add a custom reminder to track important dates.', 'Add Reminder', null, 'add-reminder')}
+        }).join('') : emptyState('bell', filter === 'all' ? 'No reminders' : 'Nothing in this filter', filter === 'all' ? 'Add a custom reminder or update property certificates to generate reminders.' : 'Try another filter or add a custom reminder.', filter === 'all' ? 'Add Reminder' : null, null, filter === 'all' ? 'add-reminder' : null)}
         <button data-go="add-reminder" class="btn-primary w-full py-3.5 text-[14px]">+ Custom Reminder</button>
-        <p class="text-[11px] text-[#94A3B8] text-center mt-2">Reminders sync from alarms, certificates, leases and inspections</p>
+        <p class="text-[11px] text-[#94A3B8] text-center mt-2">Certificate, alarm, lease and inspection dates sync automatically</p>
     </div>`;
+}
+
+function screenReminderDetail() {
+    const r = AppStore.reminders.find(x => x.id === STATE.reminderId);
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    if (!r) {
+        return `${topBar('Reminder', { back: true })}
+        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Reminder not found.</p></div>`;
+    }
+    recalcReminderMeta(r);
+    const p = PROPERTIES[r.propertyId];
+    const rt = reminderTypeMeta(r.type);
+    const badge = reminderStatusBadge(r);
+    const action = reminderPrimaryAction(r);
+    const dueLabel = formatReminderDue(r.due);
+    const statusLabel = formatReminderDaysLeft(r.daysLeft);
+    const source = reminderSourceLabel(r);
+    const recordsView = ['gas', 'electrical', 'epc', 'smoke', 'heat', 'co2', 'insurance', 'mortgage'].includes(r.type) ? 'compliance' : r.type === 'inspection' ? 'inspections' : 'compliance';
+    return `${topBar('Reminder', { back: true })}
+    <div class="screen-content screen-enter stack-sm">
+        <div class="reminder-detail-hero card p-4 urgency-${r.urgency}">
+            <div class="flex items-start gap-3">
+                <div class="dash-reminder-icon" style="background:${rt[3]};color:${rt[4]}"><i data-lucide="${rt[2]}" class="w-[22px] h-[22px]"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="reminder-detail-type">${esc(rt[1])}</p>
+                    <h2 class="reminder-detail-title">${esc(r.title)}</h2>
+                    <p class="reminder-detail-prop">${esc(p?.name || '—')}</p>
+                </div>
+                <span class="badge shrink-0" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>
+            </div>
+            <div class="reminder-detail-meta">
+                <div class="reminder-detail-meta-item">
+                    <span class="reminder-detail-meta-label">Due date</span>
+                    <span class="reminder-detail-meta-value">${esc(dueLabel)}</span>
+                </div>
+                <div class="reminder-detail-meta-item">
+                    <span class="reminder-detail-meta-label">Status</span>
+                    <span class="reminder-detail-meta-value">${esc(statusLabel)}</span>
+                </div>
+                <div class="reminder-detail-meta-item">
+                    <span class="reminder-detail-meta-label">Source</span>
+                    <span class="reminder-detail-meta-value">${esc(source)}</span>
+                </div>
+            </div>
+        </div>
+        ${r.auto ? `
+        <div class="card p-3 bg-[#FFFBEB] border border-[#FDE68A]">
+            <p class="text-[12px] text-[#92400E] leading-relaxed">This reminder is synced from your property records. Use the action below to update the certificate, alarm, lease or inspection — or change the due date manually.</p>
+        </div>` : ''}
+        <p class="screen-section-title">Actions</p>
+        <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full py-3 text-[13px]">${esc(action.label)}</button>
+        <button type="button" data-go="edit-reminder" data-rid="${r.id}" class="btn-secondary w-full py-3 text-[13px]">Change due date</button>
+        <button type="button" data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="${recordsView}" class="btn-secondary w-full py-3 text-[13px]">View property records</button>
+        <button type="button" data-action="delete-reminder" data-rid="${r.id}" class="btn-secondary w-full py-3 text-[13px]${r.auto ? '' : ' text-[#DC2626]'}">${r.auto ? 'Remove from list' : 'Delete reminder'}</button>
+    </div>`;
+}
+
+function renderReminderFormFields(reminder = null) {
+    const typeVal = reminder?.type || 'custom';
+    const titleVal = reminder?.title || '';
+    const propVal = reminder?.propertyId ?? PROPERTIES[0]?.id ?? 0;
+    const dueVal = reminder ? reminderDueInputValue(reminder.due) : '';
+    const autoNote = reminder?.auto ? `
+        <div class="card p-3 bg-[#EFF6FF] border border-[#DBEAFE]">
+            <p class="text-[12px] text-[#1E40AF] leading-relaxed">Synced from property records. Saving updates the certificate, alarm, lease or inspection date behind this reminder.</p>
+        </div>` : '';
+    return `
+        ${autoNote}
+        <div><label class="form-label">${requiredLabel('Reminder Type')}</label>
+        <select data-field="type" class="form-input form-select">${REMINDER_TYPES.map(t => `<option value="${t[0]}"${t[0] === typeVal ? ' selected' : ''}>${t[1]}</option>`).join('')}</select></div>
+        ${formFieldReq('Title', 'title', titleVal, 'text', 'e.g. Gas certificate renewal')}
+        <div><label class="form-label">${requiredLabel('Property')}</label>
+        <select data-field="propertyId" class="form-input form-select">${PROPERTIES.map(p => `<option value="${p.id}"${p.id === propVal ? ' selected' : ''}>${p.name}</option>`).join('')}</select></div>
+        ${formFieldReq('Due Date', 'due', dueVal, 'date')}`;
 }
 
 function screenAddReminder() {
     return `${topBar('Add Reminder', { back: true })}
-    <div class="screen-content screen-enter">
-        <div><label class="form-label">${requiredLabel('Reminder Type')}</label>
-        <select data-field="type" class="form-input form-select">${REMINDER_TYPES.map(t => `<option value="${t[0]}">${t[1]}</option>`).join('')}</select></div>
-        ${formFieldReq('Title', 'title', '', 'text', 'e.g. Gas certificate renewal')}
-        <div><label class="form-label">${requiredLabel('Property')}</label>
-        <select data-field="propertyId" class="form-input form-select">${PROPERTIES.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
-        ${formFieldReq('Due Date', 'due', '', 'date')}
+    <div class="screen-content screen-enter stack-sm">
+        ${renderReminderFormFields()}
         <button data-action="save-reminder" class="btn-primary w-full py-3.5 text-[14px]">Save Reminder</button>
+    </div>`;
+}
+
+function screenEditReminder() {
+    const reminder = AppStore.reminders.find(r => r.id === STATE.reminderId);
+    if (!reminder) {
+        return `${topBar('Edit Reminder', { back: true })}
+        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Reminder not found.</p></div>`;
+    }
+    const dueLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(reminder.due) : reminder.due;
+    return `${topBar('Edit Reminder', { back: true })}
+    <div class="screen-content screen-enter stack-sm">
+        <p class="text-[12px] text-[#64748B]">Current due date: <strong class="text-[#334155]">${dueLabel || '—'}</strong></p>
+        ${renderReminderFormFields(reminder)}
+        <button data-action="save-reminder" class="btn-primary w-full py-3.5 text-[14px]">Save changes</button>
     </div>`;
 }
 
@@ -13369,7 +13618,7 @@ function handleFeatureSave(el) {
     if (screen === 'add-flat') return saveAddFlat();
     if (screen === 'log-maintenance') return saveLogMaintenance();
     if (screen === 'create-invoice') return saveCreateInvoice();
-    if (screen === 'add-reminder') return saveReminder();
+    if (screen === 'add-reminder' || screen === 'edit-reminder') return saveReminder();
     if (screen === 'create-tenancy') return saveTenancy();
     if (screen === 'checkout-tenancy') return saveCheckout();
     if (screen === 'conduct-inspection') return saveInspection();
@@ -13692,17 +13941,35 @@ function saveCreateInvoice() {
 }
 
 function saveReminder() {
-    if (!validateFields([['title','Title',v=>v],['due','Due Date',v=>v]])) return;
-    const due = new Date(fieldVal('due'));
-    const daysLeft = Math.max(0, Math.ceil((due - new Date()) / 86400000));
-    AppStore.reminders.push({
-        id: AppStore.nextId(AppStore.reminders),
+    if (!validateFields([['title', 'Title', v => v], ['due', 'Due Date', v => v]])) return;
+    const due = fieldVal('due');
+    const daysLeft = daysUntil(due) ?? 0;
+    const payload = {
         type: fieldVal('type') || 'custom',
         propertyId: +fieldVal('propertyId'),
         title: fieldVal('title'),
-        due: fieldVal('due'),
+        due,
         daysLeft,
-        urgency: daysLeft <= 7 ? 'high' : daysLeft <= 30 ? 'medium' : 'low',
+        urgency: daysLeft < 0 ? 'high' : daysLeft <= 7 ? 'high' : daysLeft <= 30 ? 'medium' : 'low',
+    };
+    const editId = STATE.screen === 'edit-reminder' ? STATE.reminderId : null;
+    if (editId != null) {
+        const idx = AppStore.reminders.findIndex(r => r.id === editId);
+        if (idx < 0) { toast('Reminder not found'); return; }
+        const existing = AppStore.reminders[idx];
+        Object.assign(existing, payload);
+        if (existing.auto) applyReminderDueToSource(existing, due);
+        withLoading(() => {
+            syncSmartReminders();
+            AppStore.save();
+            toast('Reminder updated');
+            go('reminder-detail', { reminderId: editId });
+        });
+        return;
+    }
+    AppStore.reminders.push({
+        id: AppStore.nextId(AppStore.reminders),
+        ...payload,
     });
     withLoading(() => { AppStore.save(); toast('Reminder added'); go('reminders'); });
 }
@@ -14863,12 +15130,17 @@ function deleteDocumentAction(docId) {
 function deleteReminderAction(reminderId) {
     const reminder = AppStore.reminders.find(r => r.id === reminderId);
     if (!reminder) { toast('Reminder not found'); return; }
-    showConfirm('Delete Reminder', `Remove "${reminder.title}"?`, () => {
+    const title = reminder.auto ? 'Remove synced reminder?' : 'Delete reminder?';
+    const msg = reminder.auto
+        ? 'This reminder is synced from property records and may reappear after the next sync. Remove it from your list anyway?'
+        : `Remove "${reminder.title}"?`;
+    showConfirm(title, msg, () => {
         AppStore.reminders = AppStore.reminders.filter(r => r.id !== reminderId);
         AppStore.save();
-        toast('Reminder deleted');
-        render();
-    }, { okLabel: 'Delete', danger: true });
+        toast(reminder.auto ? 'Reminder removed from list' : 'Reminder deleted');
+        if (STATE.screen === 'reminder-detail') go('reminders', { reminderId: undefined });
+        else render();
+    }, { okLabel: reminder.auto ? 'Remove' : 'Delete', danger: true });
 }
 
 function deleteTenantNoteAction(noteId) {
@@ -14963,7 +15235,7 @@ function deleteInvoiceAction(invoiceId) {
 
 /* ─── Register screens & nav ─── */
 const FEATURE_SCREENS = [
-    'compliance-dashboard', 'reminders', 'add-reminder',
+    'compliance-dashboard', 'reminders', 'add-reminder', 'edit-reminder', 'reminder-detail',
     'broadcast-notices', 'send-broadcast', 'broadcast-detail',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
@@ -14976,6 +15248,8 @@ Object.assign(SCREEN_MAP, {
     'compliance-dashboard': screenComplianceDashboard,
     'reminders': screenReminders,
     'add-reminder': screenAddReminder,
+    'edit-reminder': screenEditReminder,
+    'reminder-detail': screenReminderDetail,
     'broadcast-notices': screenBroadcastNotices,
     'send-broadcast': screenSendBroadcast,
     'broadcast-detail': screenBroadcastDetail,
@@ -15033,6 +15307,8 @@ const FEATURE_BACK_MAP = {
     'compliance-dashboard': 'dashboard',
     'reminders': 'dashboard',
     'add-reminder': 'reminders',
+    'edit-reminder': 'reminders',
+    'reminder-detail': 'reminders',
     'broadcast-notices': 'dashboard',
     'send-broadcast': 'broadcast-notices',
     'broadcast-detail': 'broadcast-notices',
@@ -15374,6 +15650,12 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="delete-document"]').forEach(el => {
         el.onclick = () => deleteDocumentAction(+el.dataset.doc);
+    });
+    app.querySelectorAll('[data-reminder-filter]').forEach(el => {
+        el.onclick = () => { STATE.reminderFilter = el.dataset.reminderFilter; render(); };
+    });
+    app.querySelectorAll('[data-action="edit-reminder"]').forEach(el => {
+        el.onclick = (e) => { e.stopPropagation(); go('edit-reminder', { reminderId: +el.dataset.rid }); };
     });
     app.querySelectorAll('[data-action="delete-reminder"]').forEach(el => {
         el.onclick = (e) => { e.stopPropagation(); deleteReminderAction(+el.dataset.rid); };

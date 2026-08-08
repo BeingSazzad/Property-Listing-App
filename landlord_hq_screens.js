@@ -2030,6 +2030,12 @@ function go(screen, opts = {}) {
         const inv = tenantInviteByToken(STATE.tenantInviteToken);
         if (inv) STATE.propertyId = inv.propertyId;
     }
+    if (screen === 'add-reminder') delete STATE.reminderId;
+    if (screen === 'reminders' && opts.reminderId === undefined) delete STATE.reminderId;
+    if (screen === 'edit-reminder') {
+        if (opts.reminderId != null) STATE.reminderId = opts.reminderId;
+        STATE.reminderEditReturn = from === 'reminder-detail' ? 'reminder-detail' : 'reminders';
+    }
     render();
 }
 
@@ -2087,7 +2093,7 @@ function navigateBackFallback() {
         'contractor-sign-up': STATE.contractorInviteContext ? 'contractor-invite' : 'role-select',
         'contractor-notifications': 'contractor-dashboard',
         'compliance-dashboard': 'dashboard',
-        'reminders': 'dashboard', 'add-reminder': 'reminders',
+        'reminders': 'dashboard', 'add-reminder': 'reminders', 'edit-reminder': 'reminders', 'reminder-detail': 'reminders',
         'create-tenancy': 'property-detail', 'checkout-tenancy': 'tenant-detail',
         'assign-contractor': 'maintenance-detail', 'conduct-inspection': 'property-detail',
         'create-invoice': 'financial', 'mark-rent-received': STATE.rentReturnScreen || 'financial', 'pay-contractor': 'financial',
@@ -2114,6 +2120,7 @@ function navigateBackFallback() {
         'tenant-active-tenancy': 'tenant-dashboard',
         'tenant-contact': 'personal-info',
         'tenant-reminders': 'tenant-dashboard',
+        'tenant-reminder-detail': 'tenant-reminders',
         'tenant-compliance': 'tenant-dashboard',
         'tenant-communication': 'tenant-dashboard',
         'tenant-checkout': 'personal-info',
@@ -2136,6 +2143,16 @@ function navigateBackFallback() {
         'property-utilities': 'info', 'property-parking': 'info', 'property-info': 'info',
         'unit-utilities': 'units', 'edit-flat': 'units',
     };
+    if (STATE.screen === 'edit-reminder') {
+        const ret = STATE.reminderEditReturn || 'reminders';
+        const backOpts = { noHistory: true };
+        if (ret === 'reminder-detail' && STATE.reminderId != null) {
+            go('reminder-detail', { reminderId: STATE.reminderId, ...backOpts });
+            return;
+        }
+        go(ret, backOpts);
+        return;
+    }
     const target = map[STATE.screen] || defaultHome;
     const opts = { noHistory: true };
     if (tabMap[STATE.screen]) {
@@ -3025,6 +3042,7 @@ const bottomNav = () => {
         'tenant-active-tenancy': 'tenant-dashboard',
         'tenant-contact': 'personal-info',
         'tenant-reminders': 'tenant-dashboard',
+        'tenant-reminder-detail': 'tenant-reminders',
         'tenant-compliance': 'tenant-dashboard',
         'tenant-communication': 'tenant-dashboard',
         'tenant-checkout': 'personal-info',
@@ -3230,14 +3248,13 @@ function screenDashboard() {
     const collectedPct = fin?.pct ?? null;
     const compliancePct = PROPERTIES.length ? Math.round((compliantCount / PROPERTIES.length) * 100) : 0;
     const reminders = (typeof AppStore !== 'undefined' ? AppStore.reminders : [
-        { title: 'Gas Certificate Expiry', propertyId: 0, daysLeft: 3, urgency: 'high', type: 'gas' },
-        { title: 'Inspection Due', propertyId: 1, daysLeft: 5, urgency: 'medium', type: 'inspection' },
-        { title: 'Rent Review', propertyId: 2, daysLeft: 10, urgency: 'medium', type: 'rent-review' },
-    ]).slice(0, 3).map(r => {
+        { id: 0, title: 'Gas Certificate Expiry', propertyId: 0, daysLeft: 3, urgency: 'high', type: 'gas' },
+        { id: 1, title: 'Inspection Due', propertyId: 1, daysLeft: 5, urgency: 'medium', type: 'inspection' },
+        { id: 2, title: 'Rent Review', propertyId: 2, daysLeft: 10, urgency: 'medium', type: 'rent-review' },
+    ]).slice().sort((a, b) => (a.daysLeft ?? 99) - (b.daysLeft ?? 99)).slice(0, 3).map(r => {
         const p = PROPERTIES[r.propertyId];
         const rt = (typeof REMINDER_TYPES !== 'undefined' ? REMINDER_TYPES.find(t => t[0] === r.type) : null) || ['custom', r.title, 'bell', '#EFF6FF', '#2563EB'];
-        const tab = r.type === 'inspection' ? 'inspection' : r.type === 'rent-review' ? 'units' : 'compliance';
-        return [rt[2], r.title, p?.name || '', `${r.daysLeft} days left`, rt[3], rt[4], r.propertyId, tab, r.urgency];
+        return { id: r.id, ic: rt[2], title: r.title, sub: p?.name || '', time: typeof formatReminderDaysLeft === 'function' ? formatReminderDaysLeft(r.daysLeft) : `${r.daysLeft} days left`, bg: rt[3], color: rt[4], urgency: r.urgency };
     });
     return `${dashboardHeader()}
     <div class="screen-content screen-enter">
@@ -3295,14 +3312,14 @@ function screenDashboard() {
                 <button data-go="reminders" class="dash-view-all">View all</button>
             </div>
             <div class="dash-reminder-list card" style="margin-top:var(--stack-gap-sm)">
-                ${reminders.slice(0, 2).map(([ic, t, p, d, bg, c, pid, tab, urgency]) => `
-                <button data-go="property-detail" data-pid="${pid}" data-tab="${tab}" class="dash-reminder-row urgency-${urgency}">
-                    <div class="dash-reminder-icon" style="background:${bg};color:${c}"><i data-lucide="${ic}" class="w-[18px] h-[18px]"></i></div>
+                ${reminders.slice(0, 2).map(r => `
+                <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="dash-reminder-row urgency-${r.urgency}">
+                    <div class="dash-reminder-icon" style="background:${r.bg};color:${r.color}"><i data-lucide="${r.ic}" class="w-[18px] h-[18px]"></i></div>
                     <div class="dash-reminder-body">
-                        <p class="dash-reminder-title">${t}</p>
-                        <p class="dash-reminder-prop">${p}</p>
+                        <p class="dash-reminder-title">${r.title}</p>
+                        <p class="dash-reminder-prop">${r.sub} · ${r.time}</p>
                     </div>
-                    <span class="badge shrink-0" style="background:${bg};color:${c}">${d}</span>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] flex-shrink-0"></i>
                 </button>`).join('')}
             </div>
         </div>` : ''}
@@ -5098,6 +5115,8 @@ function _renderApp() {
 function collectGoOptions(el) {
     const opts = {};
     if (el.dataset.pid !== undefined) opts.propertyId = +el.dataset.pid;
+    if (el.dataset.rid !== undefined) opts.reminderId = +el.dataset.rid;
+    if (el.dataset.reminderKey) opts.tenantReminderKey = el.dataset.reminderKey;
     if (el.dataset.tid !== undefined) opts.tenantId = +el.dataset.tid;
     if (el.dataset.mid !== undefined) opts.maintId = +el.dataset.mid;
     if (el.dataset.bid !== undefined) opts.broadcastId = +el.dataset.bid;
