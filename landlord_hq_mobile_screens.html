@@ -5316,12 +5316,13 @@
         .tenant-v2-contact-line--truncate {
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .unit-util-page { gap: 12px; }
+        .unit-util-page { gap: 14px; }
         .unit-util-page .form-input {
             min-height: 36px; padding: 8px 12px; font-size: 13px;
         }
         .unit-util-page .form-label { font-size: 12px; margin-bottom: 4px; }
-        .unit-util-row { display: flex; flex-direction: column; gap: 4px; }
+        .unit-util-page .form-group { margin-bottom: 0; }
+        .unit-util-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 2px; }
         .unit-util-row-label { margin-bottom: 0; }
         .unit-util-block { display: flex; flex-direction: column; gap: 8px; }
         .unit-util-block-head { display: flex; flex-direction: column; gap: 2px; }
@@ -5369,14 +5370,10 @@
             width: 100%; padding: 9px 12px; font-size: 13px;
         }
         .unit-util-save-btn {
-            width: 100%; padding: 10px 12px; font-size: 14px;
+            width: 100%; padding: 12px 14px; font-size: 14px; margin-top: 4px;
         }
-        .unit-util-meters { gap: 10px; }
-        .unit-util-meter-row {
-            display: grid; grid-template-columns: 92px 1fr; gap: 8px; align-items: center;
-        }
-        .unit-util-meter-label { margin: 0; font-size: 12px; line-height: 1.3; }
-        .unit-util-meter-error { grid-column: 1 / -1; margin: 0; }
+        .unit-util-meters { gap: 12px; }
+        .unit-util-meters .form-group:last-child { margin-bottom: 0; }
         .unit-util-overage { background: #FFFBEB; border-color: #FDE68A; }
         .unit-util-overage-title { color: #92400E; }
         .unit-util-overage .unit-util-hint { color: #B45309; }
@@ -9548,7 +9545,7 @@
     <div id="app"></div>
     <script src="landlord_hq_screens.js?v=221"></script>
     <script src="landlord_hq_contractor.js?v=196"></script>
-    <script src="landlord_hq_features.js?v=230"></script>
+    <script src="landlord_hq_features.js?v=232"></script>
     <script src="landlord_hq_product.js?v=213"></script>
     <script>
     (function () {
