@@ -2913,9 +2913,19 @@
             display: flex; align-items: center; justify-content: center;
             width: 48px; height: 48px; border-radius: 10px;
         }
-        .maint-inbox-card-footer .maint-priority-pill {
+        .maint-inbox-card-footer .maint-priority-pill,
+        .maint-inbox-card-footer .maint-work-status-pill {
             font-size: 9px; padding: 2px 7px; line-height: 1.2;
         }
+        .maint-inbox-card-badges {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-width: 0;
+        }
+        .maint-work-status-pill {
+            font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; line-height: 1.3;
+        }
+        .maint-work-status-pill--open { background: #FEF3C7; color: #D97706; }
+        .maint-work-status-pill--progress { background: #DBEAFE; color: #2563EB; }
+        .maint-work-status-pill--done { background: #DCFCE7; color: #16A34A; }
         .maint-inbox-card-body { flex: 1; min-width: 0; }
         .maint-inbox-card-head {
             display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
@@ -9538,7 +9548,7 @@
     <div id="app"></div>
     <script src="landlord_hq_screens.js?v=221"></script>
     <script src="landlord_hq_contractor.js?v=196"></script>
-    <script src="landlord_hq_features.js?v=229"></script>
+    <script src="landlord_hq_features.js?v=230"></script>
     <script src="landlord_hq_product.js?v=213"></script>
     <script>
     (function () {

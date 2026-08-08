@@ -611,6 +611,17 @@ function maintPriorityTone(priority) {
     return { label: priority || 'Low', cls: 'maint-priority-pill--low' };
 }
 
+function maintStatusTone(status) {
+    const key = String(status || 'open').toLowerCase();
+    if (key === 'done' || key === 'completed') {
+        return { label: 'Completed', cls: 'maint-work-status-pill--done' };
+    }
+    if (key === 'progress' || key === 'in progress') {
+        return { label: 'In progress', cls: 'maint-work-status-pill--progress' };
+    }
+    return { label: 'Open', cls: 'maint-work-status-pill--open' };
+}
+
 function maintIssuePhoto(m) {
     if (m?.photos?.length) return m.photos[0];
     if (m?.propertyId != null && typeof getPropertyCoverPhoto === 'function') return getPropertyCoverPhoto(m.propertyId);
@@ -11016,6 +11027,7 @@ function renderMaintInboxRow(item) {
 
 function renderMaintInboxCard(item, opts = {}) {
     const priority = maintPriorityTone(item.priority);
+    const workStatus = maintStatusTone(item.status);
     const tenantReport = isTenantMaintReport(item);
     const job = getContractorJobForMaint(item.id);
     const assigned = maintHasAssignedContractor(item, job);
@@ -11051,7 +11063,10 @@ function renderMaintInboxCard(item, opts = {}) {
                         </div>
                     </button>
                     <div class="maint-inbox-card-footer">
-                        <span class="maint-priority-pill ${priority.cls}">${priority.label}</span>
+                        <div class="maint-inbox-card-badges">
+                            <span class="maint-work-status-pill ${workStatus.cls}">${workStatus.label}</span>
+                            <span class="maint-priority-pill ${priority.cls}">${priority.label}</span>
+                        </div>
                         ${actionHtml}
                     </div>
                 </div>
