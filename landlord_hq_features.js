@@ -957,7 +957,11 @@ function goAfterDepositSave() {
         return;
     }
     if (ret?.screen === 'tenant-detail') {
-        go('tenant-detail', { tenantId: ret.tenantId ?? STATE.tenantId, noHistory: true });
+        go('tenant-detail', {
+            tenantId: ret.tenantId ?? STATE.tenantId,
+            tenantTab: ret.tenantTab || 'lease',
+            noHistory: true,
+        });
         return;
     }
     go('tenancy-detail', {

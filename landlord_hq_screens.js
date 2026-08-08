@@ -707,7 +707,9 @@ function snapshotNav() {
     return {
         screen: STATE.screen,
         tab: STATE.tab,
+        recordsView: STATE.recordsView,
         tenantTab: STATE.tenantTab,
+        flatTab: STATE.flatTab,
         propertyId: STATE.propertyId,
         tenantId: STATE.tenantId,
         maintId: STATE.maintId,
@@ -719,6 +721,10 @@ function snapshotNav() {
         contractorJobTab: STATE.contractorJobTab,
         shareDocId: STATE.shareDocId,
         invoiceFilter: STATE.invoiceFilter,
+        reminderId: STATE.reminderId,
+        tenantReminderKey: STATE.tenantReminderKey,
+        complianceId: STATE.complianceId,
+        reminderFilter: STATE.reminderFilter,
     };
 }
 
@@ -726,6 +732,60 @@ function restoreNav(snap) {
     Object.assign(STATE, snap, { drawer: false, fab: false, showPropFilters: false });
     render();
 }
+
+function navigateBackFromEditReminder() {
+    const ret = STATE.reminderEditReturn || 'reminders';
+    const backOpts = { noHistory: true };
+    if (ret === 'reminder-detail' && STATE.reminderId != null) {
+        go('reminder-detail', { reminderId: STATE.reminderId, ...backOpts });
+        return;
+    }
+    go(ret, backOpts);
+}
+
+function navigateBackFromEditDeposit() {
+    const ret = STATE.depositEditReturn || { screen: 'tenancy-detail', propertyId: STATE.propertyId, unit: STATE.selectedUnit };
+    STATE.depositEditReturn = null;
+    if (ret.screen === 'flat-detail') {
+        go('flat-detail', {
+            propertyId: ret.propertyId,
+            unit: ret.unit,
+            flatTab: ret.flatTab || 'payments',
+            noHistory: true,
+        });
+        return;
+    }
+    if (ret.screen === 'tenant-detail') {
+        go('tenant-detail', {
+            tenantId: ret.tenantId ?? STATE.tenantId,
+            tenantTab: ret.tenantTab || 'lease',
+            noHistory: true,
+        });
+        return;
+    }
+    go('tenancy-detail', {
+        propertyId: ret.propertyId ?? STATE.propertyId,
+        unit: ret.unit ?? STATE.selectedUnit,
+        noHistory: true,
+    });
+}
+
+const PROPERTY_HUB_BACK_OPTS = {
+    'property-inspections': { tab: 'records', recordsView: 'inspections' },
+    'property-inventory': { tab: 'records', recordsView: 'inventory' },
+    'property-flat-documents': { tab: 'records', recordsView: 'documents' },
+    'property-doc-folder': { tab: 'records', recordsView: 'documents' },
+    'certificate-assign': { tab: 'records', recordsView: 'compliance' },
+    'property-photos': { tab: 'info' },
+    'property-info': { tab: 'info' },
+    'property-alarms': { tab: 'info' },
+    'property-appliances': { tab: 'info' },
+    'property-utilities': { tab: 'info' },
+    'property-parking': { tab: 'info' },
+    'unit-utilities': { tab: 'units' },
+    'inspection-detail': { tab: 'records', recordsView: 'inspections' },
+    'inventory-room': { tab: 'records', recordsView: 'inventory' },
+};
 
 function clearNavStack() {
     STATE.navStack = [];
@@ -2032,9 +2092,15 @@ function go(screen, opts = {}) {
     }
     if (screen === 'add-reminder') delete STATE.reminderId;
     if (screen === 'reminders' && opts.reminderId === undefined) delete STATE.reminderId;
+    if (screen === 'reminder-detail') {
+        if (opts.reminderId != null) STATE.reminderId = opts.reminderId;
+        if (!['edit-reminder'].includes(from)) {
+            STATE.reminderListReturn = ['dashboard', 'compliance-dashboard'].includes(from) ? from : 'reminders';
+        }
+    }
     if (screen === 'edit-reminder') {
         if (opts.reminderId != null) STATE.reminderId = opts.reminderId;
-        STATE.reminderEditReturn = from === 'reminder-detail' ? 'reminder-detail' : 'reminders';
+        STATE.reminderEditReturn = from === 'reminder-detail' ? 'reminder-detail' : (from === 'dashboard' ? 'dashboard' : 'reminders');
     }
     if (screen === 'edit-tenancy-deposit') {
         const pid = opts.propertyId ?? STATE.propertyId;
@@ -2042,7 +2108,11 @@ function go(screen, opts = {}) {
         if (from === 'flat-detail') {
             STATE.depositEditReturn = { screen: 'flat-detail', propertyId: pid, unit, flatTab: STATE.flatTab || 'payments' };
         } else if (from === 'tenant-detail') {
-            STATE.depositEditReturn = { screen: 'tenant-detail', tenantId: STATE.tenantId };
+            STATE.depositEditReturn = {
+                screen: 'tenant-detail',
+                tenantId: STATE.tenantId,
+                tenantTab: STATE.tenantTab || 'lease',
+            };
         } else {
             STATE.depositEditReturn = { screen: 'tenancy-detail', propertyId: pid, unit };
         }
@@ -2155,30 +2225,24 @@ function navigateBackFallback() {
         'unit-utilities': 'units', 'edit-flat': 'units',
     };
     if (STATE.screen === 'edit-reminder') {
-        const ret = STATE.reminderEditReturn || 'reminders';
-        const backOpts = { noHistory: true };
-        if (ret === 'reminder-detail' && STATE.reminderId != null) {
-            go('reminder-detail', { reminderId: STATE.reminderId, ...backOpts });
-            return;
-        }
-        go(ret, backOpts);
+        navigateBackFromEditReminder();
         return;
     }
     if (STATE.screen === 'edit-tenancy-deposit') {
-        const ret = STATE.depositEditReturn || { screen: 'tenancy-detail', propertyId: STATE.propertyId, unit: STATE.selectedUnit };
-        STATE.depositEditReturn = null;
-        if (ret.screen === 'flat-detail') {
-            go('flat-detail', { propertyId: ret.propertyId, unit: ret.unit, flatTab: ret.flatTab || 'payments', noHistory: true });
-            return;
-        }
-        if (ret.screen === 'tenant-detail') {
-            go('tenant-detail', { tenantId: ret.tenantId ?? STATE.tenantId, noHistory: true });
-            return;
-        }
-        go('tenancy-detail', { propertyId: ret.propertyId ?? STATE.propertyId, unit: ret.unit ?? STATE.selectedUnit, noHistory: true });
+        navigateBackFromEditDeposit();
         return;
     }
-    const target = map[STATE.screen] || defaultHome;
+    if (STATE.screen === 'add-reminder') {
+        go('reminders', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'tenant-reminder-detail') {
+        go('tenant-reminders', { noHistory: true });
+        return;
+    }
+    const target = map[STATE.screen]
+        || (typeof FEATURE_BACK_MAP !== 'undefined' ? FEATURE_BACK_MAP[STATE.screen] : null)
+        || defaultHome;
     const opts = { noHistory: true };
     if (tabMap[STATE.screen]) {
         opts.tab = tabMap[STATE.screen];
@@ -2222,6 +2286,15 @@ function navigateBackFallback() {
             go('flat-detail', { propertyId: STATE.propertyId, unit: STATE.selectedUnit, noHistory: true });
             return;
         }
+    }
+    if (STATE.screen === 'reminder-detail') {
+        go(STATE.reminderListReturn || target, { noHistory: true });
+        return;
+    }
+    const hubOpts = PROPERTY_HUB_BACK_OPTS[STATE.screen];
+    if (hubOpts && ['property-detail', 'property-inventory', 'property-inspections'].includes(target)) {
+        go(target, { propertyId: STATE.propertyId, ...hubOpts, noHistory: true });
+        return;
     }
     go(target, opts);
 }
@@ -2344,6 +2417,26 @@ function back() {
             backOpts.tenantTab = 'payments';
         }
         go(ret, backOpts);
+        return;
+    }
+    if (STATE.screen === 'edit-reminder') {
+        navigateBackFromEditReminder();
+        return;
+    }
+    if (STATE.screen === 'edit-tenancy-deposit') {
+        navigateBackFromEditDeposit();
+        return;
+    }
+    if (STATE.screen === 'add-reminder') {
+        go('reminders', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'tenant-reminder-detail') {
+        go('tenant-reminders', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'reminder-detail') {
+        go(STATE.reminderListReturn || 'reminders', { noHistory: true });
         return;
     }
     if (finishDrawerFlowBackIfNeeded()) return;
