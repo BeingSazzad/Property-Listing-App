@@ -308,12 +308,19 @@ function uploadContractorFile(kind) {
         STATE.contractorCertUpload.jobId = job.id;
         return;
     } else if (kind === 'invoice') {
-        const amount = document.querySelector('[data-field="invoiceAmount"]')?.value?.trim() || '£185';
-        job.invoice = {
-            amount: amount.startsWith('£') ? amount : `£${amount}`,
-            file: `INV-${job.id + 100}.pdf`,
-            uploadedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-        };
+        const amount = document.querySelector('[data-field="invoiceAmount"]')?.value?.trim() || '185';
+        const desc = document.querySelector('[data-field="invoiceDesc"]')?.value?.trim() || job.issue;
+        const notes = document.querySelector('[data-field="invoiceNotes"]')?.value?.trim() || '';
+        job.invoice = typeof generateContractorSystemInvoice === 'function'
+            ? generateContractorSystemInvoice(job)
+            : {
+                amount: amount.startsWith('£') ? amount : `£${amount}`,
+                description: desc,
+                notes,
+                file: `INV-${job.id + 100}.pdf`,
+                uploadedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+            };
+        if (!job.invoice) return;
         toast('Invoice uploaded');
     } else if (job.photos[kind]) {
         job.photos[kind].push(src);
@@ -810,10 +817,23 @@ function renderContractorCertUploadModal() {
     </div>`;
 }
 
-function renderContractorCertList(profile, { editable = false } = {}) {
+function renderContractorCertList(profile, { editable = false, compact = false } = {}) {
     const certs = ensureContractorCertificates(profile);
     if (!certs.length) {
         return `<p class="text-[13px] text-[#64748B]">No certificates uploaded yet${editable ? ' — add your Gas Safe, insurance, and trade documents.' : '.'}</p>`;
+    }
+    if (compact) {
+        return `
+    <div class="ctr-cert-compact-list">
+        ${certs.map(cert => `
+        <div class="ctr-cert-compact-row">
+            <div class="ctr-cert-compact-body min-w-0">
+                <p class="ctr-cert-compact-name">${escapeHtml(cert.name)}</p>
+                <p class="ctr-cert-compact-meta">${cert.validUntil ? `Valid until ${escapeHtml(cert.validUntil)}` : `Uploaded ${escapeHtml(cert.uploadedAt)}`}</p>
+            </div>
+            <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" data-contractor-view="${profile.id ?? ''}" class="ctr-cert-compact-view">View</button>
+        </div>`).join('')}
+    </div>`;
     }
     return `
     <div class="ctr-cert-list">
@@ -862,51 +882,51 @@ function screenContractorPublicProfile() {
     if (!profile) {
         return `${topBar('Contractor', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Contractor not found</p></div>`;
     }
-    const visual = typeof resolveContractorTrade === 'function' ? resolveContractorTrade(profile) : null;
     const certCount = ensureContractorCertificates(profile).length;
     const isLandlord = STATE.userRole === 'landlord';
     const isTenant = STATE.userRole === 'tenant';
     const chatId = typeof ensureContractorConversation === 'function' ? ensureContractorConversation(profile) : null;
-    const openJobs = typeof contractorOpenJobs === 'function' ? contractorOpenJobs(profile.name) : 0;
-    const jobsLine = openJobs ? `${openJobs} open job${openJobs === 1 ? '' : 's'}` : 'No active jobs';
+    const trustBits = [
+        profile.gasSafe ? 'Gas Safe' : '',
+        profile.liabilityInsurance ? 'Insured' : '',
+    ].filter(Boolean).join(' · ');
+    const jobsLine = escapeHtml(contractorJobsForLabel(profile));
     return `${topBar('Contractor', { back: true })}
-    <div class="screen-content screen-enter ctr-profile-page">
-        <div class="ctr-profile-hero card">
+    <div class="screen-content screen-enter ctr-profile-page ctr-profile-page--minimal">
+        <div class="ctr-profile-hero card ctr-profile-hero--minimal">
             <img src="${profile.img || contractorAvatarForTrade(profile.tradeId)}" class="ctr-profile-avatar" alt="">
             <div class="ctr-profile-hero-copy min-w-0 flex-1">
                 <h1 class="ctr-profile-name">${escapeHtml(profile.name)}</h1>
-                ${profile.firstName ? `<p class="ctr-profile-person">${escapeHtml(`${profile.firstName} ${profile.lastName || ''}`.trim())}</p>` : ''}
                 <div class="ctr-profile-trade-row">
                     ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(profile) : ''}
                 </div>
-                <p class="ctr-profile-jobs">${escapeHtml(contractorJobsForLabel(profile))}</p>
-                <p class="ctr-profile-meta">${jobsLine}</p>
+                ${trustBits ? `<p class="ctr-profile-trust">${escapeHtml(trustBits)}</p>` : ''}
+                <p class="ctr-profile-jobs">${jobsLine}</p>
             </div>
         </div>
-        ${(isLandlord || isTenant) ? `
-        <div class="ctr-profile-actions">
-            ${profile.phone ? `<button type="button" data-action="call-contractor" data-phone="${profile.phone.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="phone" class="w-4 h-4"></i><span>Call</span></button>` : ''}
-            ${profile.email ? `<button type="button" data-action="email-contractor" data-email="${profile.email.replace(/"/g, '')}" class="ctr-card-action"><i data-lucide="mail" class="w-4 h-4"></i><span>Email</span></button>` : ''}
-            ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="ctr-card-action"><i data-lucide="message-square" class="w-4 h-4"></i><span>Message</span></button>` : ''}
+        ${(isLandlord || isTenant) && (profile.phone || profile.email) ? `
+        <div class="ctr-profile-contact card">
+            <p class="ctr-section-label">Contact</p>
+            ${profile.phone ? `
+            <div class="ctr-profile-contact-row">
+                <span class="ctr-profile-contact-label"><i data-lucide="phone" class="w-4 h-4"></i>Phone</span>
+                <button type="button" class="ctr-profile-contact-value" data-action="copy-contact" data-text="${profile.phone.replace(/"/g, '')}">${escapeHtml(profile.phone)}</button>
+            </div>` : ''}
+            ${profile.email ? `
+            <div class="ctr-profile-contact-row">
+                <span class="ctr-profile-contact-label"><i data-lucide="mail" class="w-4 h-4"></i>Email</span>
+                <button type="button" class="ctr-profile-contact-value" data-action="copy-contact" data-text="${profile.email.replace(/"/g, '')}">${escapeHtml(profile.email)}</button>
+            </div>` : ''}
+            <p class="ctr-profile-contact-hint">Tap to copy · use your phone to call or email</p>
         </div>` : ''}
-        <div class="ctr-profile-section card">
-            <div class="ctr-profile-section-head">
-                <p class="ctr-section-label">Certifications</p>
-                <span class="ctr-public-cert-count">${certCount} on file</span>
-            </div>
-            <div class="ctr-profile-badges">
-                ${profile.gasSafe ? '<span class="ctr-profile-badge ctr-profile-badge--green">Gas Safe</span>' : ''}
-                ${profile.liabilityInsurance ? '<span class="ctr-profile-badge ctr-profile-badge--blue">Insured</span>' : ''}
-                ${visual ? `<span class="ctr-profile-badge" style="background:${visual.bg};color:${visual.color}">${escapeHtml(profile.category || visual.shortLabel)}</span>` : ''}
-            </div>
-            ${renderContractorCertList(profile)}
-        </div>
-        ${profile.companyReg ? `
-        <div class="ctr-profile-section card">
-            <p class="ctr-section-label">Company</p>
-            <p class="ctr-profile-reg"><i data-lucide="building-2" class="w-4 h-4"></i> Reg ${escapeHtml(profile.companyReg)}</p>
+        ${(isLandlord || isTenant) && chatId != null ? `
+        <button type="button" data-go="chat" data-chat="${chatId}" class="btn-primary w-full py-3.5 text-[14px] ctr-profile-msg-btn"><i data-lucide="message-square" class="w-4 h-4"></i> Message</button>` : ''}
+        ${certCount ? `
+        <div class="ctr-profile-section card ctr-profile-section--certs">
+            <p class="ctr-section-label">Certifications</p>
+            ${renderContractorCertList(profile, { compact: true })}
         </div>` : ''}
-        ${isTenant ? `<p class="ctr-profile-tenant-note">Your landlord assigned this contractor. Contact your landlord to reschedule.</p>` : ''}
+        ${isTenant ? `<p class="ctr-profile-tenant-note">Contact your landlord to reschedule or change contractor.</p>` : ''}
     </div>`;
 }
 
@@ -1157,18 +1177,18 @@ function screenContractorSignUp() {
             <span style="width:40px"></span>
         </div>
         <div class="auth-content">
-            <div class="auth-icon-wrap ctr-signup-icon">
-                <i data-lucide="hard-hat" class="w-7 h-7 text-[#EA580C]"></i>
+            <div class="auth-icon-wrap">
+                <i data-lucide="hard-hat" class="w-7 h-7 text-[#2563EB]"></i>
             </div>
             <h1 class="auth-heading">Create Contractor Account</h1>
             <p class="auth-sub">${invited ? 'Complete your profile to accept jobs from landlords on Landlord HQ.' : 'Set up your trade business to receive maintenance jobs, schedule visits, and upload invoices.'}</p>
             ${invited ? `
             <div class="card p-3 ctr-signup-invite-strip" style="margin-top:12px">
-                <p class="text-[12px] font-semibold text-[#92400E]"><i data-lucide="mail-check" class="w-4 h-4 inline-block -mt-px"></i> Invited by John Smith</p>
+                <p class="text-[12px] font-semibold text-[#1E40AF]"><i data-lucide="mail-check" class="w-4 h-4 inline-block -mt-px"></i> Invited by John Smith</p>
             </div>` : ''}
             ${progress}
             ${stepBody[step]}
-            <button type="button" data-action="contractor-signup-next" class="btn-auth btn-auth-primary ctr-signup-primary">${step < 4 ? 'Continue' : 'Create account'}</button>
+            <button type="button" data-action="contractor-signup-next" class="btn-auth btn-auth-primary">${step < 4 ? 'Continue' : 'Create account'}</button>
             ${step > 1 ? `<button type="button" data-action="contractor-signup-back" class="btn-auth btn-auth-outline" style="margin-top:12px">Back</button>` : ''}
             <p class="auth-footer-text" style="margin-top:20px">Already have an account? <button type="button" data-action="contractor-sign-in">Sign In</button></p>
         </div>
@@ -1446,16 +1466,35 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
     </div>`;
 }
 
+function renderTenantHomeChargeCard(pay) {
+    if (!pay?.chargeBalance || pay.chargeBalance === '£0.00') return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `
+    <div class="tnt-charge-card card">
+        <div class="tnt-rent-card-head">
+            <p class="tnt-rent-label">Extra charge due</p>
+            <span class="tnt-rent-badge tnt-rent-badge--due">Due</span>
+        </div>
+        <p class="tnt-rent-amount tnt-rent-amount--sm">${esc(pay.chargeBalance)}</p>
+        <p class="tnt-rent-meta">${esc(pay.nextChargeDue || 'Charge from your landlord')}</p>
+        <div class="tnt-charge-actions">
+            <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay?.chargeInvoiceId ?? ''}" class="btn-primary flex-1 py-2.5 text-[12px]">Pay charge</button>
+            <button type="button" data-go="transaction-history" data-tenant-pay-preset="charges" class="btn-secondary flex-1 py-2.5 text-[12px]">View all</button>
+        </div>
+    </div>`;
+}
+
 function renderTenantHomeMaintBill(pay) {
     if (!pay?.maintBalance || pay.maintBalance === '£0.00') return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `
     <div class="tnt-maint-bill card">
         <div class="tnt-rent-card-head">
-            <p class="tnt-rent-label">Bill due</p>
+            <p class="tnt-rent-label">Maintenance bill</p>
             <span class="tnt-rent-badge tnt-rent-badge--due">Due</span>
         </div>
-        <p class="tnt-rent-amount tnt-rent-amount--sm">${pay.maintBalance}</p>
-        <p class="tnt-rent-meta">${pay.nextMaintDue || 'Maintenance or utility charge'}</p>
+        <p class="tnt-rent-amount tnt-rent-amount--sm">${esc(pay.maintBalance)}</p>
+        <p class="tnt-rent-meta">${esc(pay.nextMaintDue || 'Repair or utility overage')}</p>
         <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-secondary w-full py-2.5 text-[12px] mt-2">Pay with Stripe</button>
     </div>`;
 }
@@ -1525,6 +1564,7 @@ function screenTenantDashboard() {
     <div class="screen-content screen-enter tnt-home-page">
         ${renderTenantHomePropertyCard(t, p)}
         ${renderTenantHomeRentStrip(t, pay, rentDue)}
+        ${renderTenantHomeChargeCard(pay)}
         ${renderTenantHomeMaintBill(pay)}
         <div class="dash-quick">
             ${[
@@ -1550,16 +1590,44 @@ function screenTenantBuildingInfo() {
     const building = typeof getPropertyBuilding === 'function' ? getPropertyBuilding(t.propertyId) : {};
     const meta = typeof AppStore !== 'undefined' ? AppStore.meta(t.propertyId) : {};
     const info = meta?.info || {};
+    const parkingDisplay = typeof propertyHasParking === 'function' && propertyHasParking(meta)
+        ? (typeof propertyParkingSummary === 'function' ? propertyParkingSummary(meta) : '—')
+        : (building.parking || info.parking || 'Street / permit');
     const rows = [
         ['Address', p?.address || '—'],
         ['Your unit', t.unit || '—'],
-        ['Building type', building.type || info.buildingType || 'Residential'],
+        ['Building type', building.type || info.type || 'Residential'],
         ['Floors', building.floors != null ? String(building.floors) : (info.floors || '—')],
         ['Total units', building.flatCount != null ? String(building.flatCount) : '—'],
-        ['Year built', building.yearBuilt || info.yearBuilt || '—'],
-        ['Parking', building.parking || info.parking || 'Street / permit'],
+        ['Year built', building.yearBuilt || info.built || '—'],
+        ['Parking', parkingDisplay],
         ['Emergency contact', LANDLORD_USER.phone || '—'],
     ];
+    const utilItems = typeof propertyUtilityDisplayItems === 'function' ? propertyUtilityDisplayItems(meta) : [];
+    const applianceItems = (meta.appliances || []).map(a => ({
+        icon: typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug',
+        label: a.name,
+        sub: [a.brand, a.condition && a.condition !== 'Good' ? a.condition : ''].filter(Boolean).join(' · '),
+    }));
+    const alarmItems = typeof ALARM_CATALOG !== 'undefined' && typeof alarmHasData === 'function'
+        ? [
+            ...ALARM_CATALOG
+                .filter(a => alarmHasData(meta.alarms?.[a.key]))
+                .map(a => {
+                    const alarm = meta.alarms[a.key];
+                    const parts = [
+                        alarm.location || '',
+                        alarm.expiry && typeof formatInfoDate === 'function' ? `Expires ${formatInfoDate(alarm.expiry)}` : '',
+                    ].filter(Boolean);
+                    return { icon: a.icon, label: `${a.label} Alarm`, sub: parts.join(' · ') };
+                }),
+            ...(typeof propertyCustomAlarmItems === 'function' ? propertyCustomAlarmItems(meta) : []),
+        ]
+        : [];
+    const featureItems = [...applianceItems, ...alarmItems];
+    const renderIcon = typeof renderBuildingIconItem === 'function'
+        ? renderBuildingIconItem
+        : ({ label, sub }) => `<p class="text-[13px] text-[#475569]"><strong>${label}</strong>${sub ? ` · ${sub}` : ''}</p>`;
     return `${topBar('Your building', { back: true })}
     <div class="screen-content screen-content-sm screen-enter building-info-page">
         <div class="building-info-hero card p-4">
@@ -1578,6 +1646,18 @@ function screenTenantBuildingInfo() {
                 </div>`).join('')}
             </div>
         </div>
+        ${utilItems.length ? `
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Utilities</p>
+            <div class="building-icon-grid cols-3">${utilItems.map(item => renderIcon(item)).join('')}</div>
+        </div>` : ''}
+        ${typeof propertyHasParking === 'function' && propertyHasParking(meta) && typeof renderBuildingParkingBlock === 'function' ? `
+        <div class="card p-4">${renderBuildingParkingBlock(meta)}</div>` : ''}
+        ${featureItems.length ? `
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Appliances & alarms</p>
+            <div class="building-icon-grid cols-2">${featureItems.map(item => renderIcon(item)).join('')}</div>
+        </div>` : ''}
         ${info.notes ? `<div class="card p-4"><p class="text-[11px] font-bold text-[#64748B] uppercase">Building notes</p><p class="text-[13px] text-[#475569] mt-2 leading-relaxed">${typeof escapeHtml === 'function' ? escapeHtml(info.notes) : info.notes}</p></div>` : ''}
         <button type="button" data-go="tenant-house-rules" class="btn-secondary w-full py-3 text-[13px]">House rules & regulations</button>
     </div>`;
@@ -1649,16 +1729,22 @@ function screenTenantPaymentHistory() {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
     const kind = STATE.tenantPayFilter || 'rent';
     const rows = typeof tenantInvoicesByKind === 'function' ? tenantInvoicesByKind(tid, kind) : [];
-    const tabs = [['rent', 'Rent'], ['maintenance', 'Bills']];
+    const tabs = [['rent', 'Rent'], ['charges', 'Extra charges'], ['maintenance', 'Maintenance']];
     const unpaid = rows.filter(i => i.status !== 'Paid');
     const paid = rows.filter(i => i.status === 'Paid');
     const dueTotal = unpaid.reduce((s, i) => s + (typeof parseRentAmount === 'function' ? parseRentAmount(i.amount) : 0), 0);
     const renderRow = inv => typeof renderTenantPaymentRow === 'function' ? renderTenantPaymentRow(inv) : '';
+    const emptyCopy = {
+        rent: { title: 'No rent payments yet', desc: 'Your monthly rent payments will show here.' },
+        charges: { title: 'No extra charges', desc: 'Utility, repair, penalty and custom charges from your landlord appear here.' },
+        maintenance: { title: 'No maintenance bills', desc: 'Repair shares and utility overage bills will show here.' },
+    };
+    const empty = emptyCopy[kind] || emptyCopy.charges;
     const listBody = !rows.length ? `
         <div class="empty-state card">
             <i data-lucide="receipt" class="empty-state-icon"></i>
-            <p class="empty-state-title">No ${kind === 'maintenance' ? 'bills' : 'payments'} yet</p>
-            <p class="empty-state-desc">${kind === 'maintenance' ? 'Maintenance and utility bills from your landlord will appear here.' : 'Your rent payments will show here.'}</p>
+            <p class="empty-state-title">${empty.title}</p>
+            <p class="empty-state-desc">${empty.desc}</p>
         </div>` : `
         ${unpaid.length && dueTotal ? `
         <div class="fin-summary card">
@@ -1695,22 +1781,25 @@ function tenantPayBill(kind, invoiceId) {
         toast('No outstanding bill found');
         return;
     }
+    const payLabel = kind === 'rent'
+        ? 'Rent'
+        : (typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(inv) : 'Bill');
     const payFn = typeof openStripeCheckout === 'function' ? openStripeCheckout : (opts) => {
         toast('Opening Stripe…');
         setTimeout(() => opts.onSuccess?.(), 700);
     };
     payFn({
         amount: inv.amount,
-        label: kind === 'maintenance' ? 'Maintenance' : 'Rent',
+        label: payLabel,
         onSuccess: () => {
-            inv.status = 'Paid';
-            inv.paidOn = typeof formatEventDate === 'function' ? formatEventDate() : 'Today';
-            inv.paymentMethod = 'Stripe';
-            if (typeof markOveragePaidForInvoice === 'function') markOveragePaidForInvoice(inv);
+            stampInvoicePaid(inv, {
+                paidOn: typeof formatEventDate === 'function' ? formatEventDate() : 'Today',
+                paymentMethod: 'Stripe',
+            });
             if (typeof syncTransactionsFromInvoices === 'function') syncTransactionsFromInvoices();
             if (typeof AppStore !== 'undefined') AppStore.save();
-            toast(kind === 'maintenance' ? 'Bill paid — thank you!' : 'Rent paid — thank you!');
-            render();
+            toast(kind === 'rent' ? 'Rent paid — download your receipt' : `${payLabel} paid — download receipt`);
+            go('invoice-detail', { invoiceId: inv.id });
         },
     });
 }
@@ -2003,10 +2092,14 @@ function screenTenantAccount() {
     }
     const p = PROPERTIES[t.propertyId];
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t.id;
+    const rec = tid != null ? TENANTS[tid] : null;
+    const displayName = typeof fullNameFromParts === 'function'
+        ? fullNameFromParts(rec?.firstName || t.firstName, rec?.lastName || t.lastName)
+        : `${rec?.firstName || t.firstName} ${rec?.lastName || t.lastName}`.trim();
     const av = typeof tenantAvatarUrl === 'function' ? tenantAvatarUrl(tid) : IMG.avatar.sarah;
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const propLabel = (p?.name || 'Your home').split(',')[0];
-    const unitMeta = `${propLabel} · ${t.unit || '—'}`;
+    const unitMeta = `${propLabel} · ${rec?.unit || t.unit || '—'}`;
     const ref = typeof getTenantReferencing === 'function' ? getTenantReferencing(tid) : {};
     const refDone = Object.values(ref).filter(r => ['verified', 'complete', 'not_required'].includes(r?.status)).length;
     const refTotal = typeof TENANT_REF_SECTIONS !== 'undefined' ? TENANT_REF_SECTIONS.length : 7;
@@ -2014,7 +2107,7 @@ function screenTenantAccount() {
 
     const tenancyMenus = menuList([
         ['home', 'Active tenancy', 'tenant-active-tenancy', unitMeta],
-        ['phone', 'Contact information', 'tenant-contact', t.phone || '—'],
+        ['phone', 'Contact information', 'tenant-contact', rec?.phone || t.phone || '—'],
         ['clipboard-check', 'Tenant referencing', 'tenant-referencing', `${refDone}/${refTotal} complete`],
         ['log-out', 'Check-out', 'tenant-checkout', `Deposit ${pay?.deposit || '—'}`],
     ]);
@@ -2036,8 +2129,8 @@ function screenTenantAccount() {
         <button type="button" data-go="tenant-edit-profile" class="profile-card">
             <img src="${av}" class="profile-card-avatar" alt="">
             <div class="profile-card-body">
-                <p class="profile-card-name">${esc(`${t.firstName} ${t.lastName}`)}</p>
-                <p class="profile-card-email">${esc(t.email)}</p>
+                <p class="profile-card-name">${esc(displayName)}</p>
+                <p class="profile-card-email">${esc(rec?.email || t.email)}</p>
             </div>
             <span class="profile-card-plan">${esc(t.unit || 'Tenant')}</span>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
@@ -2068,18 +2161,19 @@ function screenTenantEditProfile() {
         <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenant account.</p></div>`;
     }
     return `${topBar('Personal Information', { back: true })}
-    <div class="screen-content screen-content-sm screen-enter">
-        <div class="flex justify-center mb-2">
+    <div class="screen-content screen-content-sm profile-form-page screen-enter">
+        <div class="flex justify-center profile-form-photo">
             <div class="relative"><img src="${IMG.avatar.sarah}" class="w-20 h-20 rounded-2xl object-cover" alt="">
             <button type="button" data-action="toast" data-msg="Profile photo updated" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button></div>
         </div>
-        <p class="text-[13px] text-[#64748B] mb-3">Update contact details. Lease and deposit are managed by your landlord.</p>
-        ${formField('First Name', t.firstName, 'text', '', 'firstName')}
-        ${formField('Last Name', t.lastName, 'text', '', 'lastName')}
-        ${formField('Email', t.email, 'email', '', 'email')}
+        <p class="text-[13px] text-[#64748B]">Update contact details. Lease and deposit are managed by your landlord.</p>
+        <div class="form-stack">
+        ${formField('Full Name', typeof fullNameFromParts === 'function' ? fullNameFromParts(rec?.firstName || t.firstName, rec?.lastName || t.lastName) : `${rec?.firstName || t.firstName} ${rec?.lastName || t.lastName}`.trim(), 'text', 'e.g. Sarah Johnson', 'fullName')}
+        ${formField('Email', rec?.email || t.email, 'email', '', 'email')}
         ${formField('Phone', t.phone || rec?.phone || '', 'tel', '', 'phone')}
         ${formField('Emergency contact', rec?.emergency && rec.emergency !== '—' ? rec.emergency : '', 'text', 'Full name', 'emergency')}
         ${formField('Emergency phone', rec?.emergencyPhone && rec.emergencyPhone !== '—' ? rec.emergencyPhone : '', 'tel', '+44 7700 900000', 'emergencyPhone')}
+        </div>
         <div class="card p-4 bg-[#F8FAFC]">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">On file with landlord</p>
             <div class="grid grid-cols-2 gap-3 mt-2">
@@ -2726,7 +2820,7 @@ function screenContractorReviews() {
 
 function screenContractorProfile() {
     const u = CONTRACTOR_USER;
-    const name = `${u.firstName} ${u.lastName}`;
+    const name = typeof fullNameFromParts === 'function' ? fullNameFromParts(u.firstName, u.lastName) : `${u.firstName} ${u.lastName}`.trim();
     const trade = contractorTradeFromLabel(u.trade);
     const certCount = ensureContractorCertificates(u).length;
     const reviewSummary = typeof contractorReviewSummary === 'function' ? contractorReviewSummary() : { avg: '—', count: 0 };
@@ -2775,20 +2869,55 @@ function screenContractorProfile() {
     </div>`;
 }
 
+function saveContractorCompany() {
+    const company = (typeof fieldVal === 'function' ? fieldVal('companyName') : document.querySelector('[data-field="companyName"]')?.value)?.trim();
+    if (!company) { toast('Enter company name'); return true; }
+    CONTRACTOR_USER.company = company;
+    const trade = (typeof fieldVal === 'function' ? fieldVal('trade') : document.querySelector('[data-field="trade"]')?.value) || CONTRACTOR_USER.trade;
+    CONTRACTOR_USER.trade = trade;
+    if (typeof normalizeContractorTradeFields === 'function') {
+        Object.assign(CONTRACTOR_USER, normalizeContractorTradeFields(CONTRACTOR_USER));
+    }
+    CONTRACTOR_USER.companyReg = (typeof fieldVal === 'function' ? fieldVal('companyReg') : '') || '';
+    CONTRACTOR_USER.vatNumber = (typeof fieldVal === 'function' ? fieldVal('vatNumber') : '') || '';
+    CONTRACTOR_USER.phone = (typeof fieldVal === 'function' ? fieldVal('phone') : CONTRACTOR_USER.phone) || CONTRACTOR_USER.phone;
+    CONTRACTOR_USER.email = (typeof fieldVal === 'function' ? fieldVal('email') : CONTRACTOR_USER.email) || CONTRACTOR_USER.email;
+    if (typeof contractorAccountByEmail === 'function') {
+        const acc = contractorAccountByEmail(CONTRACTOR_USER.email);
+        if (acc) {
+            acc.company = CONTRACTOR_USER.company;
+            acc.trade = CONTRACTOR_USER.trade;
+            acc.tradeId = CONTRACTOR_USER.tradeId;
+            acc.category = CONTRACTOR_USER.category;
+            acc.jobsFor = CONTRACTOR_USER.jobsFor;
+            acc.companyReg = CONTRACTOR_USER.companyReg;
+            acc.vatNumber = CONTRACTOR_USER.vatNumber;
+            acc.phone = CONTRACTOR_USER.phone;
+            acc.email = CONTRACTOR_USER.email;
+            if (typeof saveContractorAccounts === 'function') saveContractorAccounts();
+        }
+    }
+    if (typeof syncContractorUserToDirectory === 'function') syncContractorUserToDirectory();
+    if (typeof AppStore !== 'undefined') AppStore.save();
+    toast('Company info updated');
+    back();
+    return true;
+}
+
 function screenContractorCompany() {
     return `${topBar('Company Information', { back: true })}
     <div class="screen-content screen-enter">
-        ${formField('Company Name', CONTRACTOR_USER.company || '')}
-        ${formSelect('Contractor type', CONTRACTOR_USER.trade || CONTRACTOR_TRADES[0], CONTRACTOR_TRADES)}
+        ${formField('Company Name', CONTRACTOR_USER.company || '', 'text', 'Plumber Pro Ltd', 'companyName')}
+        ${formSelect('Contractor type', CONTRACTOR_USER.trade || CONTRACTOR_TRADES[0], CONTRACTOR_TRADES, 'trade')}
         <div class="ctr-signup-trade-hint card p-3" style="margin-bottom:16px">
             <p class="ctr-signup-trade-hint-label">Category shown to landlords</p>
             <div class="flex flex-wrap gap-2 mt-2">${renderContractorTradeBadge(CONTRACTOR_USER)}</div>
             <p class="ctr-signup-trade-hint-text" style="margin-top:8px">For: ${contractorJobsForLabel(CONTRACTOR_USER)}</p>
         </div>
-        ${formField('Company Reg. No.', CONTRACTOR_USER.companyReg || '')}
-        ${formField('VAT Number', CONTRACTOR_USER.vatNumber || '')}
-        ${formField('Phone', CONTRACTOR_USER.phone || '')}
-        ${formField('Email', CONTRACTOR_USER.email || '')}
+        ${formField('Company Reg. No.', CONTRACTOR_USER.companyReg || '', 'text', '12345678', 'companyReg')}
+        ${formField('VAT Number', CONTRACTOR_USER.vatNumber || '', 'text', 'GB123456789', 'vatNumber')}
+        ${formField('Phone', CONTRACTOR_USER.phone || '', 'tel', '', 'phone')}
+        ${formField('Email', CONTRACTOR_USER.email || '', 'email', '', 'email')}
         <p class="section-title">Certifications</p>
         <p class="text-[12px] text-[#64748B] mb-3">Manage certificates and upload documents landlords and tenants can verify.</p>
         <button type="button" data-go="contractor-certifications" class="btn-secondary w-full py-3 text-[13px] mb-3">Manage certifications (${ensureContractorCertificates(CONTRACTOR_USER).length})</button>
