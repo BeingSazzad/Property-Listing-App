@@ -909,17 +909,14 @@ function renderTenantDepositSection(tenantId) {
         ? formatDisplayDate(leaseEndRaw) || leaseEndRaw
         : (leaseEndRaw || null);
     const leaseRemainder = tenantLeaseRemainder(fin.leaseEnd);
-    const leaseLabel = leaseEnd
-        ? `Lease ends ${leaseEnd}${leaseRemainder ? ` ${leaseRemainder}` : ''}`
-        : null;
-    const meta = [
-        dep.moveIn !== '—' ? `Move-in ${dep.moveIn}` : null,
-        tenantSince,
-        leaseLabel,
-        dep.scheme !== '—' ? dep.scheme : null,
-        dep.protectionRef ? `Ref ${dep.protectionRef}` : null,
-    ].filter(Boolean).join(' · ');
-    if (!amounts.length && !meta) return '';
+    const metaItems = [
+        dep.moveIn !== '—' ? { label: 'Move-in', value: dep.moveIn } : null,
+        tenantSince ? { label: 'Tenancy', value: tenantSince.replace(/^Tenant since /, '') } : null,
+        leaseEnd ? { label: 'Lease ends', value: `${leaseEnd}${leaseRemainder ? ` ${leaseRemainder}` : ''}` } : null,
+        dep.scheme !== '—' ? { label: 'Scheme', value: dep.scheme } : null,
+        dep.protectionRef ? { label: 'Ref', value: dep.protectionRef } : null,
+    ].filter(Boolean);
+    if (!amounts.length && !metaItems.length) return '';
     return `
     <div class="tenant-v2-section">
         <div class="tenant-v2-section-head">
@@ -928,7 +925,14 @@ function renderTenantDepositSection(tenantId) {
         </div>
         <div class="card tenant-deposit-card">
             ${amounts.length ? `<p class="tenant-deposit-line">${escapeHtml(amounts.join(' · '))}</p>` : ''}
-            ${meta ? `<p class="tenant-deposit-meta">${escapeHtml(meta)}</p>` : ''}
+            ${metaItems.length ? `
+            <div class="tenant-deposit-facts">
+                ${metaItems.map(item => `
+                <div class="tenant-deposit-fact">
+                    <span class="tenant-deposit-fact-label">${escapeHtml(item.label)}</span>
+                    <span class="tenant-deposit-fact-value">${escapeHtml(item.value)}</span>
+                </div>`).join('')}
+            </div>` : ''}
         </div>
     </div>`;
 }
@@ -1116,12 +1120,12 @@ function renderTenantContactCard(tenantId, opts = {}) {
             : `<span class="tenant-info-value tenant-info-value--wrap">${escapeHtml(emergency.text)}</span>`;
     return `
     <div class="tenant-v2-section">
-        <div class="tenant-v2-section-head">
-            <div>
+        <div class="tenant-v2-section-head tenant-v2-section-head--stack">
+            <div class="tenant-v2-section-head-row">
                 <h3>Contact</h3>
-                <p class="tenant-info-hint">Emergency contact collected at move-in or updated by tenant</p>
+                ${emergency.empty ? `<button type="button" data-go="edit-tenant" data-tid="${tenantId}" class="tenant-v2-link">Add contact</button>` : ''}
             </div>
-            ${emergency.empty ? `<button type="button" data-go="edit-tenant" data-tid="${tenantId}" class="tenant-v2-link">Add contact</button>` : ''}
+            <p class="tenant-info-hint">Emergency contact collected at move-in or updated by tenant</p>
         </div>
         <div class="card tenant-info-compact">
             <div class="tenant-info-row tenant-info-row--stack">
@@ -3819,32 +3823,26 @@ function renderPropertyHubSummaryCard(propertyId) {
             </div>
             <div class="prop-hub-summary-stats">
                 <div class="prop-hub-stat">
-                    <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+                    <span class="prop-hub-stat-head"><i data-lucide="building-2" class="w-3 h-3"></i><span class="prop-hub-stat-lbl">${unitWord}</span></span>
                     <span class="prop-hub-stat-val">${units.length}</span>
-                    <span class="prop-hub-stat-lbl">${unitWord}</span>
                 </div>
                 <div class="prop-hub-stat">
-                    <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                    <span class="prop-hub-stat-head"><i data-lucide="layers" class="w-3 h-3"></i><span class="prop-hub-stat-lbl">${floorWord}</span></span>
                     <span class="prop-hub-stat-val">${floors}</span>
-                    <span class="prop-hub-stat-lbl">${floorWord}</span>
                 </div>
-                <div class="prop-hub-stat">
-                    <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                <div class="prop-hub-stat prop-hub-stat--occupied">
+                    <span class="prop-hub-stat-head"><i data-lucide="users" class="w-3 h-3"></i><span class="prop-hub-stat-lbl">Occupied</span></span>
                     <span class="prop-hub-stat-val">${occupiedFlats}</span>
-                    <span class="prop-hub-stat-lbl">Occupied</span>
                 </div>
-                <div class="prop-hub-stat">
-                    <i data-lucide="door-open" class="w-3.5 h-3.5"></i>
+                <div class="prop-hub-stat prop-hub-stat--vacant">
+                    <span class="prop-hub-stat-head"><i data-lucide="door-open" class="w-3 h-3"></i><span class="prop-hub-stat-lbl">Vacant</span></span>
                     <span class="prop-hub-stat-val">${vacantFlats}</span>
-                    <span class="prop-hub-stat-lbl">Vacant</span>
                 </div>
             </div>
         </div>
         <div class="prop-hub-summary-foot">
-            <div class="prop-hub-income">
-                <span class="prop-hub-income-lbl">Total rent</span>
-                <span class="prop-hub-income-val"><i data-lucide="wallet" class="w-4 h-4"></i>${incomeLabel}</span>
-            </div>
+            <span class="prop-hub-income-lbl">Total rent</span>
+            <span class="prop-hub-income-val"><i data-lucide="wallet" class="w-4 h-4"></i>${incomeLabel}</span>
         </div>
     </div>`;
 }
@@ -6536,12 +6534,14 @@ function renderPropertyRecordsHub(propertyId) {
     return `
     <div class="screen-content screen-content-sm prop-records-page prop-records-unified">
         <section class="records-hub-section" id="records-compliance">
-            <div class="records-hub-section-head">
-                <h3 class="records-hub-section-title">Certificates</h3>
-                <div class="records-hub-section-actions">
+            <div class="records-hub-section-head records-hub-section-head--cert">
+                <div class="records-hub-section-copy">
+                    <h3 class="records-hub-section-title">Certificates</h3>
                     ${certIssues.length ? `<span class="records-hub-section-badge records-hub-section-badge--warn">${certIssues.length} need attention</span>` : ''}
-                    <button type="button" data-action="open-add-document-flow" class="records-hub-text-btn">Upload</button>
                 </div>
+                <button type="button" data-action="open-add-document-flow" class="records-hub-upload-btn" aria-label="Upload certificate">
+                    <i data-lucide="upload" class="w-3.5 h-3.5"></i><span>Upload</span>
+                </button>
             </div>
             ${renderBuildingCertTiles(propertyId)}
         </section>
