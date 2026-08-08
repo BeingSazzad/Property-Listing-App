@@ -2036,6 +2036,17 @@ function go(screen, opts = {}) {
         if (opts.reminderId != null) STATE.reminderId = opts.reminderId;
         STATE.reminderEditReturn = from === 'reminder-detail' ? 'reminder-detail' : 'reminders';
     }
+    if (screen === 'edit-tenancy-deposit') {
+        const pid = opts.propertyId ?? STATE.propertyId;
+        const unit = opts.unit ?? STATE.selectedUnit;
+        if (from === 'flat-detail') {
+            STATE.depositEditReturn = { screen: 'flat-detail', propertyId: pid, unit, flatTab: STATE.flatTab || 'payments' };
+        } else if (from === 'tenant-detail') {
+            STATE.depositEditReturn = { screen: 'tenant-detail', tenantId: STATE.tenantId };
+        } else {
+            STATE.depositEditReturn = { screen: 'tenancy-detail', propertyId: pid, unit };
+        }
+    }
     render();
 }
 
@@ -2151,6 +2162,20 @@ function navigateBackFallback() {
             return;
         }
         go(ret, backOpts);
+        return;
+    }
+    if (STATE.screen === 'edit-tenancy-deposit') {
+        const ret = STATE.depositEditReturn || { screen: 'tenancy-detail', propertyId: STATE.propertyId, unit: STATE.selectedUnit };
+        STATE.depositEditReturn = null;
+        if (ret.screen === 'flat-detail') {
+            go('flat-detail', { propertyId: ret.propertyId, unit: ret.unit, flatTab: ret.flatTab || 'payments', noHistory: true });
+            return;
+        }
+        if (ret.screen === 'tenant-detail') {
+            go('tenant-detail', { tenantId: ret.tenantId ?? STATE.tenantId, noHistory: true });
+            return;
+        }
+        go('tenancy-detail', { propertyId: ret.propertyId ?? STATE.propertyId, unit: ret.unit ?? STATE.selectedUnit, noHistory: true });
         return;
     }
     const target = map[STATE.screen] || defaultHome;

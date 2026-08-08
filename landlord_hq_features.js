@@ -902,10 +902,69 @@ function getTenantDepositProtection(tenantId) {
         deposit: fin.deposit || '—',
         advancePaid: fin.advancePaid || '—',
         scheme: tenancy?.depositScheme || checkout.depositScheme || '—',
-        status: tenancy?.depositStatus || checkout.depositStatus || 'pending',
+        status: resolveDepositStatus(
+            tenancy?.depositScheme || checkout.depositScheme,
+            tenancy?.protectionRef || checkout.protectionRef
+        ),
         protectionRef: tenancy?.protectionRef || checkout.protectionRef || '',
         moveIn: moveInLabel,
     };
+}
+
+const DEPOSIT_SCHEME_OPTIONS = ['MyDeposits', 'DPS', 'TDS', 'Not yet registered'];
+
+function resolveDepositStatus(depositScheme, protectionRef) {
+    const scheme = depositScheme || '';
+    const ref = (protectionRef || '').trim();
+    if (scheme === 'Not yet registered') return 'unregistered';
+    if (ref) return 'protected';
+    if (scheme) return 'pending';
+    return 'unregistered';
+}
+
+function depositStatusDisplay(status, depositScheme) {
+    const resolved = status || resolveDepositStatus(depositScheme, '');
+    if (resolved === 'protected') return { label: 'Protected', badgeClass: 'deposit-status-badge--ok' };
+    if (resolved === 'unregistered' || depositScheme === 'Not yet registered') {
+        return { label: 'Not registered', badgeClass: 'deposit-status-badge--muted' };
+    }
+    return { label: 'Pending registration', badgeClass: 'deposit-status-badge--warn' };
+}
+
+function renderDepositStatusBadge(status, depositScheme, extraClass = '') {
+    const { label, badgeClass } = depositStatusDisplay(status, depositScheme);
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `<span class="deposit-status-badge ${badgeClass}${extraClass ? ` ${extraClass}` : ''}">${esc(label)}</span>`;
+}
+
+function depositSchemeSummaryLine(scheme, protectionRef) {
+    const parts = [];
+    if (scheme && scheme !== '—') parts.push(scheme);
+    if (protectionRef) parts.push(protectionRef);
+    return parts.join(' · ') || '—';
+}
+
+function goAfterDepositSave() {
+    const ret = STATE.depositEditReturn;
+    STATE.depositEditReturn = null;
+    if (ret?.screen === 'flat-detail') {
+        go('flat-detail', {
+            propertyId: ret.propertyId,
+            unit: ret.unit,
+            flatTab: ret.flatTab || 'payments',
+            noHistory: true,
+        });
+        return;
+    }
+    if (ret?.screen === 'tenant-detail') {
+        go('tenant-detail', { tenantId: ret.tenantId ?? STATE.tenantId, noHistory: true });
+        return;
+    }
+    go('tenancy-detail', {
+        propertyId: ret?.propertyId ?? STATE.propertyId,
+        unit: ret?.unit ?? STATE.selectedUnit,
+        noHistory: true,
+    });
 }
 
 function renderTenantDepositSection(tenantId) {
@@ -927,8 +986,7 @@ function renderTenantDepositSection(tenantId) {
         dep.moveIn !== '—' ? { label: 'Move-in', value: dep.moveIn } : null,
         tenantSince ? { label: 'Tenancy', value: tenantSince.replace(/^Tenant since /, '') } : null,
         leaseEnd ? { label: 'Lease ends', value: `${leaseEnd}${leaseRemainder ? ` ${leaseRemainder}` : ''}` } : null,
-        dep.scheme !== '—' ? { label: 'Scheme', value: dep.scheme } : null,
-        dep.protectionRef ? { label: 'Ref', value: dep.protectionRef } : null,
+        dep.scheme !== '—' ? { label: 'Scheme', value: depositSchemeSummaryLine(dep.scheme, dep.protectionRef) } : null,
         depositReturn ? { label: 'Deposit return', value: depositReturn } : null,
     ].filter(Boolean);
     const listItem = TENANT_LIST[tenantId];
@@ -943,7 +1001,10 @@ function renderTenantDepositSection(tenantId) {
                 : `<button type="button" data-ttab="property" class="tenant-v2-link">Tenancy</button>`}
         </div>
         <div class="card tenant-deposit-card">
-            ${amounts.length ? `<p class="tenant-deposit-line">${escapeHtml(amounts.join(' · '))}</p>` : ''}
+            <div class="tenant-deposit-card-head">
+                ${amounts.length ? `<p class="tenant-deposit-line">${escapeHtml(amounts.join(' · '))}</p>` : '<p class="tenant-deposit-line">Deposit on file</p>'}
+                ${renderDepositStatusBadge(dep.status, dep.scheme)}
+            </div>
             ${metaItems.length ? `
             <div class="tenant-deposit-facts">
                 ${metaItems.map(item => `
@@ -4633,9 +4694,8 @@ function renderTenancyContextCard(tenantId) {
 }
 
 function renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead) {
-    const depStatus = tenancy.depositStatus === 'protected' ? 'Protected' : tenancy.depositStatus === 'pending' ? 'Pending' : 'Not registered';
-    const depBadgeClass = tenancy.depositStatus === 'protected' ? 'tenancy-summary-badge--ok' : 'tenancy-summary-badge--warn';
-    const schemeLine = [tenancy.depositScheme, tenancy.protectionRef].filter(Boolean).join(' · ');
+    const depStatus = resolveDepositStatus(tenancy.depositScheme, tenancy.protectionRef);
+    const schemeLine = depositSchemeSummaryLine(tenancy.depositScheme, tenancy.protectionRef);
     const showAdvance = tenancy.advancePaid && tenancy.advancePaid !== tenancy.deposit;
   return `
     <section class="card tenancy-summary">
@@ -4650,7 +4710,7 @@ function renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead) {
             <div class="tenancy-summary-row">
                 <span class="tenancy-summary-label">Deposit</span>
                 <span class="tenancy-summary-value">${escapeHtml(tenancy.deposit || '—')}</span>
-                <span class="tenancy-summary-badge ${depBadgeClass}">${depStatus}</span>
+                ${renderDepositStatusBadge(depStatus, tenancy.depositScheme, 'tenancy-summary-badge')}
             </div>
             ${showAdvance ? `
             <div class="tenancy-summary-row">
@@ -4714,13 +4774,24 @@ function screenEditTenancyDeposit() {
         return `${topBar('Deposit scheme', { back: true })}
         <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenancy for this unit.</p></div>`;
     }
-    const schemes = ['MyDeposits', 'DPS', 'TDS', 'Not yet registered'];
+    const schemeLine = depositSchemeSummaryLine(tenancy.depositScheme, tenancy.protectionRef);
+    const depStatus = resolveDepositStatus(tenancy.depositScheme, tenancy.protectionRef);
     return `${topBar('Deposit scheme', { back: true, sub: unit })}
-    <div class="screen-content screen-content-sm screen-enter">
-        <p class="form-helper mb-3">Update the deposit protection scheme and reference for this tenancy.</p>
-        ${formSelectField('Deposit scheme', 'depositScheme', schemes, tenancy.depositScheme || 'MyDeposits', { blankLabel: 'Select scheme' })}
-        ${formField('Protection reference', tenancy.protectionRef || '', 'text', 'Optional scheme reference number', 'protectionRef')}
-        <button type="button" data-action="save-tenancy-deposit" class="btn-primary w-full py-3.5 text-[14px] mt-2">Save deposit details</button>
+    <div class="screen-content screen-content-sm screen-enter stack-sm">
+        <div class="card deposit-edit-summary p-4">
+            <div class="deposit-edit-summary-top">
+                <div>
+                    <p class="deposit-edit-label">Deposit held</p>
+                    <p class="deposit-edit-amount">${escapeHtml(tenancy.deposit || '—')}</p>
+                </div>
+                ${renderDepositStatusBadge(depStatus, tenancy.depositScheme)}
+            </div>
+            ${schemeLine !== '—' ? `<p class="deposit-edit-meta">Current scheme · ${escapeHtml(schemeLine)}</p>` : ''}
+        </div>
+        <p class="form-helper">Choose the protection scheme. Add a reference once the deposit is registered — status updates to Protected automatically.</p>
+        ${formSelectField('Deposit scheme', 'depositScheme', DEPOSIT_SCHEME_OPTIONS, tenancy.depositScheme || 'MyDeposits', { blankLabel: 'Select scheme' })}
+        ${formField('Protection reference', tenancy.protectionRef || '', 'text', 'e.g. MD-20481', 'protectionRef')}
+        <button type="button" data-action="save-tenancy-deposit" class="btn-primary w-full py-3.5 text-[14px]">Save deposit details</button>
     </div>`;
 }
 
@@ -4736,11 +4807,11 @@ function saveTenancyDeposit() {
     const protectionRef = (fieldVal('protectionRef') || '').trim();
     tenancy.depositScheme = depositScheme;
     tenancy.protectionRef = protectionRef;
-    tenancy.depositStatus = depositScheme === 'Not yet registered' ? 'pending' : (protectionRef ? 'protected' : 'pending');
+    tenancy.depositStatus = resolveDepositStatus(depositScheme, protectionRef);
     withLoading(() => {
         AppStore.save();
         toast('Deposit scheme updated');
-        go('tenancy-detail', { propertyId, unit, noHistory: true });
+        goAfterDepositSave();
     });
     return true;
 }
@@ -6007,7 +6078,7 @@ function upsertTenantFromInvite(invite, activated = false) {
     const advanceFmt = formatMoneyField(invite.advancePaid || rentRaw);
     const depositScheme = invite.depositScheme || 'MyDeposits';
     const protectionRef = invite.protectionRef || '';
-    const depositStatus = depositScheme === 'Not yet registered' ? 'pending' : (protectionRef.trim() ? 'protected' : 'pending');
+    const depositStatus = resolveDepositStatus(depositScheme, protectionRef);
 
     if (!listItem) {
         listItem = {
@@ -7494,24 +7565,28 @@ function renderFlatDetailTenantTab(propertyId, unit, ctx) {
 function renderFlatDepositContext(propertyId, unit) {
     const { tenancy } = getFlatMemberRoster(propertyId, unit);
     if (!tenancy) return '';
-    const schemeLine = [tenancy.depositScheme, tenancy.protectionRef].filter(Boolean).join(' · ');
+    const depStatus = resolveDepositStatus(tenancy.depositScheme, tenancy.protectionRef);
+    const schemeLine = depositSchemeSummaryLine(tenancy.depositScheme, tenancy.protectionRef);
     const rows = [
         ['Deposit held', tenancy.deposit || '—'],
         tenancy.advancePaid && tenancy.advancePaid !== tenancy.deposit ? ['Advance paid', tenancy.advancePaid] : null,
-        schemeLine ? ['Deposit scheme', schemeLine] : null,
+        ['Protection', depStatus],
+        schemeLine !== '—' ? ['Scheme', schemeLine] : null,
     ].filter(Boolean);
     if (!rows.length) return '';
     return `
     <section class="card flat-pay-deposit">
         <div class="flat-dt-section-head">
             <h3 class="flat-dt-section-title">Deposit & scheme</h3>
-            <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-section-link">Edit</button>
+            <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-section-link">Edit scheme</button>
         </div>
         <div class="flat-pay-deposit-rows">
             ${rows.map(([label, value]) => `
-            <div class="flat-pay-deposit-row">
+            <div class="flat-pay-deposit-row${label === 'Protection' ? ' flat-pay-deposit-row--status' : ''}">
                 <span class="flat-pay-deposit-label">${escapeHtml(label)}</span>
-                <span class="flat-pay-deposit-value">${escapeHtml(value)}</span>
+                ${label === 'Protection'
+                    ? renderDepositStatusBadge(value, tenancy.depositScheme)
+                    : `<span class="flat-pay-deposit-value">${escapeHtml(value)}</span>`}
             </div>`).join('')}
         </div>
     </section>`;
@@ -13991,7 +14066,7 @@ function saveTenancy() {
     const advanceFmt = formatMoneyField(fieldVal('advancePaid') || '0');
     const depositScheme = fieldVal('depositScheme') || 'MyDeposits';
     const protectionRef = fieldVal('protectionRef') || '';
-    const depositStatus = depositScheme === 'Not yet registered' ? 'pending' : (protectionRef.trim() ? 'protected' : 'pending');
+    const depositStatus = resolveDepositStatus(depositScheme, protectionRef);
     const tenancy = {
         id: AppStore.nextId(AppStore.tenancies),
         propertyId: STATE.propertyId,

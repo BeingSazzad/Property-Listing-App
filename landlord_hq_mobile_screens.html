@@ -3732,6 +3732,33 @@
         }
         .tenancy-summary-badge--ok { background: #DCFCE7; color: #16A34A; }
         .tenancy-summary-badge--warn { background: #FEF3C7; color: #D97706; }
+        .deposit-status-badge {
+            display: inline-flex; align-items: center; flex-shrink: 0;
+            font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+            white-space: nowrap; letter-spacing: 0.01em; line-height: 1.2;
+        }
+        .deposit-status-badge--ok { background: #DCFCE7; color: #16A34A; }
+        .deposit-status-badge--warn { background: #FEF3C7; color: #B45309; }
+        .deposit-status-badge--muted { background: #F1F5F9; color: #64748B; }
+        .tenant-deposit-card-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+        }
+        .deposit-edit-summary { border: 1px solid #E8EDF3; }
+        .deposit-edit-summary-top {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+        }
+        .deposit-edit-label {
+            font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase;
+            letter-spacing: 0.04em; margin: 0;
+        }
+        .deposit-edit-amount {
+            font-size: 22px; font-weight: 800; color: #0F172A; margin: 4px 0 0; line-height: 1.1;
+        }
+        .deposit-edit-meta {
+            font-size: 12px; color: #64748B; margin: 10px 0 0; padding-top: 10px;
+            border-top: 1px solid #F1F5F9; line-height: 1.4;
+        }
+        .flat-pay-deposit-row--status { align-items: center; }
         .tenancy-members { padding: 0; overflow: hidden; }
         .tenancy-members-head {
             display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -9848,9 +9875,9 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=224"></script>
+    <script src="landlord_hq_screens.js?v=225"></script>
     <script src="landlord_hq_contractor.js?v=198"></script>
-    <script src="landlord_hq_features.js?v=240"></script>
+    <script src="landlord_hq_features.js?v=241"></script>
     <script src="landlord_hq_product.js?v=213"></script>
     <script>
     (function () {
