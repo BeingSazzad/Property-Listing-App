@@ -3683,6 +3683,7 @@ const tenantSectionContent = (tab, t) => {
                 ? AppStore.checkoutRecords?.find(r => r.tenantId === STATE.tenantId)
                 : null;
             const checkoutNotes = checkoutRec?.notes?.trim() || tenancy?.checkout?.notes?.trim() || '';
+            const depositReturn = checkoutRec?.deposit || tenancy?.checkout?.deposit || '';
             const leaseEndLabel = fin?.leaseEnd && typeof formatDisplayDate === 'function'
                 ? formatDisplayDate(fin.leaseEnd) || fin.leaseEnd
                 : (t.leaseEnd || '—');
@@ -3698,10 +3699,10 @@ const tenantSectionContent = (tab, t) => {
                 ['Deposit held', fin?.deposit || '—'],
                 ['Advance paid', fin?.advancePaid || '—'],
             ].filter((row) => row[1] !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held', 'Advance paid'].includes(row[0])))) : ''}
-            ${checkoutNotes ? `
+            ${checkoutNotes || depositReturn ? `
             <div class="card p-4 note-block-item">
-                <p class="note-block-label">Check-out note</p>
-                <p class="note-block-text">${checkoutNotes}</p>
+                ${depositReturn ? `<p class="note-block-label">Deposit return</p><p class="note-block-text">${depositReturn}</p>` : ''}
+                ${checkoutNotes ? `<p class="note-block-label${depositReturn ? ' mt-3' : ''}">Check-out note</p><p class="note-block-text">${checkoutNotes}</p>` : ''}
                 ${checkoutRec?.date ? `<p class="note-block-meta">${typeof formatDisplayDate === 'function' ? formatDisplayDate(checkoutRec.date) || checkoutRec.date : checkoutRec.date}</p>` : ''}
             </div>` : ''}
             <div class="tenant-tenancy-actions">

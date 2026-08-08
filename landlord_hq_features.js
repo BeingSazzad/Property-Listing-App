@@ -921,12 +921,15 @@ function renderTenantDepositSection(tenantId) {
         ? formatDisplayDate(leaseEndRaw) || leaseEndRaw
         : (leaseEndRaw || null);
     const leaseRemainder = tenantLeaseRemainder(fin.leaseEnd);
+    const checkoutRec = AppStore.checkoutRecords?.find(r => r.tenantId === tenantId);
+    const depositReturn = checkoutRec?.deposit || '';
     const metaItems = [
         dep.moveIn !== '—' ? { label: 'Move-in', value: dep.moveIn } : null,
         tenantSince ? { label: 'Tenancy', value: tenantSince.replace(/^Tenant since /, '') } : null,
         leaseEnd ? { label: 'Lease ends', value: `${leaseEnd}${leaseRemainder ? ` ${leaseRemainder}` : ''}` } : null,
         dep.scheme !== '—' ? { label: 'Scheme', value: dep.scheme } : null,
         dep.protectionRef ? { label: 'Ref', value: dep.protectionRef } : null,
+        depositReturn ? { label: 'Deposit return', value: depositReturn } : null,
     ].filter(Boolean);
     if (!amounts.length && !metaItems.length) return '';
     return `
@@ -3982,6 +3985,7 @@ function renderPropertyOverviewDetails(propertyId) {
     const featureItems = [...applianceItems, ...alarmItems];
     const infoRows = [
         ['map-pin', 'Address', p.address || '—'],
+        ...(info.postcode ? [['map', 'Postcode', info.postcode]] : []),
         ['home', 'Type', info.type || '—'],
         ['calendar', 'Year Built', info.built || '—'],
         ['leaf', 'EPC', formatEpcDisplay(info.epc)],
@@ -6975,6 +6979,7 @@ function flatDetailSpecChips(u) {
     if (u.sqft) specs.push({ icon: 'ruler', text: `${u.sqft} sqft` });
     const floor = flatFloorLine(u);
     if (floor) specs.push({ icon: 'layers', text: floor });
+    if (u.furnished) specs.push({ icon: 'sofa', text: u.furnished });
     if (!specs.length) return '';
     return `
     <div class="flat-dt-spec-chips">
@@ -7023,8 +7028,9 @@ function flatDetailBuildingMeta(propertyId, u) {
 
 function flatDetailSpecSection(propertyId, u) {
     const chips = flatDetailSpecChips(u);
-    if (!chips) return '';
-    return `<div class="flat-dt-spec-row flat-dt-spec-row--unit">${chips}</div>`;
+    const extra = flatDetailExtraLine(propertyId, u);
+    if (!chips && !extra) return '';
+    return `<div class="flat-dt-spec-row flat-dt-spec-row--unit">${chips}${extra}</div>`;
 }
 
 function flatDetailExtraLine(propertyId, u) {
@@ -7101,15 +7107,22 @@ function flatDetailRecentActivity(propertyId, unit, opts = {}) {
     </section>`;
 }
 
+function unitUtilitySummary(propertyId, unit) {
+    const util = getUnitUtilityMeta(propertyId, unit);
+    const meterCount = ['electricity', 'gas', 'water'].filter(k => (util.meters?.[k] || '').trim()).length;
+    const customCount = (util.customUtilities || []).filter(c => (c.name || '').trim()).length;
+    const billCount = (util.uploads || []).length;
+    return { util, meterCount, customCount, billCount, setupCount: meterCount + customCount };
+}
+
 function flatQuickActionMeta(propertyId, unit) {
     const stats = unitRentStats(propertyId, unit);
-    const util = AppStore.meta(propertyId).unitUtilities?.[unit];
-    const utilCount = util ? ['electricity', 'gas', 'water', 'internet'].filter(k => util[k]?.provider).length + (util.customUtilities?.length || 0) : 0;
+    const { setupCount, billCount } = unitUtilitySummary(propertyId, unit);
     const unitDocs = sortPropertyDocuments(AppStore.docsForProperty(propertyId).filter(d => d.unit === unit));
     return {
         pay: stats.outstanding ? `£${stats.outstanding.toLocaleString()} due` : 'Up to date',
         records: unitDocs.length ? `${unitDocs.length} file${unitDocs.length === 1 ? '' : 's'}` : 'Open',
-        utilities: utilCount ? `${utilCount} meter${utilCount === 1 ? '' : 's'} set` : 'Set up meters',
+        utilities: billCount ? `${billCount} bill${billCount === 1 ? '' : 's'} on file` : setupCount ? `${setupCount} meter${setupCount === 1 ? '' : 's'} set` : 'Set up meters',
     };
 }
 
@@ -7372,7 +7385,7 @@ function renderFlatTenantIdentitySection(propertyId, unit) {
 function renderFlatDetailRecordsTab(propertyId, unit, p) {
     const issues = propertyComplianceCertRows(propertyId).filter(r => r.st.tone !== 'ok').length;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(propertyId).length : 0;
-    const utilDocs = AppStore.meta(propertyId).unitUtilities?.[unit]?.documents?.length || 0;
+    const utilDocs = unitUtilitySummary(propertyId, unit).billCount;
     const photoCount = flatDetailPhotoList(propertyId, unit).length;
     const navRow = (icon, label, attrs) => `
         <button type="button" ${attrs} class="flat-records-nav-row w-full text-left">
@@ -12968,11 +12981,14 @@ function screenUnitUtilities() {
             </div>`).join('')}
         </div>` : ''}` : ''}
         <div class="unit-util-block">
-            <p class="screen-section-title">Meter numbers</p>
+            <div class="unit-util-block-head">
+                <p class="screen-section-title">Meter numbers</p>
+                <p class="unit-util-hint">Optional — add when you have the meter reference or reading.</p>
+            </div>
             <div class="card unit-util-card unit-util-meters">
-                ${formFieldInlineReq('Electricity', 'meter_electricity', util.meters?.electricity || '', 'text')}
-                ${formFieldInlineReq('Gas', 'meter_gas', util.meters?.gas || '', 'text')}
-                ${formFieldInlineReq('Water', 'meter_water', util.meters?.water || '', 'text')}
+                ${formField('Electricity', util.meters?.electricity || '', 'text', 'e.g. MPAN or meter ID', 'meter_electricity')}
+                ${formField('Gas', util.meters?.gas || '', 'text', 'e.g. MPRN or meter ID', 'meter_gas')}
+                ${formField('Water', util.meters?.water || '', 'text', 'e.g. meter serial', 'meter_water')}
             </div>
         </div>
         <div class="unit-util-block">
@@ -12986,8 +13002,8 @@ function screenUnitUtilities() {
                 <button data-action="toast" data-msg="Downloaded ${u.name}" class="unit-util-view">View</button>
             </div>`).join('') : `<div class="card unit-util-card"><p class="unit-util-empty">No utility documents uploaded yet</p></div>`}
             <button data-action="upload-unit-utility" class="btn-secondary unit-util-upload-btn">Upload bill / document</button>
-            <button data-action="save-unit-utilities" class="btn-primary unit-util-save-btn">Save utilities</button>
         </div>
+        <button data-action="save-unit-utilities" class="btn-primary unit-util-save-btn">Save utilities</button>
     </div>`;
 }
 
@@ -13104,6 +13120,7 @@ function screenPropertyDetailsEdit(section) {
         </div>
         <div><label class="form-label">Property Name</label><input data-field="info_name" type="text" class="form-input" value="${escapeHtml(p?.name || '')}" placeholder="e.g. 12 Park Lane"></div>
         <div><label class="form-label">Address</label><input data-field="info_address" type="text" class="form-input" value="${escapeHtml(p?.address || '')}" placeholder="e.g. London, SW1A 1AA"></div>
+        <div><label class="form-label">Postcode</label><input data-field="info_postcode" type="text" class="form-input" value="${escapeHtml(info.postcode || '')}" placeholder="e.g. SW1A 1AA"></div>
         ${formSelectField('Property Type', 'info_type', PROPERTY_TYPE_OPTIONS, info.type, { blankLabel: 'Select type' })}
         <div><label class="form-label">Year Built</label><input data-field="info_built" type="number" class="form-input" value="${escapeHtml(info.built || '')}" placeholder="e.g. 1985" min="1700" max="2030"></div>
         ${formSelectField('EPC Rating', 'info_epc', EPC_RATING_OPTIONS, info.epc, { blankLabel: 'Select rating' })}
@@ -13175,10 +13192,12 @@ function savePropertyMeta(section) {
             syncPropertyDisplayReferences(STATE.propertyId);
             syncPropertyStatus(STATE.propertyId);
         }
+        const postcode = (fieldVal('info_postcode') || '').trim();
         meta.info = {
             ...(meta.info || {}),
             type: fieldVal('info_type'),
             built: fieldVal('info_built'),
+            postcode,
             epc: saveEpcValue(fieldVal('info_epc')),
             epcExpiry: fieldVal('info_epcExpiry'),
             insuranceExpiry: fieldVal('info_insuranceExpiry'),
