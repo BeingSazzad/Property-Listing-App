@@ -6,10 +6,11 @@ const DOC_FOLDER_DEFS = [
     { id: 'epc', label: 'EPC', icon: 'leaf', color: '#16A34A', bg: '#ECFDF5', match: d => d.type === 'EPC Certificate' },
     { id: 'fire', label: 'Fire Safety', icon: 'flame-kindling', color: '#EA580C', bg: '#FFEDD5', match: d => /fire|smoke|alarm/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'insurance', label: 'Insurance', icon: 'shield-check', color: '#4338CA', bg: '#EEF2FF', match: d => /insurance/i.test(d.name || d.type || '') },
-    { id: 'custom', label: 'Custom Documents', icon: 'folder', color: '#64748B', bg: '#F1F5F9', match: () => false },
+    { id: 'custom', label: 'Other files', icon: 'folder', color: '#64748B', bg: '#F1F5F9', match: () => false },
 ];
 
 const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'fire', 'insurance', 'custom'];
+const DOC_FOLDER_RECORDS_IDS = ['fire', 'custom'];
 
 const CHARGE_TYPE_OPTIONS = [
     { id: 'utility', label: 'Utility charge', icon: 'zap' },
@@ -18,6 +19,38 @@ const CHARGE_TYPE_OPTIONS = [
     { id: 'service', label: 'Service charge', icon: 'receipt' },
     { id: 'custom', label: 'Custom charge', icon: 'plus-circle' },
 ];
+
+const CHARGE_TYPE_QUICK_IDS = ['utility', 'repair', 'penalty'];
+const CHARGE_TYPE_MORE_IDS = ['service', 'custom'];
+
+function renderChargeTypePicker(chargeType) {
+    return `
+        <div class="form-group">
+            <label class="form-label">${typeof requiredLabel === 'function' ? requiredLabel('Charge type') : 'Charge type'}</label>
+            <select data-charge-type-select class="form-input form-select">
+                ${CHARGE_TYPE_OPTIONS.map(o => `
+                <option value="${o.id}" ${chargeType === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
+            </select>
+        </div>
+        ${chargeType === 'custom' ? `
+        <div class="charge-type-custom-field">
+            ${formFieldReq('Charge name', 'customChargeName', STATE.chargeCustomName || '', 'text', 'e.g. Parking fee, cleaning')}
+            <p class="charge-type-custom-hint">Give this charge a clear name tenants will recognise on their bill.</p>
+        </div>` : ''}`;
+}
+
+function renderChargeTargetPicker(chargeTarget) {
+    const selected = CHARGE_TARGET_OPTIONS.find(o => o.id === chargeTarget) || CHARGE_TARGET_OPTIONS[0];
+    return `
+        <div class="form-group">
+            <label class="form-label">Who is billed?</label>
+            <select data-charge-target-select class="form-input form-select">
+                ${CHARGE_TARGET_OPTIONS.map(o => `
+                <option value="${o.id}" ${chargeTarget === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
+            </select>
+            <p class="form-helper">${selected.hint}</p>
+        </div>`;
+}
 
 const CHARGE_TARGET_OPTIONS = [
     { id: 'lead', label: 'Lead tenant', hint: 'Bill the primary tenant on the unit' },
@@ -62,10 +95,10 @@ function docYearFromDate(dateStr) {
 function docsForFolder(docs, folderId) {
     if (folderId === 'custom') {
         const primary = DOC_FOLDER_DEFS.filter(f => f.id !== 'custom');
-        return docs.filter(d => !primary.some(f => f.match(d)));
+        return docs.filter(d => d.folderId === 'custom' || (!d.folderId && !primary.some(f => f.match(d))));
     }
     const folder = DOC_FOLDER_DEFS.find(f => f.id === folderId) || DOC_FOLDER_DEFS[DOC_FOLDER_DEFS.length - 1];
-    return docs.filter(folder.match);
+    return docs.filter(d => d.folderId === folderId || (!d.folderId && folder.match(d)));
 }
 
 function tenantDocFolderFromName(name) {
@@ -90,6 +123,32 @@ function docDisplayFileName(doc) {
         return `${year}.pdf`;
     }
     return /\.pdf$/i.test(doc.name) ? doc.name : `${doc.name}.pdf`;
+}
+
+function renderDocFolderCompactRow(propertyId, folder, fileCount) {
+    const countSuffix = fileCount ? ` · ${fileCount}` : '';
+    return `
+    <button type="button" data-go="property-doc-folder" data-folder="${folder.id}" data-pid="${propertyId}" class="doc-folder-compact-row">
+        <span class="doc-folder-compact-icon" style="background:${folder.bg};color:${folder.color}"><i data-lucide="${folder.icon}" class="w-4 h-4"></i></span>
+        <span class="doc-folder-compact-label">${folder.label}${countSuffix}</span>
+        <i data-lucide="chevron-right" class="w-4 h-4 doc-folder-compact-chevron"></i>
+    </button>`;
+}
+
+function renderDocFolderCompactList(propertyId, folderIds = DOC_FOLDER_RECORDS_IDS) {
+    const allDocs = sortPropertyDocuments(AppStore.docsForProperty(propertyId));
+    return `
+    <div class="doc-folder-compact-list">
+        ${folderIds.map(id => {
+            const folder = DOC_FOLDER_DEFS.find(f => f.id === id);
+            const count = docsForFolder(allDocs, id).length;
+            return renderDocFolderCompactRow(propertyId, folder, count);
+        }).join('')}
+    </div>`;
+}
+
+function renderDocFolderTileGrid(propertyId) {
+    return renderDocFolderCompactList(propertyId, DOC_FOLDER_PRIMARY_IDS);
 }
 
 function renderDocFolderListRow(propertyId, folder, fileCount) {
@@ -155,28 +214,18 @@ function screenDocFolderView() {
     <div class="doc-folder-page screen-enter">
         ${topBar(folder.label, { back: true })}
         <div class="screen-content screen-content-sm doc-folder-page-body">
-            <div class="doc-folder-page-toolbar">
-                <div class="search-bar doc-folder-search doc-folder-search--inline">
-                    <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-                    <input data-doc-search="${contextKey}" type="text" value="${STATE.docSearch?.[contextKey] || ''}" placeholder="Search files…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
-                </div>
-                <select data-doc-sort="${contextKey}" class="form-input form-select doc-folder-sort doc-folder-sort--inline">
-                    <option value="year" ${sort === 'year' ? 'selected' : ''}>Newest first</option>
-                    <option value="updated" ${sort === 'updated' ? 'selected' : ''}>Last updated</option>
-                    <option value="name" ${sort === 'name' ? 'selected' : ''}>Name A–Z</option>
-                </select>
+            <div class="search-bar doc-folder-search">
+                <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+                <input data-doc-search="${contextKey}" type="text" value="${STATE.docSearch?.[contextKey] || ''}" placeholder="Search files…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
             </div>
+            ${renderDocFolderUploadBtn(folderId, propertyId)}
             ${files.length ? `<div class="card doc-file-list">${fileRows}</div>` : `
             <div class="records-docs-empty card">
                 <i data-lucide="file-text" class="w-8 h-8 text-[#CBD5E1]"></i>
                 <p class="records-docs-empty-title">No files yet</p>
-                <p class="records-docs-empty-sub">Upload ${folder.label.toLowerCase()} for this property.</p>
-                <button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="btn-primary w-full py-3 text-[13px] mt-3">Upload file</button>
+                <p class="records-docs-empty-sub">Tap upload above to add ${folder.label.toLowerCase()} for this property.</p>
             </div>`}
         </div>
-        <button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="doc-upload-fab" aria-label="Upload document">
-            <i data-lucide="upload" class="w-5 h-5"></i>
-        </button>
     </div>`;
 }
 
@@ -234,6 +283,14 @@ function renderRecordsDocUploadCta() {
     </button>`;
 }
 
+function renderDocFolderUploadBtn(folderId, propertyId, label = 'Upload new file') {
+    return `
+    <button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="doc-folder-upload-cta">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span>${label}</span>
+    </button>`;
+}
+
 function renderDocFolderToolbar(contextKey, opts = {}) {
     const q = STATE.docSearch?.[contextKey] || '';
     const compact = !!opts.compact;
@@ -286,18 +343,14 @@ function sortDocList(docs, sort) {
     return list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
 
-function rentPaymentSummaryStats(unpaid) {
-    const total = unpaid.reduce((s, i) => s + parseInvoiceAmount(i.amount), 0);
-    const unit = STATE.rentReceiveUnitFilter;
-    let collected = 0;
-    let rentTotal = total;
-    if (unit && typeof invoicesForUnit === 'function' && typeof unitRentStats === 'function') {
-        const stats = unitRentStats(STATE.propertyId, unit);
-        collected = stats.collected || 0;
-        rentTotal = stats.total || total;
-    }
+function rentPaymentSummaryStats(unpaid, selected) {
     const outstanding = unpaid.reduce((s, i) => s + parseInvoiceAmount(i.amount), 0);
-    return { rentTotal, collected, outstanding };
+    return {
+        selected: selected?.total ?? 0,
+        selectedCount: selected?.count ?? 0,
+        outstanding,
+        dueCount: unpaid.length,
+    };
 }
 
 function renderDocFolderBrowser(propertyId, contextKey = `property-${propertyId}`, opts = {}) {
@@ -358,7 +411,7 @@ function renderDocFolderBrowser(propertyId, contextKey = `property-${propertyId}
                         : (typeof renderDocumentRow === 'function' ? renderDocumentRow(d, propertyId) : '')).join('')}
                 </div>`;
                 }).join('') : `<p class="doc-folder-empty">${compact ? 'No files yet — tap + Add above.' : 'No files in this folder yet.'}</p>`}
-                ${compact ? '' : `<button type="button" data-action="open-add-document-folder" data-folder="${folder.id}" data-pid="${propertyId}" class="doc-folder-add">+ Add to ${folder.label}</button>`}
+                <button type="button" data-action="open-add-document-folder" data-folder="${folder.id}" data-pid="${propertyId}" class="doc-folder-add">+ Add to ${folder.label}</button>
             </div>` : ''}
         </div>`;
     }).filter(Boolean);
@@ -621,23 +674,9 @@ function screenCreateChargeProduct() {
             <p class="ux-tip-title">Extra bill / charge</p>
             <p class="ux-tip-text">Monthly rent is tracked per unit automatically. Use this for utilities, repairs, penalties, or custom charges.</p>
         </div>
-        <p class="screen-section-title">Charge type</p>
-        <div class="charge-type-grid">
-            ${CHARGE_TYPE_OPTIONS.map(o => `
-            <button type="button" data-charge-type="${o.id}" class="charge-type-card ${chargeType === o.id ? 'active' : ''}">
-                <i data-lucide="${o.icon}" class="w-5 h-5"></i>
-                <span>${o.label}</span>
-            </button>`).join('')}
-        </div>
-        <p class="screen-section-title">Who is billed?</p>
-        ${CHARGE_TARGET_OPTIONS.map(o => `
-        <label class="charge-target-row card ${chargeTarget === o.id ? 'charge-target-row--active' : ''}">
-            <input type="radio" name="chargeTarget" data-charge-target="${o.id}" ${chargeTarget === o.id ? 'checked' : ''} class="accent-[#2563EB]">
-            <span class="min-w-0 flex-1">
-                <span class="charge-target-label">${o.label}</span>
-                <span class="charge-target-hint">${o.hint}</span>
-            </span>
-        </label>`).join('')}
+        <p class="screen-section-title">Charge details</p>
+        ${renderChargeTypePicker(chargeType)}
+        ${renderChargeTargetPicker(chargeTarget)}
         <div><label class="form-label">${requiredLabel('Property')}</label>
         <select data-field="propertyId" data-action="refresh-invoice-units" class="form-input form-select">${PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).map(p => `<option value="${p.id}" ${p.id === defaultPid ? 'selected' : ''}>${p.name}</option>`).join('')}</select></div>
         ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Unit</label>${unitSelectHtml(defaultPid, 'unit', false, '')}</div>` : ''}
@@ -654,11 +693,15 @@ function screenCreateChargeProduct() {
 }
 
 function saveChargeProduct() {
-    if (!validateFields([['amount', 'Amount', v => v && +v > 0], ['due', 'Due date', v => v]])) return;
+    const chargeType = STATE.chargeType || 'utility';
+    const rules = [['amount', 'Amount', v => v && +v > 0], ['due', 'Due date', v => v]];
+    if (chargeType === 'custom') {
+        rules.push(['customChargeName', 'Charge name', v => v && String(v).trim().length >= 2]);
+    }
+    if (!validateFields(rules)) return;
     const pid = +fieldVal('propertyId');
     const p = PROPERTIES[pid];
     const unit = fieldVal('unit') || '';
-    const chargeType = STATE.chargeType || 'utility';
     const chargeTarget = STATE.chargeTarget || 'lead';
     const typeMeta = CHARGE_TYPE_OPTIONS.find(c => c.id === chargeType);
     let tenants = TENANT_LIST.filter(t => t.propertyId === pid && t.status === 'active' && (!unit || t.unit === unit));
@@ -670,7 +713,10 @@ function saveChargeProduct() {
     }
     if (!tenants.length) { toast('No tenant found for this unit'); return; }
     const notes = fieldVal('chargeNotes') || '';
-    const desc = `${typeMeta?.label || 'Charge'}${notes ? ` · ${notes}` : ''}`;
+    const customName = chargeType === 'custom' ? String(fieldVal('customChargeName') || '').trim() : '';
+    STATE.chargeCustomName = customName;
+    const typeLabel = chargeType === 'custom' ? customName : (typeMeta?.label || 'Charge');
+    const desc = `${typeLabel}${notes ? ` · ${notes}` : ''}`;
     tenants.forEach(tenant => {
         const id = AppStore.nextId(INVOICES);
         INVOICES.unshift({
@@ -685,13 +731,23 @@ function saveChargeProduct() {
             title: 'New charge', desc: `${desc} · ${tenant.name}`,
             time: 'Just now', unread: true, screen: 'invoice-detail', opts: { iid: id },
         });
+        if (typeof pushTenantNotification === 'function') {
+            pushTenantNotification(tenant.id, {
+                category: 'charge',
+                icon: typeof chargeTypeIcon === 'function' ? chargeTypeIcon(chargeType) : 'receipt',
+                color: ['#FEF3C7', '#D97706'],
+                title: 'New charge from landlord',
+                desc: `${desc} · ${`£${parseInt(fieldVal('amount'), 10).toLocaleString()}`} due ${formatDisplayDate(fieldVal('due'))}`,
+                time: 'Just now', unread: true,
+                screen: 'invoice-detail', opts: { iid: id, tenantPayFilter: 'charges' },
+            });
+        }
     });
     syncTransactionsFromInvoices();
     withLoading(() => { AppStore.save(); toast('Charge sent'); go('financial'); });
 }
 
 function screenMarkRentReceivedProduct() {
-    if (typeof initRentReceiveSelection === 'function') initRentReceiveSelection();
     const unpaid = rentReceiveInvoices();
     const overdue = unpaid.filter(i => i.status === 'Overdue');
     const pending = unpaid.filter(i => i.status === 'Pending');
@@ -708,28 +764,29 @@ function screenMarkRentReceivedProduct() {
         </div>`;
     }
     const sorted = [...overdue, ...pending];
-    const summary = rentPaymentSummaryStats(unpaid);
+    const summary = rentPaymentSummaryStats(unpaid, selected);
     return `${topBar('Record payment', { back: true })}
     <div class="screen-content screen-enter rent-receive-page rent-receive-page--compact">
         <div class="rent-summary-triple card">
             <div class="rent-summary-triple-col">
-                <span class="rent-summary-triple-label">Total rent</span>
-                <span class="rent-summary-triple-val">£${summary.rentTotal.toLocaleString()}</span>
-            </div>
-            <div class="rent-summary-triple-col">
-                <span class="rent-summary-triple-label">Collected</span>
-                <span class="rent-summary-triple-val rent-summary-triple-val--ok">£${summary.collected.toLocaleString()}</span>
+                <span class="rent-summary-triple-label">Selected</span>
+                <span class="rent-summary-triple-val rent-summary-triple-val--ok">£${summary.selected.toLocaleString()}</span>
             </div>
             <div class="rent-summary-triple-col">
                 <span class="rent-summary-triple-label">Outstanding</span>
                 <span class="rent-summary-triple-val rent-summary-triple-val--due">£${summary.outstanding.toLocaleString()}</span>
             </div>
+            <div class="rent-summary-triple-col">
+                <span class="rent-summary-triple-label">Due</span>
+                <span class="rent-summary-triple-val">${summary.selectedCount} of ${summary.dueCount}</span>
+            </div>
         </div>
         <div class="rent-receive-list-head">
-            <p class="rent-receive-list-title">Select tenants</p>
+            <p class="rent-receive-list-title">Select payments</p>
             <button type="button" data-action="toggle-rent-receive-all" class="rent-receive-select-all">${allSelected ? 'None' : 'All'}</button>
         </div>
-        <div class="rent-receive-list">${sorted.map(rentReceiveRow).join('')}</div>
+        ${typeof renderRentReceivePlaceFilters === 'function' ? renderRentReceivePlaceFilters() : ''}
+        ${typeof renderRentReceiveList === 'function' ? renderRentReceiveList(sorted) : `<div class="rent-receive-list">${sorted.map(rentReceiveRow).join('')}</div>`}
         <div class="rent-receive-date card rent-receive-date--compact">
             <label class="form-label">Payment received on</label>
             <input type="date" data-field="receivedDate" class="form-input" value="${receiveDate}">
@@ -791,7 +848,7 @@ function confirmMarkRentReceivedProduct() {
             }
             inv.paidOn = paidLabel;
             inv.paymentMethod = methodLabel;
-            inv.paymentReference = reference;
+            inv.paymentReference = reference || inv.paymentReference || (typeof invoicePaymentReference === 'function' ? invoicePaymentReference(inv) : `LH-${inv.num}`);
             inv.paymentNotes = notes;
             inv.receiptSent = receiptSent;
             if (ids.length === 1 && overrideAmt > 0 && overrideAmt < fullAmt) {
@@ -809,7 +866,18 @@ function confirmMarkRentReceivedProduct() {
     AppStore.save();
     STATE.rentReceiveIds = [];
     STATE.rentPaymentMethod = method;
-    showConfirm('Payment recorded', `${ids.length} payment${ids.length === 1 ? '' : 's'} saved${receiptSent ? ' · receipt sent' : ''}.`, () => {
+    showConfirm(
+        'Payment recorded',
+        ids.length === 1
+            ? 'Receipt ready — open the invoice to download PDF.'
+            : `${ids.length} payment${ids.length === 1 ? '' : 's'} saved${receiptSent ? ' · receipt sent' : ''}.`,
+        () => {
+        if (ids.length === 1) {
+            const savedReturn = STATE.rentReturnScreen || 'financial';
+            STATE.rentReturnScreen = savedReturn;
+            go('invoice-detail', { invoiceId: ids[0] });
+            return;
+        }
         const returnScreen = STATE.rentReturnScreen || 'financial';
         const returnOpts = {};
         if (returnScreen === 'flat-rent-history' || returnScreen === 'flat-detail') {
@@ -817,70 +885,223 @@ function confirmMarkRentReceivedProduct() {
             if (STATE.selectedUnit) returnOpts.unit = STATE.selectedUnit;
         }
         STATE.rentReturnScreen = null;
+        STATE.rentReceivePropertyFilter = null;
         STATE.rentReceiveUnitFilter = null;
         go(returnScreen, returnOpts);
-    }, { okLabel: 'Done' });
+    }, { okLabel: ids.length === 1 ? 'View receipt' : 'Done' });
+}
+
+const CERT_ASSIGN_TYPES = [
+    { id: 'gas', label: 'Gas Certificate (CP12)', short: 'Gas (CP12)', complianceId: 0, docType: 'Gas Certificate' },
+    { id: 'eicr', label: 'Electrical Certificate (EICR)', short: 'EICR', complianceId: 1, docType: 'Electrical Certificate' },
+    { id: 'epc', label: 'EPC Certificate', short: 'EPC', complianceId: 7, docType: 'EPC Certificate' },
+    { id: 'inspection', label: 'Inspection Report', short: 'Inspection', inspection: true },
+];
+
+function certAssignTypeDef(id) {
+    return CERT_ASSIGN_TYPES.find(t => t.id === id) || CERT_ASSIGN_TYPES[0];
+}
+
+function certStatusFromExpiry(expiryIso) {
+    if (!expiryIso) return { label: 'Pending', tone: 'muted' };
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const exp = new Date(expiryIso);
+    if (Number.isNaN(exp.getTime())) return { label: 'Pending', tone: 'muted' };
+    exp.setHours(0, 0, 0, 0);
+    if (exp < today) return { label: 'Expired', tone: 'bad' };
+    const days = Math.ceil((exp - today) / 86400000);
+    if (days <= 30) return { label: `Expires in ${days} day${days === 1 ? '' : 's'}`, tone: 'warn' };
+    return { label: 'Valid', tone: 'ok' };
+}
+
+function captureCertAssignDraft() {
+    if (typeof fieldVal !== 'function') return;
+    STATE.certAssignDraft = {
+        issue: fieldVal('certIssueDate'),
+        expiry: fieldVal('certExpiryDate'),
+        reference: fieldVal('certReference'),
+        notes: fieldVal('certNotes'),
+    };
+}
+
+function certAssignDraftValues() {
+    const d = STATE.certAssignDraft || {};
+    return {
+        issue: d.issue || '',
+        expiry: d.expiry || '',
+        reference: d.reference || '',
+        notes: d.notes || '',
+    };
+}
+
+function certAssignHistoryRows(propertyId) {
+    return (AppStore.certHistory?.[propertyId] || []).slice(0, 5).map(h => {
+        const typeDef = CERT_ASSIGN_TYPES.find(t => t.id === h.type);
+        const status = h.status || certStatusFromExpiry(h.expiry).label;
+        const issueLabel = h.issue && typeof formatDisplayDate === 'function' ? formatDisplayDate(h.issue) || h.issue : h.issue;
+        const expiryLabel = h.expiry && typeof formatDisplayDate === 'function' ? formatDisplayDate(h.expiry) || h.expiry : h.expiry;
+        return {
+            label: typeDef?.label || h.type,
+            issue: issueLabel,
+            expiry: expiryLabel,
+            status,
+            tone: certStatusFromExpiry(h.expiry).tone,
+        };
+    });
 }
 
 function screenCertificateAssign() {
     const pid = STATE.propertyId ?? 0;
     const p = PROPERTIES[pid];
     const certType = STATE.certAssignType || 'gas';
-    const types = [
-        { id: 'gas', label: 'Gas Certificate (CP12)' },
-        { id: 'eicr', label: 'Electrical Certificate (EICR)' },
-        { id: 'inspection', label: 'Inspection Report' },
-        { id: 'epc', label: 'EPC Certificate' },
-    ];
-    const history = (AppStore.certHistory?.[pid] || []).slice(0, 5);
+    const typeDef = certAssignTypeDef(certType);
+    const draft = certAssignDraftValues();
+    const history = certAssignHistoryRows(pid);
+    const isInspection = !!typeDef.inspection;
     return `${topBar('Assign certificate', { back: true, sub: p?.name || '' })}
-    <div class="screen-content screen-enter">
-        <p class="ux-intro">Link a certificate to this property. Expiry reminders sync to compliance when backend is connected.</p>
+    <div class="screen-content screen-content-sm screen-enter cert-assign-page">
+        <p class="cert-assign-intro">Link a certificate to this property. Compliance status and reminders update from the expiry date.</p>
         <p class="screen-section-title">Certificate type</p>
-        ${types.map(t => `
-        <button type="button" data-cert-assign-type="${t.id}" class="charge-target-row card w-full text-left ${certType === t.id ? 'charge-target-row--active' : ''}">
-            <span class="charge-target-label">${t.label}</span>
+        <div class="cert-assign-type-grid">
+        ${CERT_ASSIGN_TYPES.map(t => `
+        <button type="button" data-cert-assign-type="${t.id}" class="cert-assign-type${certType === t.id ? ' cert-assign-type--active' : ''}">
+            <span>${t.short}</span>
         </button>`).join('')}
-        ${formFieldReq('Issue date', 'certIssueDate', '', 'date')}
-        ${formFieldReq('Expiry date', 'certExpiryDate', '', 'date')}
-        <div><label class="form-label">Status</label>
-        <select data-field="certStatus" class="form-input form-select">
-            <option>Valid</option><option>Expiring soon</option><option>Expired</option><option>Pending upload</option>
-        </select></div>
-        ${formTextarea('Notes', '', 'Engineer, reference, or access notes…', 'certNotes')}
-        <button type="button" data-action="save-cert-assign" class="btn-primary w-full py-3.5 text-[14px]">Save certificate</button>
+        </div>
+        <div class="card cert-assign-form">
+            ${!isInspection ? formFieldReq('Issue date', 'certIssueDate', draft.issue, 'date') : ''}
+            ${isInspection
+                ? formFieldReq('Inspection date', 'certIssueDate', draft.issue, 'date')
+                : formFieldReq('Expiry date', 'certExpiryDate', draft.expiry, 'date')}
+            ${!isInspection ? `<p class="cert-assign-hint">Status is calculated automatically from the expiry date.</p>` : ''}
+            ${formField('Certificate reference', draft.reference, 'text', 'e.g. GS-2026-001', 'certReference')}
+            ${formTextarea('Notes', draft.notes, 'Engineer, reference, or access notes…', 'certNotes')}
+        </div>
+        <button type="button" data-action="save-cert-assign" class="btn-primary cert-assign-save">Save certificate</button>
+        ${!isInspection ? `
+        <button type="button" data-action="open-add-document-folder" data-folder="${certType === 'inspection' ? 'custom' : certType}" data-pid="${pid}" class="btn-secondary cert-assign-upload w-full py-3 text-[13px]">
+            <i data-lucide="upload" class="w-4 h-4 inline-block mr-1"></i>Upload certificate file
+        </button>` : ''}
         ${history.length ? `
-        <p class="screen-section-title txn-section-label--spaced">Certificate history</p>
-        ${history.map(h => `
-        <div class="card p-3 mb-2 flex justify-between items-center">
-            <div><p class="text-[13px] font-semibold">${h.type}</p><p class="text-[11px] text-[#64748B]">${h.issue} → ${h.expiry}</p></div>
-            <span class="badge">${h.status}</span>
-        </div>`).join('')}` : ''}
+        <p class="screen-section-title cert-assign-history-title">Recent assignments</p>
+        <div class="card cert-assign-history">
+            ${history.map(h => `
+            <div class="cert-assign-history-row">
+                <div>
+                    <p class="cert-assign-history-name">${typeof escapeHtml === 'function' ? escapeHtml(h.label) : h.label}</p>
+                    <p class="cert-assign-history-meta">${h.issue || '—'}${h.expiry ? ` → ${h.expiry}` : ''}</p>
+                </div>
+                <span class="cert-assign-status cert-assign-status--${h.tone}">${h.status}</span>
+            </div>`).join('')}
+        </div>` : ''}
     </div>`;
 }
 
 function saveCertificateAssign() {
     const pid = STATE.propertyId ?? 0;
-    if (!validateFields([['certIssueDate', 'Issue date', v => v], ['certExpiryDate', 'Expiry date', v => v]])) return;
+    const typeDef = certAssignTypeDef(STATE.certAssignType || 'gas');
+    const isInspection = !!typeDef.inspection;
+    const rules = isInspection
+        ? [['certIssueDate', 'Inspection date', v => v]]
+        : [['certIssueDate', 'Issue date', v => v], ['certExpiryDate', 'Expiry date', v => v]];
+    if (!validateFields(rules)) return;
+
+    const issueDate = fieldVal('certIssueDate');
+    const expiryDate = isInspection ? '' : fieldVal('certExpiryDate');
+    const reference = fieldVal('certReference');
+    const notes = fieldVal('certNotes');
+
+    if (!isInspection) {
+        const issueD = new Date(issueDate);
+        const expiryD = new Date(expiryDate);
+        if (!Number.isNaN(issueD.getTime()) && !Number.isNaN(expiryD.getTime()) && expiryD < issueD) {
+            STATE.formErrors = { certExpiryDate: 'Expiry must be on or after issue date' };
+            toastError('Please fix the errors below');
+            render();
+            return;
+        }
+    }
+
     if (!AppStore.certHistory) AppStore.certHistory = {};
     if (!AppStore.certHistory[pid]) AppStore.certHistory[pid] = [];
-    const entry = {
-        type: STATE.certAssignType || 'gas',
-        issue: fieldVal('certIssueDate'),
-        expiry: fieldVal('certExpiryDate'),
-        status: fieldVal('certStatus') || 'Valid',
-        notes: fieldVal('certNotes') || '',
+
+    const status = isInspection ? 'Recorded' : certStatusFromExpiry(expiryDate).label;
+    const historyEntry = {
+        type: typeDef.id,
+        issue: issueDate,
+        expiry: expiryDate,
+        status,
+        reference,
+        notes,
         at: new Date().toLocaleDateString('en-GB'),
     };
-    AppStore.certHistory[pid].unshift(entry);
+    AppStore.certHistory[pid].unshift(historyEntry);
+
+    if (isInspection) {
+        if (!AppStore.inspections) AppStore.inspections = [];
+        AppStore.inspections.unshift({
+            id: AppStore.nextId(AppStore.inspections),
+            propertyId: pid,
+            type: 'Inspection',
+            date: issueDate,
+            rating: null,
+            photos: 0,
+            notes: notes || '',
+            report: reference || 'Inspection report.pdf',
+        });
+    } else {
+        if (!AppStore.complianceCerts) AppStore.complianceCerts = {};
+        const key = `${pid}-${typeDef.complianceId}`;
+        AppStore.complianceCerts[key] = {
+            certNumber: reference || `${typeDef.id.toUpperCase()}-${new Date().getFullYear()}`,
+            issueDate,
+            expiryDate,
+            issuedBy: notes ? notes.split('\n')[0].slice(0, 80) : '',
+            notes,
+        };
+        if (COMPLIANCE_ITEMS[typeDef.complianceId]) {
+            const expiryLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(expiryDate) : expiryDate;
+            COMPLIANCE_ITEMS[typeDef.complianceId][2] = expiryLabel || COMPLIANCE_ITEMS[typeDef.complianceId][2];
+        }
+        if (typeDef.complianceId === 7) {
+            const meta = AppStore.meta(pid);
+            if (!meta.info) meta.info = {};
+            meta.info.epcExpiry = expiryDate;
+        }
+        const p = PROPERTIES[pid];
+        if (p) p.compliance = true;
+        if (typeDef.docType) {
+            const issueLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(issueDate) || issueDate : issueDate;
+            const year = (expiryDate || issueDate || '').slice(0, 4);
+            AppStore.documents.push({
+                id: AppStore.nextId(AppStore.documents),
+                propertyId: pid,
+                type: typeDef.docType,
+                name: `${typeDef.docType}${year ? ` ${year}` : ''}`,
+                date: issueLabel,
+                shared: true,
+                signed: false,
+            });
+        }
+        if (typeof syncSmartReminders === 'function') syncSmartReminders(false);
+    }
+
     pushNotification({
         category: 'compliance', icon: 'shield', color: ['#ECFDF5', '#059669'],
-        title: 'Certificate recorded', desc: `${entry.type} · expires ${entry.expiry}`,
-        time: 'Just now', unread: true, screen: 'compliance-dashboard', opts: {},
+        title: isInspection ? 'Inspection recorded' : 'Certificate recorded',
+        desc: isInspection
+            ? `${typeDef.label} · ${typeof formatDisplayDate === 'function' ? formatDisplayDate(issueDate) : issueDate}`
+            : `${typeDef.label} · expires ${typeof formatDisplayDate === 'function' ? formatDisplayDate(expiryDate) : expiryDate}`,
+        time: 'Just now', unread: true, screen: 'property-detail', opts: { pid, tab: 'records', recordsView: 'compliance' },
     });
+    STATE.certAssignDraft = null;
     AppStore.save();
-    toast('Certificate saved');
-    go('property-detail', { propertyId: pid, tab: 'compliance' });
+    toast(isInspection ? 'Inspection saved' : 'Certificate saved');
+
+    const ret = STATE.certAssignReturn || { tab: 'records', recordsView: 'compliance' };
+    const goOpts = { propertyId: pid, tab: ret.tab };
+    if (ret.recordsView) goOpts.recordsView = ret.recordsView;
+    go('property-detail', goOpts);
 }
 
 function screenNotificationsListProduct() {
@@ -898,10 +1119,11 @@ function screenNotificationsListProduct() {
     return `
     <div class="screen-header">
         <div class="sub-header-row">
-            <button data-action="back" class="back-btn shrink-0"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-            <div class="min-w-0 flex-1 text-center">
-                <h1 class="sub-header-title">Notifications</h1>
-                ${unread ? `<p class="sub-header-sub">${unread} unread</p>` : ''}
+            <div class="sub-header-left">
+                <button data-action="back" class="back-btn shrink-0"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="min-w-0">
+                    <h1 class="sub-header-title">Notifications</h1>
+                </div>
             </div>
             <button type="button" data-action="mark-all-read" class="notif-mark-read">Mark all read</button>
         </div>
@@ -976,15 +1198,18 @@ function contractorFilterJobsProduct() {
 
 function openAddDocumentFolder(folderId, propertyId) {
     if (propertyId != null) STATE.propertyId = propertyId;
+    STATE.docFolderId = folderId;
     const type = docTypeForFolder(folderId);
-    if (typeof openAddDocumentSlot === 'function') openAddDocumentSlot(type);
-    else if (typeof openAddDocumentFlow === 'function') openAddDocumentFlow();
+    if (typeof openAddDocumentSlot === 'function') {
+        openAddDocumentSlot(type, null, { folderId, propertyId, skipType: true });
+    } else if (typeof openAddDocumentFlow === 'function') {
+        openAddDocumentFlow({ folderId, propertyId });
+    }
 }
 
 function bindProductEvents() {
     const app = document.getElementById('app');
-    if (!app || app._productBound) return;
-    app._productBound = true;
+    if (!app) return;
     app.querySelectorAll('[data-action="toggle-doc-folder"]').forEach(el => {
         el.onclick = () => {
             const key = `${el.dataset.ctx}-${el.dataset.folder}`;
@@ -1014,13 +1239,21 @@ function bindProductEvents() {
         el.onclick = () => openAddDocumentFolder(el.dataset.folder, +el.dataset.pid);
     });
     app.querySelectorAll('[data-action="open-add-document-flow"]').forEach(el => {
-        el.onclick = () => { if (typeof openAddDocumentFlow === 'function') openAddDocumentFlow(); };
+        el.onclick = () => {
+            if (typeof openAddDocumentFlow !== 'function') return;
+            const pid = el.dataset.pid ? +el.dataset.pid : undefined;
+            openAddDocumentFlow(pid != null ? { propertyId: pid } : {});
+        };
     });
-    app.querySelectorAll('[data-charge-type]').forEach(el => {
-        el.onclick = () => { STATE.chargeType = el.dataset.chargeType; render(); };
+    app.querySelectorAll('[data-charge-type-select]').forEach(el => {
+        el.onchange = () => {
+            STATE.chargeType = el.value || 'utility';
+            if (STATE.chargeType !== 'custom') STATE.chargeCustomName = '';
+            render();
+        };
     });
-    app.querySelectorAll('[data-charge-target]').forEach(el => {
-        el.onchange = () => { STATE.chargeTarget = el.dataset.chargeTarget; render(); };
+    app.querySelectorAll('[data-charge-target-select]').forEach(el => {
+        el.onchange = () => { STATE.chargeTarget = el.value || 'lead'; render(); };
     });
     app.querySelectorAll('[data-action="save-charge"]').forEach(el => { el.onclick = saveChargeProduct; });
     app.querySelectorAll('[data-action="toggle-rent-reminder"]').forEach(el => {
@@ -1036,7 +1269,7 @@ function bindProductEvents() {
         el.onclick = confirmSendPaymentReminder;
     });
     app.querySelectorAll('[data-cert-assign-type]').forEach(el => {
-        el.onclick = () => { STATE.certAssignType = el.dataset.certAssignType; render(); };
+        el.onclick = () => { captureCertAssignDraft(); STATE.certAssignType = el.dataset.certAssignType; render(); };
     });
     app.querySelectorAll('[data-action="save-cert-assign"]').forEach(el => { el.onclick = saveCertificateAssign; });
     app.querySelectorAll('[data-notif-unread-only]').forEach(el => {
