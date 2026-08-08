@@ -1024,11 +1024,11 @@ function renderTenantContactQuickActions(tenantId) {
         ['file-text', 'View lease', leaseAttrs, 'tenant-v2-quick-icon--lease'],
     ];
     return `
-        <div class="tenant-v2-quick-grid">
+        <div class="tenant-v2-quick-grid tenant-v2-quick-grid--3">
             ${actions.map(([ic, label, attrs, tone]) => `
             <button type="button" ${attrs} class="tenant-v2-quick-btn">
                 <span class="tenant-v2-quick-icon ${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></span>
-                <span>${label}</span>
+                <span class="tenant-v2-quick-label">${label}</span>
             </button>`).join('')}
         </div>`;
 }
@@ -7031,21 +7031,27 @@ function flatDetailPhotoList(propertyId, unit) {
     return [getFlatCoverPhoto(propertyId, unit)];
 }
 
-function flatDetailSpecChips(u) {
-    const specs = [];
-    if (u.beds) specs.push({ icon: 'bed-double', text: `${u.beds} Bed${u.beds === 1 ? '' : 's'}` });
-    if (u.baths) specs.push({ icon: 'bath', text: `${u.baths} Bath${u.baths === 1 ? '' : 's'}` });
-    if (u.sqft) specs.push({ icon: 'ruler', text: `${u.sqft} sqft` });
-    const floor = flatFloorLine(u);
-    if (floor) specs.push({ icon: 'layers', text: floor });
-    if (u.furnished) specs.push({ icon: 'sofa', text: u.furnished });
-    if (!specs.length) return '';
+function flatDetailSpecChips(u, specs = null) {
+    const items = specs || [];
+    if (!items.length) return '';
     return `
     <div class="flat-dt-spec-chips">
-        ${specs.map((s, i) => `
+        ${items.map((s, i) => `
         ${i ? '<span class="flat-dt-spec-dot" aria-hidden="true">·</span>' : ''}
         <span class="flat-dt-spec"><i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>${escapeHtml(s.text)}</span>`).join('')}
     </div>`;
+}
+
+function flatDetailSpecItems(u) {
+    const primary = [];
+    if (u.beds) primary.push({ icon: 'bed-double', text: `${u.beds} Bed${u.beds === 1 ? '' : 's'}` });
+    if (u.baths) primary.push({ icon: 'bath', text: `${u.baths} Bath${u.baths === 1 ? '' : 's'}` });
+    if (u.sqft) primary.push({ icon: 'ruler', text: `${u.sqft} sqft` });
+    const secondary = [];
+    const floor = flatFloorLine(u);
+    if (floor) secondary.push({ icon: 'layers', text: floor });
+    if (u.furnished) secondary.push({ icon: 'sofa', text: u.furnished });
+    return { primary, secondary };
 }
 
 function flatDetailFinanceRow(u, tenancy) {
@@ -7086,16 +7092,23 @@ function flatDetailBuildingMeta(propertyId, u) {
 }
 
 function flatDetailSpecSection(propertyId, u) {
-    const chips = flatDetailSpecChips(u);
+    const { primary, secondary } = flatDetailSpecItems(u);
+    const primaryChips = flatDetailSpecChips(u, primary);
+    const secondaryChips = flatDetailSpecChips(u, secondary);
     const extra = flatDetailExtraLine(propertyId, u);
-    if (!chips && !extra) return '';
-    return `<div class="flat-dt-spec-row flat-dt-spec-row--unit">${chips}${extra}</div>`;
+    if (!primaryChips && !secondaryChips && !extra) return '';
+    return `
+    <div class="flat-dt-spec-stack">
+        ${primaryChips ? `<div class="flat-dt-spec-line">${primaryChips}</div>` : ''}
+        ${secondaryChips ? `<div class="flat-dt-spec-line flat-dt-spec-line--secondary">${secondaryChips}</div>` : ''}
+        ${extra}
+    </div>`;
 }
 
 function flatDetailExtraLine(propertyId, u) {
     const meta = flatDetailBuildingMeta(propertyId, u);
     if (!meta) return '';
-    return `<p class="flat-dt-extra-line">${meta}</p>`;
+    return `<p class="flat-dt-extra-line flat-dt-building-meta-line">${meta}</p>`;
 }
 
 function flatDetailActivityEvents(propertyId, unit) {
@@ -8273,8 +8286,7 @@ function screenDashboardEnhanced() {
         <div class="dash-brand">
             <img src="${IMG.onboarding.splashLogo}" alt="" class="dash-brand-logo">
             <div class="dash-brand-text">
-                <p class="dash-brand-name">Landlord HQ</p>
-                <p class="dash-brand-tag">Manage. Track. Grow.</p>
+                <p class="dash-brand-name">LandlordHQ</p>
             </div>
         </div>
         <button data-go="notifications-list" class="top-icon-btn relative">
@@ -8298,11 +8310,9 @@ function screenDashboardEnhanced() {
                 <button data-go="properties" class="dash-hero-stat"><strong>${stats.occupancy}%</strong><span>Occupied</span></button>
             </div>
         </div>
-        ${renderRentCollectionCard()}
-        ${renderCashFlowCard()}
-        ${dashAttentionStrip()}
-        <div class="dash-quick dash-quick--grid">
-            ${[['circle-check','Record rent','mark-rent-received','success'],['megaphone','Send announcement','broadcast-notices','indigo'],['wrench','Maintenance','maintenance','warning'],['wallet','Finance','financial','primary']].map(([ic,l,go,tone])=>`
+        ${renderDashFinancialOverview(finStats)}
+        <div class="dash-quick">
+            ${[['megaphone','Announcement','broadcast-notices','indigo'],['wrench','Maintenance','maintenance','warning'],['wallet','Finance','financial','primary']].map(([ic,l,go,tone])=>`
             <button data-go="${go}" class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${l}</span>
