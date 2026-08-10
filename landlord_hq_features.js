@@ -7925,15 +7925,15 @@ function screenFlatDetail() {
     const tabBadges = flatDetailTabBadges(propertyId, unit, pendingInvite);
     const peopleCtx = { occ, tenancy, members, count, pendingInvite };
     const rentAlert = renderFlatRentAlert(propertyId, unit);
-    const unpaid = invoicesForUnit(propertyId, unit).filter(i => i.status !== 'Paid');
+    const unpaidRent = unpaidRentForUnit(propertyId, unit);
     const overviewFooter = flatTab === 'overview' ? `
         <footer class="flat-dt-footer flat-dt-footer--actions">
             <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-action-btn flat-dt-action-btn--primary">
                 <i data-lucide="user-plus"></i><span>Add Tenant</span>
             </button>
-            <button type="button" data-go="mark-rent-received"${unpaid.length === 1 ? ` data-iid="${unpaid[0].id}"` : ''} class="flat-dt-action-btn flat-dt-action-btn--outline">
-                <i data-lucide="circle-check"></i><span>Record Payment</span>
-            </button>
+            ${unpaidRent.length ? `<button type="button" data-go="mark-rent-received"${unpaidRent.length === 1 ? ` data-iid="${unpaidRent[0].id}"` : ''} class="flat-dt-action-btn flat-dt-action-btn--outline">
+                <i data-lucide="circle-check"></i><span>Record rent</span>
+            </button>` : ''}
         </footer>` : `
         <footer class="flat-dt-footer">
             <button type="button" data-go="edit-flat" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-edit-btn">
@@ -11346,14 +11346,39 @@ ${rows.map(t => `<tr><td>${t.date || '—'}</td><td>${t.tenant || '—'}</td><td
     toast('Rent report downloaded');
 }
 
+function transactionMatchesCategory(t, category = STATE.txnCategory || 'all') {
+    if (category === 'all') return true;
+    const inv = INVOICES.find(i => i.id === t.iid);
+    if (!inv) return true;
+    if (category === 'rent') return isRentInvoice(inv);
+    if (category === 'charges') return isLandlordExtraCharge(inv) || isMaintenanceBill(inv);
+    return true;
+}
+
+function renderTxnCategoryTabs() {
+    const cat = STATE.txnCategory || 'all';
+    const tabs = [
+        ['all', 'All'],
+        ['rent', 'Rent'],
+        ['charges', 'Charges'],
+    ];
+    return `
+    <div class="fin-segments fin-category-tabs mb-3">
+        ${tabs.map(([k, label]) => `
+        <button type="button" data-txn-category="${k}" class="fin-segment ${cat === k ? 'active' : ''}">
+            <span class="fin-segment-label">${label}</span>
+        </button>`).join('')}
+    </div>`;
+}
+
 function screenTransactionHistoryEnhanced() {
     if (STATE.userRole === 'tenant') return screenTenantPaymentHistory();
     syncTransactionsFromInvoices();
     const f = STATE.invoiceFilter || 'all';
+    const txnCat = STATE.txnCategory || 'all';
     const statusMap = { pending: 'Pending', paid: 'Paid', overdue: 'Overdue' };
-    const filtered = f === 'all'
-        ? [...TRANSACTIONS]
-        : TRANSACTIONS.filter(t => t.status === statusMap[f]);
+    const base = f === 'all' ? [...TRANSACTIONS] : TRANSACTIONS.filter(t => t.status === statusMap[f]);
+    const filtered = base.filter(t => transactionMatchesCategory(t, txnCat));
     const counts = {
         all: TRANSACTIONS.length,
         pending: TRANSACTIONS.filter(t => t.status === 'Pending').length,
@@ -16633,6 +16658,7 @@ function goFeature(screen, opts = {}) {
             STATE.tenancyPrefill = null;
         }
     } else if (screen === 'mark-rent-received') {
+        STATE.rentReceiveCategory = opts.rentReceiveCategory || (STATE.financialCategory === 'charges' ? 'charges' : 'rent');
         if (from === 'flat-rent-history' || from === 'flat-detail') {
             STATE.rentReturnScreen = from;
             STATE.rentReceivePropertyFilter = STATE.propertyId;
