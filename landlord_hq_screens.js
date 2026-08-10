@@ -106,6 +106,7 @@ const STATE = {
     inspectionPrefill: null,
     inspectionId: 0,
     photoMenuIdx: null,
+    floorPlanMenuIdx: null,
     actionMenuKey: null,
     inviteReturn: null,
     inviteStep: 1,

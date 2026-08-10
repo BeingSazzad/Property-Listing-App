@@ -2177,6 +2177,17 @@ const photoActionSheet = () => {
     </div>`;
 };
 
+const floorPlanActionSheet = () => {
+    if (STATE.floorPlanMenuIdx == null || STATE.screen !== 'property-floor-plans') return '';
+    const idx = STATE.floorPlanMenuIdx;
+    return `<div class="modal-overlay open" data-action="close-floor-plan-menu">
+        <div class="photo-action-sheet">
+            <button type="button" data-action="remove-floor-plan" data-idx="${idx}" class="photo-action-item danger">Remove floor plan</button>
+            <button type="button" data-action="close-floor-plan-menu" class="photo-action-item cancel">Cancel</button>
+        </div>
+    </div>`;
+};
+
 const renameDocModal = () => {
     if (STATE.renameDocId == null) return '';
     const doc = AppStore.documents.find(d => d.id === STATE.renameDocId);
@@ -4167,6 +4178,21 @@ function renderPropertyOverviewDetails(propertyId) {
                     <img src="${src}" alt="">
                     ${i === 0 ? '<span class="photo-cover-badge">COVER</span>' : ''}
                 </div>`).join('')}
+            </button>
+        </div>
+        <div class="${buildingSectionCardClass()}">
+            ${renderBuildingSectionHead('Floor Plans', `<span class="building-section-meta">${(meta.floorPlans || []).length} plan${(meta.floorPlans || []).length === 1 ? '' : 's'}</span>`)}
+            <button type="button" data-go="property-floor-plans" data-pid="${propertyId}" class="building-section-tap building-info-tap" aria-label="Manage floor plans">
+                <div class="building-info-rows">
+                    <div class="building-info-row">
+                        <div class="building-info-row-left">
+                            <i data-lucide="layout-grid" class="w-4 h-4 text-[#94A3B8]"></i>
+                            <span class="building-info-row-label">Floor plans</span>
+                        </div>
+                        <span class="building-info-row-value">${(meta.floorPlans || []).length ? `${meta.floorPlans.length} uploaded` : 'Add floor plans'}</span>
+                    </div>
+                </div>
+                <span class="building-section-chevron"><i data-lucide="chevron-right" class="w-4 h-4"></i></span>
             </button>
         </div>
         <div class="${buildingSectionCardClass()}">
@@ -6634,24 +6660,32 @@ function certTileSummary(row) {
 
 function renderBuildingCertTiles(propertyId) {
     const rows = propertyComplianceCertRows(propertyId);
+    const allDocs = AppStore.docsForProperty(propertyId);
+    const folderCount = (folderId) => (typeof docsForFolder === 'function' ? docsForFolder(allDocs, folderId).length : 0);
     const tileDefs = [
         { folderId: 'gas', cid: 0, label: 'Gas (CP12)', icon: 'flame', bg: '#FEE2E2', color: '#DC2626' },
         { folderId: 'eicr', cid: 1, label: 'EICR', icon: 'zap', bg: '#FEF3C7', color: '#D97706' },
         { folderId: 'epc', cid: 7, label: 'EPC', icon: 'leaf', bg: '#ECFDF5', color: '#16A34A' },
+        { folderId: 'deposit', label: 'Deposit', icon: 'shield', bg: '#DBEAFE', color: '#2563EB', folderOnly: true },
+        { folderId: 'license', label: 'Property License', icon: 'badge-check', bg: '#EDE9FE', color: '#7C3AED', folderOnly: true, optional: true },
         { folderId: 'insurance', cid: 5, label: 'Insurance', icon: 'shield-check', bg: '#EEF2FF', color: '#4338CA' },
     ];
     const toneClass = { ok: 'cert-tile--ok', warn: 'cert-tile--warn', bad: 'cert-tile--bad' };
     return `
     <div class="cert-tile-grid">
         ${tileDefs.map(def => {
-            const row = rows[def.cid];
-            const st = row?.st || { tone: 'bad', label: 'Not set' };
+            const row = def.cid != null ? rows[def.cid] : null;
+            const count = def.folderOnly ? folderCount(def.folderId) : 0;
+            const st = row?.st || (def.folderOnly
+                ? (count ? { tone: 'ok', label: `${count} on file` } : { tone: 'bad', label: def.optional ? 'Optional' : 'Not set' })
+                : { tone: 'bad', label: 'Not set' });
+            const meta = row?.displayExp ? certTileSummary(row) : (def.folderOnly && count ? `${count} file${count === 1 ? '' : 's'}` : st.label);
             return `
             <button type="button" data-go="property-doc-folder" data-folder="${def.folderId}" data-pid="${propertyId}" class="cert-tile ${toneClass[st.tone] || ''}">
                 <span class="cert-tile-icon" style="background:${def.bg};color:${def.color}"><i data-lucide="${def.icon}" class="w-5 h-5"></i></span>
                 <span class="cert-tile-body">
                     <span class="cert-tile-label">${def.label}</span>
-                    <span class="cert-tile-meta">${certTileSummary(row)}</span>
+                    <span class="cert-tile-meta">${meta}</span>
                 </span>
                 <span class="cert-tile-dot cert-tile-dot--${st.tone}" aria-hidden="true"></span>
             </button>`;
@@ -13579,6 +13613,30 @@ function screenPropertyPhotos() {
     </div>`;
 }
 
+function screenPropertyFloorPlans() {
+    const meta = AppStore.meta(STATE.propertyId);
+    const plans = meta.floorPlans || [];
+    return `${topBar('Floor Plans', { back: true, sub: 'Upload floor plan images for this property.' })}
+    <div class="screen-content screen-enter photo-gallery-page">
+        ${plans.length ? `<div class="photo-gallery-grid">
+            ${plans.map((src, i) => `
+            <div class="photo-gallery-card">
+                <img src="${src}" class="photo-gallery-img" alt="">
+                <button type="button" data-action="floor-plan-menu" data-idx="${i}" class="photo-gallery-menu" title="Floor plan options" aria-label="Floor plan options">
+                    <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                </button>
+            </div>`).join('')}
+        </div>` : `<p class="building-empty-copy mb-3">No floor plans yet. Add images of your property layout.</p>`}
+        <div class="photo-gallery-footer">
+            <button type="button" data-action="upload-floor-plan" class="btn-primary photo-add-btn w-full">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+                <span>Add floor plan</span>
+            </button>
+            <p class="photo-gallery-hint">You can select multiple images at once</p>
+        </div>
+    </div>`;
+}
+
 function isCustomApplianceName(name) {
     if (!name || name === 'Other') return true;
     return !APPLIANCE_NAME_OPTIONS.slice(0, -1).includes(name);
@@ -15467,7 +15525,7 @@ const FEATURE_SCREENS = [
     'broadcast-notices', 'send-broadcast', 'broadcast-detail',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
-    'property-photos', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'tenancy-detail', 'edit-tenancy-deposit',
+    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'tenancy-detail', 'edit-tenancy-deposit',
     'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'global-search', 'contractors', 'invite-contractor', 'contractor-invite-sent', 'inspection-detail',
 ];
 
