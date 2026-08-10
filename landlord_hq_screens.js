@@ -126,9 +126,11 @@ const STATE = {
     rentReceivePropertyFilter: null,
     rentRollFilter: 'all',
     rentRollPropertyFilter: null,
+    financialCategory: 'all',
     rentReminderIds: [],
     rentReminderChannel: 'both',
     txnReturnScreen: null,
+    txnCategory: 'all',
     flatReturn: null,
     navStack: [],
     drawerReturnScreen: null,
@@ -778,6 +780,7 @@ const PROPERTY_HUB_BACK_OPTS = {
     'property-doc-folder': { tab: 'records', recordsView: 'documents' },
     'certificate-assign': { tab: 'records', recordsView: 'compliance' },
     'property-photos': { tab: 'info' },
+    'property-floor-plans': { tab: 'info' },
     'property-info': { tab: 'info' },
     'property-alarms': { tab: 'info' },
     'property-appliances': { tab: 'info' },
@@ -2044,8 +2047,8 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
-    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail') {
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
     if (screen === 'certificate-assign') {
@@ -2181,6 +2184,7 @@ function navigateBackFallback() {
         'create-invoice': 'financial', 'mark-rent-received': STATE.rentReturnScreen || 'financial', 'pay-contractor': 'financial',
         'share-document': 'property-detail',
         'property-photos': 'property-detail',
+        'property-floor-plans': 'property-detail',
         'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
         'property-utilities': 'property-detail', 'property-parking': 'property-detail',
         'property-info': 'property-detail', 'unit-utilities': 'property-detail',
@@ -2221,9 +2225,9 @@ function navigateBackFallback() {
         'create-tenancy': 'tenant', 'tenant-invite-sent': 'tenant',
         'conduct-inspection': 'inspection', 'share-document': 'documents',
         'inspection-detail': 'inspection',
-        'property-photos': 'info', 'property-alarms': 'info', 'property-appliances': 'info',
+        'property-photos': 'info', 'property-floor-plans': 'info', 'property-alarms': 'info', 'property-appliances': 'info',
         'property-utilities': 'info', 'property-parking': 'info', 'property-info': 'info',
-        'unit-utilities': 'units', 'edit-flat': 'units',
+        'unit-utilities': 'units', 'edit-flat': 'units', 'flat-keys': 'units',
     };
     if (STATE.screen === 'edit-reminder') {
         navigateBackFromEditReminder();
@@ -2261,7 +2265,7 @@ function navigateBackFallback() {
     if (STATE.screen === 'edit-preference') opts.prefKey = STATE.prefKey;
     if (['edit-payment-method'].includes(STATE.screen)) opts.paymentId = STATE.paymentId;
     if (STATE.screen === 'assign-contractor') opts.maintId = STATE.maintId;
-    if (STATE.screen === 'flat-detail' || STATE.screen === 'flat-members' || STATE.screen === 'tenancy-detail' || STATE.screen === 'edit-flat' || STATE.screen === 'flat-rent-history') {
+    if (STATE.screen === 'flat-detail' || STATE.screen === 'flat-members' || STATE.screen === 'tenancy-detail' || STATE.screen === 'edit-flat' || STATE.screen === 'flat-rent-history' || STATE.screen === 'flat-keys') {
         opts.unit = STATE.selectedUnit;
     }
     if (STATE.screen === 'invite-tenant' || STATE.screen === 'tenant-invite-sent') {
@@ -4738,7 +4742,8 @@ function screenInvoiceDetail() {
             <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-secondary py-3 text-[13px]">Download PDF</button>
             ${!paid ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Record payment</button>` : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
         </div>
-        ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}`}
+        ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}
+        ${!isTenant && paid ? `<button type="button" data-action="undo-rent-payment" data-iid="${inv.id}" class="btn-danger-outline mt-3">Undo payment</button>` : ''}`}
     </div>`;
 }
 
@@ -5372,6 +5377,7 @@ function handleDelegatedAction(e, el) {
         case 'clear-rent-receive-place-filters': return run(() => clearRentReceivePlaceFilters());
         case 'clear-rent-roll-property-filter': return run(() => clearRentRollPropertyFilter());
         case 'mark-invoice-paid': return run(() => { if (typeof markInvoicePaid === 'function') markInvoicePaid(+el.dataset.iid); });
+        case 'undo-rent-payment': return run(() => { if (typeof undoInvoicePayment === 'function') undoInvoicePayment(+el.dataset.iid); });
         case 'toggle-rent-receive': return run(() => { e.stopPropagation(); if (typeof toggleRentReceiveInvoice === 'function') toggleRentReceiveInvoice(+el.dataset.iid); });
         case 'toggle-rent-receive-group': return run(() => { e.stopPropagation(); if (typeof toggleRentReceiveGroup === 'function') toggleRentReceiveGroup(+el.dataset.pid); });
         case 'toggle-rent-receive-all': return run(() => { if (typeof toggleRentReceiveAll === 'function') toggleRentReceiveAll(); });
