@@ -356,6 +356,8 @@ const AppStore = {
         if (!this.propertyMeta[pid].utilities) this.propertyMeta[pid].utilities = {};
         if (!this.propertyMeta[pid].parking) this.propertyMeta[pid].parking = {};
         if (!Array.isArray(this.propertyMeta[pid].photos)) this.propertyMeta[pid].photos = [IMG.props[pid]];
+        if (!Array.isArray(this.propertyMeta[pid].floorPlans)) this.propertyMeta[pid].floorPlans = [];
+        migrateUtilityKeys(this.propertyMeta[pid]);
         return this.propertyMeta[pid];
     },
     docsForProperty(pid) { return this.documents.filter(d => d.propertyId === pid); },
@@ -1648,12 +1650,68 @@ const UTILITY_PROVIDER_SUGGESTIONS = {
 
 const UTILITY_CATALOG = [
     { key: 'gas', label: 'Gas', icon: 'flame' },
-    { key: 'electric', label: 'Electric', icon: 'zap' },
+    { key: 'electric', label: 'Electricity', icon: 'zap' },
     { key: 'water', label: 'Water', icon: 'droplets' },
-    { key: 'broadband', label: 'Broadband', icon: 'wifi' },
-    { key: 'oil', label: 'Oil / LPG', icon: 'fuel' },
-    { key: 'heating', label: 'Communal heating', icon: 'thermometer-sun' },
+    { key: 'wifi', label: 'Wi-Fi', icon: 'wifi' },
 ];
+
+const REMINDER_TIMING_OPTIONS = [
+    { id: '30', label: '30 days before expiry' },
+    { id: '60', label: '60 days before expiry' },
+    { id: '90', label: '90 days before expiry' },
+    { id: 'custom', label: 'Custom reminder date' },
+];
+
+function normalizeUtilityEntry(val) {
+    if (!val) return null;
+    if (typeof val === 'object') return val;
+    return { provider: String(val) };
+}
+
+function getUtilityEntry(meta, key) {
+    const raw = meta?.utilities?.[key];
+    return normalizeUtilityEntry(raw);
+}
+
+function migrateUtilityKeys(meta) {
+    if (!meta.utilities) meta.utilities = {};
+    if (meta.utilities.broadband != null && meta.utilities.wifi == null) {
+        meta.utilities.wifi = meta.utilities.broadband;
+        delete meta.utilities.broadband;
+    }
+    UTILITY_CATALOG.forEach(u => {
+        const entry = meta.utilities[u.key];
+        if (entry != null && typeof entry === 'string') {
+            meta.utilities[u.key] = { provider: entry };
+        }
+    });
+    if (meta.utilities.councilTax && !meta.utilities.council) {
+        meta.utilities.council = { name: meta.info?.councilTax || '', notes: '' };
+    }
+}
+
+function computeReminderDate(expiry, timing, customDate) {
+    if (!expiry) return '';
+    if (timing === 'custom' && customDate) return customDate;
+    const days = parseInt(timing, 10) || 30;
+    const exp = new Date(expiry);
+    if (Number.isNaN(exp.getTime())) return '';
+    exp.setDate(exp.getDate() - days);
+    return exp.toISOString().slice(0, 10);
+}
+
+function applianceSummaryItems(appliances) {
+    const counts = {};
+    (appliances || []).forEach(a => {
+        const name = a.name || 'Appliance';
+        counts[name] = (counts[name] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({
+        icon: applianceIcon(name),
+        label: count > 1 ? `${count} ${name}s` : `1 ${name}`,
+        sub: (appliances || []).find(a => a.name === name)?.brand || '',
+    }));
+}
 
 const APPLIANCE_CATALOG = [
     { name: 'Boiler', icon: 'flame' },
@@ -1710,7 +1768,7 @@ function propertyParkingSummary(meta) {
 }
 
 function alarmHasData(alarm) {
-    return !!(alarm && (alarm.location || alarm.expiry || alarm.lastCheck || alarm.name));
+    return !!(alarm && (alarm.location || alarm.expiry || alarm.makeModel || alarm.description || alarm.name));
 }
 
 function propertyCustomAlarmItems(meta) {
@@ -1726,13 +1784,22 @@ function propertyCustomAlarmItems(meta) {
 }
 
 function propertyUtilityDisplayItems(meta) {
-    return UTILITY_CATALOG
-        .filter(u => meta.utilities?.[u.key])
-        .map(u => ({
-            icon: u.icon,
-            label: u.label,
-            sub: meta.utilities[u.key] || '',
-        }));
+    migrateUtilityKeys(meta);
+    const items = UTILITY_CATALOG
+        .filter(u => getUtilityEntry(meta, u.key))
+        .map(u => {
+            const entry = getUtilityEntry(meta, u.key);
+            return {
+                icon: u.icon,
+                label: u.label,
+                sub: entry?.provider || '',
+            };
+        });
+    const council = meta.utilities?.council;
+    if (council?.name) {
+        items.push({ icon: 'landmark', label: 'Council', sub: council.name });
+    }
+    return items;
 }
 
 function renderBuildingParkingBlock(meta, propertyId) {
@@ -1820,24 +1887,35 @@ function utilityProviderPlaceholder(key) {
 }
 
 function renderUtilityProviderFields(meta) {
+    migrateUtilityKeys(meta);
     const utilities = meta.utilities || {};
-    return UTILITY_CATALOG
+    const utilityCards = UTILITY_CATALOG
         .filter(u => utilities[u.key] != null)
         .map(u => {
-            const suggestions = UTILITY_PROVIDER_SUGGESTIONS[u.key] || [];
-            const datalistId = `util-suggest-${u.key}`;
+            const entry = getUtilityEntry(meta, u.key) || {};
             return `<div class="utility-provider-card card p-4 mb-2">
                 <div class="utility-provider-head">
                     <span class="feature-pick-chip-icon"><i data-lucide="${u.icon}" class="w-4 h-4"></i></span>
                     <p class="utility-provider-title">${u.label}</p>
                 </div>
-                <div>
-                    <label class="form-label">Provider name</label>
-                    <input data-field="util_${u.key}" class="form-input" list="${datalistId}" value="${escapeHtml(utilities[u.key] || '')}" placeholder="${utilityProviderPlaceholder(u.key)}">
-                    ${suggestions.length ? `<datalist id="${datalistId}">${suggestions.map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>` : ''}
-                </div>
+                <div><label class="form-label">Provider name</label><input data-field="util_${u.key}_provider" class="form-input" value="${escapeHtml(entry.provider || '')}" placeholder="${utilityProviderPlaceholder(u.key)}"></div>
+                <div><label class="form-label">Meter number</label><input data-field="util_${u.key}_meter" class="form-input" value="${escapeHtml(entry.meterNumber || '')}" placeholder="e.g. MPAN / MPRN"></div>
+                <div><label class="form-label">Meter location</label><input data-field="util_${u.key}_location" class="form-input" value="${escapeHtml(entry.meterLocation || '')}" placeholder="e.g. Under stairs cupboard"></div>
+                <div><label class="form-label">Phone number</label><input data-field="util_${u.key}_phone" type="tel" class="form-input" value="${escapeHtml(entry.phone || '')}" placeholder="Provider contact"></div>
+                <div><label class="form-label">Meter picture</label><input data-field="util_${u.key}_picture" class="form-input" value="${escapeHtml(entry.meterPicture || '')}" placeholder="Photo reference or filename"></div>
             </div>`;
         }).join('');
+    const council = utilities.council || {};
+    const councilCard = `
+    <div class="utility-provider-card card p-4 mb-2">
+        <div class="utility-provider-head">
+            <span class="feature-pick-chip-icon"><i data-lucide="landmark" class="w-4 h-4"></i></span>
+            <p class="utility-provider-title">Council</p>
+        </div>
+        <div><label class="form-label">Council name</label><input data-field="util_council_name" class="form-input" value="${escapeHtml(council.name || '')}" placeholder="e.g. Westminster City Council"></div>
+        <div><label class="form-label">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></label><textarea data-field="util_council_notes" class="form-input min-h-[72px] resize-none" placeholder="Account reference, contact details…">${escapeHtml(council.notes || '')}</textarea></div>
+    </div>`;
+    return `${utilityCards}${councilCard}`;
 }
 
 function escapeHtml(s) {
@@ -2510,7 +2588,6 @@ function fieldVal(key) {
 }
 
 const INVENTORY_LEGACY_ROOM_SLUGS = ['kitchen-0', 'reception-0', 'bedroom-0', 'bathroom-0', 'hallway-0'];
-const INVENTORY_CONDITIONS = ['Good', 'Fair', 'Poor', 'Needs repair'];
 
 const INVENTORY_ROOM_TEMPLATES = {
     Kitchen: ['Oven / hob', 'Fridge freezer', 'Microwave', 'Extractor fan', 'Worktops'],
@@ -2599,9 +2676,12 @@ function inventoryRoomName(propertyId, roomRef) {
     return inventoryRoomMeta(propertyId, roomRef).name;
 }
 
+function inventoryItemName(item) {
+    return Array.isArray(item) ? (item[0] || '') : String(item || '');
+}
+
 function getDefaultItemsForRoom(roomName) {
-    const labels = INVENTORY_ROOM_TEMPLATES[roomName] || ['General fixture'];
-    return labels.map(label => [label, 'Good']);
+    return INVENTORY_ROOM_TEMPLATES[roomName] || ['General fixture'];
 }
 
 function ensureInventoryRoom(pid, roomRef) {
@@ -2609,13 +2689,17 @@ function ensureInventoryRoom(pid, roomRef) {
     const key = inventoryKey(pid, meta.slug);
     if (!AppStore.inventory[key]) {
         AppStore.inventory[key] = {
-            condition: 'Good',
             notes: '',
             items: getDefaultItemsForRoom(meta.template),
             photos: [],
         };
-    } else if (!AppStore.inventory[key].items?.length) {
-        AppStore.inventory[key].items = getDefaultItemsForRoom(meta.template);
+    } else {
+        if (AppStore.inventory[key].items?.length) {
+            AppStore.inventory[key].items = AppStore.inventory[key].items.map(inventoryItemName);
+        } else {
+            AppStore.inventory[key].items = getDefaultItemsForRoom(meta.template);
+        }
+        delete AppStore.inventory[key].condition;
     }
     return AppStore.inventory[key];
 }
@@ -2675,14 +2759,13 @@ function inventoryConditionBadgeClass(condition) {
 function getInventoryRooms(propertyId = STATE.propertyId) {
     return getInventoryRoomCatalog(propertyId).map((room, i) => {
         const inv = ensureInventoryRoom(propertyId, room.slug);
-        const condition = inv.condition || 'Good';
         const photoCount = inv.photos?.length || 0;
         const itemCount = inv.items?.length || 0;
         const notes = inv.notes?.trim();
         const sub = notes
             ? truncateNote(notes, 52)
             : `${itemCount} item${itemCount === 1 ? '' : 's'}${photoCount ? ` · ${photoCount} photo${photoCount === 1 ? '' : 's'}` : ''}`;
-        return [room.name, condition, sub, room.icon, i];
+        return [room.name, sub, room.icon, i];
     });
 }
 
@@ -2734,20 +2817,20 @@ function renderPropertyInventoryTab(propertyId) {
         ${renderInventoryLayoutSection(propertyId)}
         <p class="screen-section-title mt-2">Room checklists</p>
         <div class="stack-sm">
-        ${rooms.map(([r, c, n, icon, idx]) => `
+        ${rooms.map(([r, n, icon, idx]) => `
         <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-4 flex items-center justify-between card-hover text-left">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-[18px] h-[18px] text-[#64748B]"></i></div>
                 <div class="min-w-0"><p class="text-[13px] font-semibold">${r}</p><p class="text-[11px] text-[#64748B] truncate">${n}</p></div>
             </div>
-            <span class="badge shrink-0 ${inventoryConditionBadgeClass(c)}">${c}</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>`).join('')}
         </div>
     </div>`;
 }
 
 function getInventoryItems(pid, rid) {
-    return ensureInventoryRoom(pid, rid).items.map(item => [...item]);
+    return ensureInventoryRoom(pid, rid).items.map(inventoryItemName);
 }
 
 function getInventoryNotes(pid, rid) {
@@ -2760,7 +2843,7 @@ function initInventoryEditItems() {
 
 function addInventoryEditItem(name = '') {
     if (!STATE.inventoryEditItems) initInventoryEditItems();
-    STATE.inventoryEditItems.push([name, 'Good']);
+    STATE.inventoryEditItems.push(name);
     render();
 }
 
@@ -2775,8 +2858,7 @@ function collectInventoryEditItemsFromDom() {
     const items = [];
     rows.forEach(row => {
         const name = row.querySelector('[data-inventory-item-name]')?.value?.trim();
-        const condition = row.querySelector('[data-inventory-item-condition]')?.value || 'Good';
-        if (name) items.push([name, condition]);
+        if (name) items.push(name);
     });
     return items.length ? items : (STATE.inventoryEditItems || []);
 }
@@ -2796,18 +2878,16 @@ function screenInventoryRoomEnhanced() {
     return `${topBar(room[0], { back: true })}
     <div class="screen-content screen-enter">
         <p class="form-helper">${inventoryLayoutSummaryLine(layout)}</p>
-        <div class="flex items-center justify-between mt-2">
-            <span class="badge ${inventoryConditionBadgeClass(room[1])}">Condition: ${room[1]}</span>
+        <div class="flex items-center justify-end mt-2">
             <button data-go="edit-inventory-room" data-room="${rid}" class="text-[13px] font-semibold text-[#2563EB]">Edit room</button>
         </div>
         ${photoPreview}
         <button type="button" data-action="upload-photo" class="btn-secondary w-full py-3 text-[13px]">+ Add room photos</button>
         <div class="card p-4 mt-3">
             <h3 class="text-[14px] font-bold mb-2">Items in this room</h3>
-            ${items.length ? items.map(([item, c]) => `
-            <div class="flex justify-between text-[13px] py-2 border-b border-[#F1F5F9] last:border-0 gap-3">
+            ${items.length ? items.map(item => `
+            <div class="text-[13px] py-2 border-b border-[#F1F5F9] last:border-0">
                 <span class="font-medium">${escapeHtml(item)}</span>
-                <span class="text-[#64748B] shrink-0">${escapeHtml(c)}</span>
             </div>`).join('') : `<p class="text-[13px] text-[#94A3B8]">No items yet — tap Edit room to add fixtures.</p>`}
         </div>
         <div class="card p-4 mt-3">
@@ -2827,21 +2907,14 @@ function screenEditInventoryRoomEnhanced() {
     const items = STATE.inventoryEditItems;
     return `${topBar('Edit ' + roomName, { back: true })}
     <div class="screen-content screen-enter">
-        ${uxTip('Set condition for each fixture. Add custom items for anything specific to this property.', roomName)}
-        <div class="form-field">
-            <label class="form-label">Overall room condition</label>
-            <select data-field="condition" class="form-input form-select">${INVENTORY_CONDITIONS.map(c =>
-                `<option ${room[1] === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
-        </div>
+        ${uxTip('Add fixtures and notes for this room. Upload photos from the room view.', roomName)}
         ${formTextarea('Room notes', getInventoryNotes(STATE.propertyId, rid), 'Scratches, stains, missing keys…', 'roomNotes')}
         <p class="screen-section-title">Items</p>
         <div class="stack-sm">
-        ${items.map(([item, c], i) => `
+        ${items.map((item, i) => `
         <div class="card p-3 inventory-item-row" data-inventory-item-row>
             <div class="flex items-center gap-2">
                 <input type="text" data-inventory-item-name class="form-input flex-1 text-[13px]" value="${escapeHtml(item)}" placeholder="Item name">
-                <select data-inventory-item-condition class="form-input form-select w-[110px] py-2 text-[12px]">${INVENTORY_CONDITIONS.map(opt =>
-                    `<option ${c === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>
                 <button type="button" data-action="remove-inventory-item" data-item-idx="${i}" class="inventory-item-remove" aria-label="Remove item"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
         </div>`).join('')}
@@ -4033,11 +4106,13 @@ function renderPropertyOverviewDetails(propertyId) {
     const photoCount = meta.photos?.length || 0;
     const photos = meta.photos?.length ? meta.photos : [IMG.props[propertyId]];
     const utilItems = propertyUtilityDisplayItems(meta);
-    const applianceItems = (meta.appliances || []).map(a => ({
-        icon: applianceIcon(a.name),
-        label: a.name,
-        sub: [a.brand, a.condition && a.condition !== 'Good' ? a.condition : ''].filter(Boolean).join(' · '),
-    }));
+    const applianceItems = typeof applianceSummaryItems === 'function'
+        ? applianceSummaryItems(meta.appliances)
+        : (meta.appliances || []).map(a => ({
+            icon: applianceIcon(a.name),
+            label: a.name,
+            sub: a.brand || '',
+        }));
     const alarmItems = [
         ...ALARM_CATALOG
             .filter(a => alarmHasData(meta.alarms?.[a.key]))
@@ -4052,16 +4127,23 @@ function renderPropertyOverviewDetails(propertyId) {
         ...propertyCustomAlarmItems(meta),
     ];
     const featureItems = [...applianceItems, ...alarmItems];
+    const valuationLabel = info.valuationAmount
+        ? [formatMoneyField(info.valuationAmount), info.valuationDate ? `as of ${formatInfoDate(info.valuationDate)}` : ''].filter(Boolean).join(' ')
+        : '';
     const infoRows = [
         ['map-pin', 'Address', p.address || '—'],
         ...(info.postcode ? [['map', 'Postcode', info.postcode]] : []),
         ['home', 'Type', info.type || '—'],
         ['calendar', 'Year Built', info.built || '—'],
+        ...(info.furnished ? [['sofa', 'Furnished', info.furnished]] : []),
+        ...(info.purchaseDate ? [['calendar', 'Purchase Date', formatInfoDate(info.purchaseDate)]] : []),
+        ...(valuationLabel ? [['trending-up', 'Valuation', valuationLabel]] : []),
         ['leaf', 'EPC', formatEpcDisplay(info.epc)],
         ['calendar-clock', 'EPC Expiry', formatInfoDate(info.epcExpiry)],
         ['shield', 'Insurance Renewal', formatInfoDate(info.insuranceExpiry)],
         ['landmark', 'Mortgage Renewal', formatInfoDate(info.mortgageRenewal)],
         ['receipt', 'Council Tax', info.councilTax || '—'],
+        ...(info.alarmCode ? [['key-round', 'Alarm Code', info.alarmCode]] : []),
     ];
     const b = getPropertyBuilding(propertyId);
     const floors = b.useFloors && b.floors > 1 ? b.floors : Math.max(1, new Set(units.map(u => u.floor || 1)).size);
@@ -4100,6 +4182,11 @@ function renderPropertyOverviewDetails(propertyId) {
                         <span class="building-info-row-value">${escapeHtml(String(value))}</span>
                     </div>`).join('')}
                 </div>
+                ${info.description ? `
+                <div class="building-notes-block">
+                    <p class="building-notes-label">Description</p>
+                    <p class="building-notes-text">${escapeHtml(info.description)}</p>
+                </div>` : ''}
                 ${info.notes ? `
                 <div class="building-notes-block">
                     <p class="building-notes-label">Notes</p>
@@ -6369,10 +6456,10 @@ function propertyRecordsSummaryLine(propertyId) {
 }
 
 function propertyInventoryHubLabel(propertyId) {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(propertyId) : [];
-    if (!rooms.length) return 'No rooms';
-    const flagged = rooms.filter(r => r[1] && r[1] !== 'Good').length;
-    return flagged ? `${rooms.length} rooms · ${flagged} to review` : `${rooms.length} rooms`;
+    const catalog = getInventoryRoomCatalog(propertyId);
+    if (!catalog.length) return 'No rooms';
+    const noted = catalog.filter(room => ensureInventoryRoom(propertyId, room.slug).notes?.trim()).length;
+    return noted ? `${catalog.length} rooms · ${noted} with notes` : `${catalog.length} rooms`;
 }
 
 function propertyComplianceCertRows(propertyId) {
@@ -6512,25 +6599,25 @@ function renderRecordsInspectionsPanel(propertyId) {
 
 function renderRecordsInventoryPanel(propertyId) {
     const rooms = getInventoryRooms(propertyId);
-    const flagged = rooms.filter(r => r[1] && r[1] !== 'Good').length;
+    const withPhotos = rooms.filter(([, sub]) => /\d+ photo/.test(sub)).length;
     return `
     <div class="records-panel">
         <div class="records-status-banner card records-status-banner--neutral">
             <i data-lucide="package" class="w-5 h-5"></i>
             <div>
                 <p class="records-status-title">${rooms.length} room checklist${rooms.length === 1 ? '' : 's'}</p>
-                <p class="records-status-sub">${flagged ? `${flagged} room${flagged === 1 ? '' : 's'} need review` : 'Check-in / check-out condition for each room.'}</p>
+                <p class="records-status-sub">${withPhotos ? `${withPhotos} room${withPhotos === 1 ? '' : 's'} with photos` : 'Room photo records for check-in / check-out.'}</p>
             </div>
         </div>
         <div class="card records-mini-list">
-            ${rooms.map(([r, c, n, icon, idx]) => `
+            ${rooms.map(([r, n, icon, idx]) => `
             <button type="button" data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="records-mini-row">
                 <span class="records-mini-icon"><i data-lucide="${icon || 'package'}" class="w-4 h-4"></i></span>
                 <span class="records-mini-body">
                     <span class="records-mini-title">${r}</span>
                     <span class="records-mini-sub">${n}</span>
                 </span>
-                <span class="badge shrink-0 ${inventoryConditionBadgeClass(c)}">${c}</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
             </button>`).join('')}
         </div>
         <button type="button" data-action="toggle-inventory-layout-edit" class="records-panel-cta btn-secondary w-full py-3 text-[13px]">Edit property layout</button>
@@ -6606,12 +6693,11 @@ function renderRecordsHubInspectionCard(propertyId) {
 
 function renderRecordsHubInventoryCard(propertyId) {
     const rooms = getInventoryRooms(propertyId);
-    const flagged = rooms.filter(r => r[1] && r[1] !== 'Good').length;
     const hubLabel = propertyInventoryHubLabel(propertyId);
     return `
     <button type="button" data-go="property-inventory" data-pid="${propertyId}" class="records-hub-summary card w-full text-left">
         <span class="records-hub-summary-icon"><i data-lucide="package" class="w-5 h-5"></i></span>
-        <span class="records-hub-summary-title">Inventory${hubLabel ? ` · ${hubLabel}` : ''}${flagged ? ' · review' : ''}</span>
+        <span class="records-hub-summary-title">Inventory${hubLabel ? ` · ${hubLabel}` : ''}</span>
         <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
     </button>`;
 }
@@ -6729,7 +6815,7 @@ function renderPropertyRecordsHub(propertyId) {
         <section class="records-hub-section">
             <h3 class="records-hub-section-title">Safety</h3>
             <div class="records-hub-nav-list card">
-                ${renderRecordsHubNavRow('bell-ring', 'Smoke & CO alarms', `data-go="property-alarms" data-pid="${propertyId}"`, 'Test dates & expiry')}
+                ${renderRecordsHubNavRow('bell-ring', 'Alarms', `data-go="property-alarms" data-pid="${propertyId}"`, 'Test dates & expiry')}
                 ${fireCount ? renderRecordsHubNavRow('flame-kindling', 'Fire safety', `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`, `${fireCount} file${fireCount === 1 ? '' : 's'}`) : ''}
             </div>
         </section>
@@ -13498,6 +13584,35 @@ function isCustomApplianceName(name) {
     return !APPLIANCE_NAME_OPTIONS.slice(0, -1).includes(name);
 }
 
+function renderAlarmReminderFields(prefix, alarm = {}) {
+    const timing = alarm.reminderTiming || '30';
+    return `
+        <div><label class="form-label">Make / Model</label><input data-field="${prefix}_make" class="form-input" value="${escapeHtml(alarm.makeModel || '')}" placeholder="e.g. FireAngel ST-620"></div>
+        <div><label class="form-label">Description</label><input data-field="${prefix}_desc" class="form-input" value="${escapeHtml(alarm.description || '')}" placeholder="e.g. Mains-powered, hallway"></div>
+        <div><label class="form-label">Alarm picture</label><input data-field="${prefix}_photo" class="form-input" value="${escapeHtml(alarm.photo || '')}" placeholder="Photo reference or filename"></div>
+        <div><label class="form-label">Reminder timing</label>
+            <select data-field="${prefix}_reminder_timing" class="form-input form-select">
+                ${REMINDER_TIMING_OPTIONS.map(o => `<option value="${o.id}" ${timing === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
+            </select>
+        </div>
+        <div><label class="form-label">Custom reminder date</label><input data-field="${prefix}_reminder_date" type="date" class="form-input" value="${alarm.reminderDate || ''}"><p class="form-helper">Only needed when reminder timing is custom</p></div>`;
+}
+
+function readAlarmFieldsFromDom(prefix) {
+    const expiry = fieldVal(`${prefix}_expiry`);
+    const timing = fieldVal(`${prefix}_reminder_timing`) || '30';
+    const customReminder = fieldVal(`${prefix}_reminder_date`);
+    return {
+        location: fieldVal(`${prefix}_location`),
+        expiry,
+        makeModel: fieldVal(`${prefix}_make`),
+        description: fieldVal(`${prefix}_desc`),
+        photo: fieldVal(`${prefix}_photo`),
+        reminderTiming: timing,
+        reminderDate: computeReminderDate(expiry, timing, customReminder),
+    };
+}
+
 function renderCustomAlarmEditCard(a, i) {
     const title = a.name?.trim() || `Additional alarm ${i + 1}`;
     return `
@@ -13512,7 +13627,7 @@ function renderCustomAlarmEditCard(a, i) {
             <div><label class="form-label">Alarm name</label><input data-field="custom_alarm_name_${i}" class="form-input" value="${escapeHtml(a.name || '')}" placeholder="e.g. Heat detector, Smoke alarm (landing)"></div>
             <div><label class="form-label">Location</label><input data-field="custom_alarm_location_${i}" class="form-input" value="${escapeHtml(a.location || '')}" placeholder="e.g. Landing"></div>
             <div><label class="form-label">Expiry Date</label><input data-field="custom_alarm_expiry_${i}" type="date" class="form-input" value="${a.expiry || ''}"></div>
-            <div><label class="form-label">Last Check</label><input data-field="custom_alarm_check_${i}" type="date" class="form-input" value="${a.lastCheck || ''}"></div>
+            ${renderAlarmReminderFields(`custom_alarm_${i}`, a)}
         </div>`;
 }
 
@@ -13534,7 +13649,7 @@ function renderApplianceEditCard(a, i) {
             </div>
             ${nameField}
             <div><label class="form-label">Brand</label><input data-field="app_brand_${i}" class="form-input" value="${escapeHtml(a.brand || '')}" placeholder="e.g. Bosch"></div>
-            <div><label class="form-label">Condition</label><select data-field="app_cond_${i}" class="form-input form-select">${['Good','Fair','Poor'].map(o => `<option ${o===a.condition?'selected':''}>${o}</option>`).join('')}</select></div>
+            <div><label class="form-label">Warranty / notes</label><input data-field="app_warranty_${i}" class="form-input" value="${escapeHtml(a.warranty || '')}" placeholder="e.g. Until Mar 2027"></div>
         </div>`;
 }
 
@@ -13556,6 +13671,14 @@ function screenPropertyDetailsEdit(section) {
         <div><label class="form-label">Postcode</label><input data-field="info_postcode" type="text" class="form-input" value="${escapeHtml(info.postcode || '')}" placeholder="e.g. SW1A 1AA"></div>
         ${formSelectField('Property Type', 'info_type', PROPERTY_TYPE_OPTIONS, info.type, { blankLabel: 'Select type' })}
         <div><label class="form-label">Year Built</label><input data-field="info_built" type="number" class="form-input" value="${escapeHtml(info.built || '')}" placeholder="e.g. 1985" min="1700" max="2030"></div>
+        <div><label class="form-label">Date Purchased</label><input data-field="info_purchaseDate" type="date" class="form-input" value="${info.purchaseDate || ''}"></div>
+        <div class="grid grid-cols-2 gap-3">
+            <div><label class="form-label">Valuation (£)</label><input data-field="info_valuationAmount" type="number" class="form-input" value="${escapeHtml(info.valuationAmount || '')}" placeholder="e.g. 450000" min="0"></div>
+            <div><label class="form-label">Valuation Date</label><input data-field="info_valuationDate" type="date" class="form-input" value="${info.valuationDate || ''}"></div>
+        </div>
+        ${formSelectField('Furnished', 'info_furnished', ['Furnished', 'Unfurnished'], info.furnished, { blankLabel: 'Not set' })}
+        <div><label class="form-label">Property Description</label><textarea data-field="info_description" class="form-input min-h-[96px] resize-none" placeholder="Listing or advertisement details…">${escapeHtml(info.description || '')}</textarea></div>
+        <div><label class="form-label">Alarm Code</label><input data-field="info_alarmCode" type="text" class="form-input" value="${escapeHtml(info.alarmCode || '')}" placeholder="Property security / alarm code" autocomplete="off"></div>
         ${formSelectField('EPC Rating', 'info_epc', EPC_RATING_OPTIONS, info.epc, { blankLabel: 'Select rating' })}
         <div><label class="form-label">EPC Expiry Date</label><input data-field="info_epcExpiry" type="date" class="form-input" value="${info.epcExpiry || ''}"></div>
         <div><label class="form-label">Insurance Renewal</label><input data-field="info_insuranceExpiry" type="date" class="form-input" value="${info.insuranceExpiry || ''}"></div>
@@ -13567,7 +13690,7 @@ function screenPropertyDetailsEdit(section) {
         body = `
         <p class="form-helper mb-2">Standard UK alarms are listed below. Add more if this property has extra detectors.</p>
         ${ALARM_CATALOG.map(({ key, label, icon }) => {
-            const a = meta.alarms[key] || { expiry: '', lastCheck: '', location: '' };
+            const a = meta.alarms[key] || {};
             return `<div class="card p-4 mb-3">
                 <div class="flex items-center gap-2 mb-3">
                     <span class="feature-pick-chip-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
@@ -13575,7 +13698,7 @@ function screenPropertyDetailsEdit(section) {
                 </div>
                 <div><label class="form-label">Location</label><input data-field="${key}_location" class="form-input" value="${escapeHtml(a.location || '')}" placeholder="e.g. Hallway"></div>
                 <div><label class="form-label">Expiry Date</label><input data-field="${key}_expiry" type="date" class="form-input" value="${a.expiry || ''}"></div>
-                <div><label class="form-label">Last Check</label><input data-field="${key}_check" type="date" class="form-input" value="${a.lastCheck || ''}"></div>
+                ${renderAlarmReminderFields(key, a)}
             </div>`;
         }).join('')}
         ${customAlarms.length ? `<p class="screen-section-title">Additional alarms</p>` : ''}
@@ -13631,6 +13754,12 @@ function savePropertyMeta(section) {
             type: fieldVal('info_type'),
             built: fieldVal('info_built'),
             postcode,
+            purchaseDate: fieldVal('info_purchaseDate'),
+            valuationAmount: fieldVal('info_valuationAmount'),
+            valuationDate: fieldVal('info_valuationDate'),
+            furnished: fieldVal('info_furnished'),
+            description: fieldVal('info_description'),
+            alarmCode: fieldVal('info_alarmCode'),
             epc: saveEpcValue(fieldVal('info_epc')),
             epcExpiry: fieldVal('info_epcExpiry'),
             insuranceExpiry: fieldVal('info_insuranceExpiry'),
@@ -13642,11 +13771,7 @@ function savePropertyMeta(section) {
         syncSmartReminders(false);
     } else if (section === 'alarms') {
         ['smoke', 'heat', 'co'].forEach(k => {
-            meta.alarms[k] = {
-                location: fieldVal(`${k}_location`),
-                expiry: fieldVal(`${k}_expiry`),
-                lastCheck: fieldVal(`${k}_check`),
-            };
+            meta.alarms[k] = readAlarmFieldsFromDom(k);
         });
         const customIndices = [...document.querySelectorAll('[data-field^="custom_alarm_name_"]')]
             .map(el => +String(el.dataset.field).replace('custom_alarm_name_', ''))
@@ -13655,8 +13780,16 @@ function savePropertyMeta(section) {
             name: fieldVal(`custom_alarm_name_${i}`).trim(),
             location: fieldVal(`custom_alarm_location_${i}`).trim(),
             expiry: fieldVal(`custom_alarm_expiry_${i}`),
-            lastCheck: fieldVal(`custom_alarm_check_${i}`),
-        })).filter(a => a.name || a.location || a.expiry || a.lastCheck);
+            makeModel: fieldVal(`custom_alarm_${i}_make`),
+            description: fieldVal(`custom_alarm_${i}_desc`),
+            photo: fieldVal(`custom_alarm_${i}_photo`),
+            reminderTiming: fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
+            reminderDate: computeReminderDate(
+                fieldVal(`custom_alarm_expiry_${i}`),
+                fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
+                fieldVal(`custom_alarm_${i}_reminder_date`),
+            ),
+        })).filter(a => a.name || a.location || a.expiry || a.makeModel || a.description);
         syncSmartReminders(false);
     } else if (section === 'appliances') {
         const indices = [...document.querySelectorAll('[data-field^="app_name_"]')]
@@ -13665,14 +13798,25 @@ function savePropertyMeta(section) {
         meta.appliances = indices.map(i => ({
             name: fieldVal(`app_name_${i}`).trim(),
             brand: fieldVal(`app_brand_${i}`) || '',
-            condition: fieldVal(`app_cond_${i}`) || document.querySelector(`[data-field="app_cond_${i}"]`)?.value || 'Good',
+            warranty: fieldVal(`app_warranty_${i}`) || '',
         })).filter(a => a.name);
     } else if (section === 'utilities') {
         if (!meta.utilities) meta.utilities = {};
+        migrateUtilityKeys(meta);
         UTILITY_CATALOG.forEach(u => {
             if (meta.utilities[u.key] == null) return;
-            meta.utilities[u.key] = fieldVal(`util_${u.key}`) || meta.utilities[u.key];
+            meta.utilities[u.key] = {
+                provider: fieldVal(`util_${u.key}_provider`),
+                meterNumber: fieldVal(`util_${u.key}_meter`),
+                meterLocation: fieldVal(`util_${u.key}_location`),
+                phone: fieldVal(`util_${u.key}_phone`),
+                meterPicture: fieldVal(`util_${u.key}_picture`),
+            };
         });
+        meta.utilities.council = {
+            name: fieldVal('util_council_name'),
+            notes: fieldVal('util_council_notes'),
+        };
         if (meta.info?.councilTax) meta.utilities.councilTax = meta.info.councilTax;
     } else if (section === 'parking') {
         meta.parking = {
@@ -14277,8 +14421,10 @@ function saveRenewCompliance() {
         const meta = AppStore.meta(pid);
         if (!meta.alarms) meta.alarms = {};
         if (!meta.alarms[cfg.alarmKey]) meta.alarms[cfg.alarmKey] = {};
-        meta.alarms[cfg.alarmKey].expiry = fieldVal('expiryDate');
-        meta.alarms[cfg.alarmKey].lastCheck = expiry || 'Just updated';
+        meta.alarms[cfg.alarmKey] = {
+            ...(meta.alarms[cfg.alarmKey] || {}),
+            expiry: fieldVal('expiryDate'),
+        };
     } else {
         AppStore.complianceCerts[key] = {
             certNumber: fieldVal('certNumber'),
@@ -14300,7 +14446,6 @@ function saveEditInventoryRoom() {
     const key = inventoryKey(pid, rid);
     const items = collectInventoryEditItemsFromDom();
     AppStore.inventory[key] = {
-        condition: fieldVal('condition') || 'Good',
         notes: fieldVal('roomNotes'),
         items,
         photos: AppStore.inventory[key]?.photos || [],
@@ -14924,11 +15069,7 @@ function removeFlatPhotoAction(idx) {
 function captureAlarmDraftFromForm(meta) {
     if (!meta.alarms) meta.alarms = {};
     ['smoke', 'heat', 'co'].forEach(k => {
-        meta.alarms[k] = {
-            location: fieldVal(`${k}_location`),
-            expiry: fieldVal(`${k}_expiry`),
-            lastCheck: fieldVal(`${k}_check`),
-        };
+        meta.alarms[k] = readAlarmFieldsFromDom(k);
     });
     const customIndices = [...document.querySelectorAll('[data-field^="custom_alarm_name_"]')]
         .map(el => +String(el.dataset.field).replace('custom_alarm_name_', ''))
@@ -14937,7 +15078,15 @@ function captureAlarmDraftFromForm(meta) {
         name: fieldVal(`custom_alarm_name_${i}`).trim(),
         location: fieldVal(`custom_alarm_location_${i}`).trim(),
         expiry: fieldVal(`custom_alarm_expiry_${i}`),
-        lastCheck: fieldVal(`custom_alarm_check_${i}`),
+        makeModel: fieldVal(`custom_alarm_${i}_make`),
+        description: fieldVal(`custom_alarm_${i}_desc`),
+        photo: fieldVal(`custom_alarm_${i}_photo`),
+        reminderTiming: fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
+        reminderDate: computeReminderDate(
+            fieldVal(`custom_alarm_expiry_${i}`),
+            fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
+            fieldVal(`custom_alarm_${i}_reminder_date`),
+        ),
     }));
 }
 
@@ -14946,7 +15095,7 @@ function addCustomAlarmRow() {
     const meta = AppStore.meta(STATE.propertyId);
     captureAlarmDraftFromForm(meta);
     if (!meta.customAlarms) meta.customAlarms = [];
-    meta.customAlarms.push({ name: '', location: '', expiry: '', lastCheck: '' });
+    meta.customAlarms.push({ name: '', location: '', expiry: '', reminderTiming: '30' });
     AppStore.save();
     toast('New alarm added — enter details below');
     render();

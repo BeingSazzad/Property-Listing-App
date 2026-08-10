@@ -4742,9 +4742,9 @@ function screenInvoiceDetail() {
 }
 
 function screenInventoryRoom() {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(STATE.propertyId) : [['Kitchen','Good','4 items'],['Living Room','Good','6 items'],['Bedroom','Fair','5 items'],['Bathroom','Good','3 items'],['Hallway','Good','2 items']];
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(STATE.propertyId) : [['Kitchen','4 items','package',0],['Living Room','6 items','sofa',1],['Bedroom','5 items','bed',2],['Bathroom','3 items','bath',3],['Hallway','2 items','door-open',4]];
     const room = rooms[STATE.roomId] || rooms[0];
-    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : [['Oven & Hob','Good'],['Fridge Freezer','Good'],['Washing Machine','Fair'],['Microwave','Good']];
+    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob','Fridge Freezer','Washing Machine','Microwave'];
     const notes = typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '';
     const invKey = typeof inventoryKey === 'function' ? inventoryKey(STATE.propertyId, STATE.roomId) : `${STATE.propertyId}-${STATE.roomId}`;
     const roomPhotos = (typeof AppStore !== 'undefined' && AppStore.inventory?.[invKey]?.photos?.length)
@@ -4755,8 +4755,7 @@ function screenInventoryRoom() {
         : (roomPhotos.length ? `<div class="grid grid-cols-2 gap-2">${roomPhotos.map(src => `<div class="aspect-square rounded-xl overflow-hidden"><img src="${src}" class="img-cover" alt=""></div>`).join('')}</div>` : '');
     return `${topBar(room[0], { back: true })}
     <div class="screen-content screen-enter">
-        <div class="flex items-center justify-between">
-            <span class="badge ${room[1]==='Good'?'bg-[#DCFCE7] text-[#16A34A]':'bg-[#FEF3C7] text-[#D97706]'}">Condition: ${room[1]}</span>
+        <div class="flex items-center justify-end">
             <button data-go="edit-inventory-room" data-room="${STATE.roomId}" class="text-[13px] font-semibold text-[#2563EB]">Edit</button>
         </div>
         ${photoPreview}
@@ -4764,8 +4763,8 @@ function screenInventoryRoom() {
         <p class="form-helper text-center">${roomPhotos.length ? `${roomPhotos.length} photo${roomPhotos.length === 1 ? '' : 's'}` : 'No photos yet'} · select multiple at once</p>
         <div class="card p-4 space-y-3">
             <h3 class="text-[14px] font-bold">Items</h3>
-            ${items.map(([item,c])=>`
-            <div class="flex justify-between text-[13px] py-1.5 border-b border-[#F1F5F9] last:border-0"><span>${item}</span><span class="text-[#64748B]">${c}</span></div>`).join('')}
+            ${items.map(item => `
+            <div class="text-[13px] py-1.5 border-b border-[#F1F5F9] last:border-0"><span class="font-medium">${item}</span></div>`).join('')}
         </div>
         <div class="card p-4">${notes ? `<p class="text-[12px] text-[#64748B] mb-1">Notes</p><p class="text-[13px] leading-relaxed">${notes}</p>` : `<p class="text-[13px] text-[#94A3B8]">No notes for this room yet.</p>`}</div>
     </div>`;
@@ -4989,18 +4988,16 @@ function screenRenewCompliance() {
 }
 
 function screenEditInventoryRoom() {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms() : [['Kitchen','Good','4 items'],['Living Room','Good','6 items'],['Bedroom','Fair','5 items'],['Bathroom','Good','3 items'],['Hallway','Good','2 items']];
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms() : [['Kitchen','4 items','package',0],['Living Room','6 items','sofa',1],['Bedroom','5 items','bed',2],['Bathroom','3 items','bath',3],['Hallway','2 items','door-open',4]];
     const room = rooms[STATE.roomId] || rooms[0];
-    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : [['Oven & Hob','Good'],['Fridge Freezer','Good'],['Washing Machine','Fair'],['Microwave','Good']];
+    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob','Fridge Freezer','Washing Machine','Microwave'];
     return `${topBar('Edit ' + room[0], { back: true })}
     <div class="screen-content screen-enter">
-        ${formSelect('Condition', room[1], ['Good', 'Fair', 'Poor', 'Needs Repair'], 'condition')}
-        ${formTextarea('Room Notes', typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '', 'Condition notes for this room', 'roomNotes')}
+        ${formTextarea('Room Notes', typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '', 'Notes for this room', 'roomNotes')}
         <p class="section-title">Items</p>
-        ${items.map(([item, c], i) => `
+        ${items.map((item, i) => `
         <div class="card p-3.5 flex items-center justify-between gap-3">
             <span class="text-[14px] font-medium">${item}</span>
-            <select data-field="item_${i}" class="form-input form-select w-[120px] py-2 text-[13px]"><option ${c==='Good'?'selected':''}>Good</option><option ${c==='Fair'?'selected':''}>Fair</option><option ${c==='Poor'?'selected':''}>Poor</option></select>
         </div>`).join('')}
         ${photoUpload('Add room photos')}
         ${saveBtn('Save Room', 'Inventory updated')}
