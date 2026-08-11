@@ -208,39 +208,39 @@ const AppStore = {
         this.certHistory = {};
         this.inventory = {
             '0-kitchen-0': {
-                condition: 'Good',
+                sizeSqft: '120',
                 notes: 'Minor wear on worktop near sink.',
-                items: [['Oven / hob', 'Good'], ['Fridge freezer', 'Good'], ['Microwave', 'Good'], ['Extractor fan', 'Fair'], ['Worktops', 'Good']],
+                items: ['Oven / hob', 'Fridge freezer', 'Microwave', 'Extractor fan', 'Worktops'],
                 photos: IMG.interior.slice(0, 2),
             },
             '0-reception-0': {
-                condition: 'Good',
+                sizeSqft: '180',
                 notes: 'Sofa in good condition.',
-                items: [['Sofa', 'Good'], ['Coffee table', 'Good'], ['Curtains / blinds', 'Good'], ['Flooring', 'Good'], ['Radiator', 'Good']],
+                items: ['Sofa', 'Coffee table', 'Curtains / blinds', 'Flooring', 'Radiator'],
                 photos: [IMG.interior[2]],
             },
             '0-bedroom-0': {
-                condition: 'Fair',
+                sizeSqft: '140',
                 notes: 'Carpet showing light wear in corner.',
-                items: [['Bed frame', 'Good'], ['Mattress', 'Fair'], ['Wardrobe', 'Good'], ['Curtains / blinds', 'Good'], ['Radiator', 'Good']],
+                items: ['Bed frame', 'Mattress', 'Wardrobe', 'Curtains / blinds', 'Radiator'],
                 photos: IMG.interior.slice(3, 5),
             },
             '0-bedroom-1': {
-                condition: 'Good',
+                sizeSqft: '110',
                 notes: 'Second bedroom — used as home office.',
-                items: [['Bed frame', 'Good'], ['Mattress', 'Good'], ['Wardrobe', 'Good'], ['Curtains / blinds', 'Good'], ['Radiator', 'Good']],
+                items: ['Bed frame', 'Mattress', 'Wardrobe', 'Curtains / blinds', 'Radiator'],
                 photos: [],
             },
             '0-bathroom-0': {
-                condition: 'Good',
+                sizeSqft: '45',
                 notes: '',
-                items: [['Bath / shower', 'Good'], ['Toilet', 'Good'], ['Basin', 'Good'], ['Tiles / grouting', 'Good'], ['Extractor fan', 'Good']],
+                items: ['Bath / shower', 'Toilet', 'Basin', 'Tiles / grouting', 'Extractor fan'],
                 photos: [],
             },
             '0-hallway-0': {
-                condition: 'Good',
+                sizeSqft: '35',
                 notes: 'Smoke alarm tested Jan 2025.',
-                items: [['Smoke alarm', 'Good'], ['CO alarm', 'Good'], ['Flooring', 'Good'], ['Doors', 'Good'], ['Lighting', 'Good']],
+                items: ['Smoke alarm', 'CO alarm', 'Flooring', 'Doors', 'Lighting'],
                 photos: [],
             },
         };
@@ -316,15 +316,23 @@ const AppStore = {
                     units: built.units,
                     photos: [IMG.props[p.id], ...IMG.interior.slice(0, 2)],
                     alarms: {
-                        smoke: { expiry: '2026-01-15', lastCheck: 'Jan 2025', location: 'Hallway' },
-                        heat: { expiry: '2026-01-15', lastCheck: 'Jan 2025', location: 'Kitchen' },
-                        co: { expiry: '2026-01-15', lastCheck: 'Jan 2025', location: 'Bedroom' },
+                        smoke: { expiry: '2026-01-15', location: 'Hallway', reminderTiming: '30', reminderDate: '2025-12-16' },
+                        heat: { expiry: '2026-01-15', location: 'Kitchen', reminderTiming: '30', reminderDate: '2025-12-16' },
+                        co: { expiry: '2026-01-15', location: 'Bedroom', reminderTiming: '30', reminderDate: '2025-12-16' },
                     },
                     appliances: [
-                        { name: 'Boiler', brand: 'Worcester Bosch', condition: 'Good', lastService: 'Mar 2024' },
-                        { name: 'Oven', brand: 'Bosch', condition: 'Good', lastService: '—' },
-                        { name: 'Fridge', brand: 'Samsung', condition: 'Fair', lastService: '—' },
+                        { name: 'Boiler', brand: 'Worcester Bosch', warranty: 'Until Mar 2027', description: 'Combi boiler in kitchen cupboard' },
+                        { name: 'Oven', brand: 'Bosch', warranty: 'Manufacturer warranty', description: 'Built-in electric oven' },
+                        { name: 'Fridge', brand: 'Samsung', warranty: '—', description: 'Freestanding fridge-freezer' },
                     ],
+                    unitKeys: {
+                        'Flat 2A': [
+                            { label: 'Front door', qty: '1', location: 'Flat entrance', holder: 'Sarah Johnson' },
+                            { label: 'Building fob', qty: '1', location: 'Lobby', holder: 'Sarah Johnson' },
+                            { label: 'Mailbox key', qty: '1', location: 'Ground floor', holder: 'Landlord' },
+                        ],
+                    },
+                    floorPlans: [IMG.interior[0], IMG.interior[1]],
                     utilities: { gas: 'British Gas', electric: 'Octopus Energy', water: 'Thames Water', broadband: 'BT Fibre', councilTax: 'Band D' },
                     parking: { spaces: 1, type: 'Off-street', permit: 'LB-4421', notes: 'Allocated bay #12' },
                     info: {
@@ -1717,6 +1725,12 @@ function computeReminderDate(expiry, timing, customDate) {
     return exp.toISOString().slice(0, 10);
 }
 
+function recordReminderDue(record) {
+    if (!record?.expiry) return '';
+    if (record.reminderDate) return record.reminderDate;
+    return computeReminderDate(record.expiry, record.reminderTiming || '30', '');
+}
+
 function applianceSummaryItems(appliances) {
     const counts = {};
     (appliances || []).forEach(a => {
@@ -2782,6 +2796,40 @@ function inventoryConditionBadgeClass(condition) {
     if (condition === 'Good') return 'bg-[#DCFCE7] text-[#16A34A]';
     if (condition === 'Fair') return 'bg-[#FEF3C7] text-[#D97706]';
     return 'bg-[#FEE2E2] text-[#DC2626]';
+}
+
+function inventoryRoomSizeRows(propertyId) {
+    return getInventoryRoomCatalog(propertyId).map((room, i) => {
+        const inv = ensureInventoryRoom(propertyId, room.slug);
+        return { name: room.name, sizeSqft: inv.sizeSqft?.trim() || '', icon: room.icon, roomId: i };
+    });
+}
+
+function renderFlatRoomSizesSection(propertyId, unitName) {
+    const rows = inventoryRoomSizeRows(propertyId);
+    if (!rows.length) return '';
+    const withSizes = rows.filter(r => r.sizeSqft);
+    const unit = getUnitByName(propertyId, unitName);
+    const unitSqft = unit?.sqft;
+    const roomsTotal = withSizes.reduce((sum, r) => sum + (parseFloat(String(r.sizeSqft).replace(/[^\d.]/g, '')) || 0), 0);
+    return `
+    <section class="card flat-room-sizes-card p-4">
+        <div class="flat-dt-section-head">
+            <h3 class="flat-dt-section-title">Room sizes</h3>
+            <button type="button" data-go="property-inventory" data-pid="${propertyId}" class="flat-dt-section-link">Inventory</button>
+        </div>
+        ${unitSqft ? `<p class="text-[12px] text-[#64748B] mb-2">Unit total: ${escapeHtml(unitSqft)} sq ft</p>` : ''}
+        ${withSizes.length ? `
+        <div class="flat-room-sizes-list stack-sm">
+            ${withSizes.map(r => `
+            <button type="button" data-go="inventory-room" data-room="${r.roomId}" data-pid="${propertyId}" class="flat-room-size-row w-full text-left flex items-center gap-2 py-1.5">
+                <i data-lucide="${r.icon}" class="w-4 h-4 text-[#64748B] shrink-0"></i>
+                <span class="flex-1 text-[13px] text-[#0F172A]">${escapeHtml(r.name)}</span>
+                <span class="text-[12px] font-semibold text-[#0F172A]">${escapeHtml(r.sizeSqft)} sq ft</span>
+            </button>`).join('')}
+        </div>` : `<p class="text-[12px] text-[#64748B]">Room sizes are recorded in property inventory.</p>`}
+        ${withSizes.length > 1 && roomsTotal ? `<p class="text-[11px] text-[#94A3B8] mt-2">Rooms recorded: ${roomsTotal} sq ft</p>` : ''}
+    </section>`;
 }
 
 function getInventoryRooms(propertyId = STATE.propertyId) {
@@ -4960,6 +5008,7 @@ function screenTenancyDetail() {
         ${renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead)}
         <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mb-3">Edit deposit scheme</button>
         ${renderTenancyMembersSection(propertyId, unit, tenancy, members)}
+        ${typeof renderTenantKeysCard === 'function' && lead ? renderTenantKeysCard(propertyId, unit, lead.name) : ''}
         <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full">Back to unit</button>
     </div>`;
 }
@@ -6915,6 +6964,40 @@ function screenPropertyFlatDocuments() {
     </div>`;
 }
 
+function renderRecordsHubApplianceRow(propertyId) {
+    const count = (AppStore.meta(propertyId).appliances || []).length;
+    const meta = count ? `${count} appliance${count === 1 ? '' : 's'}` : 'No records yet';
+    return renderRecordsHubNavRow('plug', 'Appliances', `data-go="property-appliance-records" data-pid="${propertyId}"`, meta);
+}
+
+function renderApplianceRecordCard(a) {
+    const icon = applianceIcon(a.name);
+    return `
+    <div class="card p-4 mb-2">
+        <div class="flex items-start gap-3">
+            ${a.photo ? `<img src="${escapeHtml(a.photo)}" alt="" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="feature-pick-chip-icon shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
+            <div class="flex-1 min-w-0">
+                <p class="text-[13px] font-bold text-[#0F172A]">${escapeHtml(a.name || 'Appliance')}</p>
+                ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5">${escapeHtml(a.brand)}</p>` : ''}
+                ${a.description ? `<p class="text-[12px] text-[#475569] mt-2 leading-relaxed">${escapeHtml(a.description)}</p>` : ''}
+                ${a.warranty ? `<p class="text-[11px] text-[#94A3B8] mt-2">Warranty: ${escapeHtml(a.warranty)}</p>` : ''}
+            </div>
+        </div>
+    </div>`;
+}
+
+function screenPropertyApplianceRecords() {
+    const propertyId = STATE.propertyId;
+    const p = PROPERTIES[propertyId];
+    const appliances = AppStore.meta(propertyId).appliances || [];
+    return `${topBar('Appliances', { back: true, sub: p?.name || '' })}
+    <div class="screen-content screen-enter">
+        <p class="form-helper mb-3">Detailed appliance records for this property. Summary counts appear on the Info tab.</p>
+        ${appliances.length ? appliances.map(a => renderApplianceRecordCard(a)).join('') : emptyState('plug', 'No appliances recorded', 'Add appliances with type, brand, description and warranty details.', 'Add appliance', null, 'property-appliances')}
+        <button type="button" data-go="property-appliances" data-pid="${propertyId}" class="btn-primary w-full py-3.5 text-[14px] mt-2">${appliances.length ? 'Edit appliances' : 'Add appliances'}</button>
+    </div>`;
+}
+
 function renderPropertyRecordsHub(propertyId) {
     const certIssues = propertyCertTileIssues(propertyId);
     const fireCount = propertyFolderFileCount(propertyId, 'fire');
@@ -6938,6 +7021,7 @@ function renderPropertyRecordsHub(propertyId) {
             <h3 class="records-hub-section-title">Safety</h3>
             <div class="records-hub-nav-list card">
                 ${renderRecordsHubNavRow('bell-ring', 'Alarms', `data-go="property-alarms" data-pid="${propertyId}"`, 'Test dates & expiry')}
+                ${renderRecordsHubApplianceRow(propertyId)}
                 ${fireCount ? renderRecordsHubNavRow('flame-kindling', 'Fire safety', `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`, `${fireCount} file${fireCount === 1 ? '' : 's'}`) : ''}
             </div>
         </section>
@@ -7670,6 +7754,7 @@ function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, c
     <div class="flat-dt-tab-panel flat-dt-tab-panel--overview">
         ${renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
         ${flatDetailQuickLinks(propertyId, unit)}
+        ${typeof renderFlatRoomSizesSection === 'function' ? renderFlatRoomSizesSection(propertyId, unit) : ''}
         ${renderFlatOverviewTenantsList(propertyId, unit, peopleCtx)}
     </div>`;
 }
@@ -7758,6 +7843,10 @@ function renderFlatTenantIdentitySection(propertyId, unit) {
 function renderFlatDetailRecordsTab(propertyId, unit, p) {
     const issues = propertyComplianceCertRows(propertyId).filter(r => r.st.tone !== 'ok').length;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(propertyId).length : 0;
+    const roomSizes = inventoryRoomSizeRows(propertyId).filter(r => r.sizeSqft);
+    const inventoryMeta = roomSizes.length
+        ? `${rooms} rooms · ${roomSizes.length} sized`
+        : (rooms ? `${rooms} rooms` : 'Add inventory');
     const utilDocs = unitUtilitySummary(propertyId, unit).billCount;
     const photoCount = flatDetailPhotoList(propertyId, unit).length;
     const navRow = (icon, label, attrs) => `
@@ -7779,7 +7868,7 @@ function renderFlatDetailRecordsTab(propertyId, unit, p) {
             <p class="flat-section-eyebrow">Building</p>
             <div class="card flat-records-nav-list">
                 ${navRow('shield-check', `Certificates${issues ? ` · ${issues} need attention` : ''}`, `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance"`)}
-                ${navRow('clipboard-list', `Inspections & inventory${rooms ? ` · ${rooms} rooms` : ''}`, `data-go="property-detail" data-pid="${propertyId}" data-tab="records"`)}
+                ${navRow('clipboard-list', `Inspections & inventory · ${inventoryMeta}`, `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="inventory"`)}
                 ${navRow('folder-open', 'Property files', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="documents"`)}
             </div>
         </section>
@@ -10738,33 +10827,44 @@ function syncSmartReminders(persist = true) {
             if (!alarm?.expiry) return;
             const type = ALARM_REMINDER_MAP[key] || 'custom';
             const label = key === 'co' ? 'CO₂ Alarm Expiry' : `${key.charAt(0).toUpperCase() + key.slice(1)} Alarm Expiry`;
+            const due = recordReminderDue(alarm);
+            if (!due) return;
             upsertSmartReminder({
-                type, propertyId: p.id, title: label, due: alarm.expiry,
+                type, propertyId: p.id, title: label, due, expiryDate: alarm.expiry,
             });
         });
         (meta.customAlarms || []).forEach(alarm => {
             if (!alarm?.expiry) return;
+            const due = recordReminderDue(alarm);
+            if (!due) return;
             upsertSmartReminder({
                 type: 'custom',
                 propertyId: p.id,
                 title: `${alarm.name || 'Custom alarm'} expiry`,
-                due: alarm.expiry,
+                due,
+                expiryDate: alarm.expiry,
             });
         });
         const info = meta.info || {};
         if (info.epcExpiry) {
+            const expiry = info.epcExpiry;
+            const due = recordReminderDue({ expiry, reminderTiming: '30' });
             upsertSmartReminder({
-                type: 'epc', propertyId: p.id, title: 'EPC Certificate Expiry', due: info.epcExpiry,
+                type: 'epc', propertyId: p.id, title: 'EPC Certificate Expiry', due, expiryDate: expiry,
             });
         }
         if (info.insuranceExpiry) {
+            const expiry = info.insuranceExpiry;
+            const due = recordReminderDue({ expiry, reminderTiming: '30' });
             upsertSmartReminder({
-                type: 'insurance', propertyId: p.id, title: 'Landlord Insurance Renewal', due: info.insuranceExpiry,
+                type: 'insurance', propertyId: p.id, title: 'Landlord Insurance Renewal', due, expiryDate: expiry,
             });
         }
         if (info.mortgageRenewal) {
+            const expiry = info.mortgageRenewal;
+            const due = recordReminderDue({ expiry, reminderTiming: '30' });
             upsertSmartReminder({
-                type: 'mortgage', propertyId: p.id, title: 'Mortgage Renewal', due: info.mortgageRenewal,
+                type: 'mortgage', propertyId: p.id, title: 'Mortgage Renewal', due, expiryDate: expiry,
             });
         }
         const tenancies = AppStore.tenancies.filter(t => t.propertyId === p.id && t.status === 'active');
@@ -10780,16 +10880,18 @@ function syncSmartReminders(persist = true) {
         });
     });
     Object.entries(AppStore.complianceCerts || {}).forEach(([key, cert]) => {
-        const due = cert.expiryDate || cert.expiry;
-        if (!due) return;
+        const expiry = cert.expiryDate || cert.expiry;
+        if (!expiry) return;
         const [pid, cid] = key.split('-').map(Number);
         const cfg = COMPLIANCE_ITEM_CONFIG[cid];
         if (!cfg?.reminderType) return;
+        const due = recordReminderDue({ expiry, reminderTiming: '30' });
         upsertSmartReminder({
             type: cfg.reminderType,
             propertyId: pid,
             title: `${COMPLIANCE_ITEMS[cid]?.[1] || 'Certificate'} Expiry`,
             due,
+            expiryDate: expiry,
         });
     });
     const scheduled = AppStore.inspections.filter(i => i.scheduled);
@@ -11393,9 +11495,15 @@ function screenTransactionHistoryEnhanced() {
     });
     const unpaid = sorted.filter(t => t.status !== 'Paid');
     const paid = sorted.filter(t => t.status === 'Paid');
+    const txnSub = { all: 'All rent & bills', rent: 'Rent payments only', charges: 'Utilities & extra charges' }[txnCat] || 'All rent & bills';
+    const emptyCopy = txnCat === 'charges'
+        ? { title: 'No charges found', sub: 'Utility bills and extra charges appear here.', cta: 'Record charge', go: 'create-invoice' }
+        : txnCat === 'rent'
+            ? { title: 'No rent payments found', sub: 'Record rent when a tenant pays you.', cta: 'Record rent', go: 'mark-rent-received' }
+            : { title: 'No payments found', sub: 'Record rent when a tenant pays you.', cta: 'Record rent', go: 'mark-rent-received' };
     const listBody = !sorted.length
         ? (f === 'all'
-            ? emptyState('receipt', 'No payments found', 'Record rent when a tenant pays you.', 'Record rent', null, 'mark-rent-received')
+            ? emptyState('receipt', emptyCopy.title, emptyCopy.sub, emptyCopy.cta, null, emptyCopy.go)
             : emptyState('receipt', 'No payments found', 'Try another filter.'))
         : f === 'all' ? `
         ${unpaid.length ? `
@@ -11405,8 +11513,9 @@ function screenTransactionHistoryEnhanced() {
         <p class="txn-section-label ${unpaid.length ? 'txn-section-label--spaced' : ''}">Paid</p>
         <div class="txn-list">${paid.map(renderTransactionRow).join('')}</div>` : ''}` : `
         <div class="txn-list">${sorted.map(renderTransactionRow).join('')}</div>`;
-    return `${topBar('Transaction history', { back: true, sub: 'All rent & bills' })}
+    return `${topBar('Transaction history', { back: true, sub: txnSub })}
     <div class="screen-content screen-enter txn-page">
+        ${renderTxnCategoryTabs()}
         <button type="button" data-action="export-rent-pdf" class="btn-secondary w-full py-3 text-[13px] mb-3 flex items-center justify-center gap-2">
             <i data-lucide="download" class="w-4 h-4"></i>Export rent report
         </button>
@@ -11490,7 +11599,7 @@ function renderFinancialActionBar(outstandingCount) {
                 <i data-lucide="bell" class="w-4 h-4"></i>
                 <span>Remind</span>
             </button>` : `
-            <button type="button" data-go="transaction-history" data-invoice-preset="all" class="fin-action-secondary">
+            <button type="button" data-go="transaction-history" data-invoice-preset="all"${STATE.financialCategory && STATE.financialCategory !== 'all' ? ` data-txn-category="${STATE.financialCategory === 'charges' ? 'charges' : 'rent'}"` : ''} class="fin-action-secondary">
                 <i data-lucide="receipt" class="w-4 h-4"></i>
                 <span>History</span>
             </button>`}
@@ -11500,12 +11609,15 @@ function renderFinancialActionBar(outstandingCount) {
 
 function renderFinanceHistoryEntry(counts) {
     const outstandingCount = counts.pending + counts.overdue;
+    const cat = STATE.financialCategory || 'all';
+    const subLabels = { all: 'all rent & bills', rent: 'rent only', charges: 'charges & utilities' };
+    const txnAttr = cat !== 'all' ? ` data-txn-category="${cat === 'charges' ? 'charges' : 'rent'}"` : '';
     return `
-        <button type="button" data-go="transaction-history" data-invoice-preset="all" class="fin-history-entry card w-full text-left">
+        <button type="button" data-go="transaction-history" data-invoice-preset="all"${txnAttr} class="fin-history-entry card w-full text-left">
             <div class="fin-history-entry-icon"><i data-lucide="receipt" class="w-5 h-5"></i></div>
             <div class="fin-history-entry-body">
                 <p class="fin-history-entry-title">Transaction history</p>
-                <p class="fin-history-entry-sub">${counts.paid} paid${outstandingCount ? ` · ${outstandingCount} outstanding` : ''} · all rent & bills</p>
+                <p class="fin-history-entry-sub">${counts.paid} paid${outstandingCount ? ` · ${outstandingCount} outstanding` : ''} · ${subLabels[cat] || subLabels.all}</p>
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 fin-history-entry-chevron"></i>
         </button>`;
@@ -12840,9 +12952,14 @@ function screenReminderDetail() {
             </div>
             <div class="reminder-detail-meta">
                 <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Due date</span>
+                    <span class="reminder-detail-meta-label">Reminder due</span>
                     <span class="reminder-detail-meta-value">${esc(dueLabel)}</span>
                 </div>
+                ${r.expiryDate ? `
+                <div class="reminder-detail-meta-item">
+                    <span class="reminder-detail-meta-label">Expiry date</span>
+                    <span class="reminder-detail-meta-value">${esc(formatReminderDue(r.expiryDate))}</span>
+                </div>` : ''}
                 <div class="reminder-detail-meta-item">
                     <span class="reminder-detail-meta-label">Status</span>
                     <span class="reminder-detail-meta-value">${esc(statusLabel)}</span>
@@ -12855,7 +12972,9 @@ function screenReminderDetail() {
         </div>
         ${r.auto ? `
         <div class="card p-3 bg-[#FFFBEB] border border-[#FDE68A]">
-            <p class="text-[12px] text-[#92400E] leading-relaxed">This reminder is synced from your property records. Use the action below to update the certificate, alarm, lease or inspection — or change the due date manually.</p>
+            <p class="text-[12px] text-[#92400E] leading-relaxed">${r.expiryDate
+                ? 'This reminder is synced from your property records. The reminder date is when you should act — the expiry date is when the certificate or alarm actually expires.'
+                : 'This reminder is synced from your property records. Use the action below to update the certificate, alarm, lease or inspection — or change the due date manually.'}</p>
         </div>` : ''}
         <p class="screen-section-title">Actions</p>
         <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full py-3 text-[13px]">${esc(action.label)}</button>
@@ -13981,6 +14100,8 @@ function renderApplianceEditCard(a, i) {
             </div>
             ${nameField}
             <div><label class="form-label">Brand</label><input data-field="app_brand_${i}" class="form-input" value="${escapeHtml(a.brand || '')}" placeholder="e.g. Bosch"></div>
+            <div><label class="form-label">Description</label><input data-field="app_desc_${i}" class="form-input" value="${escapeHtml(a.description || '')}" placeholder="e.g. Built-in, kitchen cupboard"></div>
+            <div><label class="form-label">Picture</label><input data-field="app_photo_${i}" class="form-input" value="${escapeHtml(a.photo || '')}" placeholder="Image URL or filename"></div>
             <div><label class="form-label">Warranty / notes</label><input data-field="app_warranty_${i}" class="form-input" value="${escapeHtml(a.warranty || '')}" placeholder="e.g. Until Mar 2027"></div>
         </div>`;
 }
@@ -14132,6 +14253,8 @@ function savePropertyMeta(section) {
         meta.appliances = indices.map(i => ({
             name: fieldVal(`app_name_${i}`).trim(),
             brand: fieldVal(`app_brand_${i}`) || '',
+            description: fieldVal(`app_desc_${i}`) || '',
+            photo: fieldVal(`app_photo_${i}`) || '',
             warranty: fieldVal(`app_warranty_${i}`) || '',
         })).filter(a => a.name);
     } else if (section === 'utilities') {
@@ -15461,7 +15584,7 @@ function removeCustomAlarmRow(idx) {
 function addApplianceRow() {
     if (STATE.propertyId == null) return;
     const meta = AppStore.meta(STATE.propertyId);
-    meta.appliances.push({ name: '', brand: '', condition: 'Good' });
+    meta.appliances.push({ name: '', brand: '', description: '', photo: '', warranty: '' });
     AppStore.save();
     toast('Custom appliance added — enter a name below');
     render();
@@ -15480,7 +15603,7 @@ function quickAddAppliance(name) {
         toast('Already on your list');
         return;
     }
-    meta.appliances.push({ name, brand: '', condition: 'Good' });
+    meta.appliances.push({ name, brand: '', description: '', photo: '', warranty: '' });
     AppStore.save();
     toast(`${name} added`);
     go('property-appliances', { propertyId: STATE.propertyId });
@@ -15863,7 +15986,7 @@ const FEATURE_SCREENS = [
     'broadcast-notices', 'send-broadcast', 'broadcast-detail',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
-    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'tenancy-detail', 'edit-tenancy-deposit',
+    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-appliance-records', 'property-utilities', 'property-parking', 'property-info', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'tenancy-detail', 'edit-tenancy-deposit',
     'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'global-search', 'contractors', 'invite-contractor', 'contractor-invite-sent', 'inspection-detail',
 ];
 
@@ -15890,6 +16013,7 @@ Object.assign(SCREEN_MAP, {
     'property-floor-plans': screenPropertyFloorPlans,
     'property-alarms': () => screenPropertyDetailsEdit('alarms'),
     'property-appliances': () => screenPropertyDetailsEdit('appliances'),
+    'property-appliance-records': screenPropertyApplianceRecords,
     'property-utilities': () => screenPropertyDetailsEdit('utilities'),
     'property-parking': () => screenPropertyDetailsEdit('parking'),
     'property-info': () => screenPropertyDetailsEdit('info'),
@@ -15950,6 +16074,7 @@ const FEATURE_BACK_MAP = {
     'property-floor-plans': 'property-detail',
     'property-alarms': 'property-detail',
     'property-appliances': 'property-detail',
+    'property-appliance-records': 'property-detail',
     'property-utilities': 'property-detail',
     'property-parking': 'property-detail',
     'property-info': 'property-detail',

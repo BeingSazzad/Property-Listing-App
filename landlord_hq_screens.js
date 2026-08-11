@@ -787,6 +787,7 @@ const PROPERTY_HUB_BACK_OPTS = {
     'property-info': { tab: 'info' },
     'property-alarms': { tab: 'info' },
     'property-appliances': { tab: 'info' },
+    'property-appliance-records': { tab: 'records', recordsView: 'safety' },
     'property-utilities': { tab: 'info' },
     'property-parking': { tab: 'info' },
     'unit-utilities': { tab: 'units' },
@@ -2008,6 +2009,10 @@ function go(screen, opts = {}) {
             else STATE.txnReturnScreen = typeof profileHomeScreen === 'function' ? profileHomeScreen() : 'profile';
             if (opts.invoiceFilter) STATE.invoiceFilter = opts.invoiceFilter;
             else if (from === 'financial' || from === 'profile') STATE.invoiceFilter = 'all';
+            if (opts.txnCategory) STATE.txnCategory = opts.txnCategory;
+            else if (from === 'financial' && STATE.financialCategory && STATE.financialCategory !== 'all') {
+                STATE.txnCategory = STATE.financialCategory === 'charges' ? 'charges' : 'rent';
+            } else if (from !== 'transaction-history') STATE.txnCategory = 'all';
         }
     }
     if (screen === 'maintenance') {
@@ -2062,7 +2067,7 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
     if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
@@ -2201,6 +2206,7 @@ function navigateBackFallback() {
         'property-photos': 'property-detail',
         'property-floor-plans': 'property-detail',
         'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
+        'property-appliance-records': 'property-detail',
         'property-utilities': 'property-detail', 'property-parking': 'property-detail',
         'property-info': 'property-detail', 'unit-utilities': 'property-detail',
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
@@ -3792,6 +3798,9 @@ const tenantOverview = (t, avatar) => {
         <div class="tenant-v2-body">
             ${typeof renderTenantFinanceSplit === 'function' ? renderTenantFinanceSplit(STATE.tenantId) : ''}
             ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(STATE.tenantId) : ''}
+            ${typeof renderTenantKeysCard === 'function' && listItem.propertyId != null
+                ? renderTenantKeysCard(listItem.propertyId, listItem.unit, fullNameFromParts(t.firstName, t.lastName))
+                : ''}
             ${typeof renderTenantProfileInfoSections === 'function' ? renderTenantProfileInfoSections(STATE.tenantId) : ''}
             ${typeof renderTenantDocStrip === 'function' ? renderTenantDocStrip(STATE.tenantId) : ''}
             ${typeof renderTenantNotesPreview === 'function' ? renderTenantNotesPreview(STATE.tenantId) : ''}
@@ -5303,6 +5312,7 @@ function collectGoOptions(el) {
     if (el.dataset.previewIdx !== undefined) opts.previewDocIdx = +el.dataset.previewIdx;
     if (el.dataset.previewSource) opts.previewDocSource = el.dataset.previewSource;
     if (el.dataset.invoicePreset) opts.invoiceFilter = el.dataset.invoicePreset;
+    if (el.dataset.txnCategory) opts.txnCategory = el.dataset.txnCategory;
     if (el.dataset.maintSourceOnNav) opts.maintSourceFilter = el.dataset.maintSourceOnNav;
     if (el.dataset.maintFilterOnNav) opts.maintFilter = el.dataset.maintFilterOnNav;
     if (el.dataset.rentRollRecord != null) opts.rentRollRecord = true;
@@ -5464,6 +5474,9 @@ function handleAppClick(e) {
 
     const invoiceFilter = e.target.closest('[data-invoice-filter]');
     if (invoiceFilter) { e.preventDefault(); setInvoiceFilter(invoiceFilter.dataset.invoiceFilter); return; }
+
+    const txnCategory = e.target.closest('[data-txn-category]');
+    if (txnCategory) { e.preventDefault(); STATE.txnCategory = txnCategory.dataset.txnCategory; render(); return; }
 
     const unitFilter = e.target.closest('[data-unit-filter]');
     if (unitFilter) { e.preventDefault(); setUnitFilter(unitFilter.dataset.unitFilter); return; }

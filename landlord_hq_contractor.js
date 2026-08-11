@@ -1634,8 +1634,9 @@ function screenTenantBuildingInfo() {
     const applianceItems = (meta.appliances || []).map(a => ({
         icon: typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug',
         label: a.name,
-        sub: [a.brand, a.condition && a.condition !== 'Good' ? a.condition : ''].filter(Boolean).join(' · '),
+        sub: [a.brand, a.warranty].filter(Boolean).join(' · '),
     }));
+    const floorPlans = meta.floorPlans || [];
     const alarmItems = typeof ALARM_CATALOG !== 'undefined' && typeof alarmHasData === 'function'
         ? [
             ...ALARM_CATALOG
@@ -1684,6 +1685,11 @@ function screenTenantBuildingInfo() {
         <div class="card p-4">
             <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Appliances & alarms</p>
             <div class="building-icon-grid cols-2">${featureItems.map(item => renderIcon(item)).join('')}</div>
+        </div>` : ''}
+        ${floorPlans.length ? `
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Floor plans</p>
+            <div class="photo-gallery-grid">${floorPlans.map(src => `<img src="${typeof escapeHtml === 'function' ? escapeHtml(src) : src}" class="photo-gallery-img" alt="Floor plan">`).join('')}</div>
         </div>` : ''}
         ${info.notes ? `<div class="card p-4"><p class="text-[11px] font-bold text-[#64748B] uppercase">Building notes</p><p class="text-[13px] text-[#475569] mt-2 leading-relaxed">${typeof escapeHtml === 'function' ? escapeHtml(info.notes) : info.notes}</p></div>` : ''}
         <button type="button" data-go="tenant-house-rules" class="btn-secondary w-full py-3 text-[13px]">House rules & regulations</button>
