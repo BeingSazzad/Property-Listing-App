@@ -2244,6 +2244,7 @@ function screenTenantAccount() {
             ${supportMenus}
         </div>
         <button data-action="logout" class="profile-logout">Log Out</button>
+        <button type="button" data-go="delete-account" class="profile-delete-link">Delete account</button>
         <p class="profile-version">Tenant portal · Demo build</p>
     </div>`;
 }
@@ -2995,6 +2996,7 @@ function screenContractorProfile() {
             ])}
         </div>
         <button data-action="logout" class="profile-logout">Log out</button>
+        <button type="button" data-go="delete-account" class="profile-delete-link">Delete account</button>
         <p class="profile-version">Contractor portal · Demo build</p>
     </div>`;
 }

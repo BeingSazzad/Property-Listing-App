@@ -678,7 +678,7 @@ const PREF_OPTIONS = {
     dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
     timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
 };
-const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
+const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
 
 const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-sign-up','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
@@ -3213,6 +3213,7 @@ const bottomNav = () => {
         'personal-info': 'profile',
         'notifications-settings': 'profile',
         'password': 'profile',
+        'delete-account': profileHomeScreen(),
         'security': 'profile',
         'payment-methods': 'profile',
         'subscription': 'profile',
@@ -4147,6 +4148,7 @@ function screenProfile() {
             ])}
         </div>
         <button data-action="logout" class="profile-logout">Log out</button>
+        <button type="button" data-go="delete-account" class="profile-delete-link">Delete account</button>
         <p class="profile-version">Landlord HQ · Demo build</p>
     </div>`;
 }
@@ -4229,6 +4231,86 @@ function screenPassword() {
         ${formField('Confirm Password', '', 'password', 'Confirm new password', 'confirmPassword')}
         <button data-action="save" data-msg="Password updated" class="btn-primary w-full py-3.5 text-[14px]">Update Password</button>
     </div>`;
+}
+
+function deleteAccountWarningText() {
+    const role = STATE.userRole || 'landlord';
+    const subscriptionLine = role === 'landlord'
+        ? ' Your subscription will be cancelled immediately — you will not be charged again.'
+        : '';
+    return `This permanently deletes your account and profile.${subscriptionLine} All stored data will be removed and cannot be recovered.`;
+}
+
+function screenDeleteAccount() {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `${topBar('Delete account', { back: true })}
+    <div class="screen-content screen-content-sm screen-enter stack-sm delete-account-page">
+        <div class="card p-4 delete-account-warning">
+            <div class="flex gap-3">
+                <i data-lucide="alert-triangle" class="w-5 h-5 text-[#DC2626] shrink-0"></i>
+                <p class="text-[13px] text-[#991B1B] leading-relaxed">${esc(deleteAccountWarningText())}</p>
+            </div>
+        </div>
+        <div class="form-field">
+            <label class="form-label">Password</label>
+            <div class="relative">
+                <input data-field="deleteAccountPassword" type="${STATE.showPassword ? 'text' : 'password'}" class="form-input pr-11" placeholder="Enter your password to confirm" autocomplete="current-password">
+                <button type="button" data-action="toggle-password" class="auth-input-toggle" aria-label="Show password"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+            </div>
+            <p class="form-helper">You must enter your password to delete your account.</p>
+        </div>
+        <button type="button" data-action="confirm-delete-account" class="btn-danger w-full py-3.5 text-[14px]">Delete my account permanently</button>
+        <button type="button" data-action="back" class="btn-secondary w-full py-3.5 text-[14px]">Cancel</button>
+    </div>`;
+}
+
+function confirmDeleteAccount() {
+    const password = (typeof fieldVal === 'function' ? fieldVal('deleteAccountPassword') : document.querySelector('[data-field="deleteAccountPassword"]')?.value) || '';
+    if (!password) {
+        toastError('Enter your password to delete your account');
+        return;
+    }
+    const role = STATE.userRole || 'landlord';
+    if (role === 'landlord') {
+        loadLandlordAccounts();
+        const email = LANDLORD_USER.email;
+        const account = landlordAccountByEmail(email);
+        if (!account || account.password !== password) {
+            toastError('Incorrect password');
+            return;
+        }
+        LANDLORD_ACCOUNTS = LANDLORD_ACCOUNTS.filter(a => a.email.toLowerCase() !== email.toLowerCase());
+        saveLandlordAccounts();
+        LANDLORD_USER.subscriptionPlanId = 'free';
+    } else if (role === 'tenant') {
+        loadTenantData();
+        const active = typeof getActiveTenantAccount === 'function' ? getActiveTenantAccount() : null;
+        const email = active?.email || (typeof getActiveTenant === 'function' ? getActiveTenant()?.email : '') || DEMO_CREDENTIALS.tenant.email;
+        const account = tenantAccountByEmail(email);
+        if (!account || account.password !== password) {
+            toastError('Incorrect password');
+            return;
+        }
+        TENANT_ACCOUNTS = TENANT_ACCOUNTS.filter(a => a.email.toLowerCase() !== email.toLowerCase());
+        saveTenantData();
+    } else if (role === 'contractor') {
+        loadContractorAccounts();
+        const email = CONTRACTOR_USER.email;
+        const account = contractorAccountByEmail(email);
+        if (!account || account.password !== password) {
+            toastError('Incorrect password');
+            return;
+        }
+        CONTRACTOR_ACCOUNTS = CONTRACTOR_ACCOUNTS.filter(a => a.email.toLowerCase() !== email.toLowerCase());
+        saveContractorAccounts();
+    }
+    STATE.isAuthenticated = false;
+    STATE.showPassword = false;
+    STATE.drawer = false;
+    clearNavStack();
+    saveAuthSession();
+    go('sign-in', { noHistory: true });
+    setTimeout(() => toast('Your account has been permanently deleted'), 50);
 }
 
 function screenSecurity() {
@@ -5194,6 +5276,7 @@ const SCREEN_MAP = {
     'notifications-settings': screenNotificationsSettings,
     security: screenSecurity,
     password: screenPassword,
+    'delete-account': screenDeleteAccount,
     preferences: screenPreferences,
     'payment-methods': screenPaymentMethods,
     'transaction-history': screenTransactionHistory,
@@ -5599,6 +5682,7 @@ function bindEvents() {
         el.onclick = (e) => { e.stopPropagation(); toast(el.dataset.msg || 'Saved'); back(); };
     });
     app.querySelectorAll('[data-action="logout"]').forEach(el => { el.onclick = logout; });
+    app.querySelectorAll('[data-action="confirm-delete-account"]').forEach(el => { el.onclick = (e) => { e.stopPropagation(); confirmDeleteAccount(); }; });
     app.querySelectorAll('[data-subscription-plan]').forEach(el => {
         el.onclick = (e) => {
             e.stopPropagation();
