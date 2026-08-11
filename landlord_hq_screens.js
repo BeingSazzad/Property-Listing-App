@@ -346,7 +346,7 @@ const getActiveTenant = () => {
 const makeInviteToken = () => `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
 const MAINTENANCE_ITEMS = [
-    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2h ago', priority:'High', contractor:'Plumber Pro', status:'progress', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[0], IMG.maint[2]], videos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }], desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
+    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'High', contractor:'Plumber Pro', status:'progress', propertyId: 0, categoryId: 'plumbing', inactiveNudge: true, inactiveHours: 48, photos: [IMG.maint[0], IMG.maint[2]], videos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }], desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
     { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Main Flat', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, categoryId: 'general', photos: [IMG.maint[1]], desc:'Bedroom window latch broken — window cannot be secured. Unit currently vacant.', reportedBy:'landlord' },
     { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[2]], desc:'Damp patch appearing on bedroom wall near window frame. Getting worse after recent rain.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2d ago' },
     { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, categoryId: 'heating', photos: [IMG.maint[2]], desc:'No hot water or heating. Boiler showing error code E119.', reportedBy:'tenant', tenantName:'David Wilson', reportedAt:'3d ago' },
@@ -365,11 +365,11 @@ const maintItem = (id) => MAINTENANCE_ITEMS.find(m => m.id === id) || MAINTENANC
 const LANDLORD_USER = {
     firstName: 'John', lastName: 'Smith', email: 'john@landlordhq.co.uk',
     phone: '+44 7700 900123', address: '14 Oakwood Drive, London, SW1A 2AA',
-    subscriptionPlanId: 'pro',
+    subscriptionPlanId: 'free',
     subscriptionBillingBrand: 'Visa',
     subscriptionBillingLast4: '4242',
     subscriptionBillingExp: '08/27',
-    subscriptionRenewDate: '15 Mar 2026',
+    subscriptionRenewDate: '15 Mar 2027',
 };
 
 const SUBSCRIPTION_BILLING_HISTORY = [
@@ -380,34 +380,34 @@ const SUBSCRIPTION_BILLING_HISTORY = [
 
 const SUBSCRIPTION_PLANS = [
     {
-        id: 'starter',
-        name: 'Starter',
-        price: 9,
-        tagline: 'Your first few lets',
-        properties: 'Up to 3 properties',
-        features: ['Up to 3 properties', 'Unlimited tenants', 'Rent & invoice tracking', 'Maintenance log', 'Email support'],
+        id: 'free',
+        name: 'Free',
+        price: 0,
+        tagline: 'Reminders & basics',
+        properties: 'Up to 1 property',
+        features: ['Smart reminders', '1 property', 'Unlimited tenants (free)', 'Email support'],
     },
     {
         id: 'pro',
-        name: 'Pro',
-        price: 19,
-        tagline: 'Growing portfolios',
+        name: 'Plan 1',
+        price: 199,
+        tagline: 'Growing portfolios · billed yearly',
         properties: 'Up to 20 properties',
         popular: true,
-        features: ['Up to 20 properties', 'Compliance reminders', 'Inventory & inspections', 'Contractor jobs', 'Priority support'],
+        features: ['12-month min commitment', 'Compliance + inventory', 'Contractor jobs', 'Priority support', '5 GB storage'],
     },
     {
         id: 'portfolio',
-        name: 'Portfolio',
-        price: 39,
-        tagline: 'Professional landlords',
+        name: 'Plan 2',
+        price: 399,
+        tagline: 'Professional landlords · billed yearly',
         properties: 'Unlimited properties',
-        features: ['Unlimited properties', 'Team access (3 seats)', 'Advanced reporting', 'Bulk document export', 'Dedicated account manager'],
+        features: ['12-month min commitment', 'Team access', 'Advanced reporting', 'Dedicated manager', '20 GB storage'],
     },
 ];
 
 function getSubscriptionPlan(id) {
-    return SUBSCRIPTION_PLANS.find(p => p.id === id) || SUBSCRIPTION_PLANS.find(p => p.id === 'pro');
+    return SUBSCRIPTION_PLANS.find(p => p.id === id) || SUBSCRIPTION_PLANS.find(p => p.id === 'free');
 }
 
 function setSubscriptionPlan(id) {
@@ -418,9 +418,9 @@ function setSubscriptionPlan(id) {
 }
 
 function subscriptionPropertyUsage() {
-    const planId = LANDLORD_USER.subscriptionPlanId || 'pro';
+    const planId = LANDLORD_USER.subscriptionPlanId || 'free';
     const used = PROPERTIES.length;
-    const limit = planId === 'starter' ? 3 : planId === 'pro' ? 20 : null;
+    const limit = planId === 'free' ? 1 : planId === 'pro' ? 20 : null;
     return {
         used,
         limit,
@@ -439,8 +439,10 @@ function confirmSubscriptionPlan(planId) {
     confirmFn(
         isUpgrade ? `Upgrade to ${plan.name}?` : `Switch to ${plan.name}?`,
         isUpgrade
-            ? `You'll be charged £${plan.price}/month (prorated from today). Renews ${renew}.`
-            : `Your plan changes at the end of this cycle (${renew}). You keep ${current.name} until then.`,
+            ? `You'll be charged £${plan.price}/year (12-month commitment). Renews ${renew}.`
+            : plan.price === 0
+                ? `You'll move to Free at the end of this cycle (${renew}).`
+                : `Your plan changes at the end of this cycle (${renew}). You keep ${current.name} until then.`,
         () => {
             setSubscriptionPlan(planId);
             toast(`Now on ${plan.name} plan`);
@@ -451,7 +453,7 @@ function confirmSubscriptionPlan(planId) {
 const FAQ_BY_ROLE = {
     landlord: [
         { id: 0, cat: 'Getting Started', q: 'How do I add a new property?', a: 'Tap the + button (bottom right) and select Add Property, or go to Properties → Add. Enter the address and unit details — your building appears in your portfolio immediately.' },
-        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Go to Tenants → Invite Tenant, choose the property and unit, then enter their details. We\'ll email a secure invitation link. Once accepted, their profile links to the unit automatically.' },
+        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Open the property → Tenants → Invite. Enter their email only — they activate and complete name/DOB themselves. Each tenant gets their own login. For group tenancies, set up the tenancy first, then invite every member by email.' },
         { id: 2, cat: 'Rent & Payments', q: 'How does rent collection work?', a: 'Landlord HQ tracks rent due dates and payment status on the Financial screen. Mark rent received when payment arrives, or create invoices for tenants. Overdue rent is highlighted on your dashboard.' },
         { id: 3, cat: 'Rent & Payments', q: 'Can I export financial reports?', a: 'Go to Financial → Transaction history, or open any invoice and tap Download PDF for a record of that payment.' },
         { id: 4, cat: 'Maintenance', q: 'How do I log a maintenance issue?', a: 'Open Home → Maintenance for your full queue, or use ⋯ Log issue from a property unit when you are already in that flat.' },
@@ -662,8 +664,9 @@ const TENANTS = [
 const COMPLIANCE_ITEMS = [
     ['flame','Gas Certificate','Mar 15, 2026'],['zap','Electrical Installation','Aug 15, 2026'],
     ['bell-ring','Smoke Alarm','Annual check'],['thermometer','Heat Alarm','Annual check'],
-    ['wind','CO Alarm','Annual check'],['shield','Landlord Insurance','Jun 2025'],
+    ['wind','CO Alarm','Annual check'],['shield','Landlord Insurance','Jun 2027'],
     ['landmark','Mortgage','Active'],['leaf','EPC Certificate','Rating B — Valid'],
+    ['badge-check','Property Licence','Not required'],
 ];
 
 const PREF_OPTIONS = {
@@ -1071,14 +1074,7 @@ function fullNameFromParts(firstName, lastName) {
 function sendTenantInvitation() {
     if (typeof captureInviteDraft === 'function') captureInviteDraft();
     const draft = STATE.inviteDraft || {};
-    const fullName = inviteField('fullName') || draft.fullName || `${inviteField('firstName') || draft.firstName || ''} ${inviteField('lastName') || draft.lastName || ''}`.trim();
-    const { firstName, lastName } = splitFullName(fullName);
-    const idNumber = inviteField('idNumber') || draft.idNumber;
-    const dob = inviteField('dob') || draft.dob;
     const email = inviteField('email') || draft.email;
-    const phone = inviteField('phone') || draft.phone;
-    const emergency = inviteField('emergency') || draft.emergency || '';
-    const emergencyPhone = inviteField('emergencyPhone') || draft.emergencyPhone || '';
     const unit = inviteField('unit') || draft.unit || STATE.selectedUnit;
     const rent = inviteField('rent') || draft.rent;
     const leaseStart = inviteField('leaseStart') || draft.leaseStart;
@@ -1088,29 +1084,16 @@ function sendTenantInvitation() {
     const depositScheme = inviteField('depositScheme') || draft.depositScheme || 'MyDeposits';
     const protectionRef = inviteField('protectionRef') || draft.protectionRef || '';
     const message = inviteField('message') || draft.message;
-    if (!firstName) {
-        toast('Enter tenant full name');
-        return;
-    }
-    if (!dob) {
-        toast('Enter date of birth');
-        return;
-    }
-    if (!idNumber) {
-        toast('Enter tenant NID number');
-        return;
-    }
-    if (!hasInviteNidProof(draft) && STATE.screen === 'invite-tenant') {
-        const nidErr = typeof validateNidProof === 'function' ? validateNidProof(draft) : 'Upload front and back of the NID card';
-        toast(nidErr);
-        return;
-    }
+    const existing = typeof TENANT_ACCOUNTS !== 'undefined'
+        ? TENANT_ACCOUNTS.find(a => a.email && String(a.email).toLowerCase() === String(email || '').toLowerCase())
+        : null;
+    const firstName = existing?.firstName || inviteField('firstName') || draft.firstName || 'Invited';
+    const lastName = existing?.lastName || inviteField('lastName') || draft.lastName || 'Tenant';
+    const phone = existing?.phone || inviteField('phone') || draft.phone || '';
+    const dob = inviteField('dob') || draft.dob || '';
+    const idNumber = inviteField('idNumber') || draft.idNumber || '';
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         toast('Enter a valid email address');
-        return;
-    }
-    if (!phone) {
-        toast('Enter tenant phone number');
         return;
     }
     if (!unit) {
@@ -1129,7 +1112,6 @@ function sendTenantInvitation() {
         toast('Lease end must be after start date');
         return;
     }
-    const p = PROPERTIES[STATE.propertyId];
     const token = makeInviteToken();
     const rentDigits = String(rent || '').replace(/[^\d]/g, '');
     const rentValue = rent?.startsWith('£')
@@ -1144,13 +1126,13 @@ function sendTenantInvitation() {
         lastName,
         idNumber,
         dob,
-        nidProof: (typeof inviteNidProofSummary === 'function' ? inviteNidProofSummary(draft) : null) || STATE.nidProofName || 'NID Proof.jpg',
-        nidProofFront: STATE.nidProofFrontName || draft.nidProofFrontName || '',
-        nidProofBack: STATE.nidProofBackName || draft.nidProofBackName || '',
+        nidProof: '',
+        nidProofFront: '',
+        nidProofBack: '',
         email,
         phone,
-        emergency,
-        emergencyPhone,
+        emergency: '',
+        emergencyPhone: '',
         propertyId: STATE.propertyId,
         unit,
         rent: rentValue,
@@ -1164,6 +1146,8 @@ function sendTenantInvitation() {
         landlord: `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`,
         status: 'pending',
         sentAt: 'Just now',
+        profilePending: !existing,
+        reattachExisting: !!existing,
     };
     TENANT_INVITATIONS.push(invite);
     STATE.nidProofName = null;
@@ -1174,7 +1158,7 @@ function sendTenantInvitation() {
     STATE.tenantInviteToken = token;
     if (typeof resetInviteWizardState === 'function') resetInviteWizardState();
     go('tenant-invite-sent');
-    setTimeout(() => toast(`Invitation sent to ${email}`), 50);
+    setTimeout(() => toast(existing ? `Invite sent — existing account will attach to this tenancy` : `Invitation sent to ${email}`), 50);
 }
 
 function activateTenantAccount() {
@@ -1187,6 +1171,20 @@ function activateTenantAccount() {
         toast('This invitation was already used. Please sign in.');
         go('sign-in');
         return;
+    }
+    if (!invite.reattachExisting) {
+        const fullName = document.querySelector('[data-tenant-fullname]')?.value?.trim() || '';
+        const dob = document.querySelector('[data-tenant-dob]')?.value || '';
+        const phone = document.querySelector('[data-tenant-phone]')?.value?.trim() || '';
+        if (!fullName) { toast('Enter your full name'); return; }
+        if (!dob) { toast('Enter your date of birth'); return; }
+        if (!phone) { toast('Enter your mobile number'); return; }
+        const parts = splitFullName(fullName);
+        invite.firstName = parts.firstName;
+        invite.lastName = parts.lastName;
+        invite.dob = dob;
+        invite.phone = phone;
+        invite.profilePending = false;
     }
     const password = document.querySelector('[data-tenant-password]')?.value || '';
     const confirm = document.querySelector('[data-tenant-confirm]')?.value || '';
@@ -1201,22 +1199,39 @@ function activateTenantAccount() {
     const tid = typeof syncLandlordAfterActivation === 'function'
         ? syncLandlordAfterActivation(invite)
         : (typeof tenantListItemForInvite === 'function' ? tenantListItemForInvite(invite)?.id : null) ?? TENANT_ACCOUNTS.length;
-    const account = {
-        id: tid,
-        inviteToken: invite.token,
-        firstName: invite.firstName,
-        lastName: invite.lastName,
-        email: invite.email,
-        phone: invite.phone,
-        propertyId: invite.propertyId,
-        unit: invite.unit,
-        rent: invite.rent,
-        leaseStart: invite.leaseStart,
-        leaseEnd: invite.leaseEnd,
-        landlord: invite.landlord,
-        password,
-    };
-    TENANT_ACCOUNTS.push(account);
+    let account = TENANT_ACCOUNTS.find(a => a.email && a.email.toLowerCase() === invite.email.toLowerCase());
+    if (account) {
+        Object.assign(account, {
+            inviteToken: invite.token,
+            firstName: invite.firstName || account.firstName,
+            lastName: invite.lastName || account.lastName,
+            phone: invite.phone || account.phone,
+            propertyId: invite.propertyId,
+            unit: invite.unit,
+            rent: invite.rent,
+            leaseStart: invite.leaseStart,
+            leaseEnd: invite.leaseEnd,
+            landlord: invite.landlord,
+            password: password || account.password,
+        });
+    } else {
+        account = {
+            id: tid,
+            inviteToken: invite.token,
+            firstName: invite.firstName,
+            lastName: invite.lastName,
+            email: invite.email,
+            phone: invite.phone,
+            propertyId: invite.propertyId,
+            unit: invite.unit,
+            rent: invite.rent,
+            leaseStart: invite.leaseStart,
+            leaseEnd: invite.leaseEnd,
+            landlord: invite.landlord,
+            password,
+        };
+        TENANT_ACCOUNTS.push(account);
+    }
     invite.status = 'activated';
     saveTenantData();
     STATE.isAuthenticated = true;
@@ -1226,7 +1241,7 @@ function activateTenantAccount() {
     STATE.showConfirmPassword = false;
     saveAuthSession();
     go('tenant-welcome');
-    setTimeout(() => toast('Account activated successfully!'), 50);
+    setTimeout(() => toast(invite.reattachExisting ? 'Attached to new tenancy' : 'Account activated successfully!'), 50);
 }
 
 function openTenantInvite(token) {
@@ -4070,7 +4085,7 @@ function screenChat() {
 function screenProfile() {
     const u = LANDLORD_USER;
     const txnCount = TRANSACTIONS.length;
-    const plan = getSubscriptionPlan(u.subscriptionPlanId || 'pro');
+    const plan = getSubscriptionPlan(u.subscriptionPlanId || 'free');
     return `${topBar('Profile', { hideBell: true })}
     <div class="screen-content screen-content-sm screen-enter profile-page">
         <button data-go="personal-info" class="profile-card">
@@ -4093,7 +4108,7 @@ function screenProfile() {
         <div class="profile-section">
             <p class="section-title">Billing</p>
             ${menuList([
-                ['credit-card', 'Subscription & billing', 'subscription', `${plan.name} · £${plan.price}/mo`],
+                ['credit-card', 'Subscription & billing', 'subscription', `${plan.name} · ${plan.price ? `£${plan.price}/yr` : 'Free'}`],
                 ['landmark', 'Rent collection accounts', 'payment-methods', 'Where tenants pay rent'],
             ])}
         </div>
@@ -4101,6 +4116,12 @@ function screenProfile() {
             <p class="section-title">Records</p>
             ${menuList([
                 ['receipt', 'Transaction history', 'transaction-history', txnCount ? `${txnCount} records` : ''],
+            ])}
+        </div>
+        <div class="profile-section">
+            <p class="section-title">Growth</p>
+            ${menuList([
+                ['store', 'Cross-sell a property', 'property-cross-sell', 'Flat fee listing'],
             ])}
         </div>
         <div class="profile-section">
@@ -4256,9 +4277,9 @@ function screenPaymentMethods() {
 }
 
 function screenSubscription() {
-    const currentId = LANDLORD_USER.subscriptionPlanId || 'pro';
+    const currentId = LANDLORD_USER.subscriptionPlanId || 'free';
     const current = getSubscriptionPlan(currentId);
-    const renewDate = LANDLORD_USER.subscriptionRenewDate || '15 Mar 2026';
+    const renewDate = LANDLORD_USER.subscriptionRenewDate || '15 Mar 2027';
     const usage = subscriptionPropertyUsage();
     const billingBrand = LANDLORD_USER.subscriptionBillingBrand || 'Visa';
     const billingLast4 = LANDLORD_USER.subscriptionBillingLast4 || '4242';
@@ -4274,7 +4295,7 @@ function screenSubscription() {
                     <p class="sub-plan-tagline">${plan.tagline}</p>
                 </div>
                 <div class="sub-plan-price-wrap">
-                    <p class="sub-plan-price">£${plan.price}<span>/mo</span></p>
+                    <p class="sub-plan-price">£${plan.price}<span>${plan.price ? '/yr' : ''}</span></p>
                 </div>
             </div>
             <p class="sub-plan-properties">${plan.properties}</p>
@@ -4296,7 +4317,14 @@ function screenSubscription() {
                 </div>
                 <span class="sub-current-pill">Active</span>
             </div>
-            <p class="sub-current-meta">£${current.price}/month · Renews ${renewDate}</p>
+            <p class="sub-current-meta">${current.price ? `£${current.price}/year` : 'Free'} · Renews ${renewDate}</p>
+            <div class="free-partners-mock">
+                <div class="free-partners-row">
+                    <span class="free-account-pill free-account-pill--inline"><i data-lucide="gift" class="w-3 h-3"></i> Tenants always free</span>
+                    <span class="free-account-pill free-account-pill--inline"><i data-lucide="gift" class="w-3 h-3"></i> Contractors always free</span>
+                </div>
+                <p class="free-partners-hint">Only landlord plans are billed. Invited tenants and contractors never pay to use the portal.</p>
+            </div>
             <div class="sub-usage">
                 <div class="sub-usage-head">
                     <span class="sub-usage-label">Portfolio usage</span>
@@ -4880,23 +4908,29 @@ function screenTenantInviteSent() {
     const leaseFmt = invite.leaseStart && invite.leaseEnd
         ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(invite.leaseStart) : invite.leaseStart} → ${typeof formatDisplayDate === 'function' ? formatDisplayDate(invite.leaseEnd) : invite.leaseEnd}`
         : '—';
+    const tenantLabel = invite.profilePending
+        ? invite.email
+        : `${invite.firstName} ${invite.lastName}`.trim();
+    const statusLabel = invite.reattachExisting
+        ? 'Pending re-attach'
+        : (invite.profilePending ? 'Pending profile + activation' : 'Pending activation');
     return `${topBar('Invitation Sent', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-6 text-center">
             <div class="tenant-invite-icon"><i data-lucide="mail-check" class="w-8 h-8"></i></div>
             <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation Sent!</p>
-            <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join as tenant at <strong>${p.name}</strong> (${invite.unit}).</p>
+            <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join as tenant at <strong>${p.name}</strong> (${invite.unit}).${invite.profilePending ? ' They will create their own profile and password.' : ''}${invite.reattachExisting ? ' Their existing login will attach to this tenancy.' : ''}</p>
         </div>
         <div class="card p-4 space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invitation Details</p>
-            ${[['Tenant', `${invite.firstName} ${invite.lastName}`], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Lease', leaseFmt], ['Security deposit', depositFmt], ['Advance paid', advanceFmt], ['Deposit scheme', invite.depositScheme || 'MyDeposits'], ...(invite.protectionRef ? [['Protection ref', invite.protectionRef]] : []), ...(invite.emergency ? [['Emergency contact', invite.emergency]] : []), ...(invite.emergencyPhone ? [['Emergency phone', invite.emergencyPhone]] : []), ['Status', 'Pending activation']].map(([k, v]) => `
+            ${[['Tenant', tenantLabel], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Tenancy dates', leaseFmt], ['Security deposit', depositFmt], ['Advance paid', advanceFmt], ['Deposit scheme', invite.depositScheme || 'MyDeposits'], ...(invite.protectionRef ? [['Protection ref', invite.protectionRef]] : []), ['Status', statusLabel]].map(([k, v]) => `
             <div class="flex justify-between text-[13px] py-1"><span class="text-[#64748B]">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
-        ${typeof renderNidProofReviewPreview === 'function' ? renderNidProofReviewPreview({
-            nidProofFrontName: invite.nidProofFront || '',
-            nidProofBackName: invite.nidProofBack || '',
-            nidProofName: invite.nidProof || '',
-        }) : ''}
+        ${invite.profilePending ? `
+        <div class="ux-tip mt-2">
+            <p class="ux-tip-title">Individual login</p>
+            <p class="ux-tip-text">Each invite creates a separate account. Group housemates never share one password.</p>
+        </div>` : ''}
         ${nextMember ? `
         <button type="button" data-go="invite-tenant" data-pid="${invite.propertyId}" data-unit="${invite.unit}" data-invite-email="${nextMember.email || ''}" data-invite-first="${nextParts[0] || ''}" data-invite-last="${nextParts.slice(1).join(' ') || ''}" data-invite-phone="${nextMember.phone || ''}" class="btn-primary w-full py-3.5 text-[14px]">Invite Next Member</button>` : ''}
         <button type="button" data-go="property-detail" data-pid="${invite.propertyId}" data-tab="tenant" class="btn-secondary w-full py-3.5 text-[14px] ${nextMember ? 'mt-2' : ''}">Back to Property</button>

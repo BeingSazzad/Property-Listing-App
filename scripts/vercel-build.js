@@ -15,6 +15,7 @@ const COPY_FILES = [
   'landlord_hq_contractor.js',
   'landlord_hq_features.js',
   'landlord_hq_product.js',
+  'landlord_hq_client_feedback.js',
 ];
 
 function copyRecursive(src, dest) {

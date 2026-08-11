@@ -4,13 +4,14 @@ const DOC_FOLDER_DEFS = [
     { id: 'gas', label: 'Gas Certificates', icon: 'flame', color: '#DC2626', bg: '#FEE2E2', match: d => d.type === 'Gas Certificate' },
     { id: 'eicr', label: 'Electrical Certificates', icon: 'zap', color: '#D97706', bg: '#FEF3C7', match: d => d.type === 'Electrical Certificate' },
     { id: 'epc', label: 'EPC', icon: 'leaf', color: '#16A34A', bg: '#ECFDF5', match: d => d.type === 'EPC Certificate' },
+    { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', match: d => d.type === 'Property Licence' || /property\s*licence|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'fire', label: 'Fire Safety', icon: 'flame-kindling', color: '#EA580C', bg: '#FFEDD5', match: d => /fire|smoke|alarm/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'insurance', label: 'Insurance', icon: 'shield-check', color: '#4338CA', bg: '#EEF2FF', match: d => /insurance/i.test(d.name || d.type || '') },
     { id: 'custom', label: 'Other files', icon: 'folder', color: '#64748B', bg: '#F1F5F9', match: () => false },
 ];
 
-const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'fire', 'insurance', 'custom'];
-const DOC_FOLDER_RECORDS_IDS = ['fire', 'custom'];
+const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'licence', 'fire', 'insurance', 'custom'];
+const DOC_FOLDER_RECORDS_IDS = ['fire', 'licence', 'custom'];
 
 const CHARGE_TYPE_OPTIONS = [
     { id: 'utility', label: 'Utility charge', icon: 'zap' },
@@ -92,6 +93,157 @@ function docYearFromDate(dateStr) {
     return m ? m[0] : 'Undated';
 }
 
+/** Client feedback: Green Tick / Amber Clock / Red X — one status system */
+function statusMark(tone, opts = {}) {
+    const map = {
+        ok: { icon: 'circle-check', label: 'Valid' },
+        warn: { icon: 'clock', label: 'Due soon' },
+        bad: { icon: 'circle-x', label: 'Action needed' },
+        muted: { icon: 'circle-dashed', label: 'Pending' },
+    };
+    const t = map[tone] || map.muted;
+    const label = opts.label != null ? opts.label : t.label;
+    const size = opts.size || 'md';
+    return `<span class="status-mark status-mark--${tone || 'muted'} status-mark--${size}" title="${typeof escapeHtml === 'function' ? escapeHtml(label) : label}" role="img" aria-label="${typeof escapeHtml === 'function' ? escapeHtml(label) : label}">
+        <i data-lucide="${t.icon}"></i>
+        ${opts.showLabel ? `<span class="status-mark-label">${typeof escapeHtml === 'function' ? escapeHtml(label) : label}</span>` : ''}
+    </span>`;
+}
+
+function statusLegendRow() {
+    return `<div class="status-legend" aria-label="Status key">
+        ${statusMark('ok', { showLabel: true, size: 'sm' })}
+        ${statusMark('warn', { showLabel: true, size: 'sm' })}
+        ${statusMark('bad', { showLabel: true, size: 'sm' })}
+    </div>`;
+}
+
+function folderComplianceTone(propertyId, folderId) {
+    // Fire safety folder is document storage — not Smoke Alarm compliance row
+    if (folderId === 'fire') return { tone: 'muted', label: 'Document folder' };
+    const cidMap = { gas: 0, eicr: 1, epc: 7, insurance: 5 };
+    const cid = cidMap[folderId];
+    if (cid == null || typeof propertyComplianceCertRows !== 'function') return { tone: 'muted', label: 'Pending' };
+    const row = propertyComplianceCertRows(propertyId)[cid];
+    return row?.st || { tone: 'muted', label: 'Pending' };
+}
+
+function certFolderContractor(folderId) {
+    const map = {
+        gas: { name: 'Heating Co.', certType: 'gas_safe', issue: 'Gas safety certificate (CP12)' },
+        eicr: { name: 'Electric Fix', certType: 'electrical', issue: 'Electrical certificate (EICR)' },
+        epc: { name: 'Electric Fix', certType: 'epc', issue: 'EPC certificate renewal' },
+        fire: { name: 'Electric Fix', certType: 'other', issue: 'Fire safety documentation' },
+        insurance: { name: 'Heating Co.', certType: 'other', issue: 'Insurance documentation' },
+    };
+    return map[folderId] || { name: 'Heating Co.', certType: 'other', issue: 'Certificate request' };
+}
+
+function pendingCertRequest(propertyId, folderId) {
+    const list = (typeof AppStore !== 'undefined' && AppStore.certRequests) || [];
+    return list.find(r => r.propertyId === propertyId && r.folderId === folderId && r.status === 'pending');
+}
+
+function pickCurrentCertDoc(files) {
+    if (!files?.length) return null;
+    const marked = files.find(d => d.isCurrent);
+    if (marked) return marked;
+    return [...files].sort((a, b) => {
+        const ya = docYearFromDate(a.date);
+        const yb = docYearFromDate(b.date);
+        if (ya !== yb) return String(yb).localeCompare(String(ya));
+        return String(b.date || '').localeCompare(String(a.date || ''));
+    })[0];
+}
+
+function requestCertFromContractor(folderId, propertyId) {
+    if (typeof AppStore === 'undefined') return;
+    if (!AppStore.certRequests) AppStore.certRequests = [];
+    const folder = DOC_FOLDER_DEFS.find(f => f.id === folderId);
+    const existing = pendingCertRequest(propertyId, folderId);
+    if (existing) {
+        toast('Request already pending for this certificate');
+        return;
+    }
+    const contractor = certFolderContractor(folderId);
+    const p = typeof PROPERTIES !== 'undefined' ? PROPERTIES[propertyId] : null;
+    const maintId = typeof MAINTENANCE_ITEMS !== 'undefined'
+        ? (MAINTENANCE_ITEMS.length ? Math.max(...MAINTENANCE_ITEMS.map(m => m.id)) + 1 : 0)
+        : Date.now();
+    const jobId = typeof CONTRACTOR_JOBS !== 'undefined'
+        ? (CONTRACTOR_JOBS.length ? Math.max(...CONTRACTOR_JOBS.map(j => j.id)) + 1 : 0)
+        : Date.now();
+
+    if (typeof MAINTENANCE_ITEMS !== 'undefined') {
+        MAINTENANCE_ITEMS.unshift({
+            id: maintId,
+            issue: contractor.issue,
+            prop: p?.name || 'Property',
+            unit: 'Building',
+            time: 'Just now',
+            priority: 'Medium',
+            contractor: contractor.name,
+            status: 'progress',
+            propertyId,
+            categoryId: folderId === 'gas' ? 'heating' : folderId === 'eicr' || folderId === 'epc' ? 'electrical' : 'general',
+            photos: [],
+            desc: `Landlord requested ${folder?.label || 'certificate'} upload. Contractor should complete the visit and upload the certificate so it auto-files.`,
+            reportedBy: 'landlord',
+            certRequest: true,
+            certFolderId: folderId,
+            inactiveNudge: false,
+        });
+    }
+    if (typeof CONTRACTOR_JOBS !== 'undefined') {
+        CONTRACTOR_JOBS.unshift({
+            id: jobId,
+            maintId,
+            propertyId,
+            property: p?.name || 'Property',
+            address: p?.address || '',
+            tenant: '—',
+            landlord: typeof LANDLORD_USER !== 'undefined' ? `${LANDLORD_USER.firstName || ''} ${LANDLORD_USER.lastName || ''}`.trim() : 'Landlord',
+            issue: contractor.issue,
+            priority: 'Medium',
+            visitDate: 'To schedule',
+            status: 'assigned',
+            assignedDate: 'Just now',
+            desc: `Certificate request · ${folder?.label || folderId}. Upload the certificate from the job to auto-file into the landlord folder.`,
+            certRequest: true,
+            certFolderId: folderId,
+            certTypeHint: contractor.certType,
+            certificates: [],
+            photos: { before: [], during: [], after: [] },
+            notes: [],
+        });
+        if (typeof saveContractorJobs === 'function') saveContractorJobs();
+    }
+
+    AppStore.certRequests.unshift({
+        id: Date.now(),
+        propertyId,
+        folderId,
+        label: folder?.label || 'Certificate',
+        status: 'pending',
+        requestedAt: 'Just now',
+        contractor: contractor.name,
+        maintId,
+        jobId,
+    });
+    if (typeof AppStore.save === 'function') AppStore.save();
+    if (typeof pushNotification === 'function') {
+        pushNotification({
+            icon: 'clock', color: ['#FFFBEB', '#D97706'],
+            title: 'Certificate requested',
+            desc: `${folder?.label || 'Certificate'} · sent to ${contractor.name}`,
+            time: 'Just now', unread: true,
+            screen: 'property-doc-folder', opts: { pid: propertyId, folder: folderId },
+        });
+    }
+    toast(`Request sent to ${contractor.name}`);
+    render();
+}
+
 function docsForFolder(docs, folderId) {
     if (folderId === 'custom') {
         const primary = DOC_FOLDER_DEFS.filter(f => f.id !== 'custom');
@@ -117,12 +269,10 @@ function docFileSizeLabel(doc) {
 }
 
 function docDisplayFileName(doc) {
-    const year = docYearFromDate(doc.date);
-    if (year && year !== 'Undated' && /^\d{4}$/.test(year)) {
-        if (/\.pdf$/i.test(doc.name) && doc.name.includes(year)) return doc.name;
-        return `${year}.pdf`;
-    }
-    return /\.pdf$/i.test(doc.name) ? doc.name : `${doc.name}.pdf`;
+    const raw = String(doc?.name || '').trim();
+    if (raw) return /\.pdf$/i.test(raw) ? raw : `${raw}.pdf`;
+    const year = docYearFromDate(doc?.date);
+    return year !== 'Undated' ? `${year}.pdf` : 'Document.pdf';
 }
 
 function renderDocFolderCompactRow(propertyId, folder, fileCount) {
@@ -196,17 +346,28 @@ function screenDocFolderView() {
     const allDocs = sortDocList(docsForFolder(AppStore.docsForProperty(propertyId), folderId), sort);
     const q = (STATE.docSearch?.[contextKey] || '').toLowerCase();
     const files = q ? allDocs.filter(d => `${d.name} ${d.date}`.toLowerCase().includes(q)) : allDocs;
-    const fileRows = files.map(doc => {
+    const isCertFolder = ['gas', 'eicr', 'epc', 'insurance', 'fire'].includes(folderId);
+    const st = folderComplianceTone(propertyId, folderId);
+    const pending = pendingCertRequest(propertyId, folderId);
+    const currentDoc = pickCurrentCertDoc(files);
+    const historyDocs = currentDoc ? files.filter(d => d.id !== currentDoc.id) : [];
+    const fileRows = (list, { markCurrent } = {}) => list.map(doc => {
         const visual = typeof documentRowVisual === 'function' ? documentRowVisual(doc) : { icon: 'file-text' };
         const label = docDisplayFileName(doc);
-        const sub = `${docFileSizeLabel(doc)} · ${doc.date || '—'}`;
+        const year = docYearFromDate(doc.date);
+        const isCur = markCurrent && currentDoc && doc.id === currentDoc.id;
+        const subParts = [docFileSizeLabel(doc), doc.date || '—'];
+        if (doc.fromContractor) subParts.push('Filed by contractor');
+        if (!isCur && isCertFolder) subParts.push('Archive');
+        const sub = subParts.join(' · ');
         return `
-        <button type="button" data-go="document-preview" data-doc="${doc.id}" class="doc-file-row w-full text-left">
+        <button type="button" data-go="document-preview" data-doc="${doc.id}" class="doc-file-row w-full text-left${isCur ? ' doc-file-row--current' : ''}">
             <span class="doc-file-row-icon" style="background:${folder.bg};color:${folder.color}"><i data-lucide="${visual.icon}" class="w-4 h-4"></i></span>
             <span class="doc-file-row-body min-w-0 flex-1">
-                <span class="doc-file-row-name">${escapeHtml(label)}</span>
+                <span class="doc-file-row-name">${escapeHtml(label)}${isCur ? ' <span class="doc-current-pill">Current</span>' : ''}</span>
                 <span class="doc-file-row-sub">${escapeHtml(sub)}</span>
             </span>
+            ${isCertFolder ? statusMark(isCur ? st.tone : 'muted', { label: isCur ? st.label : year }) : ''}
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>`;
     }).join('');
@@ -214,12 +375,48 @@ function screenDocFolderView() {
     <div class="doc-folder-page screen-enter">
         ${topBar(folder.label, { back: true })}
         <div class="screen-content screen-content-sm doc-folder-page-body">
+            ${isCertFolder ? `
+            <div class="cert-folder-status card cert-folder-status--${st.tone}">
+                ${statusMark(st.tone, { size: 'lg' })}
+                <div class="cert-folder-status-body">
+                    <p class="cert-folder-status-title">${escapeHtml(st.label)}</p>
+                    <p class="cert-folder-status-sub">${currentDoc ? `Current file: ${escapeHtml(docDisplayFileName(currentDoc))}` : 'No current certificate on file'}</p>
+                </div>
+            </div>
+            ${statusLegendRow()}
+            ${pending ? `
+            <div class="cert-request-banner card">
+                ${statusMark('warn', { size: 'md' })}
+                <div>
+                    <p class="cert-request-title">Awaiting contractor upload</p>
+                    <p class="cert-request-sub">Sent to ${escapeHtml(pending.contractor || 'contractor')} · ${escapeHtml(pending.requestedAt || '')}. When they upload, it auto-files here and becomes Current.</p>
+                </div>
+            </div>` : `
+            <button type="button" data-action="request-cert-contractor" data-folder="${folderId}" data-pid="${propertyId}" class="btn-secondary w-full py-3 text-[13px] cert-request-cta">
+                <i data-lucide="send" class="w-4 h-4 inline-block mr-1"></i>Request from contractor
+            </button>`}
+            <div class="cert-flow-mock card">
+                <p class="cert-flow-mock-title">How auto-file works</p>
+                <ol class="cert-flow-steps">
+                    <li><span class="cert-flow-n">1</span> You request or assign a job</li>
+                    <li><span class="cert-flow-n">2</span> Contractor uploads the certificate</li>
+                    <li><span class="cert-flow-n">3</span> File lands in this folder · old stays in history</li>
+                </ol>
+            </div>` : ''}
             <div class="search-bar doc-folder-search">
                 <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
                 <input data-doc-search="${contextKey}" type="text" value="${STATE.docSearch?.[contextKey] || ''}" placeholder="Search files…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
             </div>
             ${renderDocFolderUploadBtn(folderId, propertyId)}
-            ${files.length ? `<div class="card doc-file-list">${fileRows}</div>` : `
+            ${files.length ? `
+            ${isCertFolder && currentDoc ? `
+            <p class="screen-section-title">Current certificate</p>
+            <div class="card doc-file-list">${fileRows([currentDoc], { markCurrent: true })}</div>
+            ${historyDocs.length ? `
+            <p class="screen-section-title">Certificate history</p>
+            <p class="cert-history-hint">Previous years stay on file. New uploads become Current; older files move here.</p>
+            <div class="card doc-file-list">${fileRows(historyDocs)}</div>` : ''}` : `
+            <div class="card doc-file-list">${fileRows(files, { markCurrent: isCertFolder })}</div>`}` : `
             <div class="records-docs-empty card">
                 <i data-lucide="file-text" class="w-8 h-8 text-[#CBD5E1]"></i>
                 <p class="records-docs-empty-title">No files yet</p>
@@ -257,6 +454,7 @@ function docTypeForFolder(folderId) {
         gas: 'Gas Certificate',
         eicr: 'Electrical Certificate',
         epc: 'EPC Certificate',
+        licence: 'Property Licence',
         fire: 'Custom Document',
         insurance: 'Custom Document',
         custom: 'Custom Document',
@@ -265,7 +463,7 @@ function docTypeForFolder(folderId) {
 }
 
 function getRecordsDocumentUploadOptions() {
-    return DOC_FOLDER_DEFS.map(f => ({
+    const folderOpts = DOC_FOLDER_DEFS.map(f => ({
         type: docTypeForFolder(f.id),
         label: f.label,
         icon: f.icon,
@@ -273,6 +471,18 @@ function getRecordsDocumentUploadOptions() {
         bg: f.bg,
         folderId: f.id,
     }));
+    const extras = [
+        { type: 'Property Licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', folderId: 'licence' },
+        { type: 'Deposit Photo', label: 'Deposit photo', icon: 'camera', color: '#059669', bg: '#DCFCE7' },
+        { type: 'Deposit Certificate', label: 'Deposit protection', icon: 'shield', color: '#059669', bg: '#DCFCE7' },
+    ];
+    const seen = new Set();
+    return [...folderOpts, ...extras].filter(o => {
+        const key = `${o.type}|${o.folderId || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 function renderRecordsDocUploadCta() {
@@ -937,7 +1147,7 @@ function certAssignDraftValues() {
 function certAssignHistoryRows(propertyId) {
     return (AppStore.certHistory?.[propertyId] || []).slice(0, 5).map(h => {
         const typeDef = CERT_ASSIGN_TYPES.find(t => t.id === h.type);
-        const status = h.status || certStatusFromExpiry(h.expiry).label;
+        const status = certStatusFromExpiry(h.expiry).label;
         const issueLabel = h.issue && typeof formatDisplayDate === 'function' ? formatDisplayDate(h.issue) || h.issue : h.issue;
         const expiryLabel = h.expiry && typeof formatDisplayDate === 'function' ? formatDisplayDate(h.expiry) || h.expiry : h.expiry;
         return {
@@ -991,7 +1201,7 @@ function screenCertificateAssign() {
                     <p class="cert-assign-history-name">${typeof escapeHtml === 'function' ? escapeHtml(h.label) : h.label}</p>
                     <p class="cert-assign-history-meta">${h.issue || '—'}${h.expiry ? ` → ${h.expiry}` : ''}</p>
                 </div>
-                <span class="cert-assign-status cert-assign-status--${h.tone}">${h.status}</span>
+                ${typeof statusMark === 'function' ? statusMark(h.tone, { showLabel: true, label: h.status, size: 'sm' }) : `<span class="cert-assign-status cert-assign-status--${h.tone}">${h.status}</span>`}
             </div>`).join('')}
         </div>` : ''}
     </div>`;
@@ -1237,6 +1447,9 @@ function bindProductEvents() {
     });
     app.querySelectorAll('[data-action="open-add-document-folder"]').forEach(el => {
         el.onclick = () => openAddDocumentFolder(el.dataset.folder, +el.dataset.pid);
+    });
+    app.querySelectorAll('[data-action="request-cert-contractor"]').forEach(el => {
+        el.onclick = () => requestCertFromContractor(el.dataset.folder, +el.dataset.pid);
     });
     app.querySelectorAll('[data-action="open-add-document-flow"]').forEach(el => {
         el.onclick = () => {

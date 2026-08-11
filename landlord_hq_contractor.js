@@ -13,7 +13,7 @@ const CONTRACTOR_DRAWER_NAV = [
 ];
 
 const CONTRACTOR_JOBS = [
-    { id: 0, maintId: 0, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Kitchen sink leaking', priority: 'High', visitDate: 'Today, 2:00 PM', status: 'assigned', assignedDate: 'Mar 10, 2025', desc: 'Water dripping from pipe under kitchen sink. Tenant reports it started this morning. Access via front door — tenant will be home after 1 PM.', tenantChatId: 0, landlordChatId: 1, reportedBy: 'tenant', reportPhotos: [IMG.maint[0], IMG.maint[2]], reportVideos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }] },
+    { id: 0, maintId: 0, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Kitchen sink leaking', priority: 'High', visitDate: 'Today, 2:00 PM', status: 'assigned', assignedDate: 'Mar 10, 2025', inactiveHours: 48, desc: 'Water dripping from pipe under kitchen sink. Tenant reports it started this morning. Access via front door — tenant will be home after 1 PM.', tenantChatId: 0, landlordChatId: 1, reportedBy: 'tenant', reportPhotos: [IMG.maint[0], IMG.maint[2]], reportVideos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }] },
     { id: 1, maintId: 3, propertyId: 1, property: '45 Queens Road', address: 'London, SW2 3TR', tenant: 'David Wilson', landlord: 'John Smith', issue: 'Boiler not working', priority: 'High', visitDate: 'Tomorrow, 10:00 AM', status: 'accepted', assignedDate: 'Mar 8, 2025', desc: 'No hot water or heating. Boiler showing error code E119. Parking available on street.', tenantChatId: 2, landlordChatId: 1 },
     { id: 2, maintId: 1, propertyId: 2, property: '88 King Street', address: 'London, EC2V 8BB', tenant: '—', landlord: 'John Smith', issue: 'Window latch broken', priority: 'Medium', visitDate: 'Mar 14, 11:30 AM', status: 'scheduled', assignedDate: 'Mar 7, 2025', desc: 'Bedroom window latch broken — window cannot be secured. Main Flat currently vacant.', tenantChatId: null, landlordChatId: 1 },
     { id: 3, maintId: 4, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Radiator not heating', priority: 'Medium', visitDate: 'Mar 12, 3:00 PM', status: 'in_progress', assignedDate: 'Mar 5, 2025', desc: 'Living room radiator cold while others work. Possible air lock or valve issue.', tenantChatId: 4, landlordChatId: 1, notes: [{ text: 'Bleed radiator — still cold on return pipe', time: 'Mar 11, 2:30 PM' }], photos: { before: [IMG.maint[2]], during: [], after: [] } },
@@ -734,6 +734,9 @@ function saveContractorCertUpload() {
                 validUntil: cert.validUntil,
             });
             if (typeof saveContractorJobs === 'function') saveContractorJobs();
+            if (typeof autoFileContractorCertToLandlord === 'function') {
+                autoFileContractorCertToLandlord(job, cert);
+            }
         }
     }
     saveContractorCertificates();
@@ -1231,6 +1234,10 @@ function screenContractorWelcome() {
             </div>
             <h1 class="welcome-hero-title">Welcome, ${firstName}! 🔧</h1>
             <p class="welcome-hero-sub">${CONTRACTOR_USER.company || 'Your contractor workspace'} is active. View jobs, schedule visits, and upload invoices.</p>
+            <div class="free-account-pill free-account-pill--on-dark">
+                <i data-lucide="gift" class="w-3.5 h-3.5"></i>
+                <span>Contractor account · Always free</span>
+            </div>
         </div>
         <div class="welcome-body">
             <button type="button" data-action="enter-app" class="welcome-dash-card" style="background:linear-gradient(135deg,#EA580C,#C2410C)">
@@ -1325,16 +1332,24 @@ function screenTenantActivate() {
     if (!invite) return screenTenantInvite();
     const pwType = STATE.showPassword ? 'text' : 'password';
     const confirmType = STATE.showConfirmPassword ? 'text' : 'password';
+    const needsProfile = !invite.reattachExisting;
+    const prefName = [invite.firstName, invite.lastName].filter(n => n && n !== 'Invited' && n !== 'Tenant').join(' ');
     return `
     <div class="auth-screen">
         ${authTopbar()}
         <div class="auth-content">
             <div class="auth-icon-wrap" style="background:#DCFCE7">
-                <i data-lucide="key-round" class="w-7 h-7 text-[#16A34A]"></i>
+                <i data-lucide="user-plus" class="w-7 h-7 text-[#16A34A]"></i>
             </div>
-            <h1 class="auth-heading">Activate Your Account</h1>
-            <p class="auth-sub">Set a password for <strong>${invite.email}</strong> to access your tenant portal at ${PROPERTIES[invite.propertyId].name}.</p>
+            <h1 class="auth-heading">${needsProfile ? 'Create your profile' : 'Activate Your Account'}</h1>
+            <p class="auth-sub">${needsProfile
+                ? `Complete your details for <strong>${invite.email}</strong>, then set a password. Each tenant gets their own login.`
+                : `Set a password for <strong>${invite.email}</strong> to access your tenant portal at ${PROPERTIES[invite.propertyId].name}.`}</p>
             <div class="auth-form">
+                ${needsProfile ? `
+                <div class="auth-field"><label>Full name</label><input type="text" data-tenant-fullname class="auth-input" placeholder="e.g. Sarah Johnson" value="${prefName}"></div>
+                <div class="auth-field"><label>Date of birth</label><input type="date" data-tenant-dob class="auth-input" value="${invite.dob || ''}"></div>
+                <div class="auth-field"><label>Mobile number</label><input type="tel" data-tenant-phone class="auth-input" placeholder="+44 7700 900000" value="${invite.phone || ''}"></div>` : ''}
                 <div class="auth-field">
                     <label>Create password</label>
                     <div class="auth-input-wrap">
@@ -1364,6 +1379,10 @@ function screenTenantWelcome() {
     <div class="auth-screen" style="padding-bottom:0">
         <div class="welcome-header">
             <h1 class="welcome-greeting">Welcome, ${name}! 🏠</h1>
+            <div class="free-account-pill">
+                <i data-lucide="gift" class="w-3.5 h-3.5"></i>
+                <span>Tenant portal · Always free</span>
+            </div>
         </div>
         <div class="auth-content" style="padding-top:0">
             <button type="button" data-action="enter-app" class="portal-card portal-card-tenant">
@@ -1577,7 +1596,7 @@ function screenTenantDashboard() {
         <div class="dash-quick dash-quick--grid">
             ${[
                 ['wrench', 'Report issue', 'log-maintenance', 'warning'],
-                ['scroll-text', 'My lease', 'tenant-active-tenancy', 'indigo'],
+                ['scroll-text', 'My Tenancy', 'tenant-active-tenancy', 'indigo'],
                 ['files', 'Documents', 'tenant-documents', 'primary'],
                 ['receipt', 'Payment history', 'transaction-history', 'success'],
             ].map(([ic, label, go, tone]) => `
@@ -1847,11 +1866,11 @@ function screenTenantDocuments() {
             : `<div class="empty-state card">
                 <i data-lucide="folder-open" class="w-10 h-10 text-[#CBD5E1]"></i>
                 <p class="empty-state-title">No documents shared yet</p>
-                <p class="empty-state-desc">Your landlord will share lease files and certificates here.</p>
+                <p class="empty-state-desc">Your landlord will share tenancy files and certificates here.</p>
             </div>`);
     return `${topBar('Documents', { back: true, sub: 'Shared with you' })}
     <div class="screen-content screen-enter">
-        <p class="text-[13px] text-[#64748B] mb-3">Lease, compliance certificates and files your landlord has shared — organised by folder.</p>
+        <p class="text-[13px] text-[#64748B] mb-3">Tenancy agreement, compliance certificates and files your landlord has shared — organised by folder.</p>
         ${body}
     </div>`;
 }
@@ -2794,6 +2813,16 @@ function screenContractorJobInvoice() {
                 </div>
             </div>`).join('') : `<p class="ctr-photo-empty">No certificates uploaded</p>`}
             <button type="button" data-contractor-upload="certificate" class="ctr-upload-btn mt-3"><i data-lucide="upload" class="w-4 h-4"></i> Upload certificate</button>
+            <p class="text-[11px] text-[#64748B] mt-2">Uploaded certificates are auto-filed to the landlord property Records folder.</p>
+        </div>
+        <div class="card p-4">
+            <p class="ctr-section-label">Approved extra work</p>
+            ${job.extraWork?.length ? job.extraWork.map((w, i) => `
+            <div class="flex justify-between text-[13px] py-2 border-b border-[#F1F5F9]">
+                <span>${escapeHtml(w.desc)}</span>
+                <span class="font-semibold">${escapeHtml(w.amount)}</span>
+            </div>`).join('') : `<p class="ctr-photo-empty">No extra work logged</p>`}
+            <button type="button" data-action="add-extra-work" class="btn-secondary w-full py-2.5 text-[12px] mt-3">+ Request approved extra work</button>
         </div>
         <div class="card p-4">
             <p class="ctr-section-label">System invoice</p>
@@ -2924,6 +2953,7 @@ function screenContractorProfile() {
                 <p class="profile-card-email">${u.email}</p>
                 ${u.phone ? `<p class="profile-card-phone">${u.phone}</p>` : ''}
                 <p class="profile-card-hint">${trade.shortLabel} · ${u.company || 'Contractor'}</p>
+                <span class="free-account-pill free-account-pill--inline"><i data-lucide="gift" class="w-3 h-3"></i> Always free</span>
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
         </button>
@@ -2939,6 +2969,7 @@ function screenContractorProfile() {
             <p class="section-title">Business</p>
             ${menuList([
                 ['building-2', 'Company information', 'contractor-company'],
+                ['users', 'Organisation & sub-accounts', 'contractor-org', 'Master + field teams'],
                 ['folder-open', 'Certifications', 'contractor-certifications', `${certCount} on file`],
             ])}
         </div>
@@ -3142,6 +3173,22 @@ function bindContractorEvents() {
     });
     app.querySelectorAll('[data-action="save-contractor-cert"]').forEach(el => {
         el.onclick = (e) => { e.preventDefault(); saveContractorCertUpload(); };
+    });
+    app.querySelectorAll('[data-action="add-extra-work"]').forEach(el => {
+        el.onclick = () => {
+            const job = contractorJob(STATE.contractorJobId);
+            if (!job) return;
+            if (!job.extraWork) job.extraWork = [];
+            job.extraWork.push({
+                desc: 'Approved extra work',
+                amount: '£75',
+                at: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+                status: 'pending_approval',
+            });
+            if (typeof saveContractorJobs === 'function') saveContractorJobs();
+            toast('Extra work request sent to landlord for approval');
+            render();
+        };
     });
     app.querySelectorAll('[data-action="close-contractor-cert-upload"]').forEach(el => {
         el.onclick = (e) => { e.preventDefault(); closeContractorCertUpload(); };
