@@ -7753,52 +7753,6 @@
         .building-notes-text {
             font-size: var(--text-body); color: #475569; line-height: 1.45; margin: 0; white-space: pre-wrap;
         }
-        .building-secure-block {
-            margin-top: 4px; padding: 12px 14px 14px; border-top: 1px solid #F1F5F9;
-        }
-        .building-secure-row {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-        }
-        .building-secure-reveal {
-            font-size: 13px; font-weight: 700; color: #2563EB; background: transparent; border: 0; padding: 0; cursor: pointer;
-        }
-        .building-secure-photo {
-            width: 100%; max-height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px; display: block;
-        }
-        .building-floorplan-block { margin-top: 4px; padding: 12px 14px 14px; border-top: 1px solid #F1F5F9; }
-        .prop-conditional-block { margin-top: 10px; }
-        .prop-garden-sides { display: flex; flex-wrap: wrap; gap: 8px; }
-        .prop-garden-chip {
-            display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
-            border: 1px solid #E2E8F0; border-radius: 999px; font-size: 12px; font-weight: 600; color: #334155; background: #fff;
-        }
-        .prop-garden-chip input { accent-color: #2563EB; }
-        .prop-alarm-code-row { display: flex; gap: 8px; align-items: stretch; }
-        .prop-alarm-code-row .form-input { flex: 1; }
-        .prop-alarm-code-toggle {
-            width: 44px; min-width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
-        }
-        .prop-key-list { display: flex; flex-direction: column; gap: 8px; }
-        .prop-key-row { display: flex; gap: 8px; align-items: center; }
-        .prop-key-row .form-input { flex: 1; }
-        .prop-room-grid { margin-bottom: 12px; }
-        .prop-years-held { margin-top: -6px; margin-bottom: 10px; }
-        .prop-floorplan-edit { margin-bottom: 4px; }
-        .prop-floorplan-grid {
-            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px;
-        }
-        .prop-floorplan-grid--overview { margin-top: 8px; margin-bottom: 0; }
-        .prop-floorplan-card {
-            position: relative; border-radius: 12px; overflow: hidden; background: #F8FAFC; border: 1px solid #E8EDF3;
-        }
-        .prop-floorplan-card img { width: 100%; height: 96px; object-fit: cover; display: block; }
-        .prop-floorplan-name {
-            display: block; padding: 6px 8px; font-size: 11px; font-weight: 600; color: #64748B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .prop-floorplan-remove {
-            position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 999px;
-            background: rgba(15, 23, 42, 0.72); color: #fff; border: 0; display: inline-flex; align-items: center; justify-content: center;
-        }
         .section-hint {
             font-size: 12px; color: #94A3B8; margin: -6px 0 10px; line-height: 1.4;
         }
@@ -7831,133 +7785,6 @@
             background: #fff; color: #2563EB; border-color: #BFDBFE;
         }
         .feature-pick-check { margin-left: auto; color: #2563EB; flex-shrink: 0; }
-
-        /* Appliances edit — spacing & layout */
-        .appliances-edit-page {
-            display: flex; flex-direction: column; gap: 16px;
-            padding-bottom: 8px;
-        }
-        .appliance-quick-pick {
-            padding: 16px; margin: 0;
-            border: 1px solid #E2E8F0;
-        }
-        .appliance-quick-pick .feature-pick-title { margin-bottom: 4px; }
-        .appliance-quick-pick .feature-pick-sub { margin-bottom: 14px; }
-        .appliance-quick-pick .feature-pick-grid { gap: 10px; }
-        .appliance-quick-pick .feature-pick-chip {
-            padding: 12px 12px; min-height: 48px; gap: 10px;
-        }
-        .appliances-list-head {
-            display: flex; align-items: center; justify-content: space-between;
-            gap: 10px; margin: 4px 0 0;
-        }
-        .appliances-list-title { margin: 0 !important; }
-        .appliances-count {
-            min-width: 24px; height: 24px; padding: 0 8px;
-            border-radius: 999px; background: #EFF6FF; color: #2563EB;
-            font-size: 12px; font-weight: 700;
-            display: inline-flex; align-items: center; justify-content: center;
-        }
-        .appliances-card-stack {
-            display: flex; flex-direction: column; gap: 14px;
-        }
-        .appliance-edit-card {
-            margin: 0; padding: 0; overflow: hidden;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-        }
-        .appliance-edit-card:active { transform: none; }
-        .appliance-edit-head {
-            display: flex; align-items: center; gap: 12px;
-            padding: 14px 16px;
-            background: #F8FAFC;
-            border-bottom: 1px solid #EEF2F7;
-        }
-        .appliance-edit-icon {
-            width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
-            background: #EFF6FF; color: #2563EB; border: 1px solid #DBEAFE;
-            display: inline-flex; align-items: center; justify-content: center;
-        }
-        .appliance-edit-head-copy { flex: 1; min-width: 0; }
-        .appliance-edit-title {
-            font-size: 14px; font-weight: 700; color: #0F172A;
-            line-height: 1.25; margin: 0;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .appliance-edit-meta {
-            font-size: 11px; color: #64748B; margin: 3px 0 0; line-height: 1.3;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .appliance-cond-pill {
-            flex-shrink: 0; font-size: 10px; font-weight: 700;
-            padding: 4px 8px; border-radius: 999px; letter-spacing: 0.01em;
-        }
-        .appliance-cond-pill--ok { background: #ECFDF5; color: #047857; }
-        .appliance-cond-pill--warn { background: #FFFBEB; color: #B45309; }
-        .appliance-cond-pill--bad { background: #FEF2F2; color: #DC2626; }
-        .appliance-edit-remove { flex-shrink: 0; }
-        .appliance-edit-body {
-            padding: 16px;
-            display: flex; flex-direction: column; gap: 0;
-        }
-        .appliance-edit-body .form-group { margin-bottom: 14px; }
-        .appliance-edit-body .form-group:last-child { margin-bottom: 0; }
-        .appliance-edit-section-label {
-            font-size: 11px; font-weight: 700; color: #94A3B8;
-            text-transform: uppercase; letter-spacing: 0.04em;
-            margin: 4px 0 10px;
-        }
-        .appliance-edit-section-label:first-child { margin-top: 0; }
-        .appliance-edit-body .form-group + .appliance-edit-section-label,
-        .appliance-size-grid + .appliance-edit-section-label {
-            margin-top: 6px; padding-top: 14px;
-            border-top: 1px solid #F1F5F9;
-        }
-        .appliance-size-grid {
-            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px; margin-bottom: 14px;
-        }
-        .appliance-size-grid .form-group { margin-bottom: 0; }
-        .appliance-size-grid .form-input { text-align: center; padding-left: 8px; padding-right: 8px; }
-        .appliance-photo-btn {
-            width: 100%; display: flex; align-items: center; gap: 12px;
-            padding: 12px 14px; text-align: left; cursor: pointer;
-            border: 1px solid #E2E8F0; border-radius: 12px; background: #fff;
-        }
-        .appliance-photo-btn:active { background: #F8FAFC; }
-        .appliance-photo-btn-icon {
-            width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-            background: #F1F5F9; color: #64748B;
-            display: inline-flex; align-items: center; justify-content: center;
-        }
-        .appliance-photo-btn-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-        .appliance-photo-btn-title { font-size: 13px; font-weight: 600; color: #0F172A; }
-        .appliance-photo-btn-sub {
-            font-size: 11px; color: #94A3B8; line-height: 1.3;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .appliances-empty {
-            display: flex; flex-direction: column; align-items: center;
-            text-align: center; padding: 28px 20px; margin: 0;
-            border: 1px dashed #CBD5E1; background: #F8FAFC;
-        }
-        .appliances-empty-icon {
-            width: 48px; height: 48px; border-radius: 14px; margin-bottom: 12px;
-            background: #EFF6FF; color: #2563EB;
-            display: inline-flex; align-items: center; justify-content: center;
-        }
-        .appliances-empty-title { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; }
-        .appliances-empty-sub {
-            font-size: 12px; color: #64748B; margin: 6px 0 0; line-height: 1.45; max-width: 260px;
-        }
-        .appliances-add-btn {
-            margin: 0; padding: 13px 16px; font-size: 13px; font-weight: 600;
-        }
-        .appliances-edit-page + .btn-primary,
-        .screen-content:has(.appliances-edit-page) > .btn-primary {
-            margin-top: 8px;
-        }
-
         .utility-provider-head {
             display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
         }
@@ -7998,27 +7825,15 @@
         .building-info-tap { display: block; width: 100%; }
         .building-subsection-label {
             font-size: 11px; font-weight: 700; color: #64748B;
-            text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 10px;
+            text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px;
         }
         .building-subsection-tap--divider {
-            margin-top: 14px; padding-top: 14px; border-top: 1px solid #F1F5F9;
+            margin-top: 12px; padding-top: 12px; border-top: 1px solid #F1F5F9;
         }
         .building-section-tap {
-            width: 100%; padding: 2px 0; border: none; background: transparent; text-align: left; cursor: pointer;
+            width: 100%; padding: 0; border: none; background: transparent; text-align: left; cursor: pointer;
         }
         .building-section-tap:active { opacity: 0.92; }
-        .building-section-tap .building-icon-grid {
-            gap: 12px 14px; margin-bottom: 0;
-        }
-        .building-section-tap .building-icon-item {
-            gap: 10px; padding: 10px 12px;
-            background: #F8FAFC; border: 1px solid #EEF2F7; border-radius: 12px;
-        }
-        .building-section-tap .building-icon-item i {
-            width: 32px; height: 32px; border-radius: 9px; margin-top: 0;
-            background: #EFF6FF; color: #2563EB;
-            display: inline-flex; align-items: center; justify-content: center;
-        }
         .building-flat-list { display: flex; flex-direction: column; gap: 8px; }
         .building-flat-row {
             display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -9560,73 +9375,6 @@
         .cert-tile-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
         .cert-tile-label { font-size: 12px; font-weight: 700; color: #0F172A; }
         .cert-tile-meta { font-size: 11px; color: #64748B; line-height: 1.35; }
-        /* Status system: Green Tick / Amber Clock / Red X */
-        .status-mark {
-            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-            flex-shrink: 0; border-radius: 999px; font-weight: 600;
-        }
-        .status-mark svg { width: 16px; height: 16px; }
-        .status-mark--sm svg { width: 14px; height: 14px; }
-        .status-mark--lg { width: 40px; height: 40px; border-radius: 12px; }
-        .status-mark--lg svg { width: 22px; height: 22px; }
-        .status-mark--ok { color: #16A34A; background: #ECFDF5; }
-        .status-mark--warn { color: #D97706; background: #FFFBEB; }
-        .status-mark--bad { color: #DC2626; background: #FEF2F2; }
-        .status-mark--muted { color: #94A3B8; background: #F1F5F9; }
-        .status-mark--sm.status-mark--ok,
-        .status-mark--sm.status-mark--warn,
-        .status-mark--sm.status-mark--bad,
-        .status-mark--sm.status-mark--muted { width: 28px; height: 28px; }
-        .status-mark:has(.status-mark-label) { width: auto !important; height: auto; padding: 4px 4px 4px 6px; }
-        .status-mark-label { font-size: 11px; padding-right: 6px; white-space: nowrap; }
-        .status-legend {
-            display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px;
-        }
-        .cert-folder-status {
-            display: flex; align-items: center; gap: 12px; padding: 14px;
-            border: 1px solid #E2E8F0;
-        }
-        .cert-folder-status--ok { border-color: #A7F3D0; background: #F0FDF4; }
-        .cert-folder-status--warn { border-color: #FDE68A; background: #FFFBEB; }
-        .cert-folder-status--bad { border-color: #FECACA; background: #FEF2F2; }
-        .cert-folder-status-title { font-size: 14px; font-weight: 700; color: #0F172A; }
-        .cert-folder-status-sub { font-size: 12px; color: #64748B; margin-top: 2px; }
-        .cert-request-banner {
-            display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px;
-            background: #FFFBEB; border-color: #FDE68A; margin-bottom: 10px;
-        }
-        .cert-request-title { font-size: 13px; font-weight: 700; color: #92400E; }
-        .cert-request-sub { font-size: 12px; color: #B45309; margin-top: 2px; line-height: 1.4; }
-        .cert-request-cta { margin-bottom: 10px; }
-        .cert-flow-mock { padding: 12px 14px; margin-bottom: 12px; background: #F8FAFC; }
-        .cert-flow-mock-title { font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px; }
-        .cert-flow-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-        .cert-flow-steps li {
-            display: flex; align-items: center; gap: 10px;
-            font-size: 12px; color: #475569; line-height: 1.35;
-        }
-        .cert-flow-n {
-            width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-            display: inline-flex; align-items: center; justify-content: center;
-            background: #0F172A; color: #fff; font-size: 11px; font-weight: 700;
-        }
-        .cert-history-hint { font-size: 12px; color: #64748B; margin: -4px 0 8px; line-height: 1.4; }
-        .doc-file-row--current { background: #F0FDF4; }
-        .doc-current-pill {
-            display: inline-block; margin-left: 6px; padding: 1px 7px;
-            border-radius: 999px; font-size: 10px; font-weight: 700;
-            background: #16A34A; color: #fff; vertical-align: middle;
-        }
-        .free-account-pill {
-            display: inline-flex; align-items: center; gap: 6px;
-            margin-top: 10px; padding: 6px 12px; border-radius: 999px;
-            background: #ECFDF5; color: #047857; font-size: 12px; font-weight: 600;
-        }
-        .free-account-pill--on-dark { background: rgba(255,255,255,.18); color: #fff; }
-        .free-account-pill--inline { margin-top: 6px; padding: 4px 10px; font-size: 11px; }
-        .free-partners-mock { margin-top: 12px; }
-        .free-partners-row { display: flex; flex-wrap: wrap; gap: 8px; }
-        .free-partners-hint { font-size: 12px; color: #64748B; margin-top: 8px; line-height: 1.4; }
         .cert-tile-dot {
             position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%;
         }
@@ -10127,11 +9875,10 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=230"></script>
-    <script src="landlord_hq_contractor.js?v=203"></script>
-    <script src="landlord_hq_features.js?v=248"></script>
-    <script src="landlord_hq_product.js?v=216"></script>
-    <script src="landlord_hq_client_feedback.js?v=5"></script>
+    <script src="landlord_hq_screens.js?v=228"></script>
+    <script src="landlord_hq_contractor.js?v=198"></script>
+    <script src="landlord_hq_features.js?v=245"></script>
+    <script src="landlord_hq_product.js?v=214"></script>
     <script>
     (function () {
         function showBootError(msg) {

@@ -4,13 +4,14 @@ const DOC_FOLDER_DEFS = [
     { id: 'gas', label: 'Gas Certificates', icon: 'flame', color: '#DC2626', bg: '#FEE2E2', match: d => d.type === 'Gas Certificate' },
     { id: 'eicr', label: 'Electrical Certificates', icon: 'zap', color: '#D97706', bg: '#FEF3C7', match: d => d.type === 'Electrical Certificate' },
     { id: 'epc', label: 'EPC', icon: 'leaf', color: '#16A34A', bg: '#ECFDF5', match: d => d.type === 'EPC Certificate' },
-    { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', match: d => d.type === 'Property Licence' || /property\s*licence|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'deposit', label: 'Deposit Certificate', icon: 'shield', color: '#2563EB', bg: '#DBEAFE', match: d => d.type === 'Deposit Certificate' || /deposit protection/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', match: d => d.type === 'Property Licence' || /property\s*licence|property\s*license|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'fire', label: 'Fire Safety', icon: 'flame-kindling', color: '#EA580C', bg: '#FFEDD5', match: d => /fire|smoke|alarm/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'insurance', label: 'Insurance', icon: 'shield-check', color: '#4338CA', bg: '#EEF2FF', match: d => /insurance/i.test(d.name || d.type || '') },
     { id: 'custom', label: 'Other files', icon: 'folder', color: '#64748B', bg: '#F1F5F9', match: () => false },
 ];
 
-const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'licence', 'fire', 'insurance', 'custom'];
+const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'deposit', 'licence', 'fire', 'insurance', 'custom'];
 const DOC_FOLDER_RECORDS_IDS = ['fire', 'licence', 'custom'];
 
 const CHARGE_TYPE_OPTIONS = [
@@ -258,6 +259,8 @@ function tenantDocFolderFromName(name) {
     if (/gas|cp12/.test(n)) return 'gas';
     if (/eicr|electrical/.test(n)) return 'eicr';
     if (/epc/.test(n)) return 'epc';
+    if (/deposit/.test(n)) return 'deposit';
+    if (/license|licence/.test(n)) return 'licence';
     if (/fire|smoke|alarm/.test(n)) return 'fire';
     if (/insurance/.test(n)) return 'insurance';
     return 'custom';
@@ -454,6 +457,7 @@ function docTypeForFolder(folderId) {
         gas: 'Gas Certificate',
         eicr: 'Electrical Certificate',
         epc: 'EPC Certificate',
+        deposit: 'Deposit Certificate',
         licence: 'Property Licence',
         fire: 'Custom Document',
         insurance: 'Custom Document',
@@ -919,7 +923,15 @@ function saveChargeProduct() {
         const tid = +fieldVal('chargeTenantId');
         tenants = tenants.filter(t => t.id === tid);
     } else if (chargeTarget === 'lead') {
-        tenants = tenants.slice(0, 1);
+        const roster = typeof getFlatMemberRoster === 'function' ? getFlatMemberRoster(pid, unit) : null;
+        const lead = roster?.members?.find(m => m.isLead) || roster?.members?.[0];
+        if (lead) {
+            tenants = tenants.filter(t =>
+                t.id === lead.listId || t.id === lead.tenantId || t.name === lead.name
+            ).slice(0, 1);
+        } else {
+            tenants = tenants.slice(0, 1);
+        }
     }
     if (!tenants.length) { toast('No tenant found for this unit'); return; }
     const notes = fieldVal('chargeNotes') || '';
@@ -1105,6 +1117,8 @@ const CERT_ASSIGN_TYPES = [
     { id: 'gas', label: 'Gas Certificate (CP12)', short: 'Gas (CP12)', complianceId: 0, docType: 'Gas Certificate' },
     { id: 'eicr', label: 'Electrical Certificate (EICR)', short: 'EICR', complianceId: 1, docType: 'Electrical Certificate' },
     { id: 'epc', label: 'EPC Certificate', short: 'EPC', complianceId: 7, docType: 'EPC Certificate' },
+    { id: 'deposit', label: 'Deposit Certificate', short: 'Deposit', folderId: 'deposit', docType: 'Deposit Certificate' },
+    { id: 'licence', label: 'Property Licence', short: 'Licence', folderId: 'licence', docType: 'Property Licence', optional: true },
     { id: 'inspection', label: 'Inspection Report', short: 'Inspection', inspection: true },
 ];
 

@@ -106,6 +106,7 @@ const STATE = {
     inspectionPrefill: null,
     inspectionId: 0,
     photoMenuIdx: null,
+    floorPlanMenuIdx: null,
     actionMenuKey: null,
     inviteReturn: null,
     inviteStep: 1,
@@ -125,9 +126,11 @@ const STATE = {
     rentReceivePropertyFilter: null,
     rentRollFilter: 'all',
     rentRollPropertyFilter: null,
+    financialCategory: 'all',
     rentReminderIds: [],
     rentReminderChannel: 'both',
     txnReturnScreen: null,
+    txnCategory: 'all',
     flatReturn: null,
     navStack: [],
     drawerReturnScreen: null,
@@ -780,6 +783,7 @@ const PROPERTY_HUB_BACK_OPTS = {
     'property-doc-folder': { tab: 'records', recordsView: 'documents' },
     'certificate-assign': { tab: 'records', recordsView: 'compliance' },
     'property-photos': { tab: 'info' },
+    'property-floor-plans': { tab: 'info' },
     'property-info': { tab: 'info' },
     'property-alarms': { tab: 'info' },
     'property-appliances': { tab: 'info' },
@@ -2058,8 +2062,8 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
-    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail') {
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
     if (screen === 'certificate-assign') {
@@ -2195,6 +2199,7 @@ function navigateBackFallback() {
         'create-invoice': 'financial', 'mark-rent-received': STATE.rentReturnScreen || 'financial', 'pay-contractor': 'financial',
         'share-document': 'property-detail',
         'property-photos': 'property-detail',
+        'property-floor-plans': 'property-detail',
         'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
         'property-utilities': 'property-detail', 'property-parking': 'property-detail',
         'property-info': 'property-detail', 'unit-utilities': 'property-detail',
@@ -2235,9 +2240,9 @@ function navigateBackFallback() {
         'create-tenancy': 'tenant', 'tenant-invite-sent': 'tenant',
         'conduct-inspection': 'inspection', 'share-document': 'documents',
         'inspection-detail': 'inspection',
-        'property-photos': 'info', 'property-alarms': 'info', 'property-appliances': 'info',
+        'property-photos': 'info', 'property-floor-plans': 'info', 'property-alarms': 'info', 'property-appliances': 'info',
         'property-utilities': 'info', 'property-parking': 'info', 'property-info': 'info',
-        'unit-utilities': 'units', 'edit-flat': 'units',
+        'unit-utilities': 'units', 'edit-flat': 'units', 'flat-keys': 'units',
     };
     if (STATE.screen === 'edit-reminder') {
         navigateBackFromEditReminder();
@@ -2275,7 +2280,7 @@ function navigateBackFallback() {
     if (STATE.screen === 'edit-preference') opts.prefKey = STATE.prefKey;
     if (['edit-payment-method'].includes(STATE.screen)) opts.paymentId = STATE.paymentId;
     if (STATE.screen === 'assign-contractor') opts.maintId = STATE.maintId;
-    if (STATE.screen === 'flat-detail' || STATE.screen === 'flat-members' || STATE.screen === 'tenancy-detail' || STATE.screen === 'edit-flat' || STATE.screen === 'flat-rent-history') {
+    if (STATE.screen === 'flat-detail' || STATE.screen === 'flat-members' || STATE.screen === 'tenancy-detail' || STATE.screen === 'edit-flat' || STATE.screen === 'flat-rent-history' || STATE.screen === 'flat-keys') {
         opts.unit = STATE.selectedUnit;
     }
     if (STATE.screen === 'invite-tenant' || STATE.screen === 'tenant-invite-sent') {
@@ -4765,14 +4770,15 @@ function screenInvoiceDetail() {
             <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-secondary py-3 text-[13px]">Download PDF</button>
             ${!paid ? `<button data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Record payment</button>` : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary py-3 text-[13px]">Download receipt</button>`}
         </div>
-        ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}`}
+        ${!paid ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline mt-3">Cancel bill</button>` : ''}
+        ${!isTenant && paid ? `<button type="button" data-action="undo-rent-payment" data-iid="${inv.id}" class="btn-danger-outline mt-3">Undo payment</button>` : ''}`}
     </div>`;
 }
 
 function screenInventoryRoom() {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(STATE.propertyId) : [['Kitchen','Good','4 items'],['Living Room','Good','6 items'],['Bedroom','Fair','5 items'],['Bathroom','Good','3 items'],['Hallway','Good','2 items']];
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(STATE.propertyId) : [['Kitchen','4 items','package',0],['Living Room','6 items','sofa',1],['Bedroom','5 items','bed',2],['Bathroom','3 items','bath',3],['Hallway','2 items','door-open',4]];
     const room = rooms[STATE.roomId] || rooms[0];
-    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : [['Oven & Hob','Good'],['Fridge Freezer','Good'],['Washing Machine','Fair'],['Microwave','Good']];
+    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob','Fridge Freezer','Washing Machine','Microwave'];
     const notes = typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '';
     const invKey = typeof inventoryKey === 'function' ? inventoryKey(STATE.propertyId, STATE.roomId) : `${STATE.propertyId}-${STATE.roomId}`;
     const roomPhotos = (typeof AppStore !== 'undefined' && AppStore.inventory?.[invKey]?.photos?.length)
@@ -4783,8 +4789,7 @@ function screenInventoryRoom() {
         : (roomPhotos.length ? `<div class="grid grid-cols-2 gap-2">${roomPhotos.map(src => `<div class="aspect-square rounded-xl overflow-hidden"><img src="${src}" class="img-cover" alt=""></div>`).join('')}</div>` : '');
     return `${topBar(room[0], { back: true })}
     <div class="screen-content screen-enter">
-        <div class="flex items-center justify-between">
-            <span class="badge ${room[1]==='Good'?'bg-[#DCFCE7] text-[#16A34A]':'bg-[#FEF3C7] text-[#D97706]'}">Condition: ${room[1]}</span>
+        <div class="flex items-center justify-end">
             <button data-go="edit-inventory-room" data-room="${STATE.roomId}" class="text-[13px] font-semibold text-[#2563EB]">Edit</button>
         </div>
         ${photoPreview}
@@ -4792,8 +4797,8 @@ function screenInventoryRoom() {
         <p class="form-helper text-center">${roomPhotos.length ? `${roomPhotos.length} photo${roomPhotos.length === 1 ? '' : 's'}` : 'No photos yet'} · select multiple at once</p>
         <div class="card p-4 space-y-3">
             <h3 class="text-[14px] font-bold">Items</h3>
-            ${items.map(([item,c])=>`
-            <div class="flex justify-between text-[13px] py-1.5 border-b border-[#F1F5F9] last:border-0"><span>${item}</span><span class="text-[#64748B]">${c}</span></div>`).join('')}
+            ${items.map(item => `
+            <div class="text-[13px] py-1.5 border-b border-[#F1F5F9] last:border-0"><span class="font-medium">${item}</span></div>`).join('')}
         </div>
         <div class="card p-4">${notes ? `<p class="text-[12px] text-[#64748B] mb-1">Notes</p><p class="text-[13px] leading-relaxed">${notes}</p>` : `<p class="text-[13px] text-[#94A3B8]">No notes for this room yet.</p>`}</div>
     </div>`;
@@ -5023,18 +5028,16 @@ function screenRenewCompliance() {
 }
 
 function screenEditInventoryRoom() {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms() : [['Kitchen','Good','4 items'],['Living Room','Good','6 items'],['Bedroom','Fair','5 items'],['Bathroom','Good','3 items'],['Hallway','Good','2 items']];
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms() : [['Kitchen','4 items','package',0],['Living Room','6 items','sofa',1],['Bedroom','5 items','bed',2],['Bathroom','3 items','bath',3],['Hallway','2 items','door-open',4]];
     const room = rooms[STATE.roomId] || rooms[0];
-    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : [['Oven & Hob','Good'],['Fridge Freezer','Good'],['Washing Machine','Fair'],['Microwave','Good']];
+    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob','Fridge Freezer','Washing Machine','Microwave'];
     return `${topBar('Edit ' + room[0], { back: true })}
     <div class="screen-content screen-enter">
-        ${formSelect('Condition', room[1], ['Good', 'Fair', 'Poor', 'Needs Repair'], 'condition')}
-        ${formTextarea('Room Notes', typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '', 'Condition notes for this room', 'roomNotes')}
+        ${formTextarea('Room Notes', typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '', 'Notes for this room', 'roomNotes')}
         <p class="section-title">Items</p>
-        ${items.map(([item, c], i) => `
+        ${items.map((item, i) => `
         <div class="card p-3.5 flex items-center justify-between gap-3">
             <span class="text-[14px] font-medium">${item}</span>
-            <select data-field="item_${i}" class="form-input form-select w-[120px] py-2 text-[13px]"><option ${c==='Good'?'selected':''}>Good</option><option ${c==='Fair'?'selected':''}>Fair</option><option ${c==='Poor'?'selected':''}>Poor</option></select>
         </div>`).join('')}
         ${photoUpload('Add room photos')}
         ${saveBtn('Save Room', 'Inventory updated')}
@@ -5408,6 +5411,7 @@ function handleDelegatedAction(e, el) {
         case 'clear-rent-receive-place-filters': return run(() => clearRentReceivePlaceFilters());
         case 'clear-rent-roll-property-filter': return run(() => clearRentRollPropertyFilter());
         case 'mark-invoice-paid': return run(() => { if (typeof markInvoicePaid === 'function') markInvoicePaid(+el.dataset.iid); });
+        case 'undo-rent-payment': return run(() => { if (typeof undoInvoicePayment === 'function') undoInvoicePayment(+el.dataset.iid); });
         case 'toggle-rent-receive': return run(() => { e.stopPropagation(); if (typeof toggleRentReceiveInvoice === 'function') toggleRentReceiveInvoice(+el.dataset.iid); });
         case 'toggle-rent-receive-group': return run(() => { e.stopPropagation(); if (typeof toggleRentReceiveGroup === 'function') toggleRentReceiveGroup(+el.dataset.pid); });
         case 'toggle-rent-receive-all': return run(() => { if (typeof toggleRentReceiveAll === 'function') toggleRentReceiveAll(); });
