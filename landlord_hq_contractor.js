@@ -2257,15 +2257,10 @@ function screenTenantEditProfile() {
         return `${topBar('Edit profile', { back: true })}
         <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenant account.</p></div>`;
     }
+    const photo = typeof getTenantProfilePhoto === 'function' && tid != null ? getTenantProfilePhoto(tid) : IMG.avatar.sarah;
     return `${topBar('Personal Information', { back: true })}
     <div class="screen-content screen-content-sm profile-form-page screen-enter">
-        <div class="flex flex-col items-center profile-form-photo">
-            <div class="relative">
-                <img src="${IMG.avatar.sarah}" class="w-20 h-20 rounded-2xl object-cover" alt="">
-                <button type="button" data-action="toast" data-msg="Profile photo updated" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button>
-            </div>
-            <p class="profile-form-photo-hint">Profile photo <span class="badge bg-[#F1F5F9] text-[#64748B]">Demo</span></p>
-        </div>
+        ${typeof renderProfilePhotoPicker === 'function' ? renderProfilePhotoPicker(photo, 'profilePhoto', IMG.avatar.sarah) : ''}
         <p class="text-[13px] text-[#64748B]">Update contact details. Lease and deposit are managed by your landlord.</p>
         <div class="form-stack">
         ${formField('Full Name', typeof fullNameFromParts === 'function' ? fullNameFromParts(rec?.firstName || t.firstName, rec?.lastName || t.lastName) : `${rec?.firstName || t.firstName} ${rec?.lastName || t.lastName}`.trim(), 'text', 'e.g. Sarah Johnson', 'fullName')}
@@ -2954,7 +2949,7 @@ function screenContractorProfile() {
     return `${topBar('Profile', { hideBell: true })}
     <div class="screen-content screen-content-sm screen-enter profile-page">
         <button type="button" data-go="personal-info" class="profile-card">
-            <img src="${IMG.avatar.plumber}" class="profile-card-avatar" alt="">
+            <img src="${typeof getContractorProfilePhoto === 'function' ? getContractorProfilePhoto() : IMG.avatar.plumber}" class="profile-card-avatar" alt="">
             <div class="profile-card-body">
                 <p class="profile-card-name">${name}</p>
                 <p class="profile-card-email">${u.email}</p>

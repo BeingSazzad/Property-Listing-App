@@ -1405,6 +1405,124 @@ function renderPhotoPreviewStrip(photos, opts = {}) {
     </div>`;
 }
 
+function isFieldPhotoPreviewable(value) {
+    if (!value) return false;
+    const v = String(value).trim();
+    return v.startsWith('data:') || /^https?:\/\//i.test(v) || v.startsWith('blob:');
+}
+
+function getFieldPhotoWrap(fieldKey) {
+    return document.querySelector(`[data-field-photo-wrap="${CSS.escape(fieldKey)}"]`);
+}
+
+function refreshFieldPhotoUi(fieldKey) {
+    const wrap = getFieldPhotoWrap(fieldKey);
+    if (!wrap) return;
+    const input = wrap.querySelector(`[data-field="${fieldKey}"]`);
+    const value = input?.value?.trim() || '';
+    const previewable = isFieldPhotoPreviewable(value);
+    let preview = wrap.querySelector('[data-field-photo-preview]');
+    const btn = wrap.querySelector('[data-action="upload-field-photo"]');
+    const span = btn?.querySelector('span');
+    const profileImg = wrap.querySelector('[data-profile-photo-img]');
+    if (previewable) {
+        if (!preview) {
+            preview = document.createElement('div');
+            preview.className = 'field-photo-preview';
+            preview.dataset.fieldPhotoPreview = fieldKey;
+            preview.innerHTML = `<img alt=""><button type="button" data-action="remove-field-photo" data-photo-field="${fieldKey}" class="photo-preview-remove" aria-label="Remove photo"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+            btn.parentNode.insertBefore(preview, btn);
+            preview.querySelector('[data-action="remove-field-photo"]').onclick = () => removeFieldPhotoAction(fieldKey);
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons({ nodes: [preview] });
+        }
+        preview.querySelector('img').src = value;
+        preview.style.display = '';
+        if (profileImg) profileImg.src = value;
+    } else {
+        preview?.remove();
+        if (profileImg) {
+            const def = profileImg.dataset.profilePhotoDefault;
+            if (def) profileImg.src = def;
+        }
+    }
+    if (span) span.textContent = previewable ? 'Change photo' : 'Upload photo';
+}
+
+async function uploadFieldPhotoAction(fieldKey) {
+    const urls = await pickImageFiles({ multiple: false });
+    if (!urls.length) return;
+    const wrap = getFieldPhotoWrap(fieldKey);
+    const input = wrap?.querySelector(`[data-field="${fieldKey}"]`);
+    if (!input) return;
+    input.value = urls[0];
+    refreshFieldPhotoUi(fieldKey);
+    toast('Photo uploaded');
+}
+
+function removeFieldPhotoAction(fieldKey) {
+    const wrap = getFieldPhotoWrap(fieldKey);
+    const input = wrap?.querySelector(`[data-field="${fieldKey}"]`);
+    if (!input) return;
+    input.value = '';
+    refreshFieldPhotoUi(fieldKey);
+}
+
+function renderFieldPhotoUpload(label, fieldKey, value, opts = {}) {
+    const photo = String(value || '').trim();
+    const previewable = isFieldPhotoPreviewable(photo);
+    const uploadLabel = previewable ? (opts.changeLabel || 'Change photo') : (opts.uploadLabel || 'Upload photo');
+    return `
+    <div class="form-field field-photo-upload" data-field-photo-wrap="${escapeHtml(fieldKey)}">
+        <label class="form-label">${escapeHtml(label)}</label>
+        <input type="hidden" data-field="${fieldKey}" value="${escapeHtml(previewable ? photo : '')}">
+        ${previewable ? `
+        <div class="field-photo-preview" data-field-photo-preview="${escapeHtml(fieldKey)}">
+            <img src="${photo}" alt="">
+            <button type="button" data-action="remove-field-photo" data-photo-field="${escapeHtml(fieldKey)}" class="photo-preview-remove" aria-label="Remove photo"><i data-lucide="x" class="w-3 h-3"></i></button>
+        </div>` : ''}
+        <button type="button" data-action="upload-field-photo" data-photo-field="${escapeHtml(fieldKey)}" class="flat-edit-photo-btn field-photo-upload-btn">
+            <i data-lucide="image-plus" class="w-4 h-4"></i><span>${uploadLabel}</span>
+        </button>
+        <p class="form-helper">${opts.helper || 'Upload from your device — JPG or PNG.'}</p>
+    </div>`;
+}
+
+function getLandlordProfilePhoto() {
+    const custom = typeof LANDLORD_USER !== 'undefined' ? LANDLORD_USER.photo : '';
+    return isFieldPhotoPreviewable(custom) ? custom : IMG.avatar.john;
+}
+
+function getContractorProfilePhoto() {
+    const custom = typeof CONTRACTOR_USER !== 'undefined' ? CONTRACTOR_USER.photo : '';
+    if (isFieldPhotoPreviewable(custom)) return custom;
+    if (typeof contractorAvatarForTrade === 'function' && CONTRACTOR_USER?.tradeId) return contractorAvatarForTrade(CONTRACTOR_USER.tradeId);
+    return IMG.avatar.plumber;
+}
+
+function getTenantProfilePhoto(tid) {
+    const list = typeof TENANT_LIST !== 'undefined' ? TENANT_LIST.find(x => x.id === tid) : null;
+    const t = typeof TENANTS !== 'undefined' ? TENANTS[tid] : null;
+    const img = t?.img || list?.img;
+    return isFieldPhotoPreviewable(img) ? img : (img || IMG.avatar.sarah);
+}
+
+function renderProfilePhotoPicker(src, fieldKey = 'profilePhoto', defaultSrc = src) {
+    const stored = isFieldPhotoPreviewable(src) ? src : '';
+    return `
+    <div class="flex justify-center profile-form-photo">
+        <div class="profile-photo-picker" data-field-photo-wrap="${escapeHtml(fieldKey)}">
+            <input type="hidden" data-field="${fieldKey}" value="${escapeHtml(stored)}">
+            <div class="relative profile-photo-frame">
+                <img src="${src}" alt="" class="w-20 h-20 rounded-2xl object-cover profile-photo-img" data-profile-photo-img data-profile-photo-default="${defaultSrc}">
+                <button type="button" data-action="upload-field-photo" data-photo-field="${fieldKey}" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center" aria-label="Upload profile photo">
+                    <i data-lucide="camera" class="w-4 h-4 text-white"></i>
+                </button>
+            </div>
+            <p class="profile-form-photo-hint">Tap camera to upload photo</p>
+        </div>
+    </div>`;
+}
+
 function renderLogMaintReportHeader(title = 'Report Issue') {
     const unread = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
     const showBack = typeof shouldShowBottomNav === 'function' ? !shouldShowBottomNav('log-maintenance') : true;
@@ -1933,7 +2051,7 @@ function renderUtilityProviderFields(meta) {
                 <div><label class="form-label">Meter number</label><input data-field="util_${u.key}_meter" class="form-input" value="${escapeHtml(entry.meterNumber || '')}" placeholder="e.g. MPAN / MPRN"></div>
                 <div><label class="form-label">Meter location</label><input data-field="util_${u.key}_location" class="form-input" value="${escapeHtml(entry.meterLocation || '')}" placeholder="e.g. Under stairs cupboard"></div>
                 <div><label class="form-label">Phone number</label><input data-field="util_${u.key}_phone" type="tel" class="form-input" value="${escapeHtml(entry.phone || '')}" placeholder="Provider contact"></div>
-                <div><label class="form-label">Meter picture</label><input data-field="util_${u.key}_picture" class="form-input" value="${escapeHtml(entry.meterPicture || '')}" placeholder="Photo reference or filename"></div>
+                <div>${renderFieldPhotoUpload('Meter picture', `util_${u.key}_picture`, entry.meterPicture || '')}</div>
             </div>`;
         }).join('');
     const council = utilities.council || {};
@@ -6972,10 +7090,11 @@ function renderRecordsHubApplianceRow(propertyId) {
 
 function renderApplianceRecordCard(a) {
     const icon = applianceIcon(a.name);
+    const photo = isFieldPhotoPreviewable(a.photo) ? a.photo : '';
     return `
     <div class="card p-4 mb-2">
         <div class="flex items-start gap-3">
-            ${a.photo ? `<img src="${escapeHtml(a.photo)}" alt="" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="feature-pick-chip-icon shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
+            ${photo ? `<img src="${photo}" alt="" class="w-14 h-14 rounded-lg object-cover shrink-0">` : `<div class="feature-pick-chip-icon shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
             <div class="flex-1 min-w-0">
                 <p class="text-[13px] font-bold text-[#0F172A]">${escapeHtml(a.name || 'Appliance')}</p>
                 ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5">${escapeHtml(a.brand)}</p>` : ''}
@@ -12257,14 +12376,17 @@ function hasInviteNidProof(draft = {}) {
     return hasCompleteNidProof(draft);
 }
 
-function renderNidProofUploadTile(side, fileName, required) {
+function renderNidProofUploadTile(side, fileName, required, previewUrl = '') {
     const label = side === 'back' ? 'Back' : 'Front';
-    const uploaded = !!fileName;
+    const uploaded = !!(fileName || previewUrl);
+    const thumb = previewUrl && isFieldPhotoPreviewable(previewUrl)
+        ? `<img src="${previewUrl}" alt="" class="nid-proof-tile-thumb">`
+        : `<i data-lucide="${uploaded ? 'file-check' : 'upload'}" class="w-5 h-5"></i>`;
     return `
     <button type="button" data-action="upload-nid-proof" data-nid-side="${side}" class="nid-proof-tile${uploaded ? ' nid-proof-tile--done' : ''}">
-        <i data-lucide="${uploaded ? 'file-check' : 'upload'}" class="w-5 h-5"></i>
+        ${thumb}
         <span class="nid-proof-tile-label">${label}${required ? ' *' : ''}</span>
-        <span class="nid-proof-tile-name">${uploaded ? escapeHtml(fileName) : (required ? 'Required' : 'Optional')}</span>
+        <span class="nid-proof-tile-name">${uploaded ? 'Uploaded' : (required ? 'Tap to upload' : 'Optional')}</span>
     </button>`;
 }
 
@@ -12296,15 +12418,17 @@ function renderNidProofReviewPreview(draft = {}) {
 function renderNidProofUploadFields(draft = {}) {
     const front = STATE.nidProofFrontName || draft.nidProofFrontName || '';
     const back = STATE.nidProofBackName || draft.nidProofBackName || '';
+    const frontPreview = STATE.nidProofFrontPreview || draft.nidProofFrontPreview || '';
+    const backPreview = STATE.nidProofBackPreview || draft.nidProofBackPreview || '';
     const legacy = !front && !back && (STATE.nidProofName || draft.nidProofName);
     const err = STATE.formErrors.nidProof;
     return `
     <div class="nid-proof-block${err ? ' nid-proof-block--error' : ''}">
         <label class="form-label">${requiredLabel('ID document')}</label>
-        <p class="form-helper nid-proof-hint">National ID card — upload front and back.</p>
+        <p class="form-helper nid-proof-hint">National ID card — upload front and back photos.</p>
         <div class="nid-proof-grid">
-            ${renderNidProofUploadTile('front', front || legacy, true)}
-            ${renderNidProofUploadTile('back', back, true)}
+            ${renderNidProofUploadTile('front', front || legacy, true, frontPreview)}
+            ${renderNidProofUploadTile('back', back, true, backPreview)}
         </div>
         ${err ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${err}</p>` : ''}
     </div>`;
@@ -14040,7 +14164,7 @@ function renderAlarmReminderFields(prefix, alarm = {}) {
     return `
         <div><label class="form-label">Make / Model</label><input data-field="${prefix}_make" class="form-input" value="${escapeHtml(alarm.makeModel || '')}" placeholder="e.g. FireAngel ST-620"></div>
         <div><label class="form-label">Description</label><input data-field="${prefix}_desc" class="form-input" value="${escapeHtml(alarm.description || '')}" placeholder="e.g. Mains-powered, hallway"></div>
-        <div><label class="form-label">Alarm picture</label><input data-field="${prefix}_photo" class="form-input" value="${escapeHtml(alarm.photo || '')}" placeholder="Photo reference or filename"></div>
+        ${renderFieldPhotoUpload('Alarm picture', `${prefix}_photo`, alarm.photo || '')}
         <div><label class="form-label">Reminder timing</label>
             <select data-field="${prefix}_reminder_timing" class="form-input form-select">
                 ${REMINDER_TIMING_OPTIONS.map(o => `<option value="${o.id}" ${timing === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
@@ -14101,7 +14225,7 @@ function renderApplianceEditCard(a, i) {
             ${nameField}
             <div><label class="form-label">Brand</label><input data-field="app_brand_${i}" class="form-input" value="${escapeHtml(a.brand || '')}" placeholder="e.g. Bosch"></div>
             <div><label class="form-label">Description</label><input data-field="app_desc_${i}" class="form-input" value="${escapeHtml(a.description || '')}" placeholder="e.g. Built-in, kitchen cupboard"></div>
-            <div><label class="form-label">Picture</label><input data-field="app_photo_${i}" class="form-input" value="${escapeHtml(a.photo || '')}" placeholder="Image URL or filename"></div>
+            ${renderFieldPhotoUpload('Picture', `app_photo_${i}`, a.photo || '')}
             <div><label class="form-label">Warranty / notes</label><input data-field="app_warranty_${i}" class="form-input" value="${escapeHtml(a.warranty || '')}" placeholder="e.g. Until Mar 2027"></div>
         </div>`;
 }
@@ -14362,6 +14486,12 @@ function saveTenantProfile() {
     t.phone = fieldVal('phone') || t.phone;
     t.emergency = fieldVal('emergency') || t.emergency || '—';
     t.emergencyPhone = fieldVal('emergencyPhone') || t.emergencyPhone || '—';
+    const profilePhoto = fieldVal('profilePhoto');
+    if (isFieldPhotoPreviewable(profilePhoto)) {
+        t.img = profilePhoto;
+        const list = TENANT_LIST[tid];
+        if (list) list.img = profilePhoto;
+    }
     account.email = t.email;
     account.phone = t.phone;
     if (typeof saveTenantData === 'function') saveTenantData();
@@ -15013,6 +15143,8 @@ function savePersonalInfo() {
         CONTRACTOR_USER.lastName = lastName;
         CONTRACTOR_USER.email = fieldVal('email');
         CONTRACTOR_USER.phone = fieldVal('phone') || CONTRACTOR_USER.phone;
+        const profilePhoto = fieldVal('profilePhoto');
+        if (isFieldPhotoPreviewable(profilePhoto)) CONTRACTOR_USER.photo = profilePhoto;
         const ctrAccount = typeof contractorAccountByEmail === 'function' ? contractorAccountByEmail(CONTRACTOR_USER.email) : null;
         if (ctrAccount) {
             ctrAccount.firstName = firstName;
@@ -15029,6 +15161,8 @@ function savePersonalInfo() {
     LANDLORD_USER.email = fieldVal('email');
     LANDLORD_USER.phone = fieldVal('phone') || LANDLORD_USER.phone;
     LANDLORD_USER.address = fieldVal('address') || LANDLORD_USER.address;
+    const profilePhoto = fieldVal('profilePhoto');
+    if (isFieldPhotoPreviewable(profilePhoto)) LANDLORD_USER.photo = profilePhoto;
     const landlordAccount = typeof landlordAccountByEmail === 'function' ? landlordAccountByEmail(LANDLORD_USER.email) : null;
     if (landlordAccount) {
         landlordAccount.firstName = firstName;
@@ -15158,14 +15292,20 @@ function openFlatDocumentUpload(propertyId, unit) {
 async function uploadNidProof(side = 'front') {
     const files = await pickDocumentFiles({ multiple: false });
     if (!files.length) return;
-    const fileName = files[0].name;
+    const file = files[0];
+    const fileName = file.name;
+    const preview = file.url;
     if (!STATE.inviteDraft) STATE.inviteDraft = {};
     if (side === 'back') {
         STATE.nidProofBackName = fileName;
+        STATE.nidProofBackPreview = preview;
         STATE.inviteDraft.nidProofBackName = fileName;
+        STATE.inviteDraft.nidProofBackPreview = preview;
     } else {
         STATE.nidProofFrontName = fileName;
+        STATE.nidProofFrontPreview = preview;
         STATE.inviteDraft.nidProofFrontName = fileName;
+        STATE.inviteDraft.nidProofFrontPreview = preview;
         STATE.nidProofName = fileName;
         STATE.inviteDraft.nidProofName = fileName;
     }
@@ -16275,6 +16415,12 @@ function bindFeatureEvents() {
             STATE.propertyId = +el.value;
             render();
         };
+    });
+    app.querySelectorAll('[data-action="upload-field-photo"]').forEach(el => {
+        el.onclick = () => uploadFieldPhotoAction(el.dataset.photoField);
+    });
+    app.querySelectorAll('[data-action="remove-field-photo"]').forEach(el => {
+        el.onclick = () => removeFieldPhotoAction(el.dataset.photoField);
     });
     app.querySelectorAll('[data-action="upload-document"]').forEach(el => { el.onclick = uploadDocumentAction; });
     app.querySelectorAll('[data-action="upload-photo"]').forEach(el => { el.onclick = uploadPhotoAction; });

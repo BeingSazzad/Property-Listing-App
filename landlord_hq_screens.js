@@ -2161,7 +2161,7 @@ function navigateBackFallback() {
         'invoice-detail': STATE.userRole === 'tenant' ? 'transaction-history' : 'financial',
         'inventory-room': 'property-inventory',
         'personal-info': profileParent, 'notifications-settings': profileParent,
-        'security': profileParent, 'password': profileParent, 'preferences': profileParent,
+        'security': profileParent, 'password': profileParent, 'delete-account': profileParent, 'preferences': profileParent,
         'payment-methods': profileParent, 'subscription': profileParent, 'subscription-billing': 'subscription',
         'transaction-history': STATE.userRole === 'tenant' ? 'tenant-dashboard' : profileParent,
         'faq-detail': 'faq', 'about': profileParent,
@@ -2739,7 +2739,7 @@ const dashboardHeader = () => `
         </button>
     </div>
     <div class="dash-greeting-row">
-        <img src="${IMG.avatar.john}" class="dash-avatar" alt="">
+        <img src="${typeof getLandlordProfilePhoto === 'function' ? getLandlordProfilePhoto() : IMG.avatar.john}" class="dash-avatar" alt="">
         <div>
             <p class="dash-greeting">${dashGreeting()}, John</p>
             <p class="dash-date">${dashDateLabel()}</p>
@@ -4104,7 +4104,7 @@ function screenProfile() {
     return `${topBar('Profile', { hideBell: true })}
     <div class="screen-content screen-content-sm screen-enter profile-page">
         <button data-go="personal-info" class="profile-card">
-            <img src="${IMG.avatar.john}" class="profile-card-avatar" alt="">
+            <img src="${typeof getLandlordProfilePhoto === 'function' ? getLandlordProfilePhoto() : IMG.avatar.john}" class="profile-card-avatar" alt="">
             <div class="profile-card-body">
                 <p class="profile-card-name">${u.firstName} ${u.lastName}</p>
                 <p class="profile-card-email">${u.email}</p>
@@ -4159,12 +4159,11 @@ function screenPersonalInfo() {
     }
     if (STATE.userRole === 'contractor') {
         const u = CONTRACTOR_USER;
+        const photo = typeof getContractorProfilePhoto === 'function' ? getContractorProfilePhoto() : IMG.avatar.plumber;
+        const defaultPhoto = typeof contractorAvatarForTrade === 'function' ? contractorAvatarForTrade(u.tradeId) : IMG.avatar.plumber;
         return `${topBar('Personal Information', { back: true })}
     <div class="screen-content screen-content-sm profile-form-page screen-enter">
-        <div class="flex justify-center profile-form-photo">
-            <div class="relative"><img src="${IMG.avatar.plumber}" class="w-20 h-20 rounded-2xl object-cover" alt="">
-            <button type="button" data-action="toast" data-msg="Photo updated" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button></div>
-        </div>
+        ${typeof renderProfilePhotoPicker === 'function' ? renderProfilePhotoPicker(photo, 'profilePhoto', defaultPhoto) : ''}
         <div class="form-stack">
         ${formField('Full Name', fullNameFromParts(u.firstName, u.lastName), 'text', 'e.g. John Smith', 'fullName')}
         ${formField('Email', u.email, 'email', '', 'email')}
@@ -4174,12 +4173,10 @@ function screenPersonalInfo() {
     </div>`;
     }
     const u = LANDLORD_USER;
+    const photo = typeof getLandlordProfilePhoto === 'function' ? getLandlordProfilePhoto() : IMG.avatar.john;
     return `${topBar('Personal Information', { back: true })}
     <div class="screen-content screen-content-sm profile-form-page screen-enter">
-        <div class="flex justify-center profile-form-photo">
-            <div class="relative"><img src="${IMG.avatar.john}" class="w-20 h-20 rounded-2xl object-cover" alt="">
-            <button type="button" data-action="toast" data-msg="Photo updated" class="absolute -bottom-1 -right-1 w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center"><i data-lucide="camera" class="w-4 h-4 text-white"></i></button></div>
-        </div>
+        ${typeof renderProfilePhotoPicker === 'function' ? renderProfilePhotoPicker(photo, 'profilePhoto', IMG.avatar.john) : ''}
         <div class="form-stack">
         ${formField('Full Name', fullNameFromParts(u.firstName, u.lastName), 'text', 'e.g. John Smith', 'fullName')}
         ${formField('Email', u.email, 'email', '', 'email')}

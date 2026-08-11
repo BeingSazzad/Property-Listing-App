@@ -7523,6 +7523,14 @@
             border: none; background: rgba(15,23,42,.72); color: #fff;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
+        .field-photo-upload { margin-top: 4px; }
+        .field-photo-preview {
+            position: relative; width: 100%; max-width: 200px; aspect-ratio: 4 / 3;
+            border-radius: 12px; overflow: hidden; border: 1px solid #E2E8F0;
+            background: #F8FAFC; margin-bottom: 10px;
+        }
+        .field-photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .field-photo-upload-btn { width: 100%; max-width: 200px; justify-content: center; }
         .photo-add-btn {
             display: inline-flex; align-items: center; justify-content: center;
             gap: 8px; min-height: var(--size-btn); font-size: var(--text-body); font-weight: var(--font-semibold);
@@ -9545,6 +9553,10 @@
             min-width: 0; width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box;
         }
         .nid-proof-tile--done { border-color: #BFDBFE; background: #F8FAFF; color: #2563EB; }
+        .nid-proof-tile-thumb {
+            width: 100%; aspect-ratio: 4 / 3; border-radius: 8px; object-fit: cover;
+            border: 1px solid #E2E8F0; background: #F8FAFC;
+        }
         .nid-proof-tile-label { font-size: 12px; font-weight: 700; color: #0F172A; }
         .nid-proof-tile-name {
             font-size: 10px; color: #64748B; text-align: center; line-height: 1.3;
@@ -9882,9 +9894,9 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=231"></script>
-    <script src="landlord_hq_contractor.js?v=200"></script>
-    <script src="landlord_hq_features.js?v=247"></script>
+    <script src="landlord_hq_screens.js?v=233"></script>
+    <script src="landlord_hq_contractor.js?v=201"></script>
+    <script src="landlord_hq_features.js?v=249"></script>
     <script src="landlord_hq_product.js?v=214"></script>
     <script>
     (function () {
