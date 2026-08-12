@@ -48,12 +48,12 @@ const REMINDER_TYPES = [
     ['smoke', 'Smoke Alarm Expiry', 'bell-ring', '#FEF3C7', '#D97706'],
     ['heat', 'Heat Alarm Expiry', 'thermometer', '#EFF6FF', '#2563EB'],
     ['co2', 'CO₂ Alarm Expiry', 'wind', '#F1F5F9', '#64748B'],
-    ['mortgage', 'Mortgage Reminder', 'landmark', '#EFF6FF', '#2563EB'],
-    ['insurance', 'Insurance Reminder', 'shield', '#ECFDF5', '#059669'],
-    ['leasehold', 'Leasehold Reminder', 'building', '#F3E8FF', '#7C3AED'],
-    ['rent-review', 'Rent Review Reminder', 'banknote', '#EFF6FF', '#2563EB'],
-    ['inspection', 'Inspection Reminder', 'search', '#FEF3C7', '#D97706'],
-    ['custom', 'Custom Reminder', 'bell', '#F1F5F9', '#475569'],
+    ['mortgage', 'Mortgage Smart Reminder', 'landmark', '#EFF6FF', '#2563EB'],
+    ['insurance', 'Insurance Smart Reminder', 'shield', '#ECFDF5', '#059669'],
+    ['leasehold', 'Leasehold Smart Reminder', 'building', '#F3E8FF', '#7C3AED'],
+    ['rent-review', 'Rent Review Smart Reminder', 'banknote', '#EFF6FF', '#2563EB'],
+    ['inspection', 'Inspection Smart Reminder', 'search', '#FEF3C7', '#D97706'],
+    ['custom', 'Custom Smart Reminder', 'bell', '#F1F5F9', '#475569'],
 ];
 
 /** Maps COMPLIANCE_ITEMS index → reminder sync + renew behaviour */
@@ -276,9 +276,16 @@ const AppStore = {
         };
         this.tenantCheckout = {
             0: {
-                checklist: { kitchen: false, bathroom: false, bedroom: false, living: false, keys: false },
-                meters: { electricity: '', gas: '', water: '' },
+                checklist: { kitchen: false, bathroom: false, bedroom: false, living: false },
+                meters: {
+                    electricity: { reading: '', photo: '' },
+                    gas: { reading: '', photo: '' },
+                    water: { reading: '', photo: '' },
+                },
+                keys: [],
                 photos: [],
+                vacateNotice: null,
+                submitted: false,
                 depositStatus: 'protected',
                 depositScheme: 'MyDeposits',
                 depositAmount: '£2,450',
@@ -390,6 +397,9 @@ Object.assign(STATE, {
     logMaintCategoryId: '',
     tenantRefKey: '',
     inspectionPhotos: [],
+    tenantInspectionPhotos: [],
+    inspCollectMode: 'visit',
+    inspScheduleDraft: null,
     invitePrefill: null,
     pendingPropertyPhotos: [],
     pendingPropertyCover: 0,
@@ -1456,6 +1466,17 @@ async function uploadFieldPhotoAction(fieldKey) {
     if (!input) return;
     input.value = urls[0];
     refreshFieldPhotoUi(fieldKey);
+    const meterMatch = String(fieldKey).match(/^co_meter_(electricity|gas|water)_photo$/);
+    if (meterMatch && STATE.screen === 'tenant-checkout') {
+        const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+        const co = getTenantCheckout(tid);
+        const key = meterMatch[1];
+        if (!co.meters[key]) co.meters[key] = { reading: '', photo: '' };
+        co.meters[key].photo = urls[0];
+        const readingInput = document.querySelector(`[data-field="co_meter_${key}"]`);
+        if (readingInput?.value) co.meters[key].reading = readingInput.value.trim();
+        AppStore.save();
+    }
     toast('Photo uploaded');
 }
 
@@ -1465,6 +1486,14 @@ function removeFieldPhotoAction(fieldKey) {
     if (!input) return;
     input.value = '';
     refreshFieldPhotoUi(fieldKey);
+    const meterMatch = String(fieldKey).match(/^co_meter_(electricity|gas|water)_photo$/);
+    if (meterMatch && STATE.screen === 'tenant-checkout') {
+        const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+        const co = getTenantCheckout(tid);
+        const key = meterMatch[1];
+        if (co.meters?.[key]) co.meters[key].photo = '';
+        AppStore.save();
+    }
 }
 
 function renderFieldPhotoUpload(label, fieldKey, value, opts = {}) {
@@ -1781,7 +1810,7 @@ const PROPERTY_TYPE_OPTIONS = ['Detached', 'Semi-detached', 'Terraced', 'Flat / 
 const FURNISHED_OPTIONS = ['Furnished', 'Unfurnished', 'Part-furnished'];
 const EPC_RATING_OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'Not rated', 'Exempt'];
 const COUNCIL_TAX_BAND_OPTIONS = ['Band A', 'Band B', 'Band C', 'Band D', 'Band E', 'Band F', 'Band G', 'Band H', 'Not applicable'];
-const APPLIANCE_NAME_OPTIONS = ['Boiler', 'Oven', 'Fridge', 'Freezer', 'Washing machine', 'Dishwasher', 'Microwave', 'Extractor fan', 'Other'];
+const APPLIANCE_NAME_OPTIONS = ['Boiler', 'Oven', 'Fridge', 'Freezer', 'Fridge & Freezer', 'Washing machine', 'Dishwasher', 'Microwave', 'Extractor fan', 'Other'];
 const UTILITY_PROVIDER_SUGGESTIONS = {
     gas: ['British Gas', 'Octopus Energy', 'EDF', 'E.ON', 'SSE', 'Scottish Power'],
     electric: ['Octopus Energy', 'British Gas', 'EDF', 'E.ON', 'SSE', 'Scottish Power'],
@@ -1801,9 +1830,11 @@ const UTILITY_CATALOG = [
 const REMINDER_TIMING_OPTIONS = [
     { id: '30', label: '30 days before expiry' },
     { id: '60', label: '60 days before expiry' },
-    { id: '90', label: '90 days before expiry' },
-    { id: 'custom', label: 'Custom reminder date' },
 ];
+
+function alarmReminderTiming(timing) {
+    return timing === '60' ? '60' : '30';
+}
 
 function normalizeUtilityEntry(val) {
     if (!val) return null;
@@ -1845,8 +1876,7 @@ function computeReminderDate(expiry, timing, customDate) {
 
 function recordReminderDue(record) {
     if (!record?.expiry) return '';
-    if (record.reminderDate) return record.reminderDate;
-    return computeReminderDate(record.expiry, record.reminderTiming || '30', '');
+    return computeReminderDate(record.expiry, alarmReminderTiming(record.reminderTiming), '');
 }
 
 function applianceSummaryItems(appliances) {
@@ -1867,6 +1897,7 @@ const APPLIANCE_CATALOG = [
     { name: 'Oven', icon: 'microwave' },
     { name: 'Fridge', icon: 'box' },
     { name: 'Freezer', icon: 'snowflake' },
+    { name: 'Fridge & Freezer', icon: 'refrigerator' },
     { name: 'Washing machine', icon: 'waves' },
     { name: 'Dishwasher', icon: 'utensils-crossed' },
     { name: 'Microwave', icon: 'microwave' },
@@ -1884,6 +1915,7 @@ function applianceIcon(name) {
     const hit = APPLIANCE_CATALOG.find(a => a.name.toLowerCase() === key);
     if (hit) return hit.icon;
     if (key.includes('boiler')) return 'flame';
+    if (key.includes('fridge') && key.includes('freezer')) return 'refrigerator';
     if (key.includes('fridge')) return 'box';
     if (key.includes('oven') || key.includes('microwave')) return 'microwave';
     if (key.includes('wash')) return 'waves';
@@ -1983,14 +2015,18 @@ function renderBuildingIconItem({ icon, label, sub = '' }) {
     </div>`;
 }
 
-function renderFeaturePickGrid(items, { isActive, action, valueKey = 'name', labelKey = 'name', iconKey = 'icon' }) {
+function renderFeaturePickGrid(items, { isActive, action, valueKey = 'name', labelKey = 'name', iconKey = 'icon', checkbox = false }) {
     return `<div class="feature-pick-grid">${items.map(item => {
         const val = item[valueKey];
         const active = isActive(item);
-        return `<button type="button" data-action="${action}" data-pick-value="${escapeHtml(val)}" class="feature-pick-chip ${active ? 'is-active' : ''}" aria-pressed="${active}">
+        const tick = checkbox
+            ? `<span class="feature-pick-tick${active ? ' is-on' : ''}" aria-hidden="true">${active ? '<i data-lucide="check" class="w-3 h-3"></i>' : ''}</span>`
+            : '';
+        return `<button type="button" data-action="${action}" data-pick-value="${escapeHtml(val)}" class="feature-pick-chip ${active ? 'is-active' : ''}"${checkbox ? ` role="checkbox" aria-checked="${active}"` : ` aria-pressed="${active}"`}>
+            ${tick}
             <span class="feature-pick-chip-icon"><i data-lucide="${item[iconKey]}" class="w-4 h-4"></i></span>
             <span>${escapeHtml(item[labelKey])}</span>
-            ${active ? '<i data-lucide="check" class="w-3.5 h-3.5 feature-pick-check"></i>' : ''}
+            ${!checkbox && active ? '<i data-lucide="check" class="w-3.5 h-3.5 feature-pick-check"></i>' : ''}
         </button>`;
     }).join('')}</div>`;
 }
@@ -1999,11 +2035,12 @@ function renderApplianceQuickPick(meta) {
     const existing = new Set((meta.appliances || []).map(a => a.name.toLowerCase()));
     return `
     <div class="feature-pick-section card p-4 mb-3">
-        <p class="feature-pick-title">Quick add common appliances</p>
-        <p class="feature-pick-sub">Tap to add — same icons appear on your building summary.</p>
+        <p class="feature-pick-title">What's in this property?</p>
+        <p class="feature-pick-sub">Tick each appliance. Ticked items appear in Records with the details you add below.</p>
         ${renderFeaturePickGrid(APPLIANCE_CATALOG, {
             isActive: (item) => existing.has(item.name.toLowerCase()),
-            action: 'quick-add-appliance',
+            action: 'toggle-appliance',
+            checkbox: true,
         })}
     </div>`;
 }
@@ -3275,7 +3312,7 @@ function getSelectedNotifyTargetIds() {
     return [...document.querySelectorAll('[data-notify-target]:checked')].map(el => +el.dataset.notifyTarget);
 }
 
-function notifyTenantsAboutEvent(propertyId, tenantIds, { title, desc, screen = 'tenant-dashboard' }) {
+function notifyTenantsAboutEvent(propertyId, tenantIds, { title, desc, screen = 'tenant-dashboard', opts = {} }) {
     const p = PROPERTIES[propertyId];
     tenantIds.forEach(tid => {
         if (!TENANT_LIST.find(t => t.id === tid)) return;
@@ -3287,8 +3324,20 @@ function notifyTenantsAboutEvent(propertyId, tenantIds, { title, desc, screen = 
             time: 'Just now',
             unread: true,
             screen,
-            opts: {},
+            opts,
         });
+        if (typeof pushTenantNotification === 'function') {
+            pushTenantNotification(tid, {
+                icon: 'clipboard-list',
+                color: ['#FEF3C7', '#D97706'],
+                title,
+                desc: desc || p?.name || '',
+                time: 'Just now',
+                unread: true,
+                screen,
+                opts,
+            });
+        }
     });
     return tenantIds.length;
 }
@@ -3727,6 +3776,68 @@ function toDateInputValue(val) {
 
 function getScheduledInspection(propertyId = STATE.propertyId) {
     return AppStore.inspections.find(i => i.propertyId === propertyId && i.scheduled) || null;
+}
+
+const INSP_TENANT_REMIND_INTERVALS = [
+    { id: '0', label: 'On the due date' },
+    { id: '7', label: '7 days before' },
+    { id: '14', label: '14 days before' },
+    { id: '30', label: '30 days before' },
+    { id: '60', label: '60 days before' },
+];
+
+function isTenantUploadInspection(insp) {
+    return insp?.collectMode === 'tenant-upload';
+}
+
+function inspectionTenantRemindDate(dueRaw, interval) {
+    const due = typeof reminderDueInputValue === 'function' ? reminderDueInputValue(dueRaw) : dueRaw;
+    if (!due) return '';
+    const parsed = parseInt(interval, 10);
+    const days = Number.isFinite(parsed) ? parsed : 0;
+    const exp = new Date(`${due}T00:00:00`);
+    if (Number.isNaN(exp.getTime())) return '';
+    exp.setDate(exp.getDate() - days);
+    const y = exp.getFullYear();
+    const m = String(exp.getMonth() + 1).padStart(2, '0');
+    const d = String(exp.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function tenantInspectionPhotoRequest(tenant) {
+    if (!tenant) return null;
+    return (AppStore.inspections || []).find(i =>
+        i.propertyId === tenant.propertyId && i.scheduled && isTenantUploadInspection(i)
+    ) || null;
+}
+
+function setInspCollectMode(mode) {
+    STATE.inspCollectMode = mode === 'tenant-upload' ? 'tenant-upload' : 'visit';
+    STATE.inspScheduleDraft = {
+        date: typeof fieldVal === 'function' ? fieldVal('inspDate') : '',
+        type: typeof fieldVal === 'function' ? fieldVal('inspType') : '',
+        notes: typeof fieldVal === 'function' ? fieldVal('inspNotes') : '',
+        timeSlot: typeof fieldVal === 'function' ? fieldVal('timeSlot') : '',
+        interval: typeof fieldVal === 'function' ? fieldVal('inspRemindInterval') : '30',
+    };
+    render();
+}
+
+function renderScheduledInspectionActions(upcoming, propertyId) {
+    const isUpload = isTenantUploadInspection(upcoming);
+    const photosReady = isUpload && ((upcoming.tenantPhotoUrls || []).length > 0 || upcoming.tenantPhotosSubmitted);
+    const editLabel = isUpload ? 'Edit request' : 'Reschedule';
+    const editBtn = `<button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-secondary py-2 text-[12px] flex-1">${editLabel}</button>`;
+    if (isUpload && photosReady) {
+        return `${editBtn}
+        <button type="button" data-go="inspection-detail" data-insp="${upcoming.id}" data-pid="${propertyId}" class="btn-primary py-2 text-[12px] flex-1">Review photos</button>`;
+    }
+    if (isUpload) {
+        return `${editBtn}
+        <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="btn-secondary py-2 text-[12px] flex-1">I'll visit</button>`;
+    }
+    return `${editBtn}
+    <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="btn-primary py-2 text-[12px] flex-1">Conduct</button>`;
 }
 
 function normalizeInspectionType(type) {
@@ -5927,9 +6038,9 @@ const CONTRACTOR_SCREEN_ALIASES = {
 
 const TENANT_ALLOWED_SCREENS = new Set([
     'tenant-dashboard', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
-    'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance',
+    'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
     'tenant-communication', 'tenant-checkout', 'tenant-building-info', 'tenant-announcements',
-    'tenant-house-rules', 'tenant-edit-profile', 'tenant-welcome',
+    'tenant-house-rules', 'tenant-edit-profile', 'tenant-welcome', 'tenant-inspection-upload',
     'log-maintenance', 'maintenance-detail', 'transaction-history', 'invoice-detail',
     'messages', 'chat', 'personal-info', 'notifications-list', 'notifications-settings',
     'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about',
@@ -6016,6 +6127,16 @@ function tenantHomeAttentionItems(tenant, pay, tenantId) {
             priority: 3, icon: 'wrench', bg: '#EFF6FF', color: '#2563EB',
             title: 'Maintenance bill due', sub: pay.nextMaintDue || pay.maintBalance,
             go: 'transaction-history', cta: 'Pay', opts: { tenantPayFilter: 'maintenance' },
+        });
+    }
+    const photoReq = typeof tenantInspectionPhotoRequest === 'function' ? tenantInspectionPhotoRequest(tenant) : null;
+    if (photoReq && !photoReq.tenantPhotosSubmitted) {
+        const due = typeof formatReminderDue === 'function' ? formatReminderDue(photoReq.date) : photoReq.date;
+        items.push({
+            priority: 2, icon: 'camera', bg: '#FEF3C7', color: '#D97706',
+            title: 'Upload inspection photos',
+            sub: due ? `Due ${due}` : 'Requested by your landlord',
+            go: 'tenant-inspection-upload', cta: 'Upload',
         });
     }
     const openIssues = typeof tenantMaintenanceForAccount === 'function'
@@ -6165,8 +6286,23 @@ const TENANT_CHECKOUT_CHECKLIST = [
     ['bathroom', 'Bathroom cleaned & fixtures wiped'],
     ['bedroom', 'Bedrooms vacuumed & surfaces dusted'],
     ['living', 'Living areas tidy & floors cleaned'],
-    ['keys', 'All keys returned to landlord'],
 ];
+
+const CHECKOUT_METER_KEYS = [
+    ['electricity', 'Electricity'],
+    ['gas', 'Gas'],
+    ['water', 'Water'],
+];
+
+const VACATE_NOTICE_TEMPLATE = (tenantName, propertyLabel, vacateDate) =>
+`Dear Landlord,
+
+I am writing to give formal notice that I intend to vacate ${propertyLabel} on ${vacateDate || '[vacating date]'}.
+
+Please consider this my Request to Vacate Property Notice in accordance with my tenancy agreement. I will complete the check-out checklist, return all keys issued at the start of the tenancy, and provide final meter readings with photos.
+
+Yours sincerely,
+${tenantName || 'Tenant'}`;
 
 function getTenantReferencing(tenantId) {
     if (!AppStore.tenantReferencing) AppStore.tenantReferencing = {};
@@ -6282,24 +6418,413 @@ function tenantContractorChatIds(tenant) {
     return [...new Set(ids)];
 }
 
+function normalizeCheckoutMeterEntry(val) {
+    if (val && typeof val === 'object') {
+        return {
+            reading: String(val.reading ?? val.value ?? '').trim(),
+            photo: String(val.photo || '').trim(),
+        };
+    }
+    return { reading: String(val || '').trim(), photo: '' };
+}
+
+function normalizeCheckoutMeters(meters = {}) {
+    const out = {};
+    CHECKOUT_METER_KEYS.forEach(([key]) => {
+        out[key] = normalizeCheckoutMeterEntry(meters[key]);
+    });
+    return out;
+}
+
+function checkoutTenantContext(tenantId) {
+    const listItem = TENANT_LIST.find(t => t.id === tenantId) || TENANT_LIST[tenantId] || null;
+    const rec = typeof TENANTS !== 'undefined' ? TENANTS[tenantId] : null;
+    const tenantName = listItem?.name
+        || (rec && typeof fullNameFromParts === 'function'
+            ? fullNameFromParts(rec.firstName, rec.lastName)
+            : `${rec?.firstName || ''} ${rec?.lastName || ''}`.trim())
+        || 'Tenant';
+    const propertyId = listItem?.propertyId ?? rec?.propertyId ?? null;
+    const unit = listItem?.unit || rec?.unit || '';
+    const propertyName = propertyId != null && typeof PROPERTIES !== 'undefined'
+        ? (PROPERTIES[propertyId]?.name || 'Property')
+        : 'Property';
+    return { listItem, rec, tenantName, propertyId, unit, propertyName };
+}
+
+function syncCheckoutKeysFromTenancy(co, tenantId) {
+    const { propertyId, unit, tenantName } = checkoutTenantContext(tenantId);
+    if (propertyId == null || !unit) return co.keys || [];
+    const issued = typeof keysHeldByTenant === 'function'
+        ? keysHeldByTenant(propertyId, unit, tenantName)
+        : (typeof getUnitKeys === 'function' ? getUnitKeys(propertyId, unit) : []);
+    const existing = Array.isArray(co.keys) ? co.keys : [];
+    const byLabel = new Map(existing.map(k => [`${(k.label || '').toLowerCase()}|${k.qty || '1'}`, k]));
+    const synced = issued.map((k, i) => {
+        const key = `${(k.label || '').toLowerCase()}|${k.qty || '1'}`;
+        const prev = byLabel.get(key);
+        return {
+            id: prev?.id ?? `key-${i}-${(k.label || 'key').toLowerCase().replace(/\s+/g, '-')}`,
+            label: k.label || 'Key',
+            qty: String(k.qty || '1'),
+            location: k.location || '',
+            holder: k.holder || tenantName,
+            returned: !!prev?.returned,
+            missing: !!prev?.missing,
+        };
+    });
+    co.keys = synced;
+    return synced;
+}
+
 function getTenantCheckout(tenantId) {
     if (!AppStore.tenantCheckout) AppStore.tenantCheckout = {};
+    const { listItem } = checkoutTenantContext(tenantId);
+    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tenantId) : null;
+    const tenancy = listItem && typeof getTenancyForTenantListItem === 'function'
+        ? getTenancyForTenantListItem(listItem) : null;
     if (!AppStore.tenantCheckout[tenantId]) {
-        const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tenantId) : null;
-        const listItem = TENANT_LIST.find(t => t.id === tenantId) || TENANT_LIST[tenantId];
-        const tenancy = listItem && typeof getTenancyForTenantListItem === 'function'
-            ? getTenancyForTenantListItem(listItem) : null;
         AppStore.tenantCheckout[tenantId] = {
             checklist: Object.fromEntries(TENANT_CHECKOUT_CHECKLIST.map(([k]) => [k, false])),
-            meters: { electricity: '', gas: '', water: '' },
+            meters: normalizeCheckoutMeters({}),
+            keys: [],
             photos: [],
+            vacateNotice: null,
+            submitted: false,
+            submittedAt: '',
             depositStatus: tenancy?.depositStatus || 'protected',
             depositScheme: tenancy?.depositScheme || 'MyDeposits',
             depositAmount: fin?.deposit || '—',
             protectionRef: tenancy?.protectionRef || '',
         };
     }
-    return AppStore.tenantCheckout[tenantId];
+    const co = AppStore.tenantCheckout[tenantId];
+    if (!co.checklist) co.checklist = {};
+    TENANT_CHECKOUT_CHECKLIST.forEach(([k]) => {
+        if (co.checklist[k] == null) co.checklist[k] = false;
+    });
+    delete co.checklist.keys;
+    if (!Array.isArray(co.customChecklist)) co.customChecklist = [];
+    co.customChecklist.forEach(item => {
+        if (item?.id && co.checklist[item.id] == null) co.checklist[item.id] = false;
+    });
+    if (co.cleaningFee == null || co.cleaningFee === '') co.cleaningFee = 150;
+    co.cleaningFee = Number(co.cleaningFee) || 0;
+    if (!co.cleaningChoice) co.cleaningChoice = '';
+    co.meters = normalizeCheckoutMeters(co.meters || {});
+    if (!Array.isArray(co.photos)) co.photos = [];
+    if (!Array.isArray(co.keys)) co.keys = [];
+    syncCheckoutKeysFromTenancy(co, tenantId);
+    if (fin?.deposit) co.depositAmount = fin.deposit;
+    if (tenancy?.depositScheme) co.depositScheme = tenancy.depositScheme;
+    if (tenancy?.protectionRef) co.protectionRef = tenancy.protectionRef;
+    return co;
+}
+
+function checkoutActiveTenantId() {
+    if (STATE.userRole === 'landlord') return STATE.tenantId;
+    return typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+}
+
+function checkoutCleaningItems(co) {
+    const custom = (co.customChecklist || []).filter(i => i?.id && i.label);
+    return [
+        ...TENANT_CHECKOUT_CHECKLIST.map(([id, label]) => ({ id, label, custom: false })),
+        ...custom.map(i => ({ id: i.id, label: i.label, custom: true })),
+    ];
+}
+
+function checkoutCleaningComplete(co) {
+    if (co.cleaningChoice === 'pay') return !!co.cleaningInvoiceId;
+    return checkoutCleaningItems(co).every(item => !!co.checklist?.[item.id]);
+}
+
+function formatCheckoutCleaningFee(amount) {
+    const n = Number(amount) || 0;
+    return `£${n.toLocaleString('en-GB')}`;
+}
+
+function generateCheckoutCleaningInvoice(tenantId, co) {
+    if (co.cleaningInvoiceId != null && typeof INVOICES !== 'undefined') {
+        const existing = INVOICES.find(i => i.id === co.cleaningInvoiceId);
+        if (existing) return existing;
+    }
+    const fee = Number(co.cleaningFee) || 0;
+    if (fee <= 0) return null;
+    const { listItem, tenantName, propertyId, unit, propertyName } = checkoutTenantContext(tenantId);
+    const p = propertyId != null && typeof PROPERTIES !== 'undefined' ? PROPERTIES[propertyId] : null;
+    const dueRaw = new Date();
+    dueRaw.setDate(dueRaw.getDate() + 14);
+    const dueIso = dueRaw.toISOString().slice(0, 10);
+    const due = typeof formatDisplayDate === 'function' ? formatDisplayDate(dueIso) || dueIso : dueIso;
+    const id = AppStore.nextId(INVOICES);
+    const inv = {
+        id,
+        num: `INV-${new Date().getFullYear()}-${1000 + id}`,
+        prop: p ? `${p.name}, ${p.address}` : propertyName,
+        unit: unit || listItem?.unit || '',
+        tenant: tenantName,
+        tenantId,
+        propertyId,
+        amount: formatCheckoutCleaningFee(fee),
+        status: 'Pending',
+        due,
+        month: '',
+        type: 'bill',
+        desc: 'End of tenancy cleaning fee',
+        chargeType: 'service',
+        chargeTarget: 'tenant',
+        paymentMode: 'offline',
+        checkoutCleaning: true,
+    };
+    INVOICES.unshift(inv);
+    co.cleaningInvoiceId = id;
+    co.cleaningChoice = 'pay';
+    if (typeof syncTransactionsFromInvoices === 'function') syncTransactionsFromInvoices();
+    pushNotification({
+        category: 'charge', icon: 'sparkles', color: ['#FEF3C7', '#D97706'],
+        title: 'Cleaning fee invoice',
+        desc: `${tenantName} · ${inv.amount}`,
+        time: 'Just now', unread: true, screen: 'invoice-detail', opts: { iid: id },
+    });
+    if (typeof pushTenantNotification === 'function') {
+        pushTenantNotification(tenantId, {
+            category: 'charge', icon: 'sparkles', color: ['#FEF3C7', '#D97706'],
+            title: 'Cleaning fee invoice',
+            desc: `${inv.amount} due ${due} — landlord will arrange the clean`,
+            time: 'Just now', unread: true,
+            screen: 'invoice-detail', opts: { iid: id, tenantPayFilter: 'charges' },
+        });
+    }
+    return inv;
+}
+
+function renderCheckoutCleaningSection(co, tenantId, opts = {}) {
+    const tenantEditable = opts.editable === true;
+    const landlordManage = opts.landlordManage === true;
+    const items = checkoutCleaningItems(co);
+    const paySelected = co.cleaningChoice === 'pay';
+    const feeLabel = formatCheckoutCleaningFee(co.cleaningFee);
+    const inv = co.cleaningInvoiceId != null && typeof INVOICES !== 'undefined'
+        ? INVOICES.find(i => i.id === co.cleaningInvoiceId)
+        : null;
+    const done = items.filter(i => co.checklist?.[i.id]).length;
+    const tickDisabled = paySelected || (!tenantEditable && !landlordManage);
+    return `
+    <p class="section-title">Cleaning</p>
+    <p class="form-helper mb-2">Complete the checklist, or pay the landlord cleaning fee so they can arrange the clean.</p>
+    ${landlordManage ? `
+    <div class="card p-4 mb-2">
+        <p class="text-[13px] font-bold text-[#0F172A]">Landlord cleaning fee</p>
+        <p class="text-[12px] text-[#64748B] mt-1 mb-2">Shown to the tenant as an alternative to ticking the checklist.</p>
+        <div class="form-field">
+            <label class="form-label">Fee (£)</label>
+            <input type="number" min="0" step="1" data-field="checkout_cleaning_fee" class="form-input" value="${escapeHtml(String(co.cleaningFee || 0))}" placeholder="150">
+        </div>
+        <button type="button" data-action="save-checkout-cleaning-fee" class="btn-secondary w-full py-2.5 text-[13px]">Save cleaning fee</button>
+    </div>` : ''}
+    ${tenantEditable ? `
+    <div class="checkout-clean-choice">
+        <button type="button" data-action="set-checkout-cleaning" data-choice="self" class="checkout-clean-choice-btn${paySelected ? '' : ' is-active'}">
+            <span class="checkout-clean-choice-title">I’ll complete the checklist</span>
+            <span class="checkout-clean-choice-sub">Tick each item before submitting</span>
+        </button>
+        <button type="button" data-action="set-checkout-cleaning" data-choice="pay" class="checkout-clean-choice-btn${paySelected ? ' is-active' : ''}">
+            <span class="checkout-clean-choice-title">Pay landlord ${feeLabel} cleaning fee</span>
+            <span class="checkout-clean-choice-sub">Landlord arranges the property clean · invoice generated</span>
+        </button>
+    </div>` : `
+    <div class="card p-4 mb-2">
+        <p class="text-[13px] font-bold text-[#0F172A]">${paySelected ? `Tenant chose: pay ${feeLabel} cleaning fee` : 'Tenant is completing the checklist'}</p>
+        ${inv ? `<p class="text-[12px] text-[#64748B] mt-1">Invoice ${escapeHtml(inv.num)} · ${escapeHtml(inv.amount)} · ${escapeHtml(inv.status)}</p>
+        <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="btn-secondary w-full py-2.5 text-[13px] mt-2">View invoice</button>` : ''}
+    </div>`}
+    ${paySelected && tenantEditable && inv ? `
+    <div class="card p-4 mb-2 checkout-clean-invoice-note">
+        <p class="text-[13px] font-semibold text-[#0F172A]">Invoice generated</p>
+        <p class="text-[12px] text-[#64748B] mt-1">${escapeHtml(inv.num)} · ${escapeHtml(inv.amount)} due ${escapeHtml(inv.due)} · landlord will get the property cleaned.</p>
+        <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="btn-secondary w-full py-2.5 text-[13px] mt-2">View invoice</button>
+    </div>` : ''}
+    ${paySelected ? '' : `
+    <p class="section-title">Cleaning checklist · ${done}/${items.length} done</p>
+    <div class="card p-4 stack-sm">
+        ${items.map(item => `
+        <div class="tnt-checkout-row-wrap">
+            <label class="tnt-checkout-row">
+                <input type="checkbox" data-action="toggle-checkout-item" data-key="${item.id}" ${co.checklist?.[item.id] ? 'checked' : ''} ${tickDisabled ? 'disabled' : ''}>
+                <span>${escapeHtml(item.label)}${item.custom ? ' <em class="checkout-custom-tag">Custom</em>' : ''}</span>
+            </label>
+            ${landlordManage && item.custom ? `<button type="button" data-action="remove-checkout-custom-item" data-item-id="${item.id}" class="row-icon-btn row-icon-btn--danger" aria-label="Remove"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
+        </div>`).join('')}
+        ${landlordManage ? `
+        <div class="checkout-custom-add">
+            <input data-field="checkout_custom_item" class="form-input" placeholder="Add custom checklist item">
+            <button type="button" data-action="add-checkout-custom-item" class="btn-secondary py-2.5 text-[13px] shrink-0">Add</button>
+        </div>` : ''}
+    </div>`}
+    ${paySelected && landlordManage ? `
+    <p class="form-helper">Checklist skipped — tenant is paying the cleaning fee instead.</p>` : ''}`;
+}
+
+function checkoutMeterPhotoComplete(co) {
+    return CHECKOUT_METER_KEYS.every(([key]) => {
+        const entry = co.meters?.[key];
+        return !!(entry?.reading?.trim() && isFieldPhotoPreviewable(entry.photo));
+    });
+}
+
+function checkoutMissingKeys(co) {
+    return (co.keys || []).filter(k => !k.returned);
+}
+
+function formatVacateDateLabel(dateStr) {
+    if (!dateStr) return '';
+    return typeof formatDisplayDate === 'function' ? (formatDisplayDate(dateStr) || dateStr) : dateStr;
+}
+
+function buildVacateNoticeDraft(tenantId, vacateDate) {
+    const { tenantName, propertyName, unit } = checkoutTenantContext(tenantId);
+    const propertyLabel = unit ? `${propertyName} · ${unit}` : propertyName;
+    const dateLabel = formatVacateDateLabel(vacateDate) || '[vacating date]';
+    return VACATE_NOTICE_TEMPLATE(tenantName, propertyLabel, dateLabel);
+}
+
+function renderCheckoutMeterFields(co, opts = {}) {
+    const editable = opts.editable !== false;
+    return CHECKOUT_METER_KEYS.map(([key, label]) => {
+        const entry = co.meters?.[key] || { reading: '', photo: '' };
+        const photoOk = isFieldPhotoPreviewable(entry.photo);
+        return `
+        <div class="card p-4 checkout-meter-card" data-checkout-meter="${key}">
+            <p class="text-[13px] font-bold text-[#0F172A] mb-2">${label} meter</p>
+            ${editable
+                ? `<div class="form-field"><label class="form-label">Reading</label><input data-field="co_meter_${key}" class="form-input" value="${escapeHtml(entry.reading || '')}" placeholder="Enter final reading" inputmode="decimal"></div>
+                   ${renderFieldPhotoUpload('Meter picture', `co_meter_${key}_photo`, entry.photo || '', { helper: 'Required — photo of the meter display.' })}`
+                : `<div class="checkout-meter-readonly">
+                    <p class="text-[12px] text-[#64748B]">Reading</p>
+                    <p class="text-[14px] font-semibold text-[#0F172A]">${escapeHtml(entry.reading || '—')}</p>
+                    ${photoOk ? `<img src="${entry.photo}" alt="${label} meter" class="checkout-meter-photo mt-2">` : `<p class="text-[12px] text-[#DC2626] mt-2">No picture uploaded</p>`}
+                   </div>`}
+        </div>`;
+    }).join('');
+}
+
+function renderCheckoutKeysSection(co, opts = {}) {
+    const editable = opts.editable !== false;
+    const keys = co.keys || [];
+    const missing = checkoutMissingKeys(co);
+    if (!keys.length) {
+        return `
+        <div class="card p-4">
+            <p class="text-[13px] font-bold text-[#0F172A]">Keys to return</p>
+            <p class="text-[12px] text-[#64748B] mt-1">No keys were registered for this tenancy yet. Ask your landlord to add keys on the unit record.</p>
+        </div>`;
+    }
+    return `
+    <div class="card p-4 checkout-keys-card">
+        <p class="text-[13px] font-bold text-[#0F172A]">Keys issued at start of tenancy</p>
+        <p class="text-[12px] text-[#64748B] mt-1 mb-3">Auto-filled from the key register. Mark each set returned — missing keys may be charged by the landlord.</p>
+        <div class="stack-sm">
+            ${keys.map((k, i) => `
+            <div class="checkout-key-row${k.missing || (!k.returned && !editable) ? ' checkout-key-row--missing' : ''}${k.returned ? ' checkout-key-row--returned' : ''}">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[13px] font-semibold text-[#0F172A]">${escapeHtml(k.label || 'Key')}${k.qty && k.qty !== '1' ? ` × ${escapeHtml(String(k.qty))}` : ''}</p>
+                    <p class="text-[11px] text-[#64748B]">${escapeHtml([k.location, k.holder ? `Issued to ${k.holder}` : ''].filter(Boolean).join(' · ') || 'On issue')}</p>
+                </div>
+                ${editable
+                    ? `<label class="checkout-key-toggle"><input type="checkbox" data-action="toggle-checkout-key" data-key-idx="${i}" ${k.returned ? 'checked' : ''}><span>Returned</span></label>`
+                    : `<span class="badge ${k.returned ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FEF2F2] text-[#DC2626]'}">${k.returned ? 'Returned' : 'Missing'}</span>`}
+            </div>`).join('')}
+        </div>
+        ${missing.length ? `
+        <div class="checkout-keys-charge-note mt-3">
+            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+            <p>${missing.length} key set${missing.length === 1 ? '' : 's'} not returned. Landlord may charge for replacements from the deposit.</p>
+        </div>` : ''}
+    </div>`;
+}
+
+function renderVacateNoticeSection(co, tenantId, opts = {}) {
+    const editable = opts.editable !== false;
+    const notice = co.vacateNotice;
+    const draftDate = STATE.vacateDraftDate || notice?.vacateDate || '';
+    const draftBody = STATE.vacateDraftBody || notice?.message || buildVacateNoticeDraft(tenantId, draftDate);
+    if (!editable && !notice?.sent) {
+        return `
+        <div class="card p-4">
+            <p class="text-[13px] font-bold text-[#0F172A]">Request to Vacate Property Notice</p>
+            <p class="text-[12px] text-[#64748B] mt-1">No vacate notice sent yet.</p>
+        </div>`;
+    }
+    if (!editable && notice?.sent) {
+        return `
+        <div class="card p-4 vacate-notice-card vacate-notice-card--sent">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[11px] font-bold text-[#059669] uppercase tracking-wide">Vacate notice sent</p>
+                    <p class="text-[14px] font-bold text-[#0F172A] mt-1">Vacating ${escapeHtml(formatVacateDateLabel(notice.vacateDate) || notice.vacateDate)}</p>
+                    <p class="text-[12px] text-[#64748B] mt-1">Sent ${escapeHtml(notice.sentAt || '')}</p>
+                </div>
+                <span class="badge bg-[#ECFDF5] text-[#059669]">Shared</span>
+            </div>
+            <pre class="vacate-notice-body mt-3">${escapeHtml(notice.message || '')}</pre>
+        </div>`;
+    }
+    return `
+    <div class="card p-4 vacate-notice-card">
+        <p class="text-[13px] font-bold text-[#0F172A]">Request to Vacate Property Notice</p>
+        <p class="text-[12px] text-[#64748B] mt-1 mb-3">Send formal notice to your landlord with your vacating date. A template is pre-filled — edit if needed.</p>
+        ${notice?.sent ? `<div class="vacate-notice-sent-banner mb-3"><i data-lucide="check-circle-2" class="w-4 h-4"></i><span>Notice already sent for ${escapeHtml(formatVacateDateLabel(notice.vacateDate) || notice.vacateDate)}. You can resend an update.</span></div>` : ''}
+        <div class="form-field">
+            <label class="form-label">Vacating date</label>
+            <input type="date" data-field="vacate_date" data-action="vacate-date-change" class="form-input" value="${escapeHtml(draftDate)}">
+        </div>
+        <div class="form-field">
+            <label class="form-label">Notice template</label>
+            <textarea data-field="vacate_body" class="form-input vacate-notice-textarea" rows="8">${escapeHtml(draftBody)}</textarea>
+        </div>
+        <button type="button" data-action="send-vacate-notice" class="btn-primary w-full py-3 text-[13px]">Send notice to landlord</button>
+    </div>`;
+}
+
+function renderSharedCheckoutPack(tenantId, opts = {}) {
+    const co = getTenantCheckout(tenantId);
+    const editable = opts.editable === true;
+    const landlordManage = opts.landlordManage === true;
+    const showVacate = opts.showVacate !== false;
+    const sharedBadge = co.submitted
+        ? `<span class="badge bg-[#ECFDF5] text-[#059669]">Shared with both parties</span>`
+        : `<span class="badge bg-[#F1F5F9] text-[#64748B]">Draft · not submitted</span>`;
+    return `
+    <div class="checkout-shared-pack stack-sm">
+        ${showVacate ? renderVacateNoticeSection(co, tenantId, { editable }) : ''}
+        <div class="card p-4 tnt-deposit-card">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[11px] font-bold text-[#64748B] uppercase">Deposit status</p>
+                    <p class="text-[18px] font-bold text-[#0F172A] mt-1">${escapeHtml(co.depositAmount || '—')}</p>
+                    <p class="text-[12px] text-[#64748B] mt-1">${escapeHtml(co.depositScheme || 'Deposit scheme')} · ${co.depositStatus === 'protected' ? 'Protected' : 'Pending'}</p>
+                </div>
+                ${sharedBadge}
+            </div>
+            <p class="text-[11px] text-[#64748B] mt-3">Check-out details are shared with landlord and tenant so both parties see the same information.</p>
+        </div>
+        <p class="section-title">Keys to return</p>
+        ${renderCheckoutKeysSection(co, { editable })}
+        <p class="section-title">Final meter readings</p>
+        <p class="form-helper mb-2">Each meter reading needs a picture uploaded. These readings are shared with the landlord for check-out.</p>
+        ${renderCheckoutMeterFields(co, { editable })}
+        ${editable ? `<button type="button" data-action="save-checkout-meters" class="btn-secondary w-full py-3 text-[13px]">Save meter readings</button>` : ''}
+        ${renderCheckoutCleaningSection(co, tenantId, { editable, landlordManage })}
+        <p class="section-title">Final photos</p>
+        ${renderPhotoPreviewStrip(co.photos || [], { removable: editable, removeAction: 'remove-checkout-photo' }) || `<p class="text-[12px] text-[#64748B] mb-2">No final photos yet.</p>`}
+        ${editable ? `
+        <div class="grid grid-cols-2 gap-3">
+            <button type="button" data-action="upload-photo" class="btn-secondary py-3 text-[12px]">Upload photos</button>
+            <button type="button" data-action="upload-video" class="btn-secondary py-3 text-[12px]">Upload videos</button>
+        </div>` : ''}
+        ${co.submitted ? `<p class="form-helper text-center">Submitted ${escapeHtml(co.submittedAt || '')}</p>` : ''}
+    </div>`;
 }
 
 function pickVideoFiles() {
@@ -6856,18 +7381,17 @@ function renderRecordsInspectionsPanel(propertyId) {
     <div class="records-panel">
         ${upcoming ? `
         <div class="card records-insp-next">
-            <p class="records-insp-label">Next visit</p>
+            <p class="records-insp-label">${isTenantUploadInspection(upcoming) ? 'Tenant photos' : 'Next visit'}</p>
             <p class="records-insp-title">${upcoming.type || 'Property inspection'}</p>
-            <p class="records-insp-date">${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}</p>
+            <p class="records-insp-date">${isTenantUploadInspection(upcoming) ? `Photos due ${nextDateLabel}` : `${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}`}</p>
             <div class="records-insp-actions">
-                <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-secondary py-2.5 text-[12px] flex-1">Reschedule</button>
-                <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="btn-primary py-2.5 text-[12px] flex-1">Conduct</button>
+                ${renderScheduledInspectionActions(upcoming, propertyId)}
             </div>
         </div>` : `
         <div class="card records-insp-empty">
             <i data-lucide="clipboard-list" class="w-8 h-8 text-[#CBD5E1]"></i>
             <p class="records-insp-empty-title">No inspection scheduled</p>
-            <p class="records-insp-empty-sub">Book a visit, then rate condition and save photos after you go.</p>
+            <p class="records-insp-empty-sub">Book a visit, or send a Smart Reminder for the tenant to upload pictures.</p>
             <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-primary w-full py-2.5 text-[13px] mt-3">Schedule inspection</button>
         </div>`}
         ${past.length ? `
@@ -6966,13 +7490,12 @@ function renderRecordsHubInspectionCard(propertyId) {
     <div class="card records-hub-insp">
         ${upcoming ? `
         <div class="records-hub-insp-main">
-            <p class="records-hub-insp-label">Next inspection</p>
+            <p class="records-hub-insp-label">${isTenantUploadInspection(upcoming) ? 'Tenant photo request' : 'Next inspection'}</p>
             <p class="records-hub-insp-title">${upcoming.type || 'Property inspection'}</p>
-            <p class="records-hub-insp-date">${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}</p>
+            <p class="records-hub-insp-date">${isTenantUploadInspection(upcoming) ? `Photos due ${nextDateLabel}` : `${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}`}</p>
         </div>
         <div class="records-hub-insp-actions">
-            <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-secondary py-2 text-[12px] flex-1">Reschedule</button>
-            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="btn-primary py-2 text-[12px] flex-1">Conduct</button>
+            ${renderScheduledInspectionActions(upcoming, propertyId)}
         </div>` : `
         <p class="records-hub-insp-label">Inspections</p>
         <p class="records-hub-insp-meta">${past.length} past report${past.length === 1 ? '' : 's'}</p>
@@ -7023,7 +7546,9 @@ function renderRecordsHubInspectionRow(propertyId) {
         const nextDateLabel = typeof formatDisplayDate === 'function'
             ? formatDisplayDate(upcoming.date) || upcoming.date
             : upcoming.date;
-        meta = `Next · ${nextDateLabel}`;
+        meta = isTenantUploadInspection(upcoming)
+            ? `${(upcoming.tenantPhotoUrls || []).length ? 'Photos in' : 'Photos due'} · ${nextDateLabel}`
+            : `Next · ${nextDateLabel}`;
     } else if (past.length) {
         meta = `${past.length} past report${past.length === 1 ? '' : 's'}`;
     }
@@ -7112,7 +7637,7 @@ function screenPropertyApplianceRecords() {
     return `${topBar('Appliances', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-enter">
         <p class="form-helper mb-3">Detailed appliance records for this property. Summary counts appear on the Info tab.</p>
-        ${appliances.length ? appliances.map(a => renderApplianceRecordCard(a)).join('') : emptyState('plug', 'No appliances recorded', 'Add appliances with type, brand, description and warranty details.', 'Add appliance', null, 'property-appliances')}
+        ${appliances.length ? appliances.map(a => renderApplianceRecordCard(a)).join('') : emptyState('plug', 'No appliances recorded', 'Tick the appliances in this property, then add brand, photo and warranty details.', 'Add appliances', null, 'property-appliances')}
         <button type="button" data-go="property-appliances" data-pid="${propertyId}" class="btn-primary w-full py-3.5 text-[14px] mt-2">${appliances.length ? 'Edit appliances' : 'Add appliances'}</button>
     </div>`;
 }
@@ -8838,7 +9363,7 @@ function screenDashboardEnhanced() {
         ${reminders.length ? `
         <div class="dash-reminder-section">
             <div class="dash-section-head">
-                <h3 class="screen-section-title">Reminder</h3>
+                <h3 class="screen-section-title">Smart Reminders</h3>
                 <button data-go="reminders" class="dash-view-all">View all</button>
             </div>
             <div class="card dash-reminder-list">
@@ -10839,7 +11364,7 @@ function reminderStatusBadge(r) {
 }
 
 function reminderSourceLabel(r) {
-    if (!r.auto) return 'Custom reminder';
+    if (!r.auto) return 'Custom Smart Reminder';
     const labels = {
         gas: 'Gas certificate', electrical: 'Electrical certificate', epc: 'EPC record',
         smoke: 'Smoke alarm', heat: 'Heat alarm', co2: 'CO alarm',
@@ -10855,6 +11380,13 @@ function reminderPrimaryAction(r) {
     const cid = REMINDER_TYPE_COMPLIANCE_CID[r.type];
     const cfg = cid != null ? COMPLIANCE_ITEM_CONFIG[cid] : null;
     if (r.type === 'inspection') {
+        const insp = AppStore.inspections.find(i => i.propertyId === pid && i.scheduled);
+        if (isTenantUploadInspection(insp)) {
+            if ((insp.tenantPhotoUrls || []).length || insp.tenantPhotosSubmitted) {
+                return { label: 'Review tenant photos', go: 'inspection-detail', opts: { inspectionId: insp.id, propertyId: pid } };
+            }
+            return { label: 'Edit photo request', go: 'reschedule-inspection', opts: { propertyId: pid } };
+        }
         return { label: 'Reschedule inspection', go: 'reschedule-inspection', opts: { propertyId: pid } };
     }
     if (r.type === 'rent-review') {
@@ -11014,12 +11546,17 @@ function syncSmartReminders(persist = true) {
         });
     });
     const scheduled = AppStore.inspections.filter(i => i.scheduled);
+    AppStore.reminders = AppStore.reminders.filter(r => !(r.auto && r.type === 'inspection'));
     scheduled.forEach(i => {
+        const isUpload = isTenantUploadInspection(i);
+        const due = isUpload
+            ? inspectionTenantRemindDate(i.date, i.reminderInterval)
+            : (typeof reminderDueInputValue === 'function' ? reminderDueInputValue(i.date) : i.date) || i.date;
         upsertSmartReminder({
             type: 'inspection',
             propertyId: i.propertyId,
-            title: `${i.type || 'Inspection'} Due`,
-            due: i.date,
+            title: isUpload ? `Upload ${i.type || 'inspection'} photos` : `${i.type || 'Inspection'} Due`,
+            due,
         });
     });
     AppStore.reminders.forEach(r => {
@@ -11790,6 +12327,7 @@ function screenInspectionDetail() {
     const p = PROPERTIES[report.propertyId ?? STATE.propertyId];
     const dateLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(report.date) || report.date : report.date;
     const photos = report.photoUrls?.length ? report.photoUrls : (report.photos ? IMG.interior.slice(0, Math.min(report.photos, 4)) : []);
+    const tenantPhotos = report.tenantPhotoUrls || [];
     const rating = report.rating ? String(report.rating) : null;
     return `${topBar(report.type || 'Inspection', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter">
@@ -11798,6 +12336,7 @@ function screenInspectionDetail() {
                 <div>
                     <p class="insp-detail-date">${dateLabel}</p>
                     <p class="insp-detail-property">${p?.address || p?.name || ''}</p>
+                    ${isTenantUploadInspection(report) ? `<p class="insp-detail-property mt-1">Tenant photo request${report.scheduled ? ' · open' : ''}</p>` : ''}
                 </div>
                 ${rating ? `<span class="insp-detail-rating">★ ${rating}</span>` : ''}
             </div>
@@ -11807,9 +12346,16 @@ function screenInspectionDetail() {
                 <p class="insp-detail-text">${report.notes}</p>
             </div>` : ''}
         </div>
+        ${tenantPhotos.length ? `
+        <div class="insp-detail-photos">
+            <p class="insp-detail-label">Tenant photos (${tenantPhotos.length})</p>
+            <div class="insp-detail-photo-grid">
+                ${tenantPhotos.map(src => `<img src="${src}" class="insp-detail-photo" alt="">`).join('')}
+            </div>
+        </div>` : ''}
         ${photos.length ? `
         <div class="insp-detail-photos">
-            <p class="insp-detail-label">Photos (${photos.length})</p>
+            <p class="insp-detail-label">${tenantPhotos.length ? 'Your photos' : 'Photos'} (${photos.length})</p>
             <div class="insp-detail-photo-grid">
                 ${photos.map(src => `<img src="${src}" class="insp-detail-photo" alt="">`).join('')}
             </div>
@@ -11839,24 +12385,27 @@ function renderPropertyInspectionTab(propertyId) {
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
         <div class="ux-tip insp-tab-intro">
-            <p class="ux-tip-title">You conduct &amp; rate</p>
-            <p class="ux-tip-text">Visit the property, then tap <strong>Conduct</strong> to save photos, notes and your 1–5 condition rating after the visit.</p>
+            <p class="ux-tip-title">Visit or tenant photos</p>
+            <p class="ux-tip-text">Schedule an appointment to visit, or send a Smart Reminder so the tenant uploads inspection pictures.</p>
         </div>
         ${upcoming ? `
         <div class="card insp-upcoming">
-            <p class="insp-upcoming-label">Next inspection</p>
+            <p class="insp-upcoming-label">${isTenantUploadInspection(upcoming) ? 'Tenant photo request' : 'Next inspection'}</p>
             <p class="insp-upcoming-title">${upcoming.type || 'Inspection'}</p>
-            <p class="insp-upcoming-date">${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}</p>
+            <p class="insp-upcoming-date">${isTenantUploadInspection(upcoming) ? `Photos due ${nextDateLabel}` : `${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}`}</p>
             ${upcoming.notes?.trim() ? `<p class="insp-upcoming-notes">${truncateNote(upcoming.notes, 90)}</p>` : ''}
-            <p class="insp-upcoming-reminder"><i data-lucide="bell" class="w-3.5 h-3.5"></i>Reminder on Dashboard &amp; Notifications</p>
+            <p class="insp-upcoming-reminder"><i data-lucide="bell" class="w-3.5 h-3.5"></i>${isTenantUploadInspection(upcoming)
+                ? ((upcoming.tenantPhotoUrls || []).length
+                    ? `${upcoming.tenantPhotoUrls.length} photo${upcoming.tenantPhotoUrls.length === 1 ? '' : 's'} received from tenant`
+                    : 'Smart Reminder for tenant to upload pictures')
+                : 'Smart Reminder on Dashboard &amp; Notifications'}</p>
             <div class="insp-upcoming-actions">
-                <button data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-secondary py-2 text-[12px] flex-1">Reschedule</button>
-                <button data-go="conduct-inspection" data-pid="${propertyId}" class="btn-primary py-2 text-[12px] flex-1">Conduct</button>
+                ${renderScheduledInspectionActions(upcoming, propertyId)}
             </div>
         </div>` : `
         <div class="card insp-empty">
             <p class="insp-empty-text">No inspection scheduled</p>
-            <p class="insp-empty-sub">Book a date to see your next inspection here and on the Dashboard.</p>
+            <p class="insp-empty-sub">Book a visit, or remind the tenant to upload inspection pictures.</p>
             <button data-go="reschedule-inspection" data-pid="${propertyId}" class="btn-primary w-full py-2 text-[12px]">Schedule inspection</button>
         </div>`}
         <div class="screen-list-header screen-list-header--compact">
@@ -12999,7 +13548,7 @@ function screenComplianceDashboard() {
                 <button data-go="renew-compliance" data-pid="${pid}" data-cid="${cid}" class="text-[11px] font-semibold text-[#2563EB]">Renew</button>
             </div>`).join('') : `<p class="text-[13px] text-[#64748B] px-1">No certificates on file yet</p>`}
         </div>
-        <button data-go="reminders" class="btn-primary w-full py-3.5 text-[14px] mt-2">View All Reminders</button>
+        <button data-go="reminders" class="btn-primary w-full py-3.5 text-[14px] mt-2">View All Smart Reminders</button>
     </div>`;
 }
 
@@ -13013,7 +13562,7 @@ function screenReminders() {
     ];
     const list = filteredReminders(filter);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    return `${topBar('Reminders', { back: true, sub: `${list.length} item${list.length === 1 ? '' : 's'}` })}
+    return `${topBar('Smart Reminders', { back: true, sub: `${list.length} item${list.length === 1 ? '' : 's'}` })}
     <div class="screen-content screen-enter">
         <div class="reminder-filter-row">
             ${tabs.map(([k, l]) => `
@@ -13040,8 +13589,8 @@ function screenReminders() {
                     ${!r.auto ? `<button type="button" data-action="delete-reminder" data-rid="${r.id}" class="row-icon-btn row-icon-btn--danger" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                 </div>
             </div>`;
-        }).join('') : emptyState('bell', filter === 'all' ? 'No reminders' : 'Nothing in this filter', filter === 'all' ? 'Add a custom reminder or update property certificates to generate reminders.' : 'Try another filter or add a custom reminder.', filter === 'all' ? 'Add Reminder' : null, null, filter === 'all' ? 'add-reminder' : null)}
-        <button data-go="add-reminder" class="btn-primary w-full py-3.5 text-[14px]">+ Custom Reminder</button>
+        }).join('') : emptyState('bell', filter === 'all' ? 'No Smart Reminders' : 'Nothing in this filter', filter === 'all' ? 'Add a custom Smart Reminder or update property certificates to generate Smart Reminders.' : 'Try another filter or add a custom Smart Reminder.', filter === 'all' ? 'Add Smart Reminder' : null, null, filter === 'all' ? 'add-reminder' : null)}
+        <button data-go="add-reminder" class="btn-primary w-full py-3.5 text-[14px]">+ Custom Smart Reminder</button>
         <p class="text-[11px] text-[#94A3B8] text-center mt-2">Certificate, alarm, lease and inspection dates sync automatically</p>
     </div>`;
 }
@@ -13050,8 +13599,8 @@ function screenReminderDetail() {
     const r = AppStore.reminders.find(x => x.id === STATE.reminderId);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     if (!r) {
-        return `${topBar('Reminder', { back: true })}
-        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Reminder not found.</p></div>`;
+        return `${topBar('Smart Reminder', { back: true })}
+        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Smart Reminder not found.</p></div>`;
     }
     recalcReminderMeta(r);
     const p = PROPERTIES[r.propertyId];
@@ -13062,7 +13611,7 @@ function screenReminderDetail() {
     const statusLabel = formatReminderDaysLeft(r.daysLeft);
     const source = reminderSourceLabel(r);
     const recordsView = ['gas', 'electrical', 'epc', 'smoke', 'heat', 'co2', 'insurance', 'mortgage'].includes(r.type) ? 'compliance' : r.type === 'inspection' ? 'inspections' : 'compliance';
-    return `${topBar('Reminder', { back: true })}
+    return `${topBar('Smart Reminder', { back: true })}
     <div class="screen-content screen-enter stack-sm">
         <div class="reminder-detail-hero card p-4 urgency-${r.urgency}">
             <div class="flex items-start gap-3">
@@ -13076,7 +13625,7 @@ function screenReminderDetail() {
             </div>
             <div class="reminder-detail-meta">
                 <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Reminder due</span>
+                    <span class="reminder-detail-meta-label">Smart Reminder due</span>
                     <span class="reminder-detail-meta-value">${esc(dueLabel)}</span>
                 </div>
                 ${r.expiryDate ? `
@@ -13097,14 +13646,14 @@ function screenReminderDetail() {
         ${r.auto ? `
         <div class="card p-3 bg-[#FFFBEB] border border-[#FDE68A]">
             <p class="text-[12px] text-[#92400E] leading-relaxed">${r.expiryDate
-                ? 'This reminder is synced from your property records. The reminder date is when you should act — the expiry date is when the certificate or alarm actually expires.'
-                : 'This reminder is synced from your property records. Use the action below to update the certificate, alarm, lease or inspection — or change the due date manually.'}</p>
+                ? 'This Smart Reminder is synced from your property records. The due date is when you should act — the expiry date is when the certificate or alarm actually expires.'
+                : 'This Smart Reminder is synced from your property records. Use the action below to update the certificate, alarm, lease or inspection — or change the due date manually.'}</p>
         </div>` : ''}
         <p class="screen-section-title">Actions</p>
         <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full py-3 text-[13px]">${esc(action.label)}</button>
         <button type="button" data-go="edit-reminder" data-rid="${r.id}" class="btn-secondary w-full py-3 text-[13px]">Change due date</button>
         <button type="button" data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="${recordsView}" class="btn-secondary w-full py-3 text-[13px]">View property records</button>
-        <button type="button" data-action="delete-reminder" data-rid="${r.id}" class="btn-secondary w-full py-3 text-[13px]${r.auto ? '' : ' text-[#DC2626]'}">${r.auto ? 'Remove from list' : 'Delete reminder'}</button>
+        <button type="button" data-action="delete-reminder" data-rid="${r.id}" class="btn-secondary w-full py-3 text-[13px]${r.auto ? '' : ' text-[#DC2626]'}">${r.auto ? 'Remove from list' : 'Delete Smart Reminder'}</button>
     </div>`;
 }
 
@@ -13115,11 +13664,11 @@ function renderReminderFormFields(reminder = null) {
     const dueVal = reminder ? reminderDueInputValue(reminder.due) : '';
     const autoNote = reminder?.auto ? `
         <div class="card p-3 bg-[#EFF6FF] border border-[#DBEAFE]">
-            <p class="text-[12px] text-[#1E40AF] leading-relaxed">Synced from property records. Saving updates the certificate, alarm, lease or inspection date behind this reminder.</p>
+            <p class="text-[12px] text-[#1E40AF] leading-relaxed">Synced from property records. Saving updates the certificate, alarm, lease or inspection date behind this Smart Reminder.</p>
         </div>` : '';
     return `
         ${autoNote}
-        <div><label class="form-label">${requiredLabel('Reminder Type')}</label>
+        <div><label class="form-label">${requiredLabel('Smart Reminder Type')}</label>
         <select data-field="type" class="form-input form-select">${REMINDER_TYPES.map(t => `<option value="${t[0]}"${t[0] === typeVal ? ' selected' : ''}>${t[1]}</option>`).join('')}</select></div>
         ${formFieldReq('Title', 'title', titleVal, 'text', 'e.g. Gas certificate renewal')}
         <div><label class="form-label">${requiredLabel('Property')}</label>
@@ -13128,21 +13677,21 @@ function renderReminderFormFields(reminder = null) {
 }
 
 function screenAddReminder() {
-    return `${topBar('Add Reminder', { back: true })}
+    return `${topBar('Add Smart Reminder', { back: true })}
     <div class="screen-content screen-enter stack-sm">
         ${renderReminderFormFields()}
-        <button data-action="save-reminder" class="btn-primary w-full py-3.5 text-[14px]">Save Reminder</button>
+        <button data-action="save-reminder" class="btn-primary w-full py-3.5 text-[14px]">Save Smart Reminder</button>
     </div>`;
 }
 
 function screenEditReminder() {
     const reminder = AppStore.reminders.find(r => r.id === STATE.reminderId);
     if (!reminder) {
-        return `${topBar('Edit Reminder', { back: true })}
-        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Reminder not found.</p></div>`;
+        return `${topBar('Edit Smart Reminder', { back: true })}
+        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Smart Reminder not found.</p></div>`;
     }
     const dueLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(reminder.due) : reminder.due;
-    return `${topBar('Edit Reminder', { back: true })}
+    return `${topBar('Edit Smart Reminder', { back: true })}
     <div class="screen-content screen-enter stack-sm">
         <p class="text-[12px] text-[#64748B]">Current due date: <strong class="text-[#334155]">${dueLabel || '—'}</strong></p>
         ${renderReminderFormFields(reminder)}
@@ -13189,23 +13738,40 @@ function screenCheckoutTenancy() {
     const tenantName = typeof fullNameFromParts === 'function'
         ? fullNameFromParts(t.firstName, t.lastName)
         : `${t.firstName} ${t.lastName}`.trim();
+    const co = getTenantCheckout(STATE.tenantId);
+    const missingKeys = checkoutMissingKeys(co);
+    const reasonDefault = co.vacateNotice?.sent ? 'Tenant notice' : 'End of lease';
+    const depositDefault = missingKeys.length ? 'Partial deduction' : 'Full return';
     return `${topBar('Check-out Tenancy', { back: true })}
-    <div class="screen-content screen-enter">
+    <div class="screen-content screen-enter stack-sm">
         <div class="card p-4">
-            <p class="text-[14px] font-bold">${tenantName}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">${propLabel}${unitLabel ? ` · ${unitLabel}` : ''} · Lease ends ${leaseEndLabel}</p>
+            <p class="text-[14px] font-bold">${escapeHtml(tenantName)}</p>
+            <p class="text-[12px] text-[#64748B] mt-1">${escapeHtml(propLabel)}${unitLabel ? ` · ${escapeHtml(unitLabel)}` : ''} · Lease ends ${escapeHtml(leaseEndLabel)}</p>
         </div>
         <div class="card tenant-deposit-card p-4">
             <p class="tenant-deposit-label">Deposit held</p>
             <p class="tenant-deposit-amount">${escapeHtml(dep.deposit || '—')}</p>
             <p class="tenant-deposit-scheme"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i>${escapeHtml([dep.scheme !== '—' ? dep.scheme : '', dep.protectionRef].filter(Boolean).join(' · ') || 'No scheme on file')}</p>
         </div>
-        ${formFieldReq('Check-out Date', 'checkoutDate', '', 'date')}
+        <p class="section-title">Shared check-out pack</p>
+        <p class="form-helper mb-1">Same information the tenant sees — meters, keys, vacate notice, and checklist.</p>
+        ${renderSharedCheckoutPack(STATE.tenantId, { editable: false, showVacate: true, landlordManage: true })}
+        ${missingKeys.length ? `
+        <div class="checkout-keys-charge-note">
+            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+            <p>${missingKeys.length} key set${missingKeys.length === 1 ? '' : 's'} marked missing. You can deduct replacement costs from the deposit below.</p>
+        </div>` : ''}
+        <p class="section-title">Complete check-out</p>
+        ${formFieldReq('Check-out Date', 'checkoutDate', co.vacateNotice?.vacateDate || '', 'date')}
         <div><label class="form-label">${requiredLabel('Reason')}</label>
-        <select data-field="reason" class="form-input form-select"><option>End of lease</option><option>Tenant notice</option><option>Mutual agreement</option><option>Eviction</option></select></div>
-        ${formTextarea('Final Notes', '', 'Condition of property, deposit deductions, forwarding address...', 'checkoutNotes')}
+        <select data-field="reason" class="form-input form-select">
+            ${['End of lease', 'Tenant notice', 'Mutual agreement', 'Eviction'].map(r => `<option${r === reasonDefault ? ' selected' : ''}>${r}</option>`).join('')}
+        </select></div>
+        ${formTextarea('Final Notes', missingKeys.length ? `Missing keys: ${missingKeys.map(k => k.label).join(', ')}. Charge for replacements if needed.` : '', 'Condition of property, deposit deductions, forwarding address...', 'checkoutNotes')}
         <div><label class="form-label">Deposit Return</label>
-        <select data-field="deposit" class="form-input form-select"><option>Full return</option><option>Partial deduction</option><option>Dispute</option></select></div>
+        <select data-field="deposit" class="form-input form-select">
+            ${['Full return', 'Partial deduction', 'Dispute'].map(r => `<option${r === depositDefault ? ' selected' : ''}>${r}</option>`).join('')}
+        </select></div>
         <button data-action="save-checkout" class="btn-primary w-full py-3.5 text-[14px]">Complete Check-out</button>
     </div>`;
 }
@@ -13730,30 +14296,77 @@ function screenShareDocument() {
 
 function screenRescheduleInspectionEnhanced() {
     const p = PROPERTIES[STATE.propertyId];
+    if (!p) {
+        return `${topBar('Schedule Inspection', { back: true })}
+        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Property not found.</p></div>`;
+    }
     const upcoming = typeof getScheduledInspection === 'function' ? getScheduledInspection(STATE.propertyId) : null;
-    const title = upcoming ? 'Reschedule Inspection' : 'Schedule Inspection';
+    const draft = STATE.inspScheduleDraft || {};
+    const collectMode = STATE.inspCollectMode
+        || (upcoming?.collectMode === 'tenant-upload' ? 'tenant-upload' : 'visit');
+    const isUpload = collectMode === 'tenant-upload';
+    const title = upcoming
+        ? (isUpload ? 'Edit photo request' : 'Reschedule Inspection')
+        : (isUpload ? 'Ask tenant for photos' : 'Schedule Inspection');
     const currentLine = upcoming
         ? `${upcoming.type || 'Inspection'} · Currently ${typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date}`
-        : 'Pick a date for your next visit';
-    const dateVal = upcoming && typeof toDateInputValue === 'function' ? toDateInputValue(upcoming.date) : '';
+        : (isUpload ? 'Remind the tenant to upload inspection pictures' : 'Pick a date for your next visit');
+    const dateVal = draft.date
+        || (upcoming && typeof toDateInputValue === 'function' ? toDateInputValue(upcoming.date) : '');
     const types = ['Check-in', 'Mid-term', 'Annual', 'Check-out'];
-    const selectedType = typeof normalizeInspectionType === 'function'
+    const selectedType = draft.type || (typeof normalizeInspectionType === 'function'
         ? normalizeInspectionType(upcoming?.type || 'Mid-term')
-        : (upcoming?.type || 'Mid-term');
+        : (upcoming?.type || 'Mid-term'));
     const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM'];
-    const selectedSlot = upcoming?.timeSlot || '10:00 AM';
+    const selectedSlot = draft.timeSlot || upcoming?.timeSlot || '10:00 AM';
+    const interval = String(draft.interval || upcoming?.reminderInterval || '30');
+    const remindOn = dateVal ? inspectionTenantRemindDate(dateVal, interval) : '';
+    const remindLabel = remindOn && typeof formatDisplayDate === 'function'
+        ? formatDisplayDate(remindOn)
+        : remindOn;
+    const saveLabel = upcoming
+        ? (isUpload ? 'Save photo request' : 'Confirm reschedule')
+        : (isUpload ? 'Send Smart Reminder' : 'Schedule inspection');
     return `${topBar(title, { back: true })}
     <div class="screen-content screen-enter insp-schedule-page">
         <div class="insp-schedule-property">
             <p class="insp-schedule-property-name">${p.name}</p>
             <p class="insp-schedule-property-meta">${currentLine}</p>
         </div>
-        ${formField('Inspection Date', dateVal, 'date', 'Select inspection date', 'inspDate')}
-        ${formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
+        <p class="form-label">How should this inspection happen?</p>
+        <div class="insp-mode-grid">
+            <button type="button" data-action="set-insp-collect-mode" data-mode="visit" class="insp-mode-card${isUpload ? '' : ' is-active'}">
+                <span class="insp-mode-icon"><i data-lucide="calendar-clock" class="w-5 h-5"></i></span>
+                <span class="insp-mode-copy">
+                    <strong>Schedule appointment</strong>
+                    <span>You visit the property on a date and time.</span>
+                </span>
+            </button>
+            <button type="button" data-action="set-insp-collect-mode" data-mode="tenant-upload" class="insp-mode-card${isUpload ? ' is-active' : ''}">
+                <span class="insp-mode-icon"><i data-lucide="camera" class="w-5 h-5"></i></span>
+                <span class="insp-mode-copy">
+                    <strong>Smart Reminder — tenant photos</strong>
+                    <span>Tenant uploads inspection pictures. You pick when to remind them.</span>
+                </span>
+            </button>
+        </div>
+        ${formField(isUpload ? 'Photos due date' : 'Inspection Date', dateVal, 'date', isUpload ? 'When photos should be in' : 'Select inspection date', 'inspDate')}
+        ${isUpload ? `
+        <div>
+            <label class="form-label">Remind tenant</label>
+            <select data-field="inspRemindInterval" class="form-input form-select">
+                ${INSP_TENANT_REMIND_INTERVALS.map(o => `<option value="${o.id}" ${interval === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
+            </select>
+            <p class="form-helper">${remindLabel ? `Smart Reminder will fire on ${remindLabel}.` : 'Choose how many days before the due date to remind the tenant.'}</p>
+        </div>` : formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
         ${formSelect('Type', selectedType, types, 'inspType')}
-        ${formTextarea('Access notes', upcoming?.notes || '', 'Parking, keys, tenant availability...', 'inspNotes', '', 'form-input--compact')}
-        ${renderTenantNotifySection(STATE.propertyId, { compact: true })}
-        ${saveBtn(upcoming ? 'Confirm reschedule' : 'Schedule inspection', 'Inspection rescheduled')}
+        ${formTextarea(isUpload ? 'Notes for tenant' : 'Access notes', escapeHtml(draft.notes || upcoming?.notes || ''), isUpload ? 'Rooms to photograph, lighting, anything to include...' : 'Parking, keys, tenant availability...', 'inspNotes', '', 'form-input--compact')}
+        ${renderTenantNotifySection(STATE.propertyId, {
+            compact: true,
+            title: isUpload ? 'Remind these tenants' : 'Notify tenants',
+            hint: isUpload ? 'Selected tenants get a Smart Reminder to upload inspection pictures.' : undefined,
+        })}
+        ${saveBtn(saveLabel, isUpload ? 'Photo request saved' : 'Inspection rescheduled')}
     </div>`;
 }
 
@@ -14160,23 +14773,21 @@ function isCustomApplianceName(name) {
 }
 
 function renderAlarmReminderFields(prefix, alarm = {}) {
-    const timing = alarm.reminderTiming || '30';
+    const timing = alarmReminderTiming(alarm.reminderTiming);
     return `
         <div><label class="form-label">Make / Model</label><input data-field="${prefix}_make" class="form-input" value="${escapeHtml(alarm.makeModel || '')}" placeholder="e.g. FireAngel ST-620"></div>
         <div><label class="form-label">Description</label><input data-field="${prefix}_desc" class="form-input" value="${escapeHtml(alarm.description || '')}" placeholder="e.g. Mains-powered, hallway"></div>
         ${renderFieldPhotoUpload('Alarm picture', `${prefix}_photo`, alarm.photo || '')}
-        <div><label class="form-label">Reminder timing</label>
+        <div><label class="form-label">Smart Reminder</label>
             <select data-field="${prefix}_reminder_timing" class="form-input form-select">
                 ${REMINDER_TIMING_OPTIONS.map(o => `<option value="${o.id}" ${timing === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
             </select>
-        </div>
-        <div><label class="form-label">Custom reminder date</label><input data-field="${prefix}_reminder_date" type="date" class="form-input" value="${alarm.reminderDate || ''}"><p class="form-helper">Only needed when reminder timing is custom</p></div>`;
+        </div>`;
 }
 
 function readAlarmFieldsFromDom(prefix) {
     const expiry = fieldVal(`${prefix}_expiry`);
-    const timing = fieldVal(`${prefix}_reminder_timing`) || '30';
-    const customReminder = fieldVal(`${prefix}_reminder_date`);
+    const timing = alarmReminderTiming(fieldVal(`${prefix}_reminder_timing`));
     return {
         location: fieldVal(`${prefix}_location`),
         expiry,
@@ -14184,7 +14795,7 @@ function readAlarmFieldsFromDom(prefix) {
         description: fieldVal(`${prefix}_desc`),
         photo: fieldVal(`${prefix}_photo`),
         reminderTiming: timing,
-        reminderDate: computeReminderDate(expiry, timing, customReminder),
+        reminderDate: computeReminderDate(expiry, timing, ''),
     };
 }
 
@@ -14212,7 +14823,7 @@ function renderApplianceEditCard(a, i) {
     const title = isCustom ? (a.name || `Custom appliance ${i + 1}`) : a.name;
     const nameField = isCustom
         ? `<div><label class="form-label">Appliance name</label><input data-field="app_name_${i}" class="form-input" value="${escapeHtml(a.name === 'Other' ? '' : (a.name || ''))}" placeholder="e.g. Tumble dryer, Air conditioner"></div>`
-        : formSelectField('Type', `app_name_${i}`, APPLIANCE_NAME_OPTIONS, a.name, { blankLabel: 'Select appliance' });
+        : `<input type="hidden" data-field="app_name_${i}" value="${escapeHtml(a.name || '')}">`;
     return `
         <div class="card p-4 mb-2 appliance-edit-card">
             <div class="flex items-center justify-between mb-2">
@@ -14285,8 +14896,8 @@ function screenPropertyDetailsEdit(section) {
     } else if (section === 'appliances') {
         const appliances = meta.appliances || [];
         body = `${renderApplianceQuickPick(meta)}
-        ${appliances.length ? `<p class="screen-section-title">Added appliances</p>` : ''}
-        ${appliances.length ? appliances.map((a, i) => renderApplianceEditCard(a, i)).join('') : `<p class="building-empty-copy mb-3">No appliances yet — use quick add above or add a custom one.</p>`}
+        ${appliances.length ? `<p class="screen-section-title">Appliance details</p>` : ''}
+        ${appliances.length ? appliances.map((a, i) => renderApplianceEditCard(a, i)).join('') : `<p class="building-empty-copy mb-3">Tick the appliances above, then add brand, photo and warranty here.</p>`}
         <button type="button" data-action="add-appliance" class="btn-secondary w-full py-3 text-[13px] mb-2">+ Add custom appliance</button>`;
     } else if (section === 'utilities') {
         body = `${renderUtilityQuickPick(meta)}
@@ -14362,11 +14973,11 @@ function savePropertyMeta(section) {
             makeModel: fieldVal(`custom_alarm_${i}_make`),
             description: fieldVal(`custom_alarm_${i}_desc`),
             photo: fieldVal(`custom_alarm_${i}_photo`),
-            reminderTiming: fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
+            reminderTiming: alarmReminderTiming(fieldVal(`custom_alarm_${i}_reminder_timing`)),
             reminderDate: computeReminderDate(
                 fieldVal(`custom_alarm_expiry_${i}`),
-                fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
-                fieldVal(`custom_alarm_${i}_reminder_date`),
+                alarmReminderTiming(fieldVal(`custom_alarm_${i}_reminder_timing`)),
+                '',
             ),
         })).filter(a => a.name || a.location || a.expiry || a.makeModel || a.description);
         syncSmartReminders(false);
@@ -14766,14 +15377,14 @@ function saveReminder() {
     const editId = STATE.screen === 'edit-reminder' ? STATE.reminderId : null;
     if (editId != null) {
         const idx = AppStore.reminders.findIndex(r => r.id === editId);
-        if (idx < 0) { toast('Reminder not found'); return; }
+        if (idx < 0) { toast('Smart Reminder not found'); return; }
         const existing = AppStore.reminders[idx];
         Object.assign(existing, payload);
         if (existing.auto) applyReminderDueToSource(existing, due);
         withLoading(() => {
             syncSmartReminders();
             AppStore.save();
-            toast('Reminder updated');
+            toast('Smart Reminder updated');
             go('reminder-detail', { reminderId: editId });
         });
         return;
@@ -14782,7 +15393,7 @@ function saveReminder() {
         id: AppStore.nextId(AppStore.reminders),
         ...payload,
     });
-    withLoading(() => { AppStore.save(); toast('Reminder added'); go('reminders'); });
+    withLoading(() => { AppStore.save(); toast('Smart Reminder added'); go('reminders'); });
 }
 
 function saveTenancy() {
@@ -14901,6 +15512,55 @@ function saveCheckout() {
     withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Check-out completed'); go('tenants'); });
 }
 
+function saveTenantInspectionPhotos() {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const req = tenantInspectionPhotoRequest(t);
+    if (!req) { toast('No photo request found'); return; }
+    const draft = STATE.tenantInspectionPhotos || [];
+    if (!draft.length && !(req.tenantPhotoUrls || []).length) {
+        toast('Add at least one photo');
+        return;
+    }
+    if (!req.tenantPhotoUrls) req.tenantPhotoUrls = [];
+    req.tenantPhotoUrls.push(...draft);
+    req.tenantPhotosSubmitted = true;
+    req.tenantPhotoSubmittedAt = new Date().toISOString().slice(0, 10);
+    req.photos = (req.tenantPhotoUrls.length) + (req.photoUrls?.length || 0);
+    STATE.tenantInspectionPhotos = [];
+    pushNotification({
+        icon: 'camera',
+        color: ['#ECFDF5', '#059669'],
+        title: 'Inspection photos received',
+        desc: `${t?.firstName || 'Tenant'} sent ${req.tenantPhotoUrls.length} photo${req.tenantPhotoUrls.length === 1 ? '' : 's'} · ${PROPERTIES[req.propertyId]?.name || ''}`,
+        time: 'Just now',
+        unread: true,
+        screen: 'inspection-detail',
+        opts: { inspectionId: req.id, propertyId: req.propertyId },
+    });
+    withLoading(() => {
+        AppStore.save();
+        toast('Photos sent to your landlord');
+        go('tenant-dashboard');
+    });
+}
+
+function removeTenantInspPhoto(idx) {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const req = tenantInspectionPhotoRequest(t);
+    const existing = req?.tenantPhotoUrls || [];
+    if (idx < existing.length) {
+        existing.splice(idx, 1);
+        req.tenantPhotoUrls = existing;
+        if (!existing.length) req.tenantPhotosSubmitted = false;
+        AppStore.save();
+    } else {
+        const di = idx - existing.length;
+        if (!STATE.tenantInspectionPhotos) STATE.tenantInspectionPhotos = [];
+        STATE.tenantInspectionPhotos.splice(di, 1);
+    }
+    render();
+}
+
 function saveInspection() {
     if (!validateFields([['inspDate', 'Date', v => v], ['rating', 'Rating', v => v]])) return;
     const rating = Math.min(5, Math.max(1, Math.round(parseFloat(fieldVal('rating')) || STATE.inspectionRating || 0)));
@@ -14942,7 +15602,7 @@ function saveInspection() {
     const toastMsg = notified
         ? `Inspection saved — ${notified} tenant${notified === 1 ? '' : 's'} notified`
         : 'Inspection saved';
-    withLoading(() => { syncSmartReminders(); AppStore.save(); toast(toastMsg); go('property-detail', { propertyId: pid, tab: 'inspection' }); });
+    withLoading(() => { syncSmartReminders(); AppStore.save(); toast(toastMsg); go('property-inspections', { propertyId: pid }); });
 }
 
 function saveEditTenant() {
@@ -15047,42 +15707,55 @@ function saveRescheduleInspection() {
     if (!validateFields([['inspDate', 'Inspection Date', v => v]])) return;
     const pid = STATE.propertyId ?? 0;
     const dateStr = formatDisplayDate(fieldVal('inspDate'));
-    const timeSlot = fieldVal('timeSlot');
+    const collectMode = STATE.inspCollectMode === 'tenant-upload' ? 'tenant-upload' : 'visit';
+    const isUpload = collectMode === 'tenant-upload';
+    const timeSlot = isUpload ? '' : fieldVal('timeSlot');
+    const reminderInterval = isUpload ? (fieldVal('inspRemindInterval') || '30') : '';
     const notifyIds = getSelectedNotifyTargetIds();
-    const insp = AppStore.inspections.find(i => i.propertyId === pid && i.scheduled)
-        || AppStore.inspections.find(i => i.propertyId === pid);
+    const payload = {
+        type: fieldVal('inspType') || 'Mid-term',
+        date: dateStr,
+        scheduled: true,
+        notes: fieldVal('inspNotes'),
+        timeSlot,
+        collectMode,
+        reminderInterval,
+        notifyTenantIds: notifyIds,
+    };
+    const insp = AppStore.inspections.find(i => i.propertyId === pid && i.scheduled);
     if (insp) {
-        insp.date = dateStr;
-        insp.type = fieldVal('inspType') || insp.type;
-        insp.scheduled = true;
-        insp.notes = fieldVal('inspNotes');
-        insp.timeSlot = timeSlot;
-        insp.notifyTenantIds = notifyIds;
+        Object.assign(insp, payload);
+        if (!isUpload) {
+            insp.tenantPhotosSubmitted = false;
+        }
     } else {
         AppStore.inspections.push({
             id: AppStore.nextId(AppStore.inspections),
             propertyId: pid,
-            type: fieldVal('inspType') || 'Mid-term',
-            date: dateStr,
             rating: null,
             photos: 0,
             report: null,
-            scheduled: true,
-            notes: fieldVal('inspNotes'),
-            timeSlot,
-            notifyTenantIds: notifyIds,
+            tenantPhotoUrls: [],
+            tenantPhotosSubmitted: false,
+            ...payload,
         });
     }
+    STATE.inspScheduleDraft = null;
     const p = PROPERTIES[pid];
-    const typeLabel = fieldVal('inspType') || 'Inspection';
+    const typeLabel = payload.type;
+    const remindOn = isUpload ? inspectionTenantRemindDate(fieldVal('inspDate'), reminderInterval) : '';
+    const remindLabel = remindOn && typeof formatDisplayDate === 'function' ? formatDisplayDate(remindOn) : remindOn;
     const notified = notifyTenantsAboutEvent(pid, notifyIds, {
-        title: 'Inspection scheduled',
-        desc: `${typeLabel} · ${dateStr}${timeSlot ? ` · ${timeSlot}` : ''} · ${p?.name || ''}`,
+        title: isUpload ? 'Upload inspection photos' : 'Inspection scheduled',
+        desc: isUpload
+            ? `${typeLabel} photos due ${dateStr}${remindLabel ? ` · reminded ${remindLabel}` : ''} · ${p?.name || ''}`
+            : `${typeLabel} · ${dateStr}${timeSlot ? ` · ${timeSlot}` : ''} · ${p?.name || ''}`,
+        screen: isUpload ? 'tenant-inspection-upload' : 'tenant-dashboard',
     });
-    const toastMsg = notified
-        ? `Inspection scheduled — ${notified} tenant${notified === 1 ? '' : 's'} notified`
-        : 'Inspection scheduled';
-    withLoading(() => { syncSmartReminders(); AppStore.save(); toast(toastMsg); go('property-detail', { propertyId: pid, tab: 'inspection' }); });
+    const toastMsg = isUpload
+        ? (notified ? `Smart Reminder sent to ${notified} tenant${notified === 1 ? '' : 's'}` : 'Tenant photo request saved')
+        : (notified ? `Inspection scheduled — ${notified} tenant${notified === 1 ? '' : 's'} notified` : 'Inspection scheduled');
+    withLoading(() => { syncSmartReminders(); AppStore.save(); toast(toastMsg); go('property-inspections', { propertyId: pid }); });
 }
 
 function saveAddPaymentMethod() {
@@ -15680,11 +16353,11 @@ function captureAlarmDraftFromForm(meta) {
         makeModel: fieldVal(`custom_alarm_${i}_make`),
         description: fieldVal(`custom_alarm_${i}_desc`),
         photo: fieldVal(`custom_alarm_${i}_photo`),
-        reminderTiming: fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
+        reminderTiming: alarmReminderTiming(fieldVal(`custom_alarm_${i}_reminder_timing`)),
         reminderDate: computeReminderDate(
             fieldVal(`custom_alarm_expiry_${i}`),
-            fieldVal(`custom_alarm_${i}_reminder_timing`) || '30',
-            fieldVal(`custom_alarm_${i}_reminder_date`),
+            alarmReminderTiming(fieldVal(`custom_alarm_${i}_reminder_timing`)),
+            '',
         ),
     }));
 }
@@ -15724,6 +16397,8 @@ function removeCustomAlarmRow(idx) {
 function addApplianceRow() {
     if (STATE.propertyId == null) return;
     const meta = AppStore.meta(STATE.propertyId);
+    if (!meta.appliances) meta.appliances = [];
+    captureApplianceDraftFromForm(meta);
     meta.appliances.push({ name: '', brand: '', description: '', photo: '', warranty: '' });
     AppStore.save();
     toast('Custom appliance added — enter a name below');
@@ -15736,17 +16411,46 @@ function addApplianceRow() {
     });
 }
 
-function quickAddAppliance(name) {
+function captureApplianceDraftFromForm(meta) {
+    if (!meta.appliances) meta.appliances = [];
+    const indices = [...document.querySelectorAll('[data-field^="app_name_"]')]
+        .map(el => +String(el.dataset.field).replace('app_name_', ''))
+        .filter(n => !Number.isNaN(n));
+    if (!indices.length) return;
+    meta.appliances = indices.map(i => ({
+        name: fieldVal(`app_name_${i}`).trim(),
+        brand: fieldVal(`app_brand_${i}`) || '',
+        description: fieldVal(`app_desc_${i}`) || '',
+        photo: fieldVal(`app_photo_${i}`) || '',
+        warranty: fieldVal(`app_warranty_${i}`) || '',
+    }));
+}
+
+function toggleAppliance(name) {
     const meta = AppStore.meta(STATE.propertyId);
     if (!meta.appliances) meta.appliances = [];
-    if (meta.appliances.some(a => a.name.toLowerCase() === String(name).toLowerCase())) {
-        toast('Already on your list');
+    captureApplianceDraftFromForm(meta);
+    const idx = meta.appliances.findIndex(a => a.name.toLowerCase() === String(name).toLowerCase());
+    if (idx >= 0) {
+        const a = meta.appliances[idx];
+        const hasDetails = !!(a.brand || a.description || a.photo || a.warranty);
+        const doRemove = () => {
+            meta.appliances.splice(idx, 1);
+            AppStore.save();
+            toast(`${name} removed`);
+            render();
+        };
+        if (hasDetails) {
+            showConfirm('Remove appliance', `Remove ${name} and its details from this property?`, doRemove, { okLabel: 'Remove', danger: true });
+            return;
+        }
+        doRemove();
         return;
     }
     meta.appliances.push({ name, brand: '', description: '', photo: '', warranty: '' });
     AppStore.save();
     toast(`${name} added`);
-    go('property-appliances', { propertyId: STATE.propertyId });
+    render();
 }
 
 function toggleUtilityType(key) {
@@ -15766,6 +16470,7 @@ function toggleUtilityType(key) {
 
 function removeApplianceRow(idx) {
     const meta = AppStore.meta(STATE.propertyId);
+    captureApplianceDraftFromForm(meta);
     if (!meta.appliances?.[idx]) return;
     const doRemove = () => {
         meta.appliances.splice(idx, 1);
@@ -15841,6 +16546,13 @@ async function uploadPhotoAction() {
         co.photos.push(...urls);
         AppStore.save();
         toast(urls.length === 1 ? 'Checkout photo added' : `${urls.length} checkout photos added`);
+        render();
+        return;
+    }
+    if (STATE.screen === 'tenant-inspection-upload') {
+        if (!STATE.tenantInspectionPhotos) STATE.tenantInspectionPhotos = [];
+        STATE.tenantInspectionPhotos.push(...urls);
+        toast(urls.length === 1 ? 'Inspection photo added' : `${urls.length} inspection photos added`);
         render();
         return;
     }
@@ -15980,15 +16692,15 @@ function deleteDocumentAction(docId) {
 
 function deleteReminderAction(reminderId) {
     const reminder = AppStore.reminders.find(r => r.id === reminderId);
-    if (!reminder) { toast('Reminder not found'); return; }
-    const title = reminder.auto ? 'Remove synced reminder?' : 'Delete reminder?';
+    if (!reminder) { toast('Smart Reminder not found'); return; }
+    const title = reminder.auto ? 'Remove synced Smart Reminder?' : 'Delete Smart Reminder?';
     const msg = reminder.auto
-        ? 'This reminder is synced from property records and may reappear after the next sync. Remove it from your list anyway?'
+        ? 'This Smart Reminder is synced from property records and may reappear after the next sync. Remove it from your list anyway?'
         : `Remove "${reminder.title}"?`;
     showConfirm(title, msg, () => {
         AppStore.reminders = AppStore.reminders.filter(r => r.id !== reminderId);
         AppStore.save();
-        toast(reminder.auto ? 'Reminder removed from list' : 'Reminder deleted');
+        toast(reminder.auto ? 'Smart Reminder removed from list' : 'Smart Reminder deleted');
         if (STATE.screen === 'reminder-detail') go('reminders', { reminderId: undefined });
         else render();
     }, { okLabel: reminder.auto ? 'Remove' : 'Delete', danger: true });
@@ -16205,7 +16917,7 @@ const FEATURE_BACK_MAP = {
     'create-tenancy': 'property-detail',
     'checkout-tenancy': 'tenant-detail',
     'assign-contractor': 'maintenance-detail',
-    'conduct-inspection': 'property-detail',
+    'conduct-inspection': 'property-inspections',
     'create-invoice': 'financial',
     'mark-rent-received': 'financial',
     'pay-contractor': 'financial',
@@ -16378,8 +17090,8 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="remove-custom-alarm"]').forEach(el => {
         el.onclick = () => removeCustomAlarmRow(+el.dataset.alarmIdx);
     });
-    app.querySelectorAll('[data-action="quick-add-appliance"]').forEach(el => {
-        el.onclick = () => quickAddAppliance(el.dataset.pickValue);
+    app.querySelectorAll('[data-action="toggle-appliance"]').forEach(el => {
+        el.onclick = () => toggleAppliance(el.dataset.pickValue);
     });
     app.querySelectorAll('[data-action="toggle-utility"]').forEach(el => {
         el.onclick = () => toggleUtilityType(el.dataset.pickValue);
@@ -16466,34 +17178,221 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="toggle-checkout-item"]').forEach(el => {
         el.onclick = () => {
-            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            if (el.disabled) return;
+            const tid = checkoutActiveTenantId();
             const co = getTenantCheckout(tid);
             co.checklist[el.dataset.key] = el.checked;
             AppStore.save();
+        };
+    });
+    app.querySelectorAll('[data-action="set-checkout-cleaning"]').forEach(el => {
+        el.onclick = () => {
+            const tid = checkoutActiveTenantId();
+            const co = getTenantCheckout(tid);
+            const choice = el.dataset.choice;
+            if (choice === 'pay') {
+                if (!(Number(co.cleaningFee) > 0)) {
+                    toastError('Landlord has not set a cleaning fee yet');
+                    return;
+                }
+                const inv = generateCheckoutCleaningInvoice(tid, co);
+                if (!inv) {
+                    toastError('Could not create cleaning invoice');
+                    return;
+                }
+                AppStore.save();
+                toast(`Invoice ${inv.num} generated · ${inv.amount}`);
+                render();
+                return;
+            }
+            co.cleaningChoice = 'self';
+            AppStore.save();
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="save-checkout-cleaning-fee"]').forEach(el => {
+        el.onclick = () => {
+            const tid = checkoutActiveTenantId();
+            const co = getTenantCheckout(tid);
+            const fee = parseInt(fieldVal('checkout_cleaning_fee'), 10);
+            if (!Number.isFinite(fee) || fee < 0) {
+                toastError('Enter a valid cleaning fee');
+                return;
+            }
+            co.cleaningFee = fee;
+            AppStore.save();
+            toast(`Cleaning fee set to ${formatCheckoutCleaningFee(fee)}`);
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="add-checkout-custom-item"]').forEach(el => {
+        el.onclick = () => {
+            const tid = checkoutActiveTenantId();
+            const co = getTenantCheckout(tid);
+            const label = (fieldVal('checkout_custom_item') || '').trim();
+            if (!label) {
+                toastError('Enter a checklist item');
+                return;
+            }
+            const id = `custom-${Date.now()}`;
+            if (!Array.isArray(co.customChecklist)) co.customChecklist = [];
+            co.customChecklist.push({ id, label });
+            co.checklist[id] = false;
+            AppStore.save();
+            toast('Checklist item added');
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="remove-checkout-custom-item"]').forEach(el => {
+        el.onclick = () => {
+            const tid = checkoutActiveTenantId();
+            const co = getTenantCheckout(tid);
+            const id = el.dataset.itemId;
+            co.customChecklist = (co.customChecklist || []).filter(i => i.id !== id);
+            if (co.checklist) delete co.checklist[id];
+            AppStore.save();
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="toggle-checkout-key"]').forEach(el => {
+        el.onclick = () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const co = getTenantCheckout(tid);
+            const key = co.keys?.[+el.dataset.keyIdx];
+            if (!key) return;
+            key.returned = el.checked;
+            key.missing = !el.checked;
+            AppStore.save();
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="vacate-date-change"]').forEach(el => {
+        el.onchange = () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const bodyEl = document.querySelector('[data-field="vacate_body"]');
+            const previousDate = STATE.vacateDraftDate || '';
+            const previousTemplate = buildVacateNoticeDraft(tid, previousDate);
+            const currentBody = (bodyEl?.value || STATE.vacateDraftBody || '').trim();
+            STATE.vacateDraftDate = el.value || '';
+            if (!currentBody || currentBody === previousTemplate.trim()) {
+                STATE.vacateDraftBody = buildVacateNoticeDraft(tid, STATE.vacateDraftDate);
+            } else {
+                STATE.vacateDraftBody = bodyEl?.value || currentBody;
+            }
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="send-vacate-notice"]').forEach(el => {
+        el.onclick = () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const vacateDate = fieldVal('vacate_date');
+            const message = (fieldVal('vacate_body') || '').trim();
+            if (!vacateDate) {
+                toastError('Choose a vacating date');
+                return;
+            }
+            if (!message) {
+                toastError('Notice message is required');
+                return;
+            }
+            const co = getTenantCheckout(tid);
+            const { tenantName, propertyName, unit } = checkoutTenantContext(tid);
+            const sentAt = new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            co.vacateNotice = {
+                sent: true,
+                vacateDate,
+                message,
+                sentAt,
+                tenantName,
+                propertyLabel: unit ? `${propertyName} · ${unit}` : propertyName,
+            };
+            STATE.vacateDraftDate = vacateDate;
+            STATE.vacateDraftBody = message;
+            pushNotification({
+                icon: 'log-out', color: ['#FEF3C7', '#D97706'],
+                title: 'Vacate notice received',
+                desc: `${tenantName} · vacating ${formatVacateDateLabel(vacateDate) || vacateDate}`,
+                time: 'Just now', unread: true,
+                screen: 'checkout-tenancy', opts: { tid },
+            });
+            AppStore.save();
+            toast('Vacate notice sent to landlord');
+            render();
         };
     });
     app.querySelectorAll('[data-action="save-checkout-meters"]').forEach(el => {
         el.onclick = () => {
             const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
             const co = getTenantCheckout(tid);
-            co.meters.electricity = fieldVal('co_meter_electricity') || '';
-            co.meters.gas = fieldVal('co_meter_gas') || '';
-            co.meters.water = fieldVal('co_meter_water') || '';
+            CHECKOUT_METER_KEYS.forEach(([key]) => {
+                co.meters[key] = {
+                    reading: fieldVal(`co_meter_${key}`) || '',
+                    photo: fieldVal(`co_meter_${key}_photo`) || co.meters[key]?.photo || '',
+                };
+            });
+            const missingPhoto = CHECKOUT_METER_KEYS.filter(([key]) => co.meters[key].reading && !isFieldPhotoPreviewable(co.meters[key].photo));
+            if (missingPhoto.length) {
+                toastError('Upload a picture for each meter reading');
+                AppStore.save();
+                render();
+                return;
+            }
             AppStore.save();
-            toast('Meter readings saved');
+            toast('Meter readings saved — shared with landlord');
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="remove-checkout-photo"]').forEach(el => {
+        el.onclick = () => {
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const co = getTenantCheckout(tid);
+            if (!co.photos?.length) return;
+            co.photos.splice(+el.dataset.photoIdx, 1);
+            AppStore.save();
+            render();
         };
     });
     app.querySelectorAll('[data-action="submit-tenant-checkout"]').forEach(el => {
         el.onclick = () => {
             const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
             const co = getTenantCheckout(tid);
-            const done = Object.values(co.checklist).filter(Boolean).length;
-            if (done < TENANT_CHECKOUT_CHECKLIST.length) {
-                toast('Complete the cleaning checklist first');
+            CHECKOUT_METER_KEYS.forEach(([key]) => {
+                const readingEl = document.querySelector(`[data-field="co_meter_${key}"]`);
+                const photoEl = document.querySelector(`[data-field="co_meter_${key}_photo"]`);
+                if (readingEl || photoEl) {
+                    co.meters[key] = {
+                        reading: fieldVal(`co_meter_${key}`) || co.meters[key]?.reading || '',
+                        photo: fieldVal(`co_meter_${key}_photo`) || co.meters[key]?.photo || '',
+                    };
+                }
+            });
+            const done = Object.values(co.checklist || {}).filter(Boolean).length;
+            if (!checkoutCleaningComplete(co)) {
+                toastError(co.cleaningChoice === 'pay'
+                    ? 'Select the cleaning fee option to generate the invoice'
+                    : 'Complete the cleaning checklist, or pay the landlord cleaning fee');
                 return;
             }
+            if (!checkoutMeterPhotoComplete(co)) {
+                toastError('Each meter reading needs a picture uploaded');
+                return;
+            }
+            const missingKeys = checkoutMissingKeys(co);
+            const { tenantName } = checkoutTenantContext(tid);
+            co.submitted = true;
+            co.submittedAt = new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            co.keys = (co.keys || []).map(k => ({ ...k, missing: !k.returned }));
+            pushNotification({
+                icon: 'clipboard-check', color: ['#EFF6FF', '#2563EB'],
+                title: 'Check-out pack submitted',
+                desc: `${tenantName}${missingKeys.length ? ` · ${missingKeys.length} key(s) missing` : ' · meters & keys shared'}`,
+                time: 'Just now', unread: true,
+                screen: 'checkout-tenancy', opts: { tid },
+            });
             AppStore.save();
-            toast('Check-out details submitted to your landlord');
+            toast(missingKeys.length
+                ? 'Submitted — landlord can charge for missing keys'
+                : 'Check-out details submitted to your landlord');
             go('tenant-dashboard');
         };
     });
@@ -16609,6 +17508,31 @@ function bindFeatureEvents() {
         const unitSel = app.querySelector('[data-field="unit"]');
         if (unitSel) unitSel.onchange = onTenancyUnitChange;
     }
+    app.querySelectorAll('[data-action="set-insp-collect-mode"]').forEach(el => {
+        el.onclick = () => setInspCollectMode(el.dataset.mode);
+    });
+    if (STATE.screen === 'reschedule-inspection') {
+        const refreshDraft = () => {
+            STATE.inspScheduleDraft = {
+                date: fieldVal('inspDate'),
+                type: fieldVal('inspType'),
+                notes: fieldVal('inspNotes'),
+                timeSlot: fieldVal('timeSlot'),
+                interval: fieldVal('inspRemindInterval') || '30',
+            };
+            render();
+        };
+        const dateEl = app.querySelector('[data-field="inspDate"]');
+        const intEl = app.querySelector('[data-field="inspRemindInterval"]');
+        if (dateEl) dateEl.onchange = refreshDraft;
+        if (intEl) intEl.onchange = refreshDraft;
+    }
+    app.querySelectorAll('[data-action="submit-tenant-insp-photos"]').forEach(el => {
+        el.onclick = saveTenantInspectionPhotos;
+    });
+    app.querySelectorAll('[data-action="remove-tenant-insp-photo"]').forEach(el => {
+        el.onclick = () => removeTenantInspPhoto(+el.dataset.photoIdx);
+    });
     app.querySelectorAll('[data-action="set-insp-rating"]').forEach(el => {
         el.onclick = () => setInspectionRating(+el.dataset.rating);
     });
@@ -16984,10 +17908,19 @@ function goFeature(screen, opts = {}) {
             date: toDateInputValue(upcoming.date),
         } : null;
         STATE.inspectionRating = 4;
-        STATE.inspectionPhotos = [];
+        STATE.inspectionPhotos = [...(upcoming?.tenantPhotoUrls || [])];
     } else if (STATE.screen === 'conduct-inspection') {
         STATE.inspectionPrefill = null;
         STATE.inspectionRating = 4;
+    }
+    if (screen === 'reschedule-inspection' && STATE.screen !== 'reschedule-inspection') {
+        const pid = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
+        const upcoming = typeof getScheduledInspection === 'function' ? getScheduledInspection(pid) : null;
+        STATE.inspCollectMode = upcoming?.collectMode === 'tenant-upload' ? 'tenant-upload' : 'visit';
+        STATE.inspScheduleDraft = null;
+    }
+    if (screen === 'tenant-inspection-upload' && STATE.screen !== 'tenant-inspection-upload') {
+        STATE.tenantInspectionPhotos = [];
     }
 }
 const _origGo = go;

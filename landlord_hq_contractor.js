@@ -1988,7 +1988,7 @@ function screenTenantActiveTenancy() {
             <button type="button" data-go="tenant-building-info" class="btn-secondary py-3 text-[13px]">Building info</button>
             <button type="button" data-go="tenant-house-rules" class="btn-secondary py-3 text-[13px]">House rules</button>
             <button type="button" data-go="tenant-compliance" class="btn-secondary py-3 text-[13px]">Compliance</button>
-            <button type="button" data-go="tenant-reminders" class="btn-secondary py-3 text-[13px]">Reminders</button>
+            <button type="button" data-go="tenant-reminders" class="btn-secondary py-3 text-[13px]">Smart Reminders</button>
             <button type="button" data-go="tenant-documents" class="btn-secondary py-3 text-[13px]">Documents</button>
             <button type="button" data-go="tenant-announcements" class="btn-secondary py-3 text-[13px]">Announcements</button>
         </div>
@@ -2014,7 +2014,7 @@ function screenTenantReminders() {
     const t = getActiveTenant();
     const rows = typeof tenantSmartReminders === 'function' ? tenantSmartReminders(t) : [];
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    return `${topBar('Reminders', { back: true, sub: 'For your home' })}
+    return `${topBar('Smart Reminders', { back: true, sub: 'For your home' })}
     <div class="screen-content screen-enter stack-sm">
         ${rows.length ? rows.map(r => {
             const urg = r.urgency === 'high' ? ['#FEE2E2', '#DC2626'] : r.urgency === 'medium' ? ['#FEF3C7', '#D97706'] : ['#EFF6FF', '#2563EB'];
@@ -2033,7 +2033,7 @@ function screenTenantReminders() {
         }).join('') : `
         <div class="empty-state card">
             <i data-lucide="bell" class="w-10 h-10 text-[#CBD5E1]"></i>
-            <p class="empty-state-title">No reminders right now</p>
+            <p class="empty-state-title">No Smart Reminders right now</p>
             <p class="empty-state-desc">Lease dates and compliance deadlines will appear here.</p>
         </div>`}
     </div>`;
@@ -2046,17 +2046,21 @@ function screenTenantReminderDetail() {
     const r = rows.find(x => String(x.id) === key || `${x.type}-${x.title}` === key);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     if (!r) {
-        return `${topBar('Reminder', { back: true })}
-        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Reminder not found.</p></div>`;
+        return `${topBar('Smart Reminder', { back: true })}
+        <div class="screen-content screen-enter"><p class="text-[13px] text-[#64748B]">Smart Reminder not found.</p></div>`;
     }
     const dueLabel = typeof formatReminderDue === 'function' ? formatReminderDue(r.due) : (r.due || '—');
     const urg = r.urgency === 'high' ? ['Urgent', '#FEE2E2', '#DC2626'] : r.urgency === 'medium' ? ['Due soon', '#FEF3C7', '#D97706'] : ['Upcoming', '#EFF6FF', '#2563EB'];
+    const photoReq = typeof tenantInspectionPhotoRequest === 'function' ? tenantInspectionPhotoRequest(t) : null;
+    const isPhotoUpload = r.type === 'inspection' && !!photoReq;
     const hint = r.id === 'rent-due'
         ? 'Pay rent from your home screen or payment history.'
         : r.id === 'lease-end'
             ? 'Your landlord manages lease renewals. Message them if you have questions.'
-            : 'Your landlord is responsible for keeping compliance items up to date.';
-    return `${topBar('Reminder', { back: true })}
+            : isPhotoUpload
+                ? 'Your landlord asked you to photograph the property. Upload pictures from this request.'
+                : 'Your landlord is responsible for keeping compliance items up to date.';
+    return `${topBar('Smart Reminder', { back: true })}
     <div class="screen-content screen-enter stack-sm">
         <div class="reminder-detail-hero card p-4">
             <div class="flex items-start justify-between gap-3">
@@ -2082,10 +2086,49 @@ function screenTenantReminderDetail() {
             </div>
         </div>
         <p class="text-[13px] text-[#64748B] leading-relaxed">${hint}</p>
-        ${r.id === 'rent-due' ? `
+        ${isPhotoUpload ? `
+        <button type="button" data-go="tenant-inspection-upload" class="btn-primary w-full py-3 text-[13px]">Upload inspection photos</button>` : r.id === 'rent-due' ? `
         <button type="button" data-go="transaction-history" class="btn-primary w-full py-3 text-[13px]">View payments</button>` : `
         <button type="button" data-go="tenant-active-tenancy" class="btn-primary w-full py-3 text-[13px]">View my tenancy</button>`}
         <button type="button" data-go="tenant-compliance" class="btn-secondary w-full py-3 text-[13px]">Building compliance</button>
+    </div>`;
+}
+
+function screenTenantInspectionUpload() {
+    const t = getActiveTenant();
+    const req = typeof tenantInspectionPhotoRequest === 'function' ? tenantInspectionPhotoRequest(t) : null;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    if (!req) {
+        return `${topBar('Inspection photos', { back: true })}
+        <div class="screen-content screen-enter">
+            <div class="empty-state card">
+                <i data-lucide="camera" class="w-10 h-10 text-[#CBD5E1]"></i>
+                <p class="empty-state-title">No photo request</p>
+                <p class="empty-state-desc">Your landlord has not asked for inspection pictures right now.</p>
+            </div>
+        </div>`;
+    }
+    const dueLabel = typeof formatReminderDue === 'function' ? formatReminderDue(req.date) : (req.date || '—');
+    const existing = req.tenantPhotoUrls || [];
+    const draft = STATE.tenantInspectionPhotos || [];
+    const allPhotos = [...existing, ...draft];
+    const submitted = !!req.tenantPhotosSubmitted;
+    return `${topBar('Upload inspection photos', { back: true, sub: req.type || 'Inspection' })}
+    <div class="screen-content screen-enter stack-sm">
+        <div class="card p-4 bg-[#FFFBEB] border border-[#FDE68A]">
+            <p class="text-[13px] font-semibold text-[#92400E]">${esc(req.type || 'Inspection')} pictures</p>
+            <p class="text-[12px] text-[#B45309] mt-1">Due ${esc(dueLabel)}${t?.unit ? ` · ${esc(t.unit)}` : ''}</p>
+            ${req.notes?.trim() ? `<p class="text-[12px] text-[#78350F] mt-2 leading-relaxed">${esc(req.notes)}</p>` : ''}
+        </div>
+        ${typeof renderPhotoPreviewStrip === 'function' ? renderPhotoPreviewStrip(allPhotos, { removable: true, removeAction: 'remove-tenant-insp-photo' }) : ''}
+        ${submitted ? `
+        <p class="form-helper">Photos sent to your landlord. You can add more if needed.</p>` : ''}
+        <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full">
+            <i data-lucide="camera" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
+            <p class="text-[13px] font-semibold text-[#0F172A] mt-2">${allPhotos.length ? 'Add more photos' : 'Add inspection photos'}</p>
+            <p class="text-[11px] text-[#64748B] mt-1">Take or choose pictures of each room</p>
+        </button>
+        <button type="button" data-action="submit-tenant-insp-photos" class="btn-primary w-full py-3.5 text-[14px]" ${draft.length || existing.length ? '' : 'disabled'}>${submitted ? 'Send more photos' : 'Send to landlord'}</button>
     </div>`;
 }
 
@@ -2141,35 +2184,12 @@ function screenTenantCommunication() {
 function screenTenantCheckout() {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
     const co = typeof getTenantCheckout === 'function' ? getTenantCheckout(tid) : {};
-    const checklist = co.checklist || {};
-    const done = Object.values(checklist).filter(Boolean).length;
     return `${topBar('Check-out', { back: true, sub: 'End of tenancy' })}
     <div class="screen-content screen-enter stack-sm">
-        <div class="card p-4 tnt-deposit-card">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase">Deposit status</p>
-            <p class="text-[18px] font-bold text-[#0F172A] mt-1">${co.depositAmount || '—'}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">${co.depositScheme || 'Deposit scheme'} · ${co.depositStatus === 'protected' ? 'Protected' : 'Pending'}</p>
-        </div>
-        <p class="section-title">Cleaning checklist · ${done}/${(typeof TENANT_CHECKOUT_CHECKLIST !== 'undefined' ? TENANT_CHECKOUT_CHECKLIST : []).length} done</p>
-        <div class="card p-4 stack-sm">
-            ${(typeof TENANT_CHECKOUT_CHECKLIST !== 'undefined' ? TENANT_CHECKOUT_CHECKLIST : []).map(([key, label]) => `
-            <label class="tnt-checkout-row">
-                <input type="checkbox" data-action="toggle-checkout-item" data-key="${key}" ${checklist[key] ? 'checked' : ''}>
-                <span>${label}</span>
-            </label>`).join('')}
-        </div>
-        <p class="section-title">Final meter readings</p>
-        ${typeof formFieldReq === 'function' ? formFieldReq('Electricity', 'co_meter_electricity', co.meters?.electricity || '', 'text') : ''}
-        ${typeof formFieldReq === 'function' ? formFieldReq('Gas', 'co_meter_gas', co.meters?.gas || '', 'text') : ''}
-        ${typeof formFieldReq === 'function' ? formFieldReq('Water', 'co_meter_water', co.meters?.water || '', 'text') : ''}
-        <button type="button" data-action="save-checkout-meters" class="btn-secondary w-full py-3 text-[13px]">Save meter readings</button>
-        <p class="section-title">Final photos</p>
-        ${typeof renderPhotoPreviewStrip === 'function' ? renderPhotoPreviewStrip(co.photos || [], { removable: false }) : ''}
-        <div class="grid grid-cols-2 gap-3">
-            <button type="button" data-action="upload-photo" class="btn-secondary py-3 text-[12px]">Upload photos</button>
-            <button type="button" data-action="upload-video" class="btn-secondary py-3 text-[12px]">Upload videos</button>
-        </div>
-        <button type="button" data-action="submit-tenant-checkout" class="btn-primary w-full py-3.5 text-[14px] mt-2">Submit check-out to landlord</button>
+        ${typeof renderSharedCheckoutPack === 'function'
+            ? renderSharedCheckoutPack(tid, { editable: true, showVacate: true })
+            : '<p class="text-[13px] text-[#64748B]">Check-out form unavailable.</p>'}
+        <button type="button" data-action="submit-tenant-checkout" class="btn-primary w-full py-3.5 text-[14px] mt-2">${co.submitted ? 'Resubmit check-out to landlord' : 'Submit check-out to landlord'}</button>
     </div>`;
 }
 
@@ -3092,6 +3112,7 @@ Object.assign(SCREEN_MAP, {
     'tenant-contact': screenTenantContact,
     'tenant-reminders': screenTenantReminders,
     'tenant-reminder-detail': screenTenantReminderDetail,
+    'tenant-inspection-upload': screenTenantInspectionUpload,
     'tenant-compliance': screenTenantCompliance,
     'tenant-communication': screenTenantCommunication,
     'tenant-checkout': screenTenantCheckout,
@@ -3107,7 +3128,7 @@ const CONTRACTOR_NO_NAV = [
     'tenant-building-info', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile',
     'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
     'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
-    'tenant-communication', 'tenant-checkout',
+    'tenant-communication', 'tenant-checkout', 'tenant-inspection-upload',
 ];
 NO_NAV.push(...CONTRACTOR_NO_NAV);
 

@@ -1184,7 +1184,7 @@ function screenCertificateAssign() {
     const isInspection = !!typeDef.inspection;
     return `${topBar('Assign certificate', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter cert-assign-page">
-        <p class="cert-assign-intro">Link a certificate to this property. Compliance status and reminders update from the expiry date.</p>
+        <p class="cert-assign-intro">Link a certificate to this property. Compliance status and Smart Reminders update from the expiry date.</p>
         <p class="screen-section-title">Certificate type</p>
         <div class="cert-assign-type-grid">
         ${CERT_ASSIGN_TYPES.map(t => `

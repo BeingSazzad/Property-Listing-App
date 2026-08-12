@@ -102,6 +102,9 @@ const STATE = {
     logMaintPrefill: null,
     logMaintStep: 1,
     inspectionPhotos: [],
+    tenantInspectionPhotos: [],
+    inspCollectMode: 'visit',
+    inspScheduleDraft: null,
     inspectionRating: 4,
     inspectionPrefill: null,
     inspectionId: 0,
@@ -386,9 +389,9 @@ const SUBSCRIPTION_PLANS = [
         id: 'free',
         name: 'Free',
         price: 0,
-        tagline: 'Reminders & basics',
+        tagline: 'Smart Reminders & basics',
         properties: 'Up to 1 property',
-        features: ['Smart reminders', '1 property', 'Unlimited tenants (free)', 'Email support'],
+        features: ['Smart Reminders', '1 property', 'Unlimited tenants (free)', 'Email support'],
     },
     {
         id: 'pro',
@@ -461,7 +464,7 @@ const FAQ_BY_ROLE = {
         { id: 3, cat: 'Rent & Payments', q: 'Can I export financial reports?', a: 'Go to Financial → Transaction history, or open any invoice and tap Download PDF for a record of that payment.' },
         { id: 4, cat: 'Maintenance', q: 'How do I log a maintenance issue?', a: 'Open Home → Maintenance for your full queue, or use ⋯ Log issue from a property unit when you are already in that flat.' },
         { id: 5, cat: 'Maintenance', q: 'How are contractors assigned?', a: 'Assign contractors from the maintenance detail screen. The job is sent to their contractor app, and you\'ll be notified when work is submitted or invoiced.' },
-        { id: 6, cat: 'Compliance', q: 'What compliance documents should I track?', a: 'We recommend tracking Gas Safety Certificate, Electrical Installation Condition Report (EICR), EPC rating, smoke/CO alarms, landlord insurance, and Right to Rent checks. Reminders appear on your dashboard.' },
+        { id: 6, cat: 'Compliance', q: 'What compliance documents should I track?', a: 'We recommend tracking Gas Safety Certificate, Electrical Installation Condition Report (EICR), EPC rating, smoke/CO alarms, landlord insurance, and Right to Rent checks. Smart Reminders appear on your dashboard.' },
         { id: 7, cat: 'Account', q: 'How do I change my password?', a: 'Go to Profile → Change Password. Enter your current password, then your new password twice.' },
         { id: 8, cat: 'Account', q: 'How do I update my account details?', a: 'Open Profile → Personal Information to update your name, email, and contact details. Change your password under Security.' },
         { id: 9, cat: 'Account', q: 'How do I change my subscription plan?', a: 'Go to Profile → Subscription & billing. Compare Starter, Pro, and Portfolio plans and tap Switch to change. Billing is charged to the card on file.' },
@@ -495,7 +498,7 @@ const PRIVACY_BY_ROLE = {
     landlord: [
         ['Introduction', ['Landlord HQ Ltd ("we", "us") respects your privacy. This policy explains how we collect, use, and protect your personal data when you use the Landlord HQ landlord application.', 'As a landlord, you may also store tenant and property data — you are responsible for handling that data lawfully under UK GDPR.']],
         ['Information We Collect', ['Account details: name, email, phone, billing information.', 'Property data: addresses, tenancy records, compliance documents, and financial records.', 'Tenant data you upload: contact details, lease documents, and maintenance history.']],
-        ['How We Use Your Data', ['To manage your property portfolio, tenants, rent tracking, and maintenance workflows.', 'To send compliance reminders, payment alerts, and contractor notifications.', 'To generate financial reports and invoices.']],
+        ['How We Use Your Data', ['To manage your property portfolio, tenants, rent tracking, and maintenance workflows.', 'To send Smart Reminders, payment alerts, and contractor notifications.', 'To generate financial reports and invoices.']],
         ['Data Sharing', ['We share data only with service providers (payments, hosting) under strict agreements. Tenant data is visible only to you and invited tenants.', 'We do not sell personal data.']],
         ['Your Rights', ['Under UK GDPR you may access, rectify, or delete your account data. Contact privacy@landlordhq.com.', 'You must also honour tenant data rights for information you hold about tenants.']],
         ['Contact Us', ['privacy@landlordhq.com · Landlord HQ Ltd, 42 Baker Street, London, W1U 7AJ']],
@@ -1285,7 +1288,7 @@ const ONBOARDING_SLIDES = [
     },
     {
         title: 'Never Miss Important Things',
-        body: 'Smart reminders for certificates, inspections, rent, and more.',
+        body: 'Smart Reminders for certificates, inspections, rent, and more.',
         art: 'reminders',
     },
 ];
@@ -2167,7 +2170,7 @@ function navigateBackFallback() {
         'faq-detail': 'faq', 'about': profileParent,
         'edit-property': 'property-detail', 'add-flat': 'property-detail', 'invite-tenant': 'property-detail',
         'edit-flat': 'flat-detail', 'flat-detail': 'property-detail', 'flat-members': 'flat-detail', 'flat-rent-history': 'flat-detail', 'tenancy-detail': 'flat-detail',
-        'edit-tenant': 'tenant-detail', 'reschedule-inspection': 'property-detail',
+        'edit-tenant': 'tenant-detail', 'reschedule-inspection': 'property-inspections',
         'inspection-detail': 'property-inspections',
         'renew-compliance': 'property-detail', 'edit-inventory-room': 'inventory-room',
         'add-payment-method': 'payment-methods', 'edit-payment-method': 'payment-methods',
@@ -2228,6 +2231,7 @@ function navigateBackFallback() {
         'tenant-contact': 'personal-info',
         'tenant-reminders': 'tenant-dashboard',
         'tenant-reminder-detail': 'tenant-reminders',
+        'tenant-inspection-upload': 'tenant-reminders',
         'tenant-compliance': 'tenant-dashboard',
         'tenant-communication': 'tenant-dashboard',
         'tenant-checkout': 'personal-info',
@@ -3187,6 +3191,7 @@ const bottomNav = () => {
         'tenant-contact': 'personal-info',
         'tenant-reminders': 'tenant-dashboard',
         'tenant-reminder-detail': 'tenant-reminders',
+        'tenant-inspection-upload': 'tenant-reminders',
         'tenant-compliance': 'tenant-dashboard',
         'tenant-communication': 'tenant-dashboard',
         'tenant-checkout': 'personal-info',
@@ -3453,7 +3458,7 @@ function screenDashboard() {
         ${reminders.length ? `
         <div>
             <div class="dash-section-head">
-                <h3 class="screen-section-title">Coming up</h3>
+                <h3 class="screen-section-title">Smart Reminders</h3>
                 <button data-go="reminders" class="dash-view-all">View all</button>
             </div>
             <div class="dash-reminder-list card" style="margin-top:var(--stack-gap-sm)">
@@ -3875,6 +3880,19 @@ const tenantSectionContent = (tab, t) => {
                 ${checkoutNotes ? `<p class="note-block-label${depositReturn ? ' mt-3' : ''}">Check-out note</p><p class="note-block-text">${checkoutNotes}</p>` : ''}
                 ${checkoutRec?.date ? `<p class="note-block-meta">${typeof formatDisplayDate === 'function' ? formatDisplayDate(checkoutRec.date) || checkoutRec.date : checkoutRec.date}</p>` : ''}
             </div>` : ''}
+            ${typeof getTenantCheckout === 'function' ? (() => {
+                const shared = getTenantCheckout(STATE.tenantId);
+                if (!shared.submitted && !shared.vacateNotice?.sent) return '';
+                const meterOk = typeof checkoutMeterPhotoComplete === 'function' && checkoutMeterPhotoComplete(shared);
+                const missing = typeof checkoutMissingKeys === 'function' ? checkoutMissingKeys(shared).length : 0;
+                return `
+            <div class="card p-4 checkout-shared-summary">
+                <p class="note-block-label">Tenant check-out pack</p>
+                <p class="note-block-text mt-1">${shared.submitted ? 'Submitted and shared' : 'In progress'}${shared.vacateNotice?.sent ? ` · Vacating ${typeof formatVacateDateLabel === 'function' ? formatVacateDateLabel(shared.vacateNotice.vacateDate) : shared.vacateNotice.vacateDate}` : ''}</p>
+                <p class="text-[12px] text-[#64748B] mt-1">${meterOk ? 'Meter photos attached' : 'Meter photos incomplete'}${missing ? ` · ${missing} key(s) missing` : ''}</p>
+                <button type="button" data-go="checkout-tenancy" data-tid="${STATE.tenantId}" class="btn-secondary w-full py-2.5 text-[13px] mt-3">View shared check-out</button>
+            </div>`;
+            })() : ''}
             <div class="tenant-tenancy-actions">
                 <button type="button" data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-2.5 text-[13px]">View unit</button>
                 ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-2.5 text-[13px]">View tenancy</button>` : `<button type="button" data-go="property-detail" data-pid="${listItem.propertyId}" class="btn-secondary py-2.5 text-[13px]">View property</button>`}

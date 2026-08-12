@@ -3662,6 +3662,23 @@
         }
         .insp-schedule-property-name { font-size: 13px; font-weight: 600; color: #0F172A; margin: 0; }
         .insp-schedule-property-meta { font-size: 11px; color: #64748B; margin: 2px 0 0; }
+        .insp-mode-grid { display: grid; gap: 8px; margin: 0 0 16px; }
+        .insp-mode-card {
+            display: flex; align-items: flex-start; gap: 10px; width: 100%;
+            padding: 12px; border-radius: 14px; text-align: left;
+            border: 1px solid var(--color-border); background: #fff;
+        }
+        .insp-mode-card.is-active { border-color: #BFDBFE; background: #EFF6FF; }
+        .insp-mode-icon {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #F8FAFC; color: #64748B; border: 1px solid var(--color-border);
+        }
+        .insp-mode-card.is-active .insp-mode-icon { background: #fff; color: #2563EB; border-color: #BFDBFE; }
+        .insp-mode-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .insp-mode-copy strong { font-size: 13px; font-weight: 700; color: #0F172A; }
+        .insp-mode-copy span { font-size: 11px; color: #64748B; line-height: 1.35; }
+        .insp-mode-card.is-active .insp-mode-copy strong { color: #1D4ED8; }
         .form-input--compact { min-height: 64px; }
         .notify-tenant-head {
             display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -7800,6 +7817,14 @@
             background: #fff; color: #2563EB; border-color: #BFDBFE;
         }
         .feature-pick-check { margin-left: auto; color: #2563EB; flex-shrink: 0; }
+        .feature-pick-tick {
+            width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+            border: 1.5px solid #CBD5E1; background: #fff;
+            display: inline-flex; align-items: center; justify-content: center; color: #fff;
+        }
+        .feature-pick-tick.is-on {
+            border-color: #2563EB; background: #2563EB;
+        }
         .utility-provider-head {
             display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
         }
@@ -9232,7 +9257,57 @@
         .tnt-ref-hint { font-size: 11px; color: #64748B; margin-top: 2px; }
         .tnt-checkout-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; padding: 4px 0; }
         .tnt-checkout-row input { width: 18px; height: 18px; accent-color: #2563EB; }
+        .tnt-checkout-row input:disabled { opacity: .7; }
         .tnt-deposit-card { background: linear-gradient(135deg, #EFF6FF 0%, #F8FAFC 100%); }
+        .checkout-meter-card { border: 1px solid #E2E8F0; }
+        .checkout-meter-photo {
+            width: 100%; max-width: 200px; aspect-ratio: 4 / 3; object-fit: cover;
+            border-radius: 12px; border: 1px solid #E2E8F0; background: #F8FAFC; display: block;
+        }
+        .checkout-key-row {
+            display: flex; align-items: center; gap: 12px; padding: 10px 0;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .checkout-key-row:last-child { border-bottom: 0; padding-bottom: 0; }
+        .checkout-key-row:first-child { padding-top: 0; }
+        .checkout-key-row--missing { background: #FEF2F2; margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 10px; border-bottom-color: transparent; }
+        .checkout-key-row--returned { }
+        .checkout-key-toggle {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 12px;
+            font-weight: 600; color: #334155; white-space: nowrap; cursor: pointer;
+        }
+        .checkout-key-toggle input { width: 18px; height: 18px; accent-color: #2563EB; }
+        .checkout-keys-charge-note {
+            display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px;
+            border-radius: 12px; background: #FEF2F2; border: 1px solid #FECACA;
+            color: #991B1B; font-size: 12px; line-height: 1.4;
+        }
+        .checkout-clean-choice { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .checkout-clean-choice-btn {
+            width: 100%; text-align: left; padding: 12px 14px; border-radius: 12px;
+            border: 1px solid #E2E8F0; background: #fff; cursor: pointer;
+        }
+        .checkout-clean-choice-btn.is-active { border-color: #2563EB; background: #EFF6FF; }
+        .checkout-clean-choice-title { display: block; font-size: 13px; font-weight: 700; color: #0F172A; }
+        .checkout-clean-choice-sub { display: block; font-size: 12px; color: #64748B; margin-top: 2px; line-height: 1.35; }
+        .checkout-clean-invoice-note { border: 1px solid #FDE68A; background: #FFFBEB; }
+        .checkout-custom-tag { font-style: normal; font-size: 10px; font-weight: 700; color: #2563EB; }
+        .tnt-checkout-row-wrap { display: flex; align-items: center; gap: 8px; }
+        .tnt-checkout-row-wrap .tnt-checkout-row { flex: 1; min-width: 0; }
+        .checkout-custom-add { display: flex; gap: 8px; align-items: center; padding-top: 8px; border-top: 1px solid #F1F5F9; }
+        .vacate-notice-card { border: 1px solid #BFDBFE; background: #F8FAFF; }
+        .vacate-notice-card--sent { border-color: #A7F3D0; background: #ECFDF5; }
+        .vacate-notice-textarea { min-height: 160px; resize: vertical; font-size: 13px; line-height: 1.45; }
+        .vacate-notice-body {
+            white-space: pre-wrap; font-family: inherit; font-size: 12px; line-height: 1.5;
+            color: #334155; background: #fff; border: 1px solid #E2E8F0; border-radius: 12px;
+            padding: 12px; margin: 0; overflow: auto;
+        }
+        .vacate-notice-sent-banner {
+            display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px;
+            border-radius: 10px; background: #ECFDF5; color: #047857; font-size: 12px; line-height: 1.4;
+        }
+        .checkout-shared-summary { border: 1px solid #BFDBFE; background: #F8FAFF; }
         .tnt-compliance-icon { width: 40px; height: 40px; border-radius: 12px; background: #FFF7ED; color: #EA580C; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .tnt-home-hi-sub { font-size: 12px; color: #64748B; margin: 2px 0 0; }
         .tnt-rent-amount--sm { font-size: 22px !important; }
@@ -9894,10 +9969,10 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=233"></script>
-    <script src="landlord_hq_contractor.js?v=201"></script>
-    <script src="landlord_hq_features.js?v=249"></script>
-    <script src="landlord_hq_product.js?v=214"></script>
+    <script src="landlord_hq_screens.js?v=237"></script>
+    <script src="landlord_hq_contractor.js?v=205"></script>
+    <script src="landlord_hq_features.js?v=257"></script>
+    <script src="landlord_hq_product.js?v=215"></script>
     <script>
     (function () {
         function showBootError(msg) {
