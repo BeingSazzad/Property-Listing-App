@@ -199,22 +199,33 @@ function saveTenantData() {
 }
 
 function ensureDemoTenantAccount() {
-    if (tenantAccountByEmail(DEMO_CREDENTIALS.tenant.email)) return;
-    TENANT_ACCOUNTS.push({
-        id: 0,
-        inviteToken: 'DEMO-TENANT',
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        email: DEMO_CREDENTIALS.tenant.email,
-        phone: '+44 7700 900456',
-        propertyId: 0,
-        unit: 'Flat 2A',
-        rent: '£2,450',
-        leaseStart: 'Jan 2024',
-        leaseEnd: 'Jan 2027',
-        landlord: 'John Smith',
-        password: DEMO_CREDENTIALS.tenant.password,
-    });
+    const demo = DEMO_CREDENTIALS.tenant;
+    let account = tenantAccountByEmail(demo.email);
+    if (!account) {
+        TENANT_ACCOUNTS.push({
+            id: 0,
+            inviteToken: 'DEMO-TENANT',
+            firstName: 'Sarah',
+            lastName: 'Johnson',
+            email: demo.email,
+            phone: '+44 7700 900456',
+            propertyId: 0,
+            unit: 'Flat 2A',
+            rent: '£2,450',
+            leaseStart: 'Jan 2024',
+            leaseEnd: 'Jan 2027',
+            landlord: 'John Smith',
+            password: demo.password,
+        });
+        saveTenantData();
+        return;
+    }
+    // Keep prototype demo always usable (password + flat link)
+    account.password = demo.password;
+    if (account.propertyId == null || account.propertyId === '') account.propertyId = 0;
+    if (!account.unit) account.unit = 'Flat 2A';
+    if (!account.firstName) account.firstName = 'Sarah';
+    if (!account.lastName) account.lastName = 'Johnson';
     saveTenantData();
 }
 
@@ -259,7 +270,7 @@ function contractorAccountByEmail(email) {
 }
 
 function signInSubtitle() {
-    if (STATE.authRole === 'tenant') return 'Sign in to your tenant portal with email and password';
+    if (STATE.authRole === 'tenant') return 'Enter the tenant portal — demo ready, no password check';
     if (STATE.authRole === 'contractor') return 'Sign in to your contractor workspace';
     return 'Sign in with your landlord email and password';
 }
@@ -285,17 +296,13 @@ function authDemoCard() {
 
 function roleContinueLabel() {
     const role = AUTH_ROLES.find(r => r.id === (STATE.authRole || 'landlord'));
-    if (STATE.authRole === 'tenant') return 'Continue as Tenant';
+    if (STATE.authRole === 'tenant') return 'Enter as Tenant';
     return role ? `Enter as ${role.title}` : 'Enter app';
 }
 
 function roleContinue() {
     const role = STATE.authRole || 'landlord';
-    if (role === 'tenant') {
-        STATE.authRole = 'tenant';
-        go('sign-up');
-        return;
-    }
+    // Prototype: one tap into the selected role with demo account — no signup gate
     demoLogin(role);
 }
 
@@ -354,10 +361,24 @@ const tenantInviteByToken = (token) => TENANT_INVITATIONS.find(i => i.token === 
 const tenantAccountByEmail = (email) => TENANT_ACCOUNTS.find(a => a.email.toLowerCase() === email.toLowerCase());
 const getActiveTenant = () => {
     if (STATE.activeTenantId != null) {
-        const match = TENANT_ACCOUNTS.find(a => a.id === STATE.activeTenantId);
+        const match = TENANT_ACCOUNTS.find(a => a.id === STATE.activeTenantId || String(a.id) === String(STATE.activeTenantId));
         if (match) return match;
     }
-    return TENANT_ACCOUNTS.length === 1 ? TENANT_ACCOUNTS[0] : null;
+    if (TENANT_ACCOUNTS.length === 1) return TENANT_ACCOUNTS[0];
+    // Authenticated tenant session: always resolve demo (or first) account
+    if (STATE.isAuthenticated && STATE.userRole === 'tenant') {
+        ensureDemoTenantAccount();
+        const demo = tenantAccountByEmail(DEMO_CREDENTIALS.tenant.email);
+        if (demo) {
+            STATE.activeTenantId = demo.id;
+            return demo;
+        }
+        if (TENANT_ACCOUNTS[0]) {
+            STATE.activeTenantId = TENANT_ACCOUNTS[0].id;
+            return TENANT_ACCOUNTS[0];
+        }
+    }
+    return null;
 };
 
 /** Tenant may have an account but is not a flat member until a landlord invite is accepted. */
@@ -887,7 +908,7 @@ function saveAuthSession() {
 
 const AUTH_ROLES = [
     { id: 'landlord', title: 'Landlord', desc: 'Manage properties & tenants', icon: 'home', color: '#2563EB', bg: '#EFF6FF' },
-    { id: 'tenant', title: 'Tenant', desc: 'Create an account — join a flat only via landlord invite', icon: 'user', color: '#16A34A', bg: '#DCFCE7' },
+    { id: 'tenant', title: 'Tenant', desc: 'Rent, issues & documents — demo ready', icon: 'user', color: '#16A34A', bg: '#DCFCE7' },
     { id: 'contractor', title: 'Contractor', desc: 'Receive & complete jobs', icon: 'wrench', color: '#EA580C', bg: '#FFEDD5' },
 ];
 
@@ -918,9 +939,14 @@ function skipOnboarding() {
 }
 
 function signIn() {
+    const role = STATE.authRole || 'landlord';
+    // Prototype tenant login: no email/password validation — enter demo tenant portal
+    if (role === 'tenant') {
+        demoLogin('tenant');
+        return;
+    }
     const email = document.querySelector('[data-signin-email]')?.value?.trim().toLowerCase() || '';
     const password = document.querySelector('[data-signin-password]')?.value || '';
-    const role = STATE.authRole || 'landlord';
     if (!email || !password) {
         toastError('Enter email and password');
         return;
@@ -933,11 +959,7 @@ function signIn() {
     if (role === 'landlord') {
         loadLandlordAccounts();
         account = landlordAccountByEmail(email);
-    } else if (role === 'tenant') {
-        loadTenantData();
-        ensureDemoTenantAccount();
-        account = tenantAccountByEmail(email);
-    } else     if (role === 'contractor') {
+    } else if (role === 'contractor') {
         loadContractorAccounts();
         account = contractorAccountByEmail(email);
         if (account && typeof setActiveContractorProfile === 'function') setActiveContractorProfile(account);
@@ -953,7 +975,6 @@ function signIn() {
         LANDLORD_USER.email = account.email;
         if (typeof AppStore !== 'undefined') AppStore.save();
     }
-    if (role === 'tenant') STATE.activeTenantId = account.id;
     clearNavStack();
     STATE.isAuthenticated = true;
     STATE.userRole = role;
@@ -961,7 +982,6 @@ function signIn() {
     saveAuthSession();
     go(getRoleHome());
     const name = role === 'landlord' ? LANDLORD_USER.firstName
-        : role === 'tenant' ? getActiveTenant()?.firstName || 'Tenant'
         : account.firstName || 'Mike';
     setTimeout(() => toast(`Welcome back, ${name}!`), 50);
 }
@@ -1020,8 +1040,8 @@ function completeSignup() {
         return;
     }
     if (STATE.authRole === 'tenant') {
-        toast('Create your account, then join a flat with your landlord’s invitation link');
-        go('sign-up');
+        // Prototype: skip create-account wall — enter demo tenant
+        demoLogin('tenant');
         return;
     }
     if (STATE.authRole === 'landlord' && STATE.signupDraft) {
@@ -1818,52 +1838,71 @@ function screenRoleSelect() {
             </div>
             <button type="button" data-action="role-continue" class="btn-auth btn-auth-primary" style="margin-top:32px">${roleContinueLabel()}</button>
             <button type="button" data-go="sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px">Sign in with email</button>
-            <p class="auth-footer-text" style="margin-top:20px">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>
+            ${STATE.authRole === 'tenant' ? '' : `<p class="auth-footer-text" style="margin-top:20px">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>`}
         </div>
     </div>`;
 }
 
 function screenSignIn() {
     const pwType = STATE.showPassword ? 'text' : 'password';
+    const role = STATE.authRole || 'landlord';
+    const demo = DEMO_CREDENTIALS[role] || DEMO_CREDENTIALS.landlord;
+    const isTenant = role === 'tenant';
     return `
     <div class="auth-screen auth-screen-figma">
         <div class="auth-content auth-content-figma">
             <div class="auth-hero-block">
                 ${authBrandLogo()}
                 <h1 class="auth-heading">Welcome Back!</h1>
-                <p class="auth-sub">Sign in to continue to Landlord HQ</p>
+                <p class="auth-sub">${signInSubtitle()}</p>
             </div>
+            ${authDemoCard()}
             <div class="auth-form auth-form-figma">
                 <div class="auth-fields-group">
                     <div class="auth-field">
                         <label>Email or Phone</label>
-                        <input type="email" data-signin-email class="auth-input" placeholder="john@email.com" autocomplete="username" inputmode="email">
+                        <input type="email" data-signin-email class="auth-input" placeholder="john@email.com" autocomplete="username" inputmode="email" value="${demo.email}">
                     </div>
                     <div class="auth-field">
                         <label>Password</label>
                         <div class="auth-input-wrap">
-                            <input type="${pwType}" data-signin-password class="auth-input" placeholder="password123" style="padding-right:44px" autocomplete="current-password">
+                            <input type="${pwType}" data-signin-password class="auth-input" placeholder="password123" style="padding-right:44px" autocomplete="current-password" value="${demo.password}">
                             <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
                         </div>
                     </div>
                 </div>
+                ${isTenant ? '' : `
                 <div class="auth-forgot-row">
                     <button type="button" data-go="forgot-password" class="auth-link">Forgot Password?</button>
-                </div>
+                </div>`}
                 <div class="auth-actions-stack">
-                    <button type="button" data-action="sign-in" class="btn-auth btn-auth-primary">Sign In</button>
-                    ${authSocialDivider()}
-                    ${authGoogleBtn()}
+                    <button type="button" data-action="sign-in" class="btn-auth btn-auth-primary">${isTenant ? 'Enter tenant portal' : 'Sign In'}</button>
+                    ${isTenant ? '' : `${authSocialDivider()}${authGoogleBtn()}`}
                 </div>
             </div>
-            <p class="auth-footer-text">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>
+            ${isTenant ? '' : `<p class="auth-footer-text">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>`}
         </div>
     </div>`;
 }
 
 function screenSignUp() {
     const pwType = STATE.showPassword ? 'text' : 'password';
-    const isTenant = STATE.authRole === 'tenant';
+    // Tenant never sees create-account form in this prototype
+    if (STATE.authRole === 'tenant') {
+        return `
+        <div class="auth-screen auth-screen-figma">
+            <div class="auth-content auth-content-figma">
+                <div class="auth-hero-block">
+                    ${authBrandLogo()}
+                    <h1 class="auth-heading">Tenant demo</h1>
+                    <p class="auth-sub">No account setup — enter the portal with the demo tenant.</p>
+                </div>
+                ${authDemoCard()}
+                <button type="button" data-action="demo-login" data-demo-role="tenant" class="btn-auth btn-auth-primary" style="margin-top:24px">Enter as Tenant</button>
+                <p class="auth-footer-text" style="margin-top:20px"><button type="button" data-go="sign-in">Back to sign in</button></p>
+            </div>
+        </div>`;
+    }
     return `
     <div class="auth-screen">
         <div class="auth-topbar">
@@ -1876,14 +1915,7 @@ function screenSignUp() {
                 <i data-lucide="user-plus" class="w-7 h-7 text-[#2563EB]"></i>
             </div>
             <h1 class="auth-heading">Create Your Account</h1>
-            <p class="auth-sub">${isTenant
-                ? 'Create your tenant login now. You can only join a property or flat after your landlord sends you an invitation link.'
-                : 'Sign up with your email. We\'ll send a verification code to confirm it\'s you.'}</p>
-            ${isTenant ? `
-            <div class="ux-tip mb-3">
-                <p class="ux-tip-title">Invitation required to join a flat</p>
-                <p class="ux-tip-text">Signing up does <strong>not</strong> add you to a building. Only the landlord’s invite link can make you a flat member.</p>
-            </div>` : ''}
+            <p class="auth-sub">Sign up with your email. We'll send a verification code to confirm it's you.</p>
             <div class="auth-form">
                 <div class="auth-field"><label>First name</label><input type="text" data-signup-first class="auth-input" placeholder="John" autocomplete="given-name" value="${STATE.signupDraft?.firstName || ''}"></div>
                 <div class="auth-field"><label>Last name</label><input type="text" data-signup-last class="auth-input" placeholder="Smith" autocomplete="family-name" value="${STATE.signupDraft?.lastName || ''}"></div>
@@ -2151,6 +2183,11 @@ function go(screen, opts = {}) {
         if (opts.unit) STATE.maintUnitFilter = opts.unit;
     }
     if (screen === 'sign-up' && STATE.authRole === 'contractor') screen = 'contractor-sign-up';
+    // Prototype tenant: never trap login path on Create Account — enter demo portal
+    if (screen === 'sign-up' && STATE.authRole === 'tenant') {
+        demoLogin('tenant');
+        return;
+    }
     if (screen === 'sign-up' && ['sign-in', 'role-select'].includes(from)) {
         STATE.authReturnScreen = from;
         // Keep the role chosen on role-select (landlord / tenant / contractor)
@@ -6057,7 +6094,7 @@ function bindEvents() {
         el.onclick = tryOpenInviteFromInput;
     });
     app.querySelectorAll('[data-action="tenant-sign-in"]').forEach(el => {
-        el.onclick = () => { STATE.authRole = 'tenant'; go('sign-in'); };
+        el.onclick = () => { STATE.authRole = 'tenant'; demoLogin('tenant'); };
     });
     app.querySelectorAll('[data-action="mark-maint-complete"]').forEach(el => {
         el.onclick = markMaintComplete;

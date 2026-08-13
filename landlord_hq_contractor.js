@@ -1584,14 +1584,14 @@ function renderTenantHomeAnnouncement(t) {
 function screenTenantDashboard() {
     const t = getActiveTenant();
     if (!t) {
+        // Prototype: never ask to create an account — one tap into demo tenant
         return `${topBar('Tenant Portal', { hideBell: true })}
         <div class="screen-content screen-enter">
             <div class="empty-state card">
-                <i data-lucide="user-plus" class="w-10 h-10 text-[#16A34A]"></i>
-                <p class="empty-state-title">Create or sign in</p>
-                <p class="empty-state-desc">Create a tenant account anytime. Joining a flat still requires your landlord’s invitation link.</p>
-                <button type="button" data-go="sign-up" class="btn-primary w-full py-3 text-[13px] mt-3">Create account</button>
-                <button type="button" data-go="sign-in" class="btn-secondary w-full py-3 text-[13px] mt-2">Sign in</button>
+                <i data-lucide="user" class="w-10 h-10 text-[#16A34A]"></i>
+                <p class="empty-state-title">Enter tenant demo</p>
+                <p class="empty-state-desc">No account setup needed for this prototype.</p>
+                <button type="button" data-action="tenant-sign-in" class="btn-primary w-full py-3 text-[13px] mt-3">Enter as Tenant</button>
             </div>
         </div>`;
     }
