@@ -892,10 +892,6 @@ function screenCreateChargeProduct() {
     const unitTenants = TENANT_LIST.filter(t => t.propertyId === defaultPid && t.status === 'active');
     return `${topBar('Add charge', { back: true })}
     <div class="screen-content screen-enter">
-        <div class="ux-tip">
-            <p class="ux-tip-title">Extra bill / charge</p>
-            <p class="ux-tip-text">Monthly rent is tracked per unit automatically. Use this for utilities, repairs, penalties, or custom charges.</p>
-        </div>
         <p class="screen-section-title">Charge details</p>
         ${renderChargeTypePicker(chargeType)}
         ${renderChargeTargetPicker(chargeTarget)}

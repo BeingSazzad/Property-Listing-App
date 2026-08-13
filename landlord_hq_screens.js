@@ -5218,7 +5218,6 @@ function screenAddProperty() {
         : '';
     return `${topBar('Add Property', { back: true })}
     <div class="screen-content screen-enter">
-        ${uxIntro('Add the building first. You can add units separately after saving.')}
         ${preview}
         <button type="button" data-action="upload-photo" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full">
             <i data-lucide="image-plus" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
@@ -5284,22 +5283,12 @@ function screenTenantInviteSent() {
             <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation Sent!</p>
             <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join <strong>${p.name}</strong> (${invite.unit}).</p>
         </div>
-        <div class="ux-tip">
-            <p class="ux-tip-title">What the tenant does next</p>
-            <p class="ux-tip-text">${invite.reattachExisting
-                ? 'They open the link, sign in with their existing password, and join this flat. You cannot edit their personal profile.'
-                : 'They open the link → create profile (name, DOB, NID, phone, password) → join this flat. Personal details stay on the tenant side.'}</p>
-        </div>
         <div class="card p-4 space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invitation Details</p>
             ${[['Invite email', invite.email], ['Shown as', tenantLabel], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Tenancy dates', leaseFmt], ['Security deposit', depositFmt], ['Advance paid', advanceFmt || '—'], ['Deposit scheme', invite.depositScheme || 'MyDeposits'], ...(invite.protectionRef ? [['Protection ref', invite.protectionRef]] : []), ['Status', statusLabel]].map(([k, v]) => `
             <div class="flex justify-between text-[13px] py-1"><span class="text-[#64748B]">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
-        <div class="ux-tip mt-2">
-            <p class="ux-tip-title">Demo: open as tenant</p>
-            <p class="ux-tip-text">Use <strong>Open invite link</strong> below to preview the tenant role flow for this invitation.</p>
-        </div>
-        <button type="button" data-go="tenant-invite" data-invite-token="${invite.token}" class="btn-primary w-full py-3.5 text-[14px]">Open invite link (tenant view)</button>
+        <button type="button" data-go="tenant-invite" data-invite-token="${invite.token}" class="btn-primary w-full py-3.5 text-[14px] mt-3">Open invite link (tenant view)</button>
         ${nextMember ? `
         <button type="button" data-go="invite-tenant" data-pid="${invite.propertyId}" data-unit="${invite.unit}" data-invite-email="${nextMember.email || ''}" data-invite-first="${nextParts[0] || ''}" data-invite-last="${nextParts.slice(1).join(' ') || ''}" data-invite-phone="${nextMember.phone || ''}" class="btn-secondary w-full py-3.5 text-[14px] mt-2">Invite Next Member</button>` : ''}
         <button type="button" data-go="property-detail" data-pid="${invite.propertyId}" data-tab="tenant" class="btn-secondary w-full py-3.5 text-[14px] mt-2">Back to Property</button>
@@ -5328,12 +5317,7 @@ function screenEditTenant() {
     ];
     return `${topBar('Tenant profile', { back: true })}
     <div class="screen-content screen-content-sm screen-enter">
-        <div class="ux-tip mb-3">
-            <p class="ux-tip-title">${list.status === 'pending' ? 'Invite sent — awaiting tenant' : 'Read-only for landlords'}</p>
-            <p class="ux-tip-text">${list.status === 'pending'
-                ? 'This person has not completed their profile yet. They will enter name, DOB, NID and contacts when they accept your invitation link.'
-                : 'Personal details are owned by the tenant. They add and edit this from their own profile after accepting your invitation link. You manage lease, rent and deposit separately.'}</p>
-        </div>
+        ${list.status === 'pending' ? `<p class="text-[12px] font-semibold text-[#D97706] mb-2">Awaiting tenant profile</p>` : ''}
         <div class="card p-4">
             ${rows.map(([label, value]) => `
             <div class="flex justify-between gap-3 py-2 border-b border-[#F1F5F9] last:border-0">

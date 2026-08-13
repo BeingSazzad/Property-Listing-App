@@ -2493,10 +2493,6 @@ function screenTenantEditProfile() {
     return `${topBar('Personal Information', { back: true })}
     <div class="screen-content screen-content-sm profile-form-page screen-enter">
         ${typeof renderProfilePhotoPicker === 'function' ? renderProfilePhotoPicker(photo, 'profilePhoto', IMG.avatar.sarah) : ''}
-        <div class="ux-tip mb-3">
-            <p class="ux-tip-title">Your details</p>
-            <p class="ux-tip-text">You own this profile. Your landlord cannot edit these fields — they only invite you by email and manage the lease.</p>
-        </div>
         <div class="form-stack">
         ${formField('Full Name', typeof fullNameFromParts === 'function' ? fullNameFromParts(rec?.firstName || t.firstName, rec?.lastName || t.lastName) : `${rec?.firstName || t.firstName} ${rec?.lastName || t.lastName}`.trim(), 'text', 'e.g. Sarah Johnson', 'fullName')}
         ${formField('Date of Birth', typeof toDateInputValue === 'function' ? toDateInputValue(rec?.dob || t.dob) : (rec?.dob || t.dob || ''), 'date', '', 'dob')}

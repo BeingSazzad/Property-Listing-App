@@ -3186,7 +3186,6 @@ function renderPropertyInventoryTab(propertyId) {
     const rooms = getInventoryRooms(propertyId);
     return `
     <div class="screen-content screen-content-sm">
-        ${uxTip('Record each room at check-in and check-out. Add custom items for anything not in the default list.', 'How inventory works')}
         ${renderInventoryLayoutSection(propertyId)}
         <p class="screen-section-title mt-2">Room checklists</p>
         <div class="stack-sm">
@@ -3326,7 +3325,6 @@ function screenEditInventoryRoomEnhanced() {
     const items = STATE.inventoryEditItems;
     return `${topBar('Edit ' + roomName, { back: true })}
     <div class="screen-content screen-enter">
-        ${uxTip('Add fixtures and notes for this room. Upload photos from the room view.', roomName)}
         <div class="form-field"><label class="form-label">Room size (sq ft)</label><input data-field="roomSizeSqft" type="text" class="form-input" value="${escapeHtml(getInventoryRoomSize(STATE.propertyId, rid))}" placeholder="e.g. 120"></div>
         ${formTextarea('Room notes', getInventoryNotes(STATE.propertyId, rid), 'Scratches, stains, missing keys…', 'roomNotes')}
         <p class="screen-section-title">Items</p>
@@ -3734,7 +3732,6 @@ function screenSendBroadcast() {
     ).join('');
     return `${topBar('Send announcement', { back: true, sub: p.name.split(',')[0] })}
     <div class="screen-content screen-enter broadcast-form-page">
-        ${uxIntro('Tenants see announcements in their portal under Announcements — not in Messages.')}
         <div class="form-group">
             <label class="form-label broadcast-form-label"><i data-lucide="building-2" class="w-4 h-4"></i> Property</label>
             <select data-broadcast-property class="form-input form-select">${propertyOptions}</select>
@@ -4697,11 +4694,7 @@ function renderPropertyOverviewDetails(propertyId) {
                     </div>`).join('');
     return `
     <div class="screen-content screen-content-sm building-info-page building-info-page--v2">
-        ${justSaved ? `
-        <div class="ux-tip add-property-saved-tip" id="property-saved-output">
-            <p class="ux-tip-title">Property saved</p>
-            <p class="ux-tip-text">Photos, purchase date, valuation and notes appear below under <strong>Property Information</strong>. Tap any row to edit.</p>
-        </div>` : ''}
+        ${justSaved ? `<p class="text-[12px] font-semibold text-[#16A34A] mb-3" id="property-saved-output">Property saved</p>` : ''}
         <div class="prop-overview-strip card">
             <div class="prop-overview-stat"><strong>${occupied}</strong><span>Occupied</span></div>
             <div class="prop-overview-divider"></div>
@@ -4922,15 +4915,7 @@ function formatReminderDaysLeft(daysLeft) {
 }
 
 function renderTenancyDemoTip(propertyId) {
-    const active = getActiveTenanciesForProperty(propertyId);
-    const hasSolo = active.some(t => t.type === 'solo');
-    const hasGroup = active.some(t => t.type === 'group');
-    if (!hasSolo || !hasGroup) return '';
-    return `
-    <div class="ux-tip tenancy-demo-tip">
-        <p class="ux-tip-title">Solo vs group examples</p>
-        <p class="ux-tip-text">Compare <strong>Flat 2A</strong> (solo — one tenant) with <strong>Flat 2B</strong> (group — several members on one lease).</p>
-    </div>`;
+    return '';
 }
 
 function renderPropertyFlatRow(propertyId, u, opts = {}) {
@@ -12753,10 +12738,6 @@ function renderPropertyInspectionTab(propertyId) {
         : null;
     return `
     <div class="screen-content screen-content-sm prop-hub-page">
-        <div class="ux-tip insp-tab-intro">
-            <p class="ux-tip-title">Visit or tenant photos</p>
-            <p class="ux-tip-text">Schedule an appointment to visit, or send a Smart Reminder so the tenant uploads inspection pictures.</p>
-        </div>
         ${upcoming ? `
         <div class="card insp-upcoming">
             <p class="insp-upcoming-label">${isTenantUploadInspection(upcoming) ? 'Tenant photo request' : 'Next inspection'}</p>
@@ -13440,11 +13421,9 @@ function screenInviteTenantEnhanced() {
             <img src="${IMG.props[STATE.propertyId]}" class="w-14 h-14 rounded-xl object-cover" alt="">
             <div><p class="text-[14px] font-bold">${p.name}</p><p class="text-[12px] text-[#64748B]">${p.address}</p></div>
         </div>`;
-    const groupTip = tenancy?.type === 'group' && pendingMembers.length ? `
-        <div class="ux-tip">
-            <p class="ux-tip-title">Group tenancy</p>
-            <p class="ux-tip-text">${pendingMembers.length} member${pendingMembers.length === 1 ? '' : 's'} still need portal invites on this unit.</p>
-        </div>` : '';
+    const groupTip = tenancy?.type === 'group' && pendingMembers.length
+        ? `<p class="text-[12px] text-[#64748B] mb-3">${pendingMembers.length} member${pendingMembers.length === 1 ? '' : 's'} still need an invite on this unit.</p>`
+        : '';
     let stepBody = '';
     if (step === 1) {
         stepBody = `
@@ -13452,21 +13431,12 @@ function screenInviteTenantEnhanced() {
         <div class="card p-3 flex items-center gap-3 mb-3">
             <div class="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0"><i data-lucide="home" class="w-4 h-4 text-[#2563EB]"></i></div>
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Invite for flat</p>
+                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Flat</p>
                 <p class="text-[14px] font-bold text-[#0F172A] mb-0">${escapeHtml(selectedUnit)}</p>
             </div>
             <button type="button" data-go="select-unit-invite" data-pid="${STATE.propertyId}" class="header-text-link shrink-0">Change</button>
         </div>` : `
-        <div class="ux-tip mb-3">
-            <p class="ux-tip-title">Choose a flat first</p>
-            <p class="ux-tip-text">Pick which unit this invite is for before sending the link.</p>
-            <button type="button" data-go="select-unit-invite" data-pid="${STATE.propertyId}" class="btn-secondary w-full py-2.5 text-[13px] mt-2">Select flat</button>
-        </div>`}
-        <div class="ux-tip mb-3">
-            <p class="ux-tip-title">Tenant owns their profile</p>
-            <p class="ux-tip-text">You only send an invitation link. Name, DOB, NID, phone and emergency contacts are entered by the tenant when they create or edit their own account — landlords cannot edit that info.</p>
-        </div>
-        <p class="step-intro">Email address for the invitation link.</p>
+        <button type="button" data-go="select-unit-invite" data-pid="${STATE.propertyId}" class="btn-secondary w-full py-3 text-[13px] mb-3">Select flat</button>`}
         ${inviteFormFieldReq('Email Address', 'email', prefill.email || '', 'email')}
         <div class="form-group">
             <label class="form-label">Personal Message</label>
@@ -13474,7 +13444,6 @@ function screenInviteTenantEnhanced() {
         </div>`;
     } else if (step === 2) {
         stepBody = `
-        <p class="step-intro">Unit, lease dates, and move-in payments (landlord-managed).</p>
         <div class="form-group ${STATE.formErrors.unit ? 'form-group-error' : ''}">
             <label class="form-label">${requiredLabel('Unit')}</label>
             ${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit).replace('class="form-input form-select"', `class="form-input form-select${STATE.formErrors.unit ? ' form-input-error' : ''}"`)}
@@ -13483,7 +13452,6 @@ function screenInviteTenantEnhanced() {
         <div class="form-group">
             <label class="form-label">Unit rent</label>
             <input data-invite="rent" type="text" class="form-input" placeholder="${unitRent}" value="${prefill.rent || unitRent}">
-            <p class="form-helper">${unitRent} per month · this unit only</p>
         </div>
         ${inviteFormFieldReq('Lease Start', 'leaseStart', prefill.leaseStart || '', 'date')}
         ${inviteFormFieldReq('Lease End', 'leaseEnd', prefill.leaseEnd || '', 'date')}
@@ -13499,7 +13467,6 @@ function screenInviteTenantEnhanced() {
         ${inviteFormField('Protection reference', prefill.protectionRef || '', 'text', 'Optional scheme reference number', 'protectionRef')}`;
     } else {
         stepBody = `
-        <p class="step-intro">Check lease details before sending. Tenant personal info will be completed by them.</p>
         <div class="invite-review-card">
             <div class="invite-review-row"><span class="invite-review-label">Invite email</span><span class="invite-review-value">${prefill.email || '—'}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">Unit</span><span class="invite-review-value">${selectedUnit || '—'}</span></div>
@@ -13510,8 +13477,7 @@ function screenInviteTenantEnhanced() {
             <div class="invite-review-row"><span class="invite-review-label">Deposit scheme</span><span class="invite-review-value">${prefill.depositScheme || 'MyDeposits'}</span></div>
             ${prefill.protectionRef ? `<div class="invite-review-row"><span class="invite-review-label">Protection ref</span><span class="invite-review-value">${prefill.protectionRef}</span></div>` : ''}
             ${prefill.message ? `<div class="invite-review-row"><span class="invite-review-label">Message</span><span class="invite-review-value">${prefill.message}</span></div>` : ''}
-        </div>
-        <p class="form-helper mt-2">Name, DOB, NID and contact details are filled by the tenant from their profile after they open this link.</p>`;
+        </div>`;
     }
     const primaryLabel = step === 3 ? 'Send Invitation' : 'Continue';
     return `${topBar('Invite Tenant', { back: true })}
@@ -14221,9 +14187,8 @@ function screenConductInspection() {
     <div class="screen-content screen-enter">
         <div class="card p-4 bg-[#EFF6FF]">
             <p class="text-[13px] font-semibold">${p.name}</p>
-            <p class="text-[12px] text-[#64748B]">${upcoming ? `Complete scheduled ${upcoming.type || 'inspection'} and add your condition rating.` : 'Record a property visit — you assign the overall condition rating (1–5 stars).'}</p>
+            <p class="text-[12px] text-[#64748B]">${upcoming ? `Complete scheduled ${upcoming.type || 'inspection'}.` : 'Record this visit and set the condition rating.'}</p>
         </div>
-        ${uxTip('Rating reflects property condition as you see it after the visit. Tenants do not rate in this app.', 'Who rates?')}
         <div><label class="form-label">${requiredLabel('Inspection Type')}</label>
         <select data-field="inspType" class="form-input form-select">${types.map(t => `<option ${t === selectedType ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         ${formFieldReq('Date', 'inspDate', dateVal, 'date')}
@@ -14247,10 +14212,6 @@ function screenCreateInvoice() {
     const defaultPid = STATE.propertyId ?? PROPERTIES.find(p => propertyOccupiedFlatCount(p.id) > 0)?.id ?? 0;
     return `${topBar('Add bill / charge', { back: true })}
     <div class="screen-content screen-enter">
-        <div class="ux-tip">
-            <p class="ux-tip-title">Not monthly rent?</p>
-            <p class="ux-tip-text">Use this for service charges, deposit top-ups, or one-off bills. Monthly rent is tracked automatically per flat.</p>
-        </div>
         <div><label class="form-label">${requiredLabel('Property')}</label>
         <select data-field="propertyId" data-action="refresh-invoice-units" class="form-input form-select">${PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).map(p => `<option value="${p.id}" ${p.id === defaultPid ? 'selected' : ''}>${p.name} — ${propertyOccupancyBadge(p.id).label}</option>`).join('')}</select></div>
         ${typeof unitSelectHtml === 'function' ? `<div><label class="form-label">Unit</label>${unitSelectHtml(defaultPid, 'unit', false, '')}</div>` : ''}
@@ -14648,10 +14609,7 @@ function screenShareDocument() {
             </div>
             <p class="form-helper mt-2">For buildings with multiple flats, pick everyone who should see this — or use Notify all.</p>
         </div>` : `
-        <div class="ux-tip">
-            <p class="ux-tip-title">No active tenants yet</p>
-            <p class="ux-tip-text">Invite tenants first — the document will be shared when they activate their account.</p>
-        </div>`}
+        <p class="text-[13px] text-[#64748B] mb-3">No active tenants yet — invite someone first to share this document.</p>`}
         <button data-action="confirm-share-doc" class="btn-primary w-full py-3.5 text-[14px]">Share Document</button>
     </div>`;
 }
@@ -14741,7 +14699,7 @@ function screenAddFlat() {
     const pendingCover = STATE.pendingFlatCover ?? 0;
     return `${topBar(isDup ? 'Duplicate unit' : 'Add unit', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter flat-edit-page">
-        ${isDup ? uxTip('Change only what is different for this new unit.', `Copied from ${sourceName}`) : uxIntro('Add rent, rooms and size for this unit.')}
+        ${isDup ? `<p class="text-[12px] text-[#64748B] mb-2">Copied from ${escapeHtml(sourceName)}</p>` : ''}
         ${renderFlatUnitPhotoPicker(pendingPhotos, pendingCover, {
             placeholder: isDup && sourceName ? getFlatCoverPhoto(STATE.propertyId, sourceName) : IMG.interior[0],
             hint: isDup && pendingPhotos.length
@@ -15092,7 +15050,6 @@ function screenFlatKeys() {
     const holderOptions = members.map(m => m.name).filter(Boolean);
     return `${topBar('Keys', { back: true, sub: `${p?.name || ''} · ${unit}` })}
     <div class="screen-content screen-content-sm screen-enter">
-        ${uxTip('Track keys issued for this unit. Holder shows which tenant currently has each set.', 'Key register')}
         <div class="stack-sm">
         ${keys.map((k, i) => `
         <div class="card p-4 flat-key-card" data-flat-key-row>
@@ -15270,11 +15227,7 @@ function screenPropertyDetailsEdit(section) {
     } else if (section === 'utilities') {
         body = `${renderUtilityQuickPick(meta)}
         ${renderUtilityProviderFields(meta) || `<p class="building-empty-copy">Select utility types above, then enter provider names.</p>`}
-        <div class="ux-tip mt-3">
-            <p class="ux-tip-title">Parking</p>
-            <p class="ux-tip-text">Parking spaces and permit details are edited separately.</p>
-            <button type="button" data-go="property-parking" data-pid="${STATE.propertyId}" class="header-text-link mt-2">Edit parking</button>
-        </div>`;
+        <button type="button" data-go="property-parking" data-pid="${STATE.propertyId}" class="btn-secondary w-full py-3 text-[13px] mt-3">Edit parking</button>`;
     } else if (section === 'parking') {
         const parking = meta.parking || {};
         body = `<div><label class="form-label">Spaces</label><input data-field="park_spaces" type="number" class="form-input" value="${parking.spaces != null && parking.spaces !== '' ? parking.spaces : ''}" min="0"></div>
@@ -15564,10 +15517,6 @@ function screenAddPropertyEnhanced() {
     });
     return `${topBar('Add Property', { back: true })}
     <div class="screen-content screen-enter add-property-page">
-        <div class="ux-tip add-property-tip">
-            <p class="ux-tip-title">Building first, units later</p>
-            <p class="ux-tip-text">Save core building details now — including when you bought it. Add flats afterwards from <strong>Property → Units</strong>. EPC, utilities and alarms stay under <strong>Property → Info</strong>.</p>
-        </div>
         <p class="screen-section-title">Photos</p>
         ${photoPicker}
         <p class="screen-section-title">Property details</p>
@@ -15583,7 +15532,7 @@ function screenAddPropertyEnhanced() {
             ${labeledInput('Valuation (£)', 'valuationAmount', '', 'number', 'e.g. 450000')}
             ${labeledInput('Valuation date', 'valuationDate', '', 'date', '')}
         </div>
-        <p class="form-helper" style="margin-top:-4px">After you save, these show on <strong>Property → Info → Property Information</strong>.</p>
+        <p class="form-helper" style="margin-top:-4px">Optional — shows on Property → Info after save.</p>
         <p class="screen-section-title">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></p>
         <div class="form-group">
             <label class="form-label">Building notes</label>
