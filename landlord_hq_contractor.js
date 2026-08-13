@@ -1310,8 +1310,9 @@ function screenTenantInvite() {
                         <p class="text-[12px] text-[#64748B]">${p.address}</p>
                     </div>
                 </div>
-                ${[['Unit', invite.unit], ['Monthly Rent', invite.rent], ['Lease', `${invite.leaseStart || '—'} → ${invite.leaseEnd || '—'}`], ['Invited', invite.sentAt]].map(([k, v]) => `
+                ${[['Unit', invite.unit], ['Monthly Rent', invite.rent], ['Lease', `${typeof formatDisplayDate === 'function' && invite.leaseStart ? formatDisplayDate(invite.leaseStart) : (invite.leaseStart || '—')} → ${typeof formatDisplayDate === 'function' && invite.leaseEnd ? formatDisplayDate(invite.leaseEnd) : (invite.leaseEnd || '—')}`], ['Invited', invite.sentAt]].map(([k, v]) => `
                 <div class="flex justify-between text-[13px] py-1.5 border-t border-[#F1F5F9] first:border-0"><span class="text-[#64748B]">${k}</span><span class="font-semibold">${v}</span></div>`).join('')}
+                <div class="flex justify-between text-[13px] py-1.5 border-t border-[#F1F5F9]"><span class="text-[#64748B]">Invite email</span><span class="font-semibold">${invite.email}</span></div>
             </div>
             ${invite.message ? `<div class="card p-4 text-left" style="margin-top:12px"><p class="text-[11px] font-bold text-[#64748B] uppercase">Message from landlord</p><p class="text-[13px] text-[#475569] mt-2 leading-relaxed">"${invite.message}"</p></div>` : ''}
             ${activated ? `
@@ -1356,6 +1357,7 @@ function screenTenantActivate() {
                 ${needsProfile ? `
                 <div class="auth-field"><label>Full name</label><input type="text" data-tenant-fullname class="auth-input" placeholder="e.g. Sarah Johnson" value="${prefName}"></div>
                 <div class="auth-field"><label>Date of birth</label><input type="date" data-tenant-dob class="auth-input" value="${invite.dob || ''}"></div>
+                <div class="auth-field"><label>NID / ID number</label><input type="text" data-tenant-nid class="auth-input" placeholder="National ID number" value="${invite.idNumber || ''}"></div>
                 <div class="auth-field"><label>Mobile number</label><input type="tel" data-tenant-phone class="auth-input" placeholder="+44 7700 900000" value="${invite.phone || ''}"></div>` : ''}
                 <div class="auth-field">
                     <label>${reattach ? 'Your password' : 'Create password'}</label>
@@ -1446,9 +1448,12 @@ function tenantDashboardHeader(t, p) {
 
 function renderTenantHomePropertyCard(t, p) {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const cover = typeof getPropertyCoverPhoto === 'function'
-        ? getPropertyCoverPhoto(t.propertyId)
-        : (IMG.props[t.propertyId] || IMG.props[0]);
+    const cover = (t.unit && typeof getFlatCoverPhoto === 'function'
+        ? getFlatCoverPhoto(t.propertyId, t.unit)
+        : null)
+        || (typeof getPropertyCoverPhoto === 'function'
+            ? getPropertyCoverPhoto(t.propertyId)
+            : (IMG.props[t.propertyId] || IMG.props[0]));
     const addrLine = [t.unit, p?.address].filter(Boolean).join(', ');
     return `
     <button type="button" data-go="tenant-active-tenancy" class="tnt-home-hero card w-full text-left">
@@ -1458,7 +1463,7 @@ function renderTenantHomePropertyCard(t, p) {
             <p class="tnt-home-hero-addr">${esc(addrLine || p?.address || '—')}</p>
             <span class="tnt-home-hero-pill">View property <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
         </div>
-        <img src="${cover}" alt="" class="tnt-home-hero-img">
+        <img src="${esc(cover)}" alt="" class="tnt-home-hero-img">
     </button>`;
 }
 
@@ -1644,7 +1649,7 @@ function screenTenantDashboard() {
             ${[
                 ['wrench', 'Report issue', 'log-maintenance', 'warning'],
                 ['scroll-text', 'My Tenancy', 'tenant-active-tenancy', 'indigo'],
-                ['files', 'Documents', 'tenant-documents', 'primary'],
+                ['images', 'Photos & inventory', 'tenant-building-info', 'primary'],
                 ['receipt', 'Payment history', 'transaction-history', 'success'],
             ].map(([ic, label, go, tone]) => `
             <button type="button" data-go="${go}" class="dash-quick-btn">
@@ -1660,10 +1665,12 @@ function screenTenantDashboard() {
 function screenTenantBuildingInfo() {
     const t = getActiveTenant();
     if (!t) return `${topBar('Building', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Sign in as tenant to view building info.</p></div>`;
-    const p = PROPERTIES[t.propertyId];
-    const building = typeof getPropertyBuilding === 'function' ? getPropertyBuilding(t.propertyId) : {};
-    const meta = typeof AppStore !== 'undefined' ? AppStore.meta(t.propertyId) : {};
+    const pid = t.propertyId;
+    const p = PROPERTIES[pid];
+    const building = typeof getPropertyBuilding === 'function' ? getPropertyBuilding(pid) : {};
+    const meta = typeof AppStore !== 'undefined' ? AppStore.meta(pid) : {};
     const info = meta?.info || {};
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const parkingDisplay = typeof propertyHasParking === 'function' && propertyHasParking(meta)
         ? (typeof propertyParkingSummary === 'function' ? propertyParkingSummary(meta) : '—')
         : (building.parking || info.parking || 'Street / permit');
@@ -1678,38 +1685,41 @@ function screenTenantBuildingInfo() {
         ['Emergency contact', LANDLORD_USER.phone || '—'],
     ];
     const utilItems = typeof propertyUtilityDisplayItems === 'function' ? propertyUtilityDisplayItems(meta) : [];
-    const applianceItems = (meta.appliances || []).map(a => ({
-        icon: typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug',
-        label: a.name,
-        sub: [a.brand, a.warranty].filter(Boolean).join(' · '),
-    }));
     const floorPlans = meta.floorPlans || [];
-    const alarmItems = typeof ALARM_CATALOG !== 'undefined' && typeof alarmHasData === 'function'
+    const propertyPhotos = meta.photos?.length
+        ? meta.photos
+        : [IMG.props[pid] || IMG.props[0]];
+    const cover = (t.unit && typeof getFlatCoverPhoto === 'function'
+        ? getFlatCoverPhoto(pid, t.unit)
+        : null)
+        || (typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(pid) : propertyPhotos[0]);
+    const unitGal = t.unit && typeof getFlatPhotoGallery === 'function' ? getFlatPhotoGallery(pid, t.unit) : null;
+    const unitPhotos = unitGal?.photos?.length ? unitGal.photos : [];
+    const appliances = meta.appliances || [];
+    const alarmEntries = typeof ALARM_CATALOG !== 'undefined' && typeof alarmHasData === 'function'
         ? [
-            ...ALARM_CATALOG
-                .filter(a => alarmHasData(meta.alarms?.[a.key]))
-                .map(a => {
-                    const alarm = meta.alarms[a.key];
-                    const parts = [
-                        alarm.location || '',
-                        alarm.expiry && typeof formatInfoDate === 'function' ? `Expires ${formatInfoDate(alarm.expiry)}` : '',
-                    ].filter(Boolean);
-                    return { icon: a.icon, label: `${a.label} Alarm`, sub: parts.join(' · ') };
-                }),
-            ...(typeof propertyCustomAlarmItems === 'function' ? propertyCustomAlarmItems(meta) : []),
+            ...ALARM_CATALOG.filter(a => alarmHasData(meta.alarms?.[a.key])).map(a => ({
+                ...meta.alarms[a.key],
+                name: `${a.label} Alarm`,
+                icon: a.icon,
+            })),
+            ...(meta.customAlarms || []).filter(a => typeof alarmHasData === 'function' ? alarmHasData(a) : true),
         ]
         : [];
-    const featureItems = [...applianceItems, ...alarmItems];
+    const invRooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const renderIcon = typeof renderBuildingIconItem === 'function'
         ? renderBuildingIconItem
         : ({ label, sub }) => `<p class="text-[13px] text-[#475569]"><strong>${label}</strong>${sub ? ` · ${sub}` : ''}</p>`;
+    const photoGrid = typeof renderTenantReadonlyPhotoGrid === 'function'
+        ? renderTenantReadonlyPhotoGrid
+        : (photos) => `<div class="photo-gallery-grid">${(photos || []).map(src => `<img src="${esc(src)}" class="photo-gallery-img" alt="">`).join('')}</div>`;
     return `${topBar('Your building', { back: true })}
     <div class="screen-content screen-content-sm screen-enter building-info-page">
         <div class="building-info-hero card p-4">
-            <div class="building-info-thumb"><img src="${(p?.photos && p.photos[0]) || IMG.props[0]}" alt=""></div>
+            <div class="building-info-thumb"><img src="${esc(cover)}" alt=""></div>
             <div class="mt-3">
-                <p class="building-info-name">${typeof escapeHtml === 'function' ? escapeHtml(p?.name || '') : (p?.name || '')}</p>
-                <p class="building-info-addr">${typeof escapeHtml === 'function' ? escapeHtml(p?.address || '') : (p?.address || '')}</p>
+                <p class="building-info-name">${esc(p?.name || '')}</p>
+                <p class="building-info-addr">${esc(p?.address || '')}</p>
             </div>
         </div>
         <div class="card p-4">
@@ -1717,10 +1727,32 @@ function screenTenantBuildingInfo() {
                 ${rows.map(([label, value]) => `
                 <div class="building-info-row${label === 'Address' ? ' building-info-row--address' : ''}">
                     <div class="building-info-row-left"><span class="building-info-row-label">${label}</span></div>
-                    <span class="building-info-row-value">${typeof escapeHtml === 'function' ? escapeHtml(value) : value}</span>
+                    <span class="building-info-row-value">${esc(value)}</span>
                 </div>`).join('')}
             </div>
         </div>
+        <div class="card p-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Property photos</p>
+                <span class="text-[11px] text-[#94A3B8]">${propertyPhotos.length} photo${propertyPhotos.length === 1 ? '' : 's'}</span>
+            </div>
+            <p class="text-[12px] text-[#64748B] mb-3">Uploaded by your landlord for the whole building.</p>
+            ${photoGrid(propertyPhotos, { coverBadge: true, empty: 'No property photos uploaded yet.' })}
+        </div>
+        ${t.unit ? `
+        <div class="card p-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Your unit photos · ${esc(t.unit)}</p>
+                <span class="text-[11px] text-[#94A3B8]">${unitPhotos.length} photo${unitPhotos.length === 1 ? '' : 's'}</span>
+            </div>
+            <p class="text-[12px] text-[#64748B] mb-3">Flat photos your landlord uploaded for this unit.</p>
+            ${photoGrid(unitPhotos, { coverBadge: true, empty: 'No unit photos uploaded yet.' })}
+        </div>` : ''}
+        ${floorPlans.length ? `
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Floor plans</p>
+            ${photoGrid(floorPlans, { empty: 'No floor plans yet.' })}
+        </div>` : ''}
         ${utilItems.length ? `
         <div class="card p-4">
             <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Utilities</p>
@@ -1728,18 +1760,145 @@ function screenTenantBuildingInfo() {
         </div>` : ''}
         ${typeof propertyHasParking === 'function' && propertyHasParking(meta) && typeof renderBuildingParkingBlock === 'function' ? `
         <div class="card p-4">${renderBuildingParkingBlock(meta)}</div>` : ''}
-        ${featureItems.length ? `
+        ${appliances.length ? `
         <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Appliances & alarms</p>
-            <div class="building-icon-grid cols-2">${featureItems.map(item => renderIcon(item)).join('')}</div>
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Appliances</p>
+            <div class="stack-sm">
+                ${appliances.map(a => {
+                    const photo = typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '';
+                    const icon = typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug';
+                    return `
+                    <div class="flex items-start gap-3">
+                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">`
+                            : `<div class="feature-pick-chip-icon shrink-0"><i data-lucide="${icon}" class="w-4 h-4"></i></div>`}
+                        <div class="min-w-0">
+                            <p class="text-[13px] font-bold text-[#0F172A] mb-0">${esc(a.name || 'Appliance')}</p>
+                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5">${esc(a.brand)}</p>` : ''}
+                            ${a.description ? `<p class="text-[12px] text-[#475569] mt-1">${esc(a.description)}</p>` : ''}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
         </div>` : ''}
-        ${floorPlans.length ? `
+        ${alarmEntries.length ? `
         <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Floor plans</p>
-            <div class="photo-gallery-grid">${floorPlans.map(src => `<img src="${typeof escapeHtml === 'function' ? escapeHtml(src) : src}" class="photo-gallery-img" alt="Floor plan">`).join('')}</div>
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Alarms</p>
+            <div class="stack-sm">
+                ${alarmEntries.map(a => {
+                    const photo = typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '';
+                    const sub = [a.location, a.makeModel, a.expiry && typeof formatInfoDate === 'function' ? `Expires ${formatInfoDate(a.expiry)}` : ''].filter(Boolean).join(' · ');
+                    return `
+                    <div class="flex items-start gap-3">
+                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">`
+                            : `<div class="feature-pick-chip-icon shrink-0"><i data-lucide="${a.icon || 'bell-ring'}" class="w-4 h-4"></i></div>`}
+                        <div class="min-w-0">
+                            <p class="text-[13px] font-bold text-[#0F172A] mb-0">${esc(a.name || 'Alarm')}</p>
+                            ${sub ? `<p class="text-[12px] text-[#64748B] mt-0.5">${esc(sub)}</p>` : ''}
+                            ${a.description ? `<p class="text-[12px] text-[#475569] mt-1">${esc(a.description)}</p>` : ''}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
         </div>` : ''}
-        ${info.notes ? `<div class="card p-4"><p class="text-[11px] font-bold text-[#64748B] uppercase">Building notes</p><p class="text-[13px] text-[#475569] mt-2 leading-relaxed">${typeof escapeHtml === 'function' ? escapeHtml(info.notes) : info.notes}</p></div>` : ''}
+        <div class="card p-4">
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <div>
+                    <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Inventory</p>
+                    <p class="text-[12px] text-[#64748B] mt-1">Room photos & checklists from your landlord</p>
+                </div>
+                <button type="button" data-go="tenant-inventory" class="header-text-link shrink-0">View all</button>
+            </div>
+            ${invRooms.length ? `
+            <div class="stack-sm mt-2">
+                ${invRooms.slice(0, 3).map(([name, sub, icon, idx]) => `
+                <button type="button" data-go="tenant-inventory-room" data-room="${idx}" class="card w-full p-3 flex items-center gap-3 text-left">
+                    <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-4 h-4 text-[#64748B]"></i></div>
+                    <div class="min-w-0 flex-1"><p class="text-[13px] font-semibold mb-0">${esc(name)}</p><p class="text-[11px] text-[#64748B] truncate mb-0">${esc(sub)}</p></div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+                </button>`).join('')}
+            </div>` : `<p class="text-[12px] text-[#94A3B8]">No inventory rooms recorded yet.</p>`}
+        </div>
+        ${info.notes ? `<div class="card p-4"><p class="text-[11px] font-bold text-[#64748B] uppercase">Building notes</p><p class="text-[13px] text-[#475569] mt-2 leading-relaxed">${esc(info.notes)}</p></div>` : ''}
         <button type="button" data-go="tenant-house-rules" class="btn-secondary w-full py-3 text-[13px]">House rules & regulations</button>
+    </div>`;
+}
+
+function screenTenantInventory() {
+    const t = getActiveTenant();
+    if (t?.propertyId == null) {
+        return `${topBar('Inventory', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Join a flat first to view inventory.</p></div>`;
+    }
+    const pid = t.propertyId;
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `${topBar('Inventory', { back: true, sub: 'Photos from your landlord' })}
+    <div class="screen-content screen-enter stack-sm">
+        <p class="text-[13px] text-[#64748B]">Room checklists and photos uploaded by your landlord for check-in / check-out.</p>
+        ${rooms.length ? rooms.map(([name, sub, icon, idx]) => {
+            const key = typeof inventoryKey === 'function' ? inventoryKey(pid, idx) : null;
+            const photos = (key && AppStore.inventory?.[key]?.photos) || [];
+            const thumb = photos[0];
+            return `
+        <button type="button" data-go="tenant-inventory-room" data-room="${idx}" class="card w-full p-4 flex items-center gap-3 text-left">
+            ${thumb
+                ? `<img src="${esc(thumb)}" alt="" class="w-12 h-12 rounded-xl object-cover shrink-0">`
+                : `<div class="w-12 h-12 rounded-xl bg-[#F8FAFC] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-5 h-5 text-[#64748B]"></i></div>`}
+            <div class="min-w-0 flex-1">
+                <p class="text-[14px] font-bold text-[#0F172A] mb-0">${esc(name)}</p>
+                <p class="text-[12px] text-[#64748B] mt-0.5 mb-0">${esc(sub)}</p>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+        </button>`;
+        }).join('') : `
+        <div class="empty-state card">
+            <i data-lucide="package" class="w-10 h-10 text-[#CBD5E1]"></i>
+            <p class="empty-state-title">No inventory yet</p>
+            <p class="empty-state-desc">When your landlord records room inventory and photos, they will appear here.</p>
+        </div>`}
+    </div>`;
+}
+
+function screenTenantInventoryRoom() {
+    const t = getActiveTenant();
+    const pid = t?.propertyId;
+    const rid = STATE.roomId ?? 0;
+    if (pid == null) {
+        return `${topBar('Room', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Room not found.</p></div>`;
+    }
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
+    const room = rooms[rid] || rooms[0];
+    const roomName = room?.[0] || 'Room';
+    const items = typeof getInventoryItems === 'function' ? getInventoryItems(pid, rid) : [];
+    const notes = typeof getInventoryNotes === 'function' ? getInventoryNotes(pid, rid) : '';
+    const roomSize = typeof getInventoryRoomSize === 'function' ? getInventoryRoomSize(pid, rid) : '';
+    const invKey = typeof inventoryKey === 'function' ? inventoryKey(pid, rid) : `${pid}-${rid}`;
+    const roomPhotos = AppStore.inventory?.[invKey]?.photos || [];
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const photoGrid = typeof renderTenantReadonlyPhotoGrid === 'function'
+        ? renderTenantReadonlyPhotoGrid(roomPhotos, { coverBadge: true, empty: 'No photos for this room yet.' })
+        : '';
+    return `${topBar(roomName, { back: true, sub: 'Inventory' })}
+    <div class="screen-content screen-enter stack-sm">
+        ${roomSize ? `<p class="text-[12px] text-[#64748B]">Size · ${esc(roomSize)} sq ft</p>` : ''}
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Photos</p>
+            ${photoGrid || `<p class="text-[12px] text-[#94A3B8]">No photos for this room yet.</p>`}
+        </div>
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Items (${items.length})</p>
+            ${items.length ? `
+            <ul class="tnt-rules-list tnt-rules-list--full">
+                ${items.map((item, i) => {
+                    const label = typeof inventoryItemName === 'function' ? inventoryItemName(item) : String(item);
+                    return `<li><span class="tnt-rule-num">${i + 1}</span>${esc(label)}</li>`;
+                }).join('')}
+            </ul>` : `<p class="text-[12px] text-[#94A3B8]">No items listed.</p>`}
+        </div>
+        ${notes ? `
+        <div class="card p-4">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase">Notes</p>
+            <p class="text-[13px] text-[#475569] mt-2 leading-relaxed">${esc(notes)}</p>
+        </div>` : ''}
     </div>`;
 }
 
@@ -2033,6 +2192,7 @@ function screenTenantActiveTenancy() {
         </div>
         <div class="tnt-quick-links-grid">
             <button type="button" data-go="tenant-building-info" class="btn-secondary py-3 text-[13px]">Building info</button>
+            <button type="button" data-go="tenant-inventory" class="btn-secondary py-3 text-[13px]">Inventory photos</button>
             <button type="button" data-go="tenant-house-rules" class="btn-secondary py-3 text-[13px]">House rules</button>
             <button type="button" data-go="tenant-compliance" class="btn-secondary py-3 text-[13px]">Compliance</button>
             <button type="button" data-go="tenant-reminders" class="btn-secondary py-3 text-[13px]">Smart Reminders</button>
@@ -3154,6 +3314,8 @@ Object.assign(SCREEN_MAP, {
     'tenant-dashboard': screenTenantDashboard,
     'tenant-welcome': screenTenantWelcome,
     'tenant-building-info': screenTenantBuildingInfo,
+    'tenant-inventory': screenTenantInventory,
+    'tenant-inventory-room': screenTenantInventoryRoom,
     'tenant-announcements': screenTenantAnnouncements,
     'tenant-announcement-detail': screenTenantAnnouncementDetail,
     'tenant-house-rules': screenTenantHouseRules,
@@ -3179,7 +3341,7 @@ const CONTRACTOR_NO_NAV = [
     'contractor-invite', 'contractor-sign-up', 'contractor-welcome',
     'contractor-landlords', 'contractor-invite-landlord', 'contractor-landlord-invite-sent',
     'tenant-invite', 'tenant-activate', 'tenant-welcome', 'tenant-dashboard',
-    'tenant-building-info', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile',
+    'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile',
     'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
     'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
     'tenant-communication', 'tenant-checkout', 'tenant-inspection-upload',

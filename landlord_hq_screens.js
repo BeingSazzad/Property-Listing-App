@@ -49,7 +49,7 @@ const IMG = {
     ],
     onboarding: {
         splashBg: 'assets/splash-screen.png?v=1',
-        splashLogo: 'assets/splash-logo.png?v=3',
+        splashLogo: 'assets/splash-logo.png?v=4',
         maintenanceIllus: 'assets/onboarding-maintenance.png',
         checkIcon: 'assets/onboarding-check.png',
     },
@@ -706,7 +706,7 @@ const PREF_OPTIONS = {
     dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
     timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
 };
-const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
+const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','select-unit-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-inventory','tenant-inventory-room','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
 
 const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-sign-up','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
@@ -1344,14 +1344,17 @@ function activateTenantAccount() {
         const fullName = document.querySelector('[data-tenant-fullname]')?.value?.trim() || '';
         const dob = document.querySelector('[data-tenant-dob]')?.value || '';
         const phone = document.querySelector('[data-tenant-phone]')?.value?.trim() || '';
+        const idNumber = document.querySelector('[data-tenant-nid]')?.value?.trim() || '';
         if (!fullName) { toast('Enter your full name'); return; }
         if (!dob) { toast('Enter your date of birth'); return; }
+        if (!idNumber) { toast('Enter your NID / ID number'); return; }
         if (!phone) { toast('Enter your mobile number'); return; }
         const parts = splitFullName(fullName);
         invite.firstName = parts.firstName;
         invite.lastName = parts.lastName;
         invite.dob = dob;
         invite.phone = phone;
+        invite.idNumber = idNumber;
         invite.profilePending = false;
     }
     const password = document.querySelector('[data-tenant-password]')?.value || '';
@@ -1708,9 +1711,20 @@ function resetSuccessDone() {
 
 const appLogo = () => `<div class="auth-mini-logo"><i data-lucide="home" class="w-5 h-5"></i></div>`;
 
+/** Clean brand mark — never a property photo crop */
+const brandMarkSvg = (cls = 'brand-mark-svg') => `
+<svg class="${cls}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M8.5 14.2 16 8.5l7.5 5.7V24a1.5 1.5 0 0 1-1.5 1.5h-4.2v-6.2h-3.6V25.5H10A1.5 1.5 0 0 1 8.5 24V14.2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M16 10.2v8.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M13.4 12.6h5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>`;
+
+const brandMarkHtml = (extraClass = '') => `
+<span class="brand-mark${extraClass ? ` ${extraClass}` : ''}" aria-hidden="true">${brandMarkSvg()}</span>`;
+
 const authBrandLogo = () => `
-<div class="auth-brand-logo">
-    <img src="${IMG.onboarding.splashLogo}" alt="" class="auth-brand-logo-img">
+<div class="auth-brand-logo" aria-label="LandlordHQ">
+    ${brandMarkHtml('brand-mark--auth')}
 </div>`;
 
 const authLucideBadge = (icon, size = 'md', tone = 'primary') => `
@@ -2148,7 +2162,8 @@ function go(screen, opts = {}) {
     if (STATE.userRole === 'tenant' && STATE.isAuthenticated) {
         const linkedScreens = [
             'log-maintenance', 'tenant-issues', 'tenant-active-tenancy', 'tenant-documents',
-            'tenant-building-info', 'tenant-announcements', 'tenant-reminders', 'tenant-compliance',
+            'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room',
+            'tenant-announcements', 'tenant-reminders', 'tenant-compliance',
             'tenant-communication', 'tenant-referencing', 'tenant-ref-detail', 'tenant-inspection-upload',
             'messages', 'transaction-history', 'invoice-detail', 'chat',
         ];
@@ -2276,9 +2291,16 @@ function go(screen, opts = {}) {
                 STATE.inviteDraft = null;
             }
             if (typeof applyInviteMemberPrefill === 'function') applyInviteMemberPrefill(opts);
+            if (opts.unit) {
+                STATE.selectedUnit = opts.unit;
+                STATE.inviteDraft = { ...(STATE.inviteDraft || {}), unit: opts.unit };
+                STATE.invitePrefill = { ...(STATE.invitePrefill || {}), unit: opts.unit };
+            }
         }
         if (from === 'property-detail' && (opts.tab === 'tenant' || STATE.tab === 'tenant')) {
             STATE.inviteReturn = { screen: 'property-detail', tab: 'tenant' };
+        } else if (from === 'select-unit-invite') {
+            STATE.inviteReturn = { screen: 'select-unit-invite' };
         } else if (from === 'flat-members' && (opts.unit || STATE.selectedUnit)) {
             STATE.inviteReturn = { screen: 'flat-members', unit: opts.unit || STATE.selectedUnit };
         } else if (from === 'flat-detail' || opts.unit || STATE.selectedUnit) {
@@ -2289,11 +2311,15 @@ function go(screen, opts = {}) {
             STATE.inviteReturn = { screen: 'property-detail', tab: 'tenant' };
         }
     }
+    if (screen === 'select-unit-invite') {
+        STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+        STATE.tab = 'tenant';
+    }
     if (screen === 'add-flat') {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
     if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
@@ -2438,10 +2464,13 @@ function navigateBackFallback() {
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
         'edit-tenancy-deposit': 'tenancy-detail',
         'maintenance-history': 'maintenance', 'select-property-invite': 'tenants',
+        'select-unit-invite': 'property-detail',
         'global-search': 'dashboard',
         'contractors': 'dashboard',
         'tenant-add-note': 'tenant-detail', 'tenant-edit-note': 'tenant-detail',
         'tenant-building-info': 'tenant-dashboard',
+        'tenant-inventory': 'tenant-building-info',
+        'tenant-inventory-room': 'tenant-inventory',
         'tenant-announcements': 'tenant-dashboard',
         'tenant-announcement-detail': 'tenant-announcements',
         'tenant-house-rules': 'tenant-building-info',
@@ -2509,7 +2538,7 @@ function navigateBackFallback() {
         opts.tenantId = STATE.tenantId;
     }
     if (STATE.screen === 'tenant-add-note' || STATE.screen === 'tenant-edit-note') opts.tenantTab = 'notes';
-    if (['edit-inventory-room'].includes(STATE.screen)) opts.roomId = STATE.roomId;
+    if (['edit-inventory-room', 'inventory-room', 'tenant-inventory-room'].includes(STATE.screen)) opts.roomId = STATE.roomId;
     if (STATE.screen === 'edit-preference') opts.prefKey = STATE.prefKey;
     if (['edit-payment-method'].includes(STATE.screen)) opts.paymentId = STATE.paymentId;
     if (STATE.screen === 'assign-contractor') opts.maintId = STATE.maintId;
@@ -3402,6 +3431,8 @@ const bottomNav = () => {
         'chat': 'messages',
         'maintenance-detail': 'tenant-issues',
         'tenant-building-info': 'tenant-dashboard',
+        'tenant-inventory': 'tenant-building-info',
+        'tenant-inventory-room': 'tenant-inventory',
         'tenant-announcements': 'tenant-dashboard',
         'tenant-announcement-detail': 'tenant-announcements',
         'tenant-house-rules': 'tenant-building-info',
@@ -5242,32 +5273,36 @@ function screenTenantInviteSent() {
     const leaseFmt = invite.leaseStart && invite.leaseEnd
         ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(invite.leaseStart) : invite.leaseStart} → ${typeof formatDisplayDate === 'function' ? formatDisplayDate(invite.leaseEnd) : invite.leaseEnd}`
         : '—';
-    const tenantLabel = invite.profilePending
-        ? invite.email
-        : `${invite.firstName} ${invite.lastName}`.trim();
+    const tenantLabel = typeof invitePersonLabel === 'function' ? invitePersonLabel(invite) : invite.email;
     const statusLabel = invite.reattachExisting
-        ? 'Pending re-attach'
-        : (invite.profilePending ? 'Pending profile + activation' : 'Pending activation');
+        ? 'Pending sign-in to join'
+        : (invite.profilePending ? 'Awaiting tenant profile' : 'Pending activation');
     return `${topBar('Invitation Sent', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-6 text-center">
             <div class="tenant-invite-icon"><i data-lucide="mail-check" class="w-8 h-8"></i></div>
             <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation Sent!</p>
-            <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join as tenant at <strong>${p.name}</strong> (${invite.unit}).${invite.profilePending ? ' They can create a login from the link, or use an account they already made.' : ''}${invite.reattachExisting ? ' Their existing login will attach to this flat — they cannot join without this link.' : ' Only this invitation link can add them as a flat member.'}</p>
+            <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join <strong>${p.name}</strong> (${invite.unit}).</p>
+        </div>
+        <div class="ux-tip">
+            <p class="ux-tip-title">What the tenant does next</p>
+            <p class="ux-tip-text">${invite.reattachExisting
+                ? 'They open the link, sign in with their existing password, and join this flat. You cannot edit their personal profile.'
+                : 'They open the link → create profile (name, DOB, NID, phone, password) → join this flat. Personal details stay on the tenant side.'}</p>
         </div>
         <div class="card p-4 space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invitation Details</p>
-            ${[['Tenant', tenantLabel], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Tenancy dates', leaseFmt], ['Security deposit', depositFmt], ['Advance paid', advanceFmt], ['Deposit scheme', invite.depositScheme || 'MyDeposits'], ...(invite.protectionRef ? [['Protection ref', invite.protectionRef]] : []), ['Status', statusLabel]].map(([k, v]) => `
+            ${[['Invite email', invite.email], ['Shown as', tenantLabel], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Tenancy dates', leaseFmt], ['Security deposit', depositFmt], ['Advance paid', advanceFmt || '—'], ['Deposit scheme', invite.depositScheme || 'MyDeposits'], ...(invite.protectionRef ? [['Protection ref', invite.protectionRef]] : []), ['Status', statusLabel]].map(([k, v]) => `
             <div class="flex justify-between text-[13px] py-1"><span class="text-[#64748B]">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
-        ${invite.profilePending ? `
         <div class="ux-tip mt-2">
-            <p class="ux-tip-title">Individual login</p>
-            <p class="ux-tip-text">Each invite creates a separate account. Group housemates never share one password.</p>
-        </div>` : ''}
+            <p class="ux-tip-title">Demo: open as tenant</p>
+            <p class="ux-tip-text">Use <strong>Open invite link</strong> below to preview the tenant role flow for this invitation.</p>
+        </div>
+        <button type="button" data-go="tenant-invite" data-invite-token="${invite.token}" class="btn-primary w-full py-3.5 text-[14px]">Open invite link (tenant view)</button>
         ${nextMember ? `
-        <button type="button" data-go="invite-tenant" data-pid="${invite.propertyId}" data-unit="${invite.unit}" data-invite-email="${nextMember.email || ''}" data-invite-first="${nextParts[0] || ''}" data-invite-last="${nextParts.slice(1).join(' ') || ''}" data-invite-phone="${nextMember.phone || ''}" class="btn-primary w-full py-3.5 text-[14px]">Invite Next Member</button>` : ''}
-        <button type="button" data-go="property-detail" data-pid="${invite.propertyId}" data-tab="tenant" class="btn-secondary w-full py-3.5 text-[14px] ${nextMember ? 'mt-2' : ''}">Back to Property</button>
+        <button type="button" data-go="invite-tenant" data-pid="${invite.propertyId}" data-unit="${invite.unit}" data-invite-email="${nextMember.email || ''}" data-invite-first="${nextParts[0] || ''}" data-invite-last="${nextParts.slice(1).join(' ') || ''}" data-invite-phone="${nextMember.phone || ''}" class="btn-secondary w-full py-3.5 text-[14px] mt-2">Invite Next Member</button>` : ''}
+        <button type="button" data-go="property-detail" data-pid="${invite.propertyId}" data-tab="tenant" class="btn-secondary w-full py-3.5 text-[14px] mt-2">Back to Property</button>
     </div>`;
 }
 
@@ -5282,7 +5317,7 @@ function screenEditTenant() {
         return dob;
     };
     const rows = [
-        ['Full name', fullNameFromParts(t.firstName, t.lastName)],
+        ['Full name', fullNameFromParts(t.firstName, t.lastName) || (list.status === 'pending' ? 'Awaiting tenant profile' : '—')],
         ['Date of birth', formatDob(t.dob)],
         ['NID', t.idNumber || '—'],
         ['Email', t.email || '—'],
@@ -5294,8 +5329,10 @@ function screenEditTenant() {
     return `${topBar('Tenant profile', { back: true })}
     <div class="screen-content screen-content-sm screen-enter">
         <div class="ux-tip mb-3">
-            <p class="ux-tip-title">Read-only for landlords</p>
-            <p class="ux-tip-text">Personal details are owned by the tenant. They add and edit this from their own profile after accepting your invitation link. You manage lease, rent and deposit separately.</p>
+            <p class="ux-tip-title">${list.status === 'pending' ? 'Invite sent — awaiting tenant' : 'Read-only for landlords'}</p>
+            <p class="ux-tip-text">${list.status === 'pending'
+                ? 'This person has not completed their profile yet. They will enter name, DOB, NID and contacts when they accept your invitation link.'
+                : 'Personal details are owned by the tenant. They add and edit this from their own profile after accepting your invitation link. You manage lease, rent and deposit separately.'}</p>
         </div>
         <div class="card p-4">
             ${rows.map(([label, value]) => `
@@ -5627,6 +5664,7 @@ function collectGoOptions(el) {
     if (el.dataset.tenantPayPreset) opts.tenantPayFilter = el.dataset.tenantPayPreset;
     if (el.dataset.duplicateFrom) opts.duplicateFrom = el.dataset.duplicateFrom;
     if (el.dataset.inviteToken) opts.token = el.dataset.inviteToken;
+    if (el.dataset.token && !opts.token) opts.token = el.dataset.token;
     if (el.dataset.inviteEmail) opts.inviteEmail = el.dataset.inviteEmail;
     if (el.dataset.inviteFirst) opts.inviteFirst = el.dataset.inviteFirst;
     if (el.dataset.inviteLast) opts.inviteLast = el.dataset.inviteLast;
