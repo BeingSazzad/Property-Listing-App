@@ -285,7 +285,18 @@ function authDemoCard() {
 
 function roleContinueLabel() {
     const role = AUTH_ROLES.find(r => r.id === (STATE.authRole || 'landlord'));
+    if (STATE.authRole === 'tenant') return 'Continue as Tenant';
     return role ? `Enter as ${role.title}` : 'Enter app';
+}
+
+function roleContinue() {
+    const role = STATE.authRole || 'landlord';
+    if (role === 'tenant') {
+        STATE.authRole = 'tenant';
+        go('sign-up');
+        return;
+    }
+    demoLogin(role);
 }
 
 function completeDemoLogin(role) {
@@ -348,6 +359,20 @@ const getActiveTenant = () => {
     }
     return TENANT_ACCOUNTS.length === 1 ? TENANT_ACCOUNTS[0] : null;
 };
+
+/** Tenant may have an account but is not a flat member until a landlord invite is accepted. */
+function tenantHasPropertyLink(account = getActiveTenant()) {
+    if (!account) return false;
+    return account.propertyId != null && account.propertyId !== '' && !!account.unit;
+}
+
+function pendingInvitesForTenantEmail(email) {
+    if (!email) return [];
+    const key = String(email).toLowerCase();
+    return TENANT_INVITATIONS.filter(i =>
+        i.status === 'pending' && i.email && String(i.email).toLowerCase() === key
+    );
+}
 
 const makeInviteToken = () => `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
@@ -459,7 +484,7 @@ function confirmSubscriptionPlan(planId) {
 const FAQ_BY_ROLE = {
     landlord: [
         { id: 0, cat: 'Getting Started', q: 'How do I add a new property?', a: 'Tap the + button (bottom right) and select Add Property, or go to Properties → Add. Enter the address and unit details — your building appears in your portfolio immediately.' },
-        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Open the property → Tenants → Invite. Enter their email only — they activate and complete name/DOB themselves. Each tenant gets their own login. For group tenancies, set up the tenancy first, then invite every member by email.' },
+        { id: 1, cat: 'Getting Started', q: 'How do I invite a tenant?', a: 'Open the property → Tenants → Invite and enter their email plus lease details. You cannot edit their personal profile — they complete name, DOB, NID and contact info themselves from the invitation link. For group tenancies, set up the tenancy first, then invite every member by email.' },
         { id: 2, cat: 'Rent & Payments', q: 'How does rent collection work?', a: 'Landlord HQ tracks rent due dates and payment status on the Financial screen. Mark rent received when payment arrives, or create invoices for tenants. Overdue rent is highlighted on your dashboard.' },
         { id: 3, cat: 'Rent & Payments', q: 'Can I export financial reports?', a: 'Go to Financial → Transaction history, or open any invoice and tap Download PDF for a record of that payment.' },
         { id: 4, cat: 'Maintenance', q: 'How do I log a maintenance issue?', a: 'Open Home → Maintenance for your full queue, or use ⋯ Log issue from a property unit when you are already in that flat.' },
@@ -470,14 +495,14 @@ const FAQ_BY_ROLE = {
         { id: 9, cat: 'Account', q: 'How do I change my subscription plan?', a: 'Go to Profile → Subscription & billing. Compare Starter, Pro, and Portfolio plans and tap Switch to change. Billing is charged to the card on file.' },
     ],
     tenant: [
-        { id: 0, cat: 'Getting Started', q: 'How do I activate my tenant account?', a: 'Tenant accounts are invitation-only. Open the secure link from your landlord, set a password, and your portal will link to your property automatically.' },
+        { id: 0, cat: 'Getting Started', q: 'How do I activate my tenant account?', a: 'You can create a tenant login anytime from Sign Up. To join a property or flat you must open the invitation link from your landlord — without that link you cannot become a flat member.' },
         { id: 1, cat: 'Getting Started', q: 'What can I see on my dashboard?', a: 'Your home details, next rent due date, maintenance request status, and quick actions to report issues or message your landlord.' },
         { id: 2, cat: 'Rent & Payments', q: 'How do I pay rent?', a: 'Your rent due date appears on your dashboard. Tap Pay with Stripe to pay by card. Your landlord is notified when payment completes.' },
         { id: 3, cat: 'Rent & Payments', q: 'Who receives my rent payment?', a: 'Rent is paid directly to your landlord through their configured payment method. Landlord HQ tracks status but does not hold tenant funds.' },
         { id: 4, cat: 'Maintenance', q: 'How do I report a maintenance issue?', a: 'Tap Report Issue on your dashboard or Issues tab. Your property and unit are pre-filled — you report issues inside your flat only. Communal building problems (hallway, roof, garden) are logged by your landlord.' },
         { id: 5, cat: 'Maintenance', q: 'Who handles repairs in my home?', a: 'Your landlord manages repairs and may assign a contractor. You can track progress on your dashboard and message your landlord for updates.' },
         { id: 6, cat: 'Messages', q: 'How do I contact my landlord?', a: 'Go to Messages to chat with your landlord. You can also reach them about urgent issues after reporting a maintenance request.' },
-        { id: 7, cat: 'Account', q: 'Can I update my contact details?', a: 'View your details under Account. Contact your landlord if any tenancy-related information needs updating on your lease record.' },
+        { id: 7, cat: 'Account', q: 'Can I update my contact details?', a: 'Yes. Open Account → Personal information to edit your name, DOB, NID, phone and emergency contacts. Your landlord can view these but cannot edit them.' },
         { id: 8, cat: 'Account', q: 'How do I sign out?', a: 'Open Account from the bottom navigation and tap Sign Out. Use the same email and password to sign back in later.' },
     ],
     contractor: [
@@ -693,14 +718,20 @@ const NAV_MAIN_TABS = new Set([
 ]);
 
 const FLAT_QUICK_ACTION_SCREENS = new Set([
-    'flat-rent-history', 'unit-utilities', 'flat-members',
-    'property-detail', 'mark-rent-received', 'maintenance-detail', 'invite-tenant',
+    'flat-rent-history', 'unit-utilities', 'flat-members', 'flat-keys',
+    'property-detail', 'property-inspections', 'property-inventory',
+    'property-flat-documents', 'property-doc-folder',
+    'mark-rent-received', 'maintenance-detail', 'invite-tenant',
     'create-tenancy', 'conduct-inspection',
 ]);
 
 function setFlatReturnFromDetail() {
     if (STATE.propertyId != null && STATE.selectedUnit) {
-        STATE.flatReturn = { propertyId: STATE.propertyId, unit: STATE.selectedUnit };
+        STATE.flatReturn = {
+            propertyId: STATE.propertyId,
+            unit: STATE.selectedUnit,
+            flatTab: STATE.flatTab || 'overview',
+        };
     }
 }
 
@@ -708,7 +739,12 @@ function restoreFlatDetailNav() {
     const ret = STATE.flatReturn;
     if (!ret?.unit) return false;
     STATE.flatReturn = null;
-    go('flat-detail', { propertyId: ret.propertyId, unit: ret.unit, noHistory: true });
+    go('flat-detail', {
+        propertyId: ret.propertyId,
+        unit: ret.unit,
+        flatTab: ret.flatTab || 'overview',
+        noHistory: true,
+    });
     return true;
 }
 
@@ -851,7 +887,7 @@ function saveAuthSession() {
 
 const AUTH_ROLES = [
     { id: 'landlord', title: 'Landlord', desc: 'Manage properties & tenants', icon: 'home', color: '#2563EB', bg: '#EFF6FF' },
-    { id: 'tenant', title: 'Tenant', desc: 'Pay rent & report issues', icon: 'user', color: '#16A34A', bg: '#DCFCE7' },
+    { id: 'tenant', title: 'Tenant', desc: 'Create an account — join a flat only via landlord invite', icon: 'user', color: '#16A34A', bg: '#DCFCE7' },
     { id: 'contractor', title: 'Contractor', desc: 'Receive & complete jobs', icon: 'wrench', color: '#EA580C', bg: '#FFEDD5' },
 ];
 
@@ -942,9 +978,50 @@ function markMaintComplete() {
 }
 
 function completeSignup() {
+    if (STATE.authRole === 'tenant' && STATE.signupDraft) {
+        loadTenantData();
+        const d = STATE.signupDraft;
+        if (tenantAccountByEmail(d.email)) {
+            toastError('This email is already registered. Sign in instead.');
+            go('sign-in');
+            return;
+        }
+        const nextId = TENANT_ACCOUNTS.length
+            ? Math.max(...TENANT_ACCOUNTS.map(a => a.id)) + 1
+            : 0;
+        const account = {
+            id: nextId,
+            inviteToken: null,
+            firstName: d.firstName,
+            lastName: d.lastName,
+            email: d.email,
+            phone: d.phone || '',
+            propertyId: null,
+            unit: null,
+            rent: null,
+            leaseStart: null,
+            leaseEnd: null,
+            landlord: null,
+            password: d.password,
+            awaitingInvite: true,
+        };
+        TENANT_ACCOUNTS.push(account);
+        saveTenantData();
+        STATE.signupDraft = null;
+        STATE.signupEmail = '';
+        STATE.isAuthenticated = true;
+        STATE.userRole = 'tenant';
+        STATE.authRole = 'tenant';
+        STATE.activeTenantId = account.id;
+        STATE.otpDigits = [];
+        saveAuthSession();
+        go('tenant-welcome');
+        setTimeout(() => toast('Account created — wait for your landlord’s invitation to join a flat'), 50);
+        return;
+    }
     if (STATE.authRole === 'tenant') {
-        toast('Tenant accounts require a landlord invitation');
-        go('tenant-invite');
+        toast('Create your account, then join a flat with your landlord’s invitation link');
+        go('sign-up');
         return;
     }
     if (STATE.authRole === 'landlord' && STATE.signupDraft) {
@@ -1026,9 +1103,24 @@ function startLandlordSignup() {
         toast('Enter a valid email address');
         return;
     }
-    if (landlordAccountByEmail(email)) {
-        toast('This email is already registered. Sign in instead.');
-        return;
+    const role = STATE.authRole || 'landlord';
+    if (role === 'tenant') {
+        loadTenantData();
+        if (tenantAccountByEmail(email)) {
+            toast('This email is already registered. Sign in instead.');
+            return;
+        }
+    } else if (role === 'landlord') {
+        if (landlordAccountByEmail(email)) {
+            toast('This email is already registered. Sign in instead.');
+            return;
+        }
+    } else if (role === 'contractor') {
+        loadContractorAccounts();
+        if (contractorAccountByEmail(email)) {
+            toast('This email is already registered. Sign in instead.');
+            return;
+        }
     }
     if (password.length < 8) {
         toast('Password must be at least 8 characters');
@@ -1095,11 +1187,12 @@ function sendTenantInvitation() {
     const existing = typeof TENANT_ACCOUNTS !== 'undefined'
         ? TENANT_ACCOUNTS.find(a => a.email && String(a.email).toLowerCase() === String(email || '').toLowerCase())
         : null;
-    const firstName = existing?.firstName || inviteField('firstName') || draft.firstName || 'Invited';
-    const lastName = existing?.lastName || inviteField('lastName') || draft.lastName || 'Tenant';
-    const phone = existing?.phone || inviteField('phone') || draft.phone || '';
-    const dob = inviteField('dob') || draft.dob || '';
-    const idNumber = inviteField('idNumber') || draft.idNumber || '';
+    // Landlord only invites by email — tenant fills name/DOB/NID/phone from their own profile
+    const firstName = existing?.firstName || 'Invited';
+    const lastName = existing?.lastName || 'Tenant';
+    const phone = existing?.phone || '';
+    const dob = existing?.dob || '';
+    const idNumber = '';
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         toast('Enter a valid email address');
         return;
@@ -1145,7 +1238,7 @@ function sendTenantInvitation() {
         unit,
         rent: rentValue,
         deposit: depositRaw,
-        advancePaid: advanceRaw || '0',
+        advancePaid: (advanceRaw != null && String(advanceRaw).replace(/[^\d]/g, '') !== '') ? advanceRaw : '',
         depositScheme,
         protectionRef,
         leaseStart,
@@ -1156,6 +1249,7 @@ function sendTenantInvitation() {
         sentAt: 'Just now',
         profilePending: !existing,
         reattachExisting: !!existing,
+        tenantOwnsProfile: true,
     };
     TENANT_INVITATIONS.push(invite);
     STATE.nidProofName = null;
@@ -1169,6 +1263,64 @@ function sendTenantInvitation() {
     setTimeout(() => toast(existing ? `Invite sent — existing account will attach to this tenancy` : `Invitation sent to ${email}`), 50);
 }
 
+function attachTenantAccountToInvite(account, invite) {
+    if (!account || !invite) return false;
+    const tid = typeof syncLandlordAfterActivation === 'function'
+        ? syncLandlordAfterActivation(invite)
+        : (typeof tenantListItemForInvite === 'function' ? tenantListItemForInvite(invite)?.id : null) ?? account.id;
+    Object.assign(account, {
+        id: account.id ?? tid,
+        inviteToken: invite.token,
+        firstName: invite.firstName || account.firstName,
+        lastName: invite.lastName || account.lastName,
+        phone: invite.phone || account.phone,
+        propertyId: invite.propertyId,
+        unit: invite.unit,
+        rent: invite.rent,
+        leaseStart: invite.leaseStart,
+        leaseEnd: invite.leaseEnd,
+        landlord: invite.landlord,
+        awaitingInvite: false,
+    });
+    invite.status = 'activated';
+    invite.profilePending = false;
+    saveTenantData();
+    return true;
+}
+
+function acceptTenantInviteForLoggedInUser(token) {
+    loadTenantData();
+    const invite = tenantInviteByToken(token || STATE.tenantInviteToken);
+    const account = getActiveTenant();
+    if (!invite) {
+        toast('Invitation not found or expired');
+        return;
+    }
+    if (invite.status === 'activated') {
+        toast('This invitation was already used');
+        return;
+    }
+    if (!account) {
+        STATE.tenantInviteToken = invite.token;
+        STATE.authRole = 'tenant';
+        go('tenant-invite', { token: invite.token });
+        return;
+    }
+    if (String(account.email || '').toLowerCase() !== String(invite.email || '').toLowerCase()) {
+        toast('This invitation was sent to a different email address');
+        return;
+    }
+    if (!attachTenantAccountToInvite(account, invite)) {
+        toast('Could not join this flat');
+        return;
+    }
+    STATE.activeTenantId = account.id;
+    STATE.tenantInviteToken = invite.token;
+    saveAuthSession();
+    toast(`Joined ${PROPERTIES[invite.propertyId]?.name || 'property'} · ${invite.unit}`);
+    go('tenant-dashboard');
+}
+
 function activateTenantAccount() {
     const invite = tenantInviteByToken(STATE.tenantInviteToken);
     if (!invite) {
@@ -1179,6 +1331,14 @@ function activateTenantAccount() {
         toast('This invitation was already used. Please sign in.');
         go('sign-in');
         return;
+    }
+    // Already signed in as this invite email — just attach to the flat
+    if (STATE.isAuthenticated && STATE.userRole === 'tenant') {
+        const loggedIn = getActiveTenant();
+        if (loggedIn && String(loggedIn.email || '').toLowerCase() === String(invite.email || '').toLowerCase()) {
+            acceptTenantInviteForLoggedInUser(invite.token);
+            return;
+        }
     }
     if (!invite.reattachExisting) {
         const fullName = document.querySelector('[data-tenant-fullname]')?.value?.trim() || '';
@@ -1196,6 +1356,28 @@ function activateTenantAccount() {
     }
     const password = document.querySelector('[data-tenant-password]')?.value || '';
     const confirm = document.querySelector('[data-tenant-confirm]')?.value || '';
+    let account = TENANT_ACCOUNTS.find(a => a.email && a.email.toLowerCase() === invite.email.toLowerCase());
+    if (account && invite.reattachExisting) {
+        // Existing self-signup account: password confirms identity, then join flat
+        if (!password) {
+            toast('Enter your account password to join this flat');
+            return;
+        }
+        if (account.password !== password) {
+            toastError('Incorrect password');
+            return;
+        }
+        attachTenantAccountToInvite(account, invite);
+        STATE.isAuthenticated = true;
+        STATE.userRole = STATE.authRole = 'tenant';
+        STATE.activeTenantId = account.id;
+        STATE.showPassword = false;
+        STATE.showConfirmPassword = false;
+        saveAuthSession();
+        go('tenant-welcome');
+        setTimeout(() => toast('Joined your flat — invitation accepted'), 50);
+        return;
+    }
     if (password.length < 6) {
         toast('Password must be at least 6 characters');
         return;
@@ -1207,7 +1389,6 @@ function activateTenantAccount() {
     const tid = typeof syncLandlordAfterActivation === 'function'
         ? syncLandlordAfterActivation(invite)
         : (typeof tenantListItemForInvite === 'function' ? tenantListItemForInvite(invite)?.id : null) ?? TENANT_ACCOUNTS.length;
-    let account = TENANT_ACCOUNTS.find(a => a.email && a.email.toLowerCase() === invite.email.toLowerCase());
     if (account) {
         Object.assign(account, {
             inviteToken: invite.token,
@@ -1221,6 +1402,7 @@ function activateTenantAccount() {
             leaseEnd: invite.leaseEnd,
             landlord: invite.landlord,
             password: password || account.password,
+            awaitingInvite: false,
         });
     } else {
         account = {
@@ -1237,6 +1419,7 @@ function activateTenantAccount() {
             leaseEnd: invite.leaseEnd,
             landlord: invite.landlord,
             password,
+            awaitingInvite: false,
         };
         TENANT_ACCOUNTS.push(account);
     }
@@ -1249,25 +1432,44 @@ function activateTenantAccount() {
     STATE.showConfirmPassword = false;
     saveAuthSession();
     go('tenant-welcome');
-    setTimeout(() => toast(invite.reattachExisting ? 'Attached to new tenancy' : 'Account activated successfully!'), 50);
+    setTimeout(() => toast(invite.reattachExisting ? 'Attached to new tenancy' : 'Account activated — you joined the flat'), 50);
 }
 
 function openTenantInvite(token) {
     loadTenantData();
     const inviteToken = token || new URLSearchParams(window.location.search).get('invite');
     if (!inviteToken) {
-        toast('Open the invitation link from your email');
+        toast('Open the invitation link from your landlord');
         return;
     }
     const invite = tenantInviteByToken(inviteToken);
     if (!invite) {
         toast('Invalid or expired invitation');
-        go('role-select');
+        go(STATE.isAuthenticated && STATE.userRole === 'tenant' ? 'tenant-dashboard' : 'role-select');
         return;
     }
     STATE.tenantInviteToken = inviteToken;
     STATE.authRole = 'tenant';
+    // Logged-in tenant with matching email can accept immediately from invite screen
     go('tenant-invite', { token: inviteToken });
+}
+
+function tryOpenInviteFromInput() {
+    const raw = document.querySelector('[data-tenant-invite-code]')?.value?.trim() || '';
+    if (!raw) {
+        toast('Paste the invitation link or code from your landlord');
+        return;
+    }
+    let token = raw;
+    try {
+        if (/^https?:\/\//i.test(raw) || raw.includes('invite=')) {
+            const url = new URL(raw, window.location.origin);
+            token = url.searchParams.get('invite') || raw;
+        }
+    } catch (_) { /* use raw */ }
+    const match = String(token).match(/INV-[A-Z0-9]+/i);
+    if (match) token = match[0].toUpperCase().replace(/^inv-/i, 'INV-');
+    openTenantInvite(token);
 }
 
 function enterApp(targetScreen) {
@@ -1647,6 +1849,7 @@ function screenSignIn() {
 
 function screenSignUp() {
     const pwType = STATE.showPassword ? 'text' : 'password';
+    const isTenant = STATE.authRole === 'tenant';
     return `
     <div class="auth-screen">
         <div class="auth-topbar">
@@ -1659,7 +1862,14 @@ function screenSignUp() {
                 <i data-lucide="user-plus" class="w-7 h-7 text-[#2563EB]"></i>
             </div>
             <h1 class="auth-heading">Create Your Account</h1>
-            <p class="auth-sub">Sign up with your email. We'll send a verification code to confirm it's you.</p>
+            <p class="auth-sub">${isTenant
+                ? 'Create your tenant login now. You can only join a property or flat after your landlord sends you an invitation link.'
+                : 'Sign up with your email. We\'ll send a verification code to confirm it\'s you.'}</p>
+            ${isTenant ? `
+            <div class="ux-tip mb-3">
+                <p class="ux-tip-title">Invitation required to join a flat</p>
+                <p class="ux-tip-text">Signing up does <strong>not</strong> add you to a building. Only the landlord’s invite link can make you a flat member.</p>
+            </div>` : ''}
             <div class="auth-form">
                 <div class="auth-field"><label>First name</label><input type="text" data-signup-first class="auth-input" placeholder="John" autocomplete="given-name" value="${STATE.signupDraft?.firstName || ''}"></div>
                 <div class="auth-field"><label>Last name</label><input type="text" data-signup-last class="auth-input" placeholder="Smith" autocomplete="family-name" value="${STATE.signupDraft?.lastName || ''}"></div>
@@ -1908,10 +2118,6 @@ function screenWelcome() {
     </div>`;
 }
 
-function roleContinue() {
-    demoLogin(STATE.authRole || 'landlord');
-}
-
 function go(screen, opts = {}) {
     const from = STATE.screen;
     const isLandlord = STATE.userRole !== 'tenant' && STATE.userRole !== 'contractor';
@@ -1933,7 +2139,24 @@ function go(screen, opts = {}) {
     if (screen === 'sign-up' && STATE.authRole === 'contractor') screen = 'contractor-sign-up';
     if (screen === 'sign-up' && ['sign-in', 'role-select'].includes(from)) {
         STATE.authReturnScreen = from;
-        if (from === 'role-select' && STATE.authRole !== 'contractor') STATE.authRole = 'landlord';
+        // Keep the role chosen on role-select (landlord / tenant / contractor)
+        if (from === 'role-select' && !['landlord', 'tenant', 'contractor'].includes(STATE.authRole)) {
+            STATE.authRole = 'landlord';
+        }
+    }
+    // Tenant without a landlord invite cannot use property-linked screens
+    if (STATE.userRole === 'tenant' && STATE.isAuthenticated) {
+        const linkedScreens = [
+            'log-maintenance', 'tenant-issues', 'tenant-active-tenancy', 'tenant-documents',
+            'tenant-building-info', 'tenant-announcements', 'tenant-reminders', 'tenant-compliance',
+            'tenant-communication', 'tenant-referencing', 'tenant-ref-detail', 'tenant-inspection-upload',
+            'messages', 'transaction-history', 'invoice-detail', 'chat',
+        ];
+        if (linkedScreens.includes(screen) && typeof tenantHasPropertyLink === 'function' && !tenantHasPropertyLink()) {
+            toast('Join a flat with your landlord’s invitation link first');
+            screen = 'tenant-dashboard';
+            opts = {};
+        }
     }
     if (screen === 'sign-in' && from === 'role-select') {
         STATE.signInOrigin = 'role-select';
@@ -3742,7 +3965,7 @@ const tenantDetailField = (label, value) => `
 const tenantFieldsCard = (fields) => `
 <div class="card tenant-fields-card">${fields.map(([l, v]) => tenantDetailField(l, v)).join('')}</div>`;
 
-const tenantSectionBar = (title, showEdit = true) => `
+const tenantSectionBar = (title, showEdit = false) => `
 <div class="screen-header tenant-section-header">
     <div class="sub-header-row">
         <div class="sub-header-left">
@@ -3751,7 +3974,7 @@ const tenantSectionBar = (title, showEdit = true) => `
             </button>
             <h1 class="sub-header-title">${title}</h1>
         </div>
-        ${showEdit ? `<button type="button" data-go="edit-tenant" class="tenant-edit-link">Edit</button>` : ''}
+        ${showEdit ? `<button type="button" data-go="edit-tenant" class="tenant-edit-link">View</button>` : ''}
     </div>
 </div>`;
 
@@ -3778,7 +4001,7 @@ const tenantOverview = (t, avatar) => {
             <button type="button" data-action="back" class="tenant-profile-back" aria-label="Back"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
             <h1 class="tenant-v2-title">Tenant details</h1>
             <div class="tenant-v2-topbar-actions">
-                <button type="button" data-go="edit-tenant" data-tid="${STATE.tenantId}" class="tenant-v2-edit">Edit</button>
+                <button type="button" data-go="edit-tenant" data-tid="${STATE.tenantId}" class="tenant-v2-edit">View</button>
             </div>
         </div>
         <div class="tenant-v2-hero card">
@@ -3834,7 +4057,7 @@ const tenantSectionContent = (tab, t) => {
             ])}
             <div class="card p-4">
                 <div class="flex items-center gap-3">
-                    <div class="tenant-doc-icon" style="color:#7C3AED"><i data-lucide="id-card" class="w-5 h-5"></i></div>
+                    <div class="tenant-doc-icon" style="color:#2563EB"><i data-lucide="id-card" class="w-5 h-5"></i></div>
                     <div class="flex-1 min-w-0">
                         <p class="text-[13px] font-semibold text-[#0F172A]">NID Document Proof</p>
                         <p class="text-[12px] text-[#64748B] mt-0.5">${nidDoc ? nidDoc.name : 'Not uploaded'}</p>
@@ -3904,7 +4127,7 @@ const tenantSectionContent = (tab, t) => {
         documents: () => {
             const docs = typeof getTenantDocuments === 'function' ? getTenantDocuments(t.id) : [
                 ['file-text', 'Lease Agreement.pdf', 'Jan 15, 2024', '#2563EB'],
-                ['file-image', 'NID Proof.jpg', 'Jan 10, 2024', '#7C3AED'],
+                ['file-image', 'NID Proof.jpg', 'Jan 10, 2024', '#2563EB'],
             ];
             return `
             <div class="stack-sm">
@@ -5030,7 +5253,7 @@ function screenTenantInviteSent() {
         <div class="card p-6 text-center">
             <div class="tenant-invite-icon"><i data-lucide="mail-check" class="w-8 h-8"></i></div>
             <p class="text-[14px] font-bold text-[#0F172A] mt-4">Invitation Sent!</p>
-            <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join as tenant at <strong>${p.name}</strong> (${invite.unit}).${invite.profilePending ? ' They will create their own profile and password.' : ''}${invite.reattachExisting ? ' Their existing login will attach to this tenancy.' : ''}</p>
+            <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">We emailed <strong>${invite.email}</strong> an invitation to join as tenant at <strong>${p.name}</strong> (${invite.unit}).${invite.profilePending ? ' They can create a login from the link, or use an account they already made.' : ''}${invite.reattachExisting ? ' Their existing login will attach to this flat — they cannot join without this link.' : ' Only this invitation link can add them as a flat member.'}</p>
         </div>
         <div class="card p-4 space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invitation Details</p>
@@ -5050,38 +5273,43 @@ function screenTenantInviteSent() {
 
 function screenEditTenant() {
     const t = TENANTS[STATE.tenantId];
-    if (!t) return `${topBar('Edit Tenant', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Tenant not found</p></div>`;
-    const hasNidProof = !!(t.nidProof || t.nidProofFront || (typeof getTenantNidProof === 'function' && getTenantNidProof(STATE.tenantId)));
-    const nidDraft = {
-        nidProofFrontName: t.nidProofFront || STATE.nidProofFrontName || '',
-        nidProofBackName: t.nidProofBack || STATE.nidProofBackName || '',
-        nidProofName: (!t.nidProofFront && !t.nidProofBack && t.nidProof) ? t.nidProof : '',
+    if (!t) return `${topBar('Tenant profile', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Tenant not found</p></div>`;
+    const list = TENANT_LIST[STATE.tenantId] || {};
+    const nidDoc = typeof getTenantNidProof === 'function' ? getTenantNidProof(STATE.tenantId) : null;
+    const formatDob = (dob) => {
+        if (!dob) return '—';
+        if (typeof formatDisplayDate === 'function') return formatDisplayDate(dob) || dob;
+        return dob;
     };
-    return `${topBar('Edit Tenant', { back: true })}
-    <div class="screen-content screen-content-sm profile-form-page screen-enter">
-        <div class="form-stack">
-        ${formField('Full Name', fullNameFromParts(t.firstName, t.lastName), 'text', 'e.g. Sarah Johnson', 'fullName')}
-        ${formField('Date of Birth', typeof toDateInputValue === 'function' ? toDateInputValue(t.dob) : (t.dob || ''), 'date', '', 'dob')}
-        ${formField('NID number', t.idNumber || '', 'text', 'National ID number', 'idNumber')}
+    const rows = [
+        ['Full name', fullNameFromParts(t.firstName, t.lastName)],
+        ['Date of birth', formatDob(t.dob)],
+        ['NID', t.idNumber || '—'],
+        ['Email', t.email || '—'],
+        ['Phone', t.phone || '—'],
+        ['Emergency contact', t.emergency && t.emergency !== '—' ? t.emergency : '—'],
+        ['Emergency phone', t.emergencyPhone && t.emergencyPhone !== '—' ? t.emergencyPhone : '—'],
+        ['Previous / home address', t.homeAddress || '—'],
+    ];
+    return `${topBar('Tenant profile', { back: true })}
+    <div class="screen-content screen-content-sm screen-enter">
+        <div class="ux-tip mb-3">
+            <p class="ux-tip-title">Read-only for landlords</p>
+            <p class="ux-tip-text">Personal details are owned by the tenant. They add and edit this from their own profile after accepting your invitation link. You manage lease, rent and deposit separately.</p>
         </div>
-        ${typeof renderNidProofUploadFields === 'function' ? renderNidProofUploadFields(nidDraft) : `
-        <div>
-            <label class="form-label">NID Document Proof</label>
-            <button type="button" data-action="upload-nid-proof" data-nid-side="front" class="card border-2 border-dashed border-[#E2E8F0] p-5 text-center w-full">
-                <i data-lucide="${hasNidProof ? 'file-check' : 'upload'}" class="w-7 h-7 text-[#94A3B8] mx-auto"></i>
-                <p class="text-[13px] font-semibold text-[#0F172A] mt-2">${hasNidProof ? (t.nidProof || 'NID proof on file') : 'Upload ID document'}</p>
-            </button>
-        </div>`}
-        <div class="form-stack">
-        ${formField('Email', t.email, 'email', '', 'email')}
-        ${formField('Phone', t.phone, 'tel', '', 'phone')}
-        ${formField('Emergency Contact', t.emergency && t.emergency !== '—' ? t.emergency : '', 'text', 'Name', 'emergency')}
-        ${formField('Emergency Phone', t.emergencyPhone && t.emergencyPhone !== '—' ? t.emergencyPhone : '', 'tel', 'Phone number', 'emergencyPhone')}
-        ${formField('Previous / home address', t.homeAddress || '', 'text', 'Last rented address (optional)', 'homeAddress')}
+        <div class="card p-4">
+            ${rows.map(([label, value]) => `
+            <div class="flex justify-between gap-3 py-2 border-b border-[#F1F5F9] last:border-0">
+                <span class="text-[12px] text-[#64748B]">${label}</span>
+                <span class="text-[13px] font-semibold text-[#0F172A] text-right">${typeof escapeHtml === 'function' ? escapeHtml(String(value)) : value}</span>
+            </div>`).join('')}
+            <div class="flex justify-between gap-3 py-2">
+                <span class="text-[12px] text-[#64748B]">NID document</span>
+                <span class="text-[13px] font-semibold text-[#0F172A]">${nidDoc ? nidDoc.name : 'Not uploaded'}</span>
+            </div>
         </div>
-        ${saveBtn('Save Tenant', 'Tenant details updated')}
-        ${(TENANT_LIST[STATE.tenantId] || {}).status === 'active' ? `
-        <button type="button" data-go="checkout-tenancy" data-tid="${STATE.tenantId}" class="btn-secondary w-full">Check-out tenant</button>` : ''}
+        ${list.status === 'active' ? `
+        <button type="button" data-go="checkout-tenancy" data-tid="${STATE.tenantId}" class="btn-secondary w-full mt-3">Check-out tenant</button>` : ''}
     </div>`;
 }
 
@@ -5598,7 +5826,11 @@ function handleAppClick(e) {
     if (tabEl && !tabEl.dataset.go) { e.preventDefault(); setTab(tabEl.dataset.tab); return; }
 
     const recordsViewEl = e.target.closest('[data-records-view]');
-    if (recordsViewEl) { e.preventDefault(); setRecordsView(recordsViewEl.dataset.recordsView); return; }
+    if (recordsViewEl && !recordsViewEl.dataset.go) {
+        e.preventDefault();
+        setRecordsView(recordsViewEl.dataset.recordsView);
+        return;
+    }
 
     const tenantFilterEl = e.target.closest('[data-tenant-filter]');
     if (tenantFilterEl) { e.preventDefault(); setTenantFilter(tenantFilterEl.dataset.tenantFilter); return; }
@@ -5795,6 +6027,12 @@ function bindEvents() {
     });
     app.querySelectorAll('[data-action="activate-tenant-account"]').forEach(el => {
         el.onclick = activateTenantAccount;
+    });
+    app.querySelectorAll('[data-action="accept-tenant-invite"]').forEach(el => {
+        el.onclick = () => acceptTenantInviteForLoggedInUser(el.dataset.token);
+    });
+    app.querySelectorAll('[data-action="open-invite-from-input"]').forEach(el => {
+        el.onclick = tryOpenInviteFromInput;
     });
     app.querySelectorAll('[data-action="tenant-sign-in"]').forEach(el => {
         el.onclick = () => { STATE.authRole = 'tenant'; go('sign-in'); };

@@ -26,7 +26,7 @@ const CONTRACTOR_JOBS = [
 const CONTRACTOR_NOTIFS = [
     { icon: 'briefcase', color: ['#FFEDD5', '#EA580C'], title: 'New job assigned', desc: 'Kitchen sink leaking — 12 Park Lane', time: '2h ago', unread: true },
     { icon: 'calendar', color: ['#EFF6FF', '#2563EB'], title: 'Visit reminder', desc: '45 Queens Road · Tomorrow 10:00 AM', time: '5h ago', unread: true },
-    { icon: 'message-square', color: ['#EEF2FF', '#4F46E5'], title: 'New message', desc: 'Sarah Johnson sent a message', time: '1d ago', unread: false },
+    { icon: 'message-square', color: ['#EFF6FF', '#2563EB'], title: 'New message', desc: 'Sarah Johnson sent a message', time: '1d ago', unread: false },
     { icon: 'file-check', color: ['#ECFDF5', '#059669'], title: 'Invoice approved', desc: 'INV-2025-1042 · £185', time: '2d ago', unread: false },
     { icon: 'banknote', color: ['#ECFDF5', '#059669'], title: 'Payment received', desc: '£185 deposited to your account', time: '3d ago', unread: false },
 ];
@@ -34,9 +34,9 @@ const CONTRACTOR_NOTIFS = [
 const CONTRACTOR_STATUS = {
     assigned: { label: 'Assigned', bg: '#FFEDD5', color: '#C2410C' },
     accepted: { label: 'Accepted', bg: '#DBEAFE', color: '#1D4ED8' },
-    scheduled: { label: 'Visit Scheduled', bg: '#E0E7FF', color: '#4338CA' },
+    scheduled: { label: 'Visit Scheduled', bg: '#DBEAFE', color: '#1D4ED8' },
     in_progress: { label: 'In Progress', bg: '#FEF3C7', color: '#D97706' },
-    waiting_approval: { label: 'Awaiting Review', bg: '#F3E8FF', color: '#7C3AED' },
+    waiting_approval: { label: 'Awaiting Review', bg: '#EFF6FF', color: '#2563EB' },
     approved: { label: 'Awaiting Payment', bg: '#DCFCE7', color: '#16A34A' },
     completed: { label: 'Completed', bg: '#D1FAE5', color: '#047857' },
     paid: { label: 'Paid', bg: '#ECFDF5', color: '#059669' },
@@ -197,7 +197,7 @@ const contractorJobCard = (job) => {
                 <div class="ctr-job-card-top">
                     <span class="ctr-job-status-badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
                     <span class="ctr-job-priority-badge" style="background:${pBg};color:${pColor}">${job.priority}</span>
-                    ${communal ? '<span class="ctr-job-priority-badge" style="background:#E0E7FF;color:#4338CA">Communal</span>' : ''}
+                    ${communal ? '<span class="ctr-job-priority-badge" style="background:#DBEAFE;color:#1D4ED8">Communal</span>' : ''}
                     ${mediaCount ? `<span class="ctr-job-media-badge"><i data-lucide="paperclip" class="w-3 h-3"></i>${mediaCount}</span>` : ''}
                 </div>
                 <p class="ctr-job-title">${job.issue}</p>
@@ -481,7 +481,7 @@ const CONTRACTOR_TRADE_CATALOG = [
     { id: 'heating', label: 'Heating & Gas', shortLabel: 'Heating engineer', icon: 'flame', color: '#EA580C', bg: '#FFF7ED', jobsFor: 'Boilers, radiators, gas safety, hot water', keywords: ['boiler', 'radiator', 'heat', 'gas', 'hot water', 'thermostat', 'central heating'] },
     { id: 'electrical', label: 'Electrical', shortLabel: 'Electrician', icon: 'zap', color: '#CA8A04', bg: '#FEF9C3', jobsFor: 'Lights, sockets, wiring, fuse boxes', keywords: ['light', 'electric', 'flicker', 'socket', 'fuse', 'wiring', 'switch', 'power'] },
     { id: 'general', label: 'General Maintenance', shortLabel: 'Handyman', icon: 'hammer', color: '#64748B', bg: '#F1F5F9', jobsFor: 'Repairs, fixtures, small jobs, odd jobs', keywords: ['window', 'door', 'lock', 'latch', 'fixture', 'general', 'repair', 'handle'] },
-    { id: 'roofing', label: 'Roofing', shortLabel: 'Roofer', icon: 'home', color: '#7C3AED', bg: '#F3E8FF', jobsFor: 'Roof leaks, tiles, gutters, chimneys', keywords: ['roof', 'gutter', 'tile', 'chimney', 'slate'] },
+    { id: 'roofing', label: 'Roofing', shortLabel: 'Roofer', icon: 'home', color: '#2563EB', bg: '#EFF6FF', jobsFor: 'Roof leaks, tiles, gutters, chimneys', keywords: ['roof', 'gutter', 'tile', 'chimney', 'slate'] },
     { id: 'carpentry', label: 'Carpentry', shortLabel: 'Carpenter', icon: 'ruler', color: '#B45309', bg: '#FFEDD5', jobsFor: 'Doors, floors, frames, built-in units', keywords: ['door', 'floor', 'wood', 'frame', 'cupboard', 'shelf', 'skirting'] },
     { id: 'painting', label: 'Painting & Decorating', shortLabel: 'Decorator', icon: 'paintbrush', color: '#DB2777', bg: '#FCE7F3', jobsFor: 'Paint, wallpaper, plaster touch-ups', keywords: ['paint', 'peel', 'wallpaper', 'decorat', 'plaster', 'wall', 'mould'] },
 ];
@@ -558,7 +558,7 @@ let CONTRACTOR_USER = {
 const CONTRACTOR_CERT_TYPES = [
     { type: 'gas_safe', label: 'Gas Safe Registration', icon: 'flame', color: '#EA580C', bg: '#FFF7ED' },
     { type: 'liability_insurance', label: 'Public Liability Insurance', icon: 'shield', color: '#2563EB', bg: '#EFF6FF' },
-    { type: 'trade_qualification', label: 'Trade Qualification', icon: 'award', color: '#7C3AED', bg: '#F3E8FF' },
+    { type: 'trade_qualification', label: 'Trade Qualification', icon: 'award', color: '#2563EB', bg: '#EFF6FF' },
     { type: 'other', label: 'Other Certificate', icon: 'file-text', color: '#64748B', bg: '#F1F5F9' },
 ];
 
@@ -1294,12 +1294,14 @@ function screenTenantInvite() {
         </div>`;
     }
     const activated = invite.status === 'activated';
+    const loggedIn = STATE.isAuthenticated && STATE.userRole === 'tenant' ? getActiveTenant() : null;
+    const emailMatch = loggedIn && String(loggedIn.email || '').toLowerCase() === String(invite.email || '').toLowerCase();
     return `
     <div class="auth-screen">
         <div class="auth-content" style="padding-top:32px">
             <div class="tenant-invite-icon"><i data-lucide="mail-check" class="w-8 h-8"></i></div>
             <h1 class="auth-heading">You're Invited!</h1>
-            <p class="auth-sub">${invite.landlord} invited you to join Landlord HQ as a tenant at <strong>${p.name}</strong>.</p>
+            <p class="auth-sub">${invite.landlord} invited you to join as a tenant at <strong>${p.name}</strong> (${invite.unit}).</p>
             <div class="card p-4 text-left" style="margin-top:20px">
                 <div class="flex items-center gap-3 mb-3">
                     <img src="${IMG.props[invite.propertyId]}" class="w-12 h-12 rounded-xl object-cover" alt="">
@@ -1314,15 +1316,18 @@ function screenTenantInvite() {
             ${invite.message ? `<div class="card p-4 text-left" style="margin-top:12px"><p class="text-[11px] font-bold text-[#64748B] uppercase">Message from landlord</p><p class="text-[13px] text-[#475569] mt-2 leading-relaxed">"${invite.message}"</p></div>` : ''}
             ${activated ? `
             <div class="card p-4 text-center" style="margin-top:16px;background:#ECFDF5;border-color:#BBF7D0">
-                <p class="text-[13px] font-semibold text-[#059669]">Account already activated</p>
+                <p class="text-[13px] font-semibold text-[#059669]">Invitation already accepted</p>
                 <p class="text-[12px] text-[#64748B] mt-1">Sign in with your email and password.</p>
             </div>
             <button type="button" data-action="tenant-sign-in" class="btn-auth btn-auth-primary" style="margin-top:20px;width:100%">Sign In</button>
+            ` : emailMatch ? `
+            <button type="button" data-action="accept-tenant-invite" data-token="${invite.token}" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Accept & join this flat</button>
+            <p class="auth-security-note" style="margin-top:16px"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Signed in as ${loggedIn.email}</p>
             ` : `
-            <button type="button" data-action="tenant-activate" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">Accept & Set Password</button>
-            <button type="button" data-action="tenant-sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Already activated? Sign In</button>
+            <button type="button" data-action="tenant-activate" class="btn-auth btn-auth-primary" style="margin-top:24px;width:100%">${invite.reattachExisting ? 'Sign in password & join flat' : 'Accept & create login'}</button>
+            <button type="button" data-action="tenant-sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px;width:100%">Already have an account? Sign In</button>
             `}
-            <p class="auth-security-note" style="margin-top:20px"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Tenant accounts require a landlord invitation</p>
+            <p class="auth-security-note" style="margin-top:20px"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Flat membership is invitation-only — only your landlord can send this link</p>
         </div>
     </div>`;
 }
@@ -1332,7 +1337,9 @@ function screenTenantActivate() {
     if (!invite) return screenTenantInvite();
     const pwType = STATE.showPassword ? 'text' : 'password';
     const confirmType = STATE.showConfirmPassword ? 'text' : 'password';
-    const needsProfile = !invite.reattachExisting;
+    const existing = TENANT_ACCOUNTS.find(a => a.email && a.email.toLowerCase() === String(invite.email || '').toLowerCase());
+    const needsProfile = !invite.reattachExisting && !existing;
+    const reattach = !!(invite.reattachExisting || existing);
     const prefName = [invite.firstName, invite.lastName].filter(n => n && n !== 'Invited' && n !== 'Tenant').join(' ');
     return `
     <div class="auth-screen">
@@ -1341,39 +1348,41 @@ function screenTenantActivate() {
             <div class="auth-icon-wrap" style="background:#DCFCE7">
                 <i data-lucide="user-plus" class="w-7 h-7 text-[#16A34A]"></i>
             </div>
-            <h1 class="auth-heading">${needsProfile ? 'Create your profile' : 'Activate Your Account'}</h1>
-            <p class="auth-sub">${needsProfile
-                ? `Complete your details for <strong>${invite.email}</strong>, then set a password. Each tenant gets their own login.`
-                : `Set a password for <strong>${invite.email}</strong> to access your tenant portal at ${PROPERTIES[invite.propertyId].name}.`}</p>
+            <h1 class="auth-heading">${reattach ? 'Join this flat' : 'Create your profile'}</h1>
+            <p class="auth-sub">${reattach
+                ? `Confirm your password for <strong>${invite.email}</strong> to join <strong>${invite.unit}</strong> at ${PROPERTIES[invite.propertyId]?.name || 'this property'}.`
+                : `Complete your details for <strong>${invite.email}</strong>, then set a password. This invitation is what links you to the flat.`}</p>
             <div class="auth-form">
                 ${needsProfile ? `
                 <div class="auth-field"><label>Full name</label><input type="text" data-tenant-fullname class="auth-input" placeholder="e.g. Sarah Johnson" value="${prefName}"></div>
                 <div class="auth-field"><label>Date of birth</label><input type="date" data-tenant-dob class="auth-input" value="${invite.dob || ''}"></div>
                 <div class="auth-field"><label>Mobile number</label><input type="tel" data-tenant-phone class="auth-input" placeholder="+44 7700 900000" value="${invite.phone || ''}"></div>` : ''}
                 <div class="auth-field">
-                    <label>Create password</label>
+                    <label>${reattach ? 'Your password' : 'Create password'}</label>
                     <div class="auth-input-wrap">
-                        <input type="${pwType}" data-tenant-password class="auth-input" placeholder="Enter password" style="padding-right:44px">
+                        <input type="${pwType}" data-tenant-password class="auth-input" placeholder="${reattach ? 'Enter your password' : 'Enter password'}" style="padding-right:44px">
                         <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
                     </div>
                 </div>
+                ${reattach ? '' : `
                 <div class="auth-field">
                     <label>Confirm password</label>
                     <div class="auth-input-wrap">
                         <input type="${confirmType}" data-tenant-confirm class="auth-input" placeholder="Re-enter password" style="padding-right:44px">
                         <button type="button" data-action="toggle-confirm-password" class="auth-input-toggle"><i data-lucide="${STATE.showConfirmPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
                     </div>
-                </div>
-                <button type="button" data-action="activate-tenant-account" class="btn-auth btn-auth-primary">Activate Account</button>
+                </div>`}
+                <button type="button" data-action="activate-tenant-account" class="btn-auth btn-auth-primary">${reattach ? 'Join flat' : 'Activate & join flat'}</button>
             </div>
-            <p class="auth-security-note"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Your account will be linked to ${invite.unit} at ${PROPERTIES[invite.propertyId].name}</p>
+            <p class="auth-security-note"><i data-lucide="lock" class="w-3.5 h-3.5"></i> You become a member of ${invite.unit} at ${PROPERTIES[invite.propertyId]?.name || 'this property'} only through this landlord invitation</p>
         </div>
     </div>`;
 }
 
 function screenTenantWelcome() {
     const t = getActiveTenant();
-    const p = t ? PROPERTIES[t.propertyId] : PROPERTIES[0];
+    const linked = typeof tenantHasPropertyLink === 'function' ? tenantHasPropertyLink(t) : !!(t?.propertyId != null && t?.unit);
+    const p = linked && t ? PROPERTIES[t.propertyId] : null;
     const name = t ? t.firstName : 'Tenant';
     return `
     <div class="auth-screen" style="padding-bottom:0">
@@ -1387,18 +1396,20 @@ function screenTenantWelcome() {
         <div class="auth-content" style="padding-top:0">
             <button type="button" data-action="enter-app" class="portal-card portal-card-tenant">
                 <p class="portal-card-title">Tenant Portal</p>
-                <p class="portal-card-sub">${p.name} · ${t?.unit || 'Your unit'}</p>
+                <p class="portal-card-sub">${linked && p ? `${p.name} · ${t.unit}` : 'Waiting for landlord invitation'}</p>
                 <i data-lucide="home" class="portal-card-icon w-20 h-20"></i>
             </button>
             <div class="card p-4 text-left">
-                <p class="text-[13px] font-semibold text-[#0F172A]">You're all set</p>
-                <p class="text-[12px] text-[#64748B] mt-2 leading-relaxed">Your account is linked to ${p.name}. Report maintenance issues, view documents, and message your landlord from the portal.</p>
+                <p class="text-[13px] font-semibold text-[#0F172A]">${linked ? "You're all set" : 'Account ready — invite needed'}</p>
+                <p class="text-[12px] text-[#64748B] mt-2 leading-relaxed">${linked && p
+                    ? `Your account is linked to ${p.name}. Report maintenance, view documents, and message your landlord from the portal.`
+                    : 'You can sign in anytime. You cannot join a flat until your landlord emails you an invitation link — only they can add you as a member.'}</p>
             </div>
         </div>
         <div class="welcome-nav">
             <button type="button" data-action="enter-app" class="welcome-nav-btn active"><i data-lucide="home" class="w-5 h-5"></i>Home</button>
-            <button type="button" data-go="log-maintenance" class="welcome-nav-btn"><i data-lucide="wrench" class="w-5 h-5"></i>Issues</button>
-            <button type="button" data-go="messages" class="welcome-nav-btn"><i data-lucide="message-square" class="w-5 h-5"></i>Messages</button>
+            <button type="button" data-go="${linked ? 'log-maintenance' : 'tenant-dashboard'}" class="welcome-nav-btn"><i data-lucide="wrench" class="w-5 h-5"></i>Issues</button>
+            <button type="button" data-go="${linked ? 'messages' : 'tenant-dashboard'}" class="welcome-nav-btn"><i data-lucide="message-square" class="w-5 h-5"></i>Messages</button>
             <button type="button" data-action="logout" class="welcome-nav-btn"><i data-lucide="log-out" class="w-5 h-5"></i>Sign Out</button>
         </div>
     </div>`;
@@ -1410,7 +1421,8 @@ function tenantDashboardHeader(t, p) {
     const greeting = typeof dashGreeting === 'function' ? dashGreeting() : 'Good morning';
     const unread = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const sub = p ? `${p.name} · ${t.unit || 'Your unit'}` : (typeof dashDateLabel === 'function' ? dashDateLabel() : '');
+    const linked = p && t?.unit;
+    const sub = linked ? `${p.name} · ${t.unit || 'Your unit'}` : 'Not linked to a flat yet';
     return `
 <div class="screen-header dash-header">
     <div class="dash-header-top">
@@ -1570,10 +1582,45 @@ function screenTenantDashboard() {
         return `${topBar('Tenant Portal', { hideBell: true })}
         <div class="screen-content screen-enter">
             <div class="empty-state card">
-                <i data-lucide="mail" class="w-10 h-10 text-[#16A34A]"></i>
-                <p class="empty-state-title">Invitation required</p>
-                <p class="empty-state-desc">Tenant accounts are created by your landlord. Open the invitation link from your email to activate your account.</p>
+                <i data-lucide="user-plus" class="w-10 h-10 text-[#16A34A]"></i>
+                <p class="empty-state-title">Create or sign in</p>
+                <p class="empty-state-desc">Create a tenant account anytime. Joining a flat still requires your landlord’s invitation link.</p>
+                <button type="button" data-go="sign-up" class="btn-primary w-full py-3 text-[13px] mt-3">Create account</button>
+                <button type="button" data-go="sign-in" class="btn-secondary w-full py-3 text-[13px] mt-2">Sign in</button>
             </div>
+        </div>`;
+    }
+    const linked = typeof tenantHasPropertyLink === 'function' ? tenantHasPropertyLink(t) : !!(t.propertyId != null && t.unit);
+    if (!linked) {
+        const pending = typeof pendingInvitesForTenantEmail === 'function'
+            ? pendingInvitesForTenantEmail(t.email)
+            : [];
+        return `${tenantDashboardHeader(t, null)}
+        <div class="screen-content screen-enter">
+            <div class="empty-state card">
+                <i data-lucide="mail" class="w-10 h-10 text-[#16A34A]"></i>
+                <p class="empty-state-title">Waiting for landlord invitation</p>
+                <p class="empty-state-desc">Your account is ready, but you are not a flat member yet. Only your landlord can send the invitation link that adds you to a property.</p>
+            </div>
+            ${pending.length ? `
+            <p class="screen-section-title mt-4">Invitations for ${(typeof escapeHtml === 'function' ? escapeHtml(t.email) : t.email)}</p>
+            <div class="stack-sm">
+                ${pending.map(inv => {
+                    const prop = PROPERTIES[inv.propertyId];
+                    return `
+                <div class="card p-4">
+                    <p class="text-[14px] font-semibold text-[#0F172A]">${prop?.name || 'Property'} · ${inv.unit}</p>
+                    <p class="text-[12px] text-[#64748B] mt-1">From ${inv.landlord || 'your landlord'} · ${inv.sentAt || 'Pending'}</p>
+                    <button type="button" data-action="accept-tenant-invite" data-token="${inv.token}" class="btn-primary w-full py-3 text-[13px] mt-3">Accept & join flat</button>
+                </div>`;
+                }).join('')}
+            </div>` : `
+            <div class="card p-4 mt-3">
+                <p class="text-[13px] font-semibold text-[#0F172A]">Have an invite link?</p>
+                <p class="text-[12px] text-[#64748B] mt-1 mb-3">Paste the link or code from your landlord’s email.</p>
+                <input type="text" data-tenant-invite-code class="form-input mb-2" placeholder="Invite link or INV-XXXXXX">
+                <button type="button" data-action="open-invite-from-input" class="btn-secondary w-full py-3 text-[13px]">Open invitation</button>
+            </div>`}
         </div>`;
     }
     const p = PROPERTIES[t.propertyId];
@@ -1713,7 +1760,7 @@ function screenTenantAnnouncements() {
             ${a.image ? `<img src="${a.image}" alt="" class="tnt-announce-thumb">` : ''}
             <div class="tnt-announce-head">
                 <p class="tnt-announce-title">${esc(a.title)}</p>
-                <span class="badge bg-[#F5F3FF] text-[#7C3AED]">${audienceLabel(a)}</span>
+                <span class="badge bg-[#EFF6FF] text-[#2563EB]">${audienceLabel(a)}</span>
             </div>
             <p class="tnt-announce-body">${esc(a.body.length > 100 ? `${a.body.slice(0, 100)}…` : a.body)}</p>
             <p class="tnt-announce-meta"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(a.date)} · ${esc(a.from)}</p>
@@ -2005,7 +2052,7 @@ function screenTenantContact() {
     <div class="screen-content screen-enter stack-sm">
         ${typeof renderTenantContactCard === 'function' ? renderTenantContactCard(tid, { actions: false }) : ''}
         ${typeof renderTenantPersonalIdCard === 'function' ? renderTenantPersonalIdCard(tid, { showPreviousAddress: true, viewDocs: true }) : ''}
-        <button type="button" data-go="tenant-edit-profile" class="btn-secondary w-full py-3 text-[13px]">Edit contact details</button>
+        <button type="button" data-go="tenant-edit-profile" class="btn-secondary w-full py-3 text-[13px]">Edit my profile</button>
         ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="btn-primary w-full py-3 text-[13px]">Message landlord</button>` : ''}
     </div>`;
 }
@@ -2278,23 +2325,30 @@ function screenTenantEditProfile() {
         <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenant account.</p></div>`;
     }
     const photo = typeof getTenantProfilePhoto === 'function' && tid != null ? getTenantProfilePhoto(tid) : IMG.avatar.sarah;
+    const nidDraft = {
+        nidProofFrontName: rec?.nidProofFront || STATE.nidProofFrontName || '',
+        nidProofBackName: rec?.nidProofBack || STATE.nidProofBackName || '',
+        nidProofName: (!rec?.nidProofFront && !rec?.nidProofBack && rec?.nidProof) ? rec.nidProof : (STATE.nidProofName || ''),
+    };
     return `${topBar('Personal Information', { back: true })}
     <div class="screen-content screen-content-sm profile-form-page screen-enter">
         ${typeof renderProfilePhotoPicker === 'function' ? renderProfilePhotoPicker(photo, 'profilePhoto', IMG.avatar.sarah) : ''}
-        <p class="text-[13px] text-[#64748B]">Update contact details. Lease and deposit are managed by your landlord.</p>
+        <div class="ux-tip mb-3">
+            <p class="ux-tip-title">Your details</p>
+            <p class="ux-tip-text">You own this profile. Your landlord cannot edit these fields — they only invite you by email and manage the lease.</p>
+        </div>
         <div class="form-stack">
         ${formField('Full Name', typeof fullNameFromParts === 'function' ? fullNameFromParts(rec?.firstName || t.firstName, rec?.lastName || t.lastName) : `${rec?.firstName || t.firstName} ${rec?.lastName || t.lastName}`.trim(), 'text', 'e.g. Sarah Johnson', 'fullName')}
+        ${formField('Date of Birth', typeof toDateInputValue === 'function' ? toDateInputValue(rec?.dob || t.dob) : (rec?.dob || t.dob || ''), 'date', '', 'dob')}
+        ${formField('NID number', rec?.idNumber || '', 'text', 'National ID number', 'idNumber')}
+        </div>
+        ${typeof renderNidProofUploadFields === 'function' ? renderNidProofUploadFields(nidDraft) : ''}
+        <div class="form-stack">
         ${formField('Email', rec?.email || t.email, 'email', '', 'email')}
         ${formField('Phone', t.phone || rec?.phone || '', 'tel', '', 'phone')}
         ${formField('Emergency contact', rec?.emergency && rec.emergency !== '—' ? rec.emergency : '', 'text', 'Full name', 'emergency')}
         ${formField('Emergency phone', rec?.emergencyPhone && rec.emergencyPhone !== '—' ? rec.emergencyPhone : '', 'tel', '+44 7700 900000', 'emergencyPhone')}
-        </div>
-        <div class="card p-4 bg-[#F8FAFC]">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">On file with landlord</p>
-            <div class="grid grid-cols-2 gap-3 mt-2">
-                <div><p class="text-[11px] text-[#94A3B8]">Date of birth</p><p class="text-[13px] font-semibold text-[#0F172A]">${typeof formatTenantDob === 'function' ? formatTenantDob(rec?.dob) : (rec?.dob || '—')}</p></div>
-                <div><p class="text-[11px] text-[#94A3B8]">NID</p><p class="text-[13px] font-semibold text-[#0F172A]">${rec?.idNumber || '—'}</p></div>
-            </div>
+        ${formField('Previous / home address', rec?.homeAddress || '', 'text', 'Optional', 'homeAddress')}
         </div>
         ${saveBtn('Save Changes', 'Profile updated')}
         <button type="button" data-action="back" class="btn-secondary w-full py-3 text-[13px] mt-2">Cancel</button>

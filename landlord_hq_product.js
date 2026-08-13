@@ -7,7 +7,7 @@ const DOC_FOLDER_DEFS = [
     { id: 'deposit', label: 'Deposit Certificate', icon: 'shield', color: '#2563EB', bg: '#DBEAFE', match: d => d.type === 'Deposit Certificate' || /deposit protection/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', match: d => d.type === 'Property Licence' || /property\s*licence|property\s*license|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'fire', label: 'Fire Safety', icon: 'flame-kindling', color: '#EA580C', bg: '#FFEDD5', match: d => /fire|smoke|alarm/i.test(`${d.name || ''} ${d.type || ''}`) },
-    { id: 'insurance', label: 'Insurance', icon: 'shield-check', color: '#4338CA', bg: '#EEF2FF', match: d => /insurance/i.test(d.name || d.type || '') },
+    { id: 'insurance', label: 'Insurance', icon: 'shield-check', color: '#1D4ED8', bg: '#EFF6FF', match: d => /insurance/i.test(d.name || d.type || '') },
     { id: 'custom', label: 'Other files', icon: 'folder', color: '#64748B', bg: '#F1F5F9', match: () => false },
 ];
 
@@ -100,14 +100,15 @@ function statusMark(tone, opts = {}) {
         ok: { icon: 'circle-check', label: 'Valid' },
         warn: { icon: 'clock', label: 'Due soon' },
         bad: { icon: 'circle-x', label: 'Action needed' },
-        muted: { icon: 'circle-dashed', label: 'Pending' },
+        muted: { icon: 'circle-dashed', label: 'Archive' },
     };
     const t = map[tone] || map.muted;
     const label = opts.label != null ? opts.label : t.label;
     const size = opts.size || 'md';
-    return `<span class="status-mark status-mark--${tone || 'muted'} status-mark--${size}" title="${typeof escapeHtml === 'function' ? escapeHtml(label) : label}" role="img" aria-label="${typeof escapeHtml === 'function' ? escapeHtml(label) : label}">
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => String(s ?? '');
+    return `<span class="status-mark status-mark--${tone || 'muted'} status-mark--${size}" title="${esc(label)}" role="img" aria-label="${esc(label)}">
         <i data-lucide="${t.icon}"></i>
-        ${opts.showLabel ? `<span class="status-mark-label">${typeof escapeHtml === 'function' ? escapeHtml(label) : label}</span>` : ''}
+        ${opts.showLabel ? `<span class="status-mark-label">${esc(label)}</span>` : ''}
     </span>`;
 }
 
@@ -357,7 +358,6 @@ function screenDocFolderView() {
     const fileRows = (list, { markCurrent } = {}) => list.map(doc => {
         const visual = typeof documentRowVisual === 'function' ? documentRowVisual(doc) : { icon: 'file-text' };
         const label = docDisplayFileName(doc);
-        const year = docYearFromDate(doc.date);
         const isCur = markCurrent && currentDoc && doc.id === currentDoc.id;
         const subParts = [docFileSizeLabel(doc), doc.date || '—'];
         if (doc.fromContractor) subParts.push('Filed by contractor');
@@ -366,12 +366,15 @@ function screenDocFolderView() {
         return `
         <button type="button" data-go="document-preview" data-doc="${doc.id}" class="doc-file-row w-full text-left${isCur ? ' doc-file-row--current' : ''}">
             <span class="doc-file-row-icon" style="background:${folder.bg};color:${folder.color}"><i data-lucide="${visual.icon}" class="w-4 h-4"></i></span>
-            <span class="doc-file-row-body min-w-0 flex-1">
-                <span class="doc-file-row-name">${escapeHtml(label)}${isCur ? ' <span class="doc-current-pill">Current</span>' : ''}</span>
+            <span class="doc-file-row-body">
+                <span class="doc-file-row-title">
+                    <span class="doc-file-row-name">${escapeHtml(label)}</span>
+                    ${isCur ? '<span class="doc-current-pill">Current</span>' : ''}
+                </span>
                 <span class="doc-file-row-sub">${escapeHtml(sub)}</span>
             </span>
-            ${isCertFolder ? statusMark(isCur ? st.tone : 'muted', { label: isCur ? st.label : year }) : ''}
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            ${isCertFolder ? statusMark(isCur ? st.tone : 'muted', { label: isCur ? st.label : 'Archive', size: 'sm' }) : ''}
+            <i data-lucide="chevron-right" class="w-4 h-4 doc-file-row-chevron"></i>
         </button>`;
     }).join('');
     return `
@@ -379,51 +382,56 @@ function screenDocFolderView() {
         ${topBar(folder.label, { back: true })}
         <div class="screen-content screen-content-sm doc-folder-page-body">
             ${isCertFolder ? `
-            <div class="cert-folder-status card cert-folder-status--${st.tone}">
-                ${statusMark(st.tone, { size: 'lg' })}
-                <div class="cert-folder-status-body">
-                    <p class="cert-folder-status-title">${escapeHtml(st.label)}</p>
-                    <p class="cert-folder-status-sub">${currentDoc ? `Current file: ${escapeHtml(docDisplayFileName(currentDoc))}` : 'No current certificate on file'}</p>
+            <section class="cert-folder-hero card cert-folder-hero--${st.tone}">
+                <div class="cert-folder-hero-top">
+                    ${statusMark(st.tone, { size: 'lg' })}
+                    <div class="cert-folder-hero-copy">
+                        <p class="cert-folder-hero-eyebrow">Status</p>
+                        <h2 class="cert-folder-hero-title">${escapeHtml(st.label)}</h2>
+                        <p class="cert-folder-hero-sub">${currentDoc
+                            ? escapeHtml(docDisplayFileName(currentDoc))
+                            : 'No current certificate on file'}</p>
+                    </div>
                 </div>
-            </div>
-            ${statusLegendRow()}
-            ${pending ? `
-            <div class="cert-request-banner card">
-                ${statusMark('warn', { size: 'md' })}
-                <div>
-                    <p class="cert-request-title">Awaiting contractor upload</p>
-                    <p class="cert-request-sub">Sent to ${escapeHtml(pending.contractor || 'contractor')} · ${escapeHtml(pending.requestedAt || '')}. When they upload, it auto-files here and becomes Current.</p>
+                <div class="cert-folder-actions">
+                    ${renderDocFolderUploadBtn(folderId, propertyId, 'Upload certificate')}
+                    ${pending ? `
+                    <div class="cert-request-banner">
+                        ${statusMark('warn', { size: 'sm' })}
+                        <div class="cert-request-copy">
+                            <p class="cert-request-title">Awaiting contractor</p>
+                            <p class="cert-request-sub">${escapeHtml(pending.contractor || 'Contractor')} · ${escapeHtml(pending.requestedAt || 'Pending')}</p>
+                        </div>
+                    </div>` : `
+                    <button type="button" data-action="request-cert-contractor" data-folder="${folderId}" data-pid="${propertyId}" class="cert-request-cta">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>Request from contractor</span>
+                    </button>`}
                 </div>
-            </div>` : `
-            <button type="button" data-action="request-cert-contractor" data-folder="${folderId}" data-pid="${propertyId}" class="btn-secondary w-full py-3 text-[13px] cert-request-cta">
-                <i data-lucide="send" class="w-4 h-4 inline-block mr-1"></i>Request from contractor
-            </button>`}
-            <div class="cert-flow-mock card">
-                <p class="cert-flow-mock-title">How auto-file works</p>
-                <ol class="cert-flow-steps">
-                    <li><span class="cert-flow-n">1</span> You request or assign a job</li>
-                    <li><span class="cert-flow-n">2</span> Contractor uploads the certificate</li>
-                    <li><span class="cert-flow-n">3</span> File lands in this folder · old stays in history</li>
-                </ol>
-            </div>` : ''}
+                <p class="cert-folder-hint">Contractor uploads auto-file here. New files become Current; older ones move to history.</p>
+            </section>` : `
+            ${renderDocFolderUploadBtn(folderId, propertyId)}`}
             <div class="search-bar doc-folder-search">
                 <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
                 <input data-doc-search="${contextKey}" type="text" value="${STATE.docSearch?.[contextKey] || ''}" placeholder="Search files…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
             </div>
-            ${renderDocFolderUploadBtn(folderId, propertyId)}
             ${files.length ? `
             ${isCertFolder && currentDoc ? `
-            <p class="screen-section-title">Current certificate</p>
-            <div class="card doc-file-list">${fileRows([currentDoc], { markCurrent: true })}</div>
+            <section class="cert-folder-section">
+                <h3 class="cert-folder-section-title">Current certificate</h3>
+                <div class="card doc-file-list">${fileRows([currentDoc], { markCurrent: true })}</div>
+            </section>
             ${historyDocs.length ? `
-            <p class="screen-section-title">Certificate history</p>
-            <p class="cert-history-hint">Previous years stay on file. New uploads become Current; older files move here.</p>
-            <div class="card doc-file-list">${fileRows(historyDocs)}</div>` : ''}` : `
+            <section class="cert-folder-section">
+                <h3 class="cert-folder-section-title">Certificate history</h3>
+                <p class="cert-folder-section-sub">Previous years stay on file for audits and renewals.</p>
+                <div class="card doc-file-list">${fileRows(historyDocs)}</div>
+            </section>` : ''}` : `
             <div class="card doc-file-list">${fileRows(files, { markCurrent: isCertFolder })}</div>`}` : `
             <div class="records-docs-empty card">
                 <i data-lucide="file-text" class="w-8 h-8 text-[#CBD5E1]"></i>
                 <p class="records-docs-empty-title">No files yet</p>
-                <p class="records-docs-empty-sub">Tap upload above to add ${folder.label.toLowerCase()} for this property.</p>
+                <p class="records-docs-empty-sub">Upload a ${escapeHtml(folder.label.replace(/s$/, '').toLowerCase())} for this property.</p>
             </div>`}
         </div>
     </div>`;
@@ -689,7 +697,7 @@ function paymentStatusBadge(inv) {
         Paid: ['#DCFCE7', '#16A34A'],
         Overdue: ['#FEE2E2', '#DC2626'],
         Pending: ['#FEF3C7', '#D97706'],
-        Partial: ['#E0E7FF', '#4338CA'],
+        Partial: ['#DBEAFE', '#1D4ED8'],
     };
     const [bg, color] = map[inv.status] || map.Pending;
     const mode = inv.paymentMode || (inv.type === 'rent' ? 'individual' : 'offline');
@@ -1291,6 +1299,16 @@ function saveCertificateAssign() {
             const meta = AppStore.meta(pid);
             if (!meta.info) meta.info = {};
             meta.info.epcExpiry = expiryDate;
+        }
+        if (typeDef.complianceId === 5) {
+            const meta = AppStore.meta(pid);
+            if (!meta.info) meta.info = {};
+            meta.info.insuranceExpiry = expiryDate;
+        }
+        if (typeDef.complianceId === 6) {
+            const meta = AppStore.meta(pid);
+            if (!meta.info) meta.info = {};
+            meta.info.mortgageRenewal = expiryDate;
         }
         const p = PROPERTIES[pid];
         if (p) p.compliance = true;
