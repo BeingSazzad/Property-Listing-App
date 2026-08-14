@@ -270,9 +270,9 @@ function contractorAccountByEmail(email) {
 }
 
 function signInSubtitle() {
-    if (STATE.authRole === 'tenant') return 'Enter the tenant portal — demo ready, no password check';
-    if (STATE.authRole === 'contractor') return 'Sign in to your contractor workspace';
-    return 'Sign in with your landlord email and password';
+    if (STATE.authRole === 'tenant') return 'Prototype — no password check, enter the tenant demo';
+    if (STATE.authRole === 'contractor') return 'Prototype — no password check, enter the contractor demo';
+    return 'Prototype — no password check, enter the landlord demo';
 }
 
 function authDemoCard() {
@@ -296,7 +296,6 @@ function authDemoCard() {
 
 function roleContinueLabel() {
     const role = AUTH_ROLES.find(r => r.id === (STATE.authRole || 'landlord'));
-    if (STATE.authRole === 'tenant') return 'Enter as Tenant';
     return role ? `Enter as ${role.title}` : 'Enter app';
 }
 
@@ -312,6 +311,7 @@ function completeDemoLogin(role) {
     STATE.authRole = role;
     STATE.showPassword = false;
     if (role === 'landlord') {
+        loadLandlordAccounts();
         const account = landlordAccountByEmail(demo.email);
         if (!account) {
             toast('Demo landlord account not found');
@@ -358,7 +358,11 @@ function demoLogin(role) {
 }
 
 const tenantInviteByToken = (token) => TENANT_INVITATIONS.find(i => i.token === token);
-const tenantAccountByEmail = (email) => TENANT_ACCOUNTS.find(a => a.email.toLowerCase() === email.toLowerCase());
+const tenantAccountByEmail = (email) => {
+    if (!email) return null;
+    const key = String(email).toLowerCase();
+    return TENANT_ACCOUNTS.find(a => a.email && a.email.toLowerCase() === key);
+};
 const getActiveTenant = () => {
     if (STATE.activeTenantId != null) {
         const match = TENANT_ACCOUNTS.find(a => a.id === STATE.activeTenantId || String(a.id) === String(STATE.activeTenantId));
@@ -384,7 +388,14 @@ const getActiveTenant = () => {
 /** Tenant may have an account but is not a flat member until a landlord invite is accepted. */
 function tenantHasPropertyLink(account = getActiveTenant()) {
     if (!account) return false;
-    return account.propertyId != null && account.propertyId !== '' && !!account.unit;
+    if (account.propertyId != null && account.propertyId !== '' && account.unit) return true;
+    // Prototype: never strand a tenant without a demo flat
+    account.propertyId = account.propertyId != null && account.propertyId !== '' ? account.propertyId : 0;
+    account.unit = account.unit || 'Flat 2A';
+    account.landlord = account.landlord || 'John Smith';
+    account.awaitingInvite = false;
+    if (typeof saveTenantData === 'function') saveTenantData();
+    return true;
 }
 
 function pendingInvitesForTenantEmail(email) {
@@ -907,9 +918,9 @@ function saveAuthSession() {
 }
 
 const AUTH_ROLES = [
-    { id: 'landlord', title: 'Landlord', desc: 'Manage properties & tenants', icon: 'home', color: '#2563EB', bg: '#EFF6FF' },
-    { id: 'tenant', title: 'Tenant', desc: 'Rent, issues & documents — demo ready', icon: 'user', color: '#16A34A', bg: '#DCFCE7' },
-    { id: 'contractor', title: 'Contractor', desc: 'Receive & complete jobs', icon: 'wrench', color: '#EA580C', bg: '#FFEDD5' },
+    { id: 'landlord', title: 'Landlord', desc: 'Manage properties & tenants — tap to explore', icon: 'home', color: '#2563EB', bg: '#EFF6FF' },
+    { id: 'tenant', title: 'Tenant', desc: 'Rent, issues & documents — tap to explore', icon: 'user', color: '#16A34A', bg: '#DCFCE7' },
+    { id: 'contractor', title: 'Contractor', desc: 'Receive & complete jobs — tap to explore', icon: 'wrench', color: '#EA580C', bg: '#FFEDD5' },
 ];
 
 const SELECTABLE_ROLES = AUTH_ROLES;
@@ -939,51 +950,8 @@ function skipOnboarding() {
 }
 
 function signIn() {
-    const role = STATE.authRole || 'landlord';
-    // Prototype tenant login: no email/password validation — enter demo tenant portal
-    if (role === 'tenant') {
-        demoLogin('tenant');
-        return;
-    }
-    const email = document.querySelector('[data-signin-email]')?.value?.trim().toLowerCase() || '';
-    const password = document.querySelector('[data-signin-password]')?.value || '';
-    if (!email || !password) {
-        toastError('Enter email and password');
-        return;
-    }
-    if (!isValidEmail(email)) {
-        toastError('Enter a valid email address');
-        return;
-    }
-    let account = null;
-    if (role === 'landlord') {
-        loadLandlordAccounts();
-        account = landlordAccountByEmail(email);
-    } else if (role === 'contractor') {
-        loadContractorAccounts();
-        account = contractorAccountByEmail(email);
-        if (account && typeof setActiveContractorProfile === 'function') setActiveContractorProfile(account);
-        if (account && typeof syncContractorUserToDirectory === 'function') syncContractorUserToDirectory();
-    }
-    if (!account || account.password !== password) {
-        toastError('Invalid email or password');
-        return;
-    }
-    if (role === 'landlord') {
-        LANDLORD_USER.firstName = account.firstName;
-        LANDLORD_USER.lastName = account.lastName;
-        LANDLORD_USER.email = account.email;
-        if (typeof AppStore !== 'undefined') AppStore.save();
-    }
-    clearNavStack();
-    STATE.isAuthenticated = true;
-    STATE.userRole = role;
-    STATE.showPassword = false;
-    saveAuthSession();
-    go(getRoleHome());
-    const name = role === 'landlord' ? LANDLORD_USER.firstName
-        : account.firstName || 'Mike';
-    setTimeout(() => toast(`Welcome back, ${name}!`), 50);
+    // Prototype: skip email/password checks so all 3 roles can explore
+    demoLogin(STATE.authRole || 'landlord');
 }
 
 function markMaintComplete() {
@@ -998,173 +966,14 @@ function markMaintComplete() {
 }
 
 function completeSignup() {
-    if (STATE.authRole === 'tenant' && STATE.signupDraft) {
-        loadTenantData();
-        const d = STATE.signupDraft;
-        if (tenantAccountByEmail(d.email)) {
-            toastError('This email is already registered. Sign in instead.');
-            go('sign-in');
-            return;
-        }
-        const nextId = TENANT_ACCOUNTS.length
-            ? Math.max(...TENANT_ACCOUNTS.map(a => a.id)) + 1
-            : 0;
-        const account = {
-            id: nextId,
-            inviteToken: null,
-            firstName: d.firstName,
-            lastName: d.lastName,
-            email: d.email,
-            phone: d.phone || '',
-            propertyId: null,
-            unit: null,
-            rent: null,
-            leaseStart: null,
-            leaseEnd: null,
-            landlord: null,
-            password: d.password,
-            awaitingInvite: true,
-        };
-        TENANT_ACCOUNTS.push(account);
-        saveTenantData();
-        STATE.signupDraft = null;
-        STATE.signupEmail = '';
-        STATE.isAuthenticated = true;
-        STATE.userRole = 'tenant';
-        STATE.authRole = 'tenant';
-        STATE.activeTenantId = account.id;
-        STATE.otpDigits = [];
-        saveAuthSession();
-        go('tenant-welcome');
-        setTimeout(() => toast('Account created — wait for your landlord’s invitation to join a flat'), 50);
-        return;
-    }
-    if (STATE.authRole === 'tenant') {
-        // Prototype: skip create-account wall — enter demo tenant
-        demoLogin('tenant');
-        return;
-    }
-    if (STATE.authRole === 'landlord' && STATE.signupDraft) {
-        const d = STATE.signupDraft;
-        LANDLORD_ACCOUNTS.push({
-            id: LANDLORD_ACCOUNTS.length,
-            firstName: d.firstName,
-            lastName: d.lastName,
-            email: d.email,
-            password: d.password,
-        });
-        saveLandlordAccounts();
-        LANDLORD_USER.firstName = d.firstName;
-        LANDLORD_USER.lastName = d.lastName;
-        LANDLORD_USER.email = d.email;
-        if (typeof AppStore !== 'undefined') AppStore.save();
-        STATE.signupDraft = null;
-        STATE.signupEmail = '';
-    }
-    if (STATE.authRole === 'contractor' && STATE.signupDraft) {
-        loadContractorAccounts();
-        const d = STATE.signupDraft;
-        if (contractorAccountByEmail(d.email)) {
-            toastError('This email is already registered');
-            go('sign-in');
-            return;
-        }
-        const account = {
-            id: CONTRACTOR_ACCOUNTS.length,
-            firstName: d.firstName,
-            lastName: d.lastName,
-            email: d.email,
-            phone: d.phone || '',
-            company: d.company,
-            tradeId: d.tradeId,
-            trade: d.trade,
-            category: d.category,
-            jobsFor: d.jobsFor,
-            companyReg: d.companyReg || '',
-            vatNumber: d.vatNumber || '',
-            gasSafe: !!d.gasSafe,
-            liabilityInsurance: !!d.liabilityInsurance,
-            certificates: [],
-            password: d.password,
-        };
-        CONTRACTOR_ACCOUNTS.push(account);
-        saveContractorAccounts();
-        if (typeof registerContractorFromSignup === 'function') registerContractorFromSignup(account);
-        if (typeof setActiveContractorProfile === 'function') setActiveContractorProfile(account);
-        if (typeof syncContractorUserToDirectory === 'function') syncContractorUserToDirectory();
-        STATE.signupDraft = null;
-        STATE.signupEmail = '';
-        STATE.contractorSignupDraft = null;
-        STATE.contractorSignupStep = 1;
-        STATE.contractorInviteContext = false;
-    }
-    STATE.isAuthenticated = true;
-    STATE.userRole = STATE.authRole;
-    STATE.otpDigits = [];
-    saveAuthSession();
-    go(getRoleWelcome());
+    // Prototype: skip OTP / account creation checks
+    demoLogin(STATE.authRole || 'landlord');
 }
 
+
 function startLandlordSignup() {
-    const firstName = document.querySelector('[data-signup-first]')?.value?.trim() || '';
-    const lastName = document.querySelector('[data-signup-last]')?.value?.trim() || '';
-    const email = document.querySelector('[data-signup-email]')?.value?.trim() || '';
-    const password = document.querySelector('[data-signup-password]')?.value || '';
-    const confirm = document.querySelector('[data-signup-confirm]')?.value || '';
-    if (!firstName) {
-        toast('Enter your first name');
-        return;
-    }
-    if (!lastName) {
-        toast('Enter your last name');
-        return;
-    }
-    if (!isValidEmail(email)) {
-        toast('Enter a valid email address');
-        return;
-    }
-    const role = STATE.authRole || 'landlord';
-    if (role === 'tenant') {
-        loadTenantData();
-        if (tenantAccountByEmail(email)) {
-            toast('This email is already registered. Sign in instead.');
-            return;
-        }
-    } else if (role === 'landlord') {
-        if (landlordAccountByEmail(email)) {
-            toast('This email is already registered. Sign in instead.');
-            return;
-        }
-    } else if (role === 'contractor') {
-        loadContractorAccounts();
-        if (contractorAccountByEmail(email)) {
-            toast('This email is already registered. Sign in instead.');
-            return;
-        }
-    }
-    if (password.length < 8) {
-        toast('Password must be at least 8 characters');
-        return;
-    }
-    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-        toast('Include an uppercase letter and a number');
-        return;
-    }
-    if (password !== confirm) {
-        toast('Passwords do not match');
-        return;
-    }
-    STATE.signupDraft = {
-        firstName,
-        lastName,
-        email,
-        password,
-    };
-    STATE.signupEmail = email;
-    STATE.otpContext = 'signup';
-    STATE.otpDigits = [];
-    go('verify-otp');
-    setTimeout(() => toast(`Verification code sent to ${email}`), 50);
+    // Prototype: Create Account has no validation / OTP — enter the selected role demo
+    demoLogin(STATE.authRole || 'landlord');
 }
 
 function resendSignupCode() {
@@ -1349,7 +1158,7 @@ function activateTenantAccount() {
     }
     if (invite.status === 'activated') {
         toast('This invitation was already used. Please sign in.');
-        go('sign-in');
+        go('role-select');
         return;
     }
     // Already signed in as this invite email — just attach to the flat
@@ -1525,7 +1334,10 @@ function nextOnboarding() {
         render();
     } else finishOnboarding();
 }
-function setAuthRole(role) { STATE.authRole = role; render(); }
+function setAuthRole(role) {
+    STATE.authRole = role || 'landlord';
+    demoLogin(STATE.authRole);
+}
 function togglePassword() { STATE.showPassword = !STATE.showPassword; render(); }
 function toggleConfirmPassword() { STATE.showConfirmPassword = !STATE.showConfirmPassword; render(); }
 function otpPress(key) {
@@ -1725,7 +1537,7 @@ function resetSuccessDone() {
     STATE.otpContext = 'signup';
     STATE.showPassword = false;
     STATE.showConfirmPassword = false;
-    go('sign-in');
+    go('role-select');
     setTimeout(() => toast('Sign in with your new password'), 50);
 }
 
@@ -1822,7 +1634,7 @@ function screenRoleSelect() {
         </div>
         <div class="auth-content">
             <h1 class="auth-heading">Choose Your Role</h1>
-            <p class="auth-sub">Select the role that best describes you to get started.</p>
+            <p class="auth-sub">Tap Landlord, Tenant, or Contractor to enter the demo. No sign-in needed.</p>
             <div class="stack" style="margin-top:28px">
                 ${SELECTABLE_ROLES.map(r => `
                 <button type="button" data-action="set-role" data-role="${r.id}" class="role-card ${STATE.authRole === r.id ? 'selected' : ''}">
@@ -1836,9 +1648,6 @@ function screenRoleSelect() {
                     <div class="role-radio"><div class="role-radio-dot"></div></div>
                 </button>`).join('')}
             </div>
-            <button type="button" data-action="role-continue" class="btn-auth btn-auth-primary" style="margin-top:32px">${roleContinueLabel()}</button>
-            <button type="button" data-go="sign-in" class="btn-auth btn-auth-outline" style="margin-top:12px">Sign in with email</button>
-            ${STATE.authRole === 'tenant' ? '' : `<p class="auth-footer-text" style="margin-top:20px">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>`}
         </div>
     </div>`;
 }
@@ -1847,7 +1656,7 @@ function screenSignIn() {
     const pwType = STATE.showPassword ? 'text' : 'password';
     const role = STATE.authRole || 'landlord';
     const demo = DEMO_CREDENTIALS[role] || DEMO_CREDENTIALS.landlord;
-    const isTenant = role === 'tenant';
+    const labels = { landlord: 'Landlord', tenant: 'Tenant', contractor: 'Contractor' };
     return `
     <div class="auth-screen auth-screen-figma">
         <div class="auth-content auth-content-figma">
@@ -1871,38 +1680,20 @@ function screenSignIn() {
                         </div>
                     </div>
                 </div>
-                ${isTenant ? '' : `
-                <div class="auth-forgot-row">
-                    <button type="button" data-go="forgot-password" class="auth-link">Forgot Password?</button>
-                </div>`}
                 <div class="auth-actions-stack">
-                    <button type="button" data-action="sign-in" class="btn-auth btn-auth-primary">${isTenant ? 'Enter tenant portal' : 'Sign In'}</button>
-                    ${isTenant ? '' : `${authSocialDivider()}${authGoogleBtn()}`}
+                    <button type="button" data-action="sign-in" class="btn-auth btn-auth-primary">Enter as ${labels[role] || 'Landlord'}</button>
                 </div>
             </div>
-            ${isTenant ? '' : `<p class="auth-footer-text">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>`}
+            <p class="auth-footer-text">Don't have an account? <button type="button" data-go="sign-up">Sign Up</button></p>
         </div>
     </div>`;
 }
 
 function screenSignUp() {
     const pwType = STATE.showPassword ? 'text' : 'password';
-    // Tenant never sees create-account form in this prototype
-    if (STATE.authRole === 'tenant') {
-        return `
-        <div class="auth-screen auth-screen-figma">
-            <div class="auth-content auth-content-figma">
-                <div class="auth-hero-block">
-                    ${authBrandLogo()}
-                    <h1 class="auth-heading">Tenant demo</h1>
-                    <p class="auth-sub">No account setup — enter the portal with the demo tenant.</p>
-                </div>
-                ${authDemoCard()}
-                <button type="button" data-action="demo-login" data-demo-role="tenant" class="btn-auth btn-auth-primary" style="margin-top:24px">Enter as Tenant</button>
-                <p class="auth-footer-text" style="margin-top:20px"><button type="button" data-go="sign-in">Back to sign in</button></p>
-            </div>
-        </div>`;
-    }
+    const role = STATE.authRole || 'landlord';
+    const labels = { landlord: 'Landlord', tenant: 'Tenant', contractor: 'Contractor' };
+    const demo = DEMO_CREDENTIALS[role] || DEMO_CREDENTIALS.landlord;
     return `
     <div class="auth-screen">
         <div class="auth-topbar">
@@ -1915,20 +1706,20 @@ function screenSignUp() {
                 <i data-lucide="user-plus" class="w-7 h-7 text-[#2563EB]"></i>
             </div>
             <h1 class="auth-heading">Create Your Account</h1>
-            <p class="auth-sub">Sign up with your email. We'll send a verification code to confirm it's you.</p>
+            <p class="auth-sub">Prototype — fields are optional. Tap Create Account to explore as ${labels[role] || 'Landlord'}.</p>
+            ${authDemoCard()}
             <div class="auth-form">
-                <div class="auth-field"><label>First name</label><input type="text" data-signup-first class="auth-input" placeholder="John" autocomplete="given-name" value="${STATE.signupDraft?.firstName || ''}"></div>
-                <div class="auth-field"><label>Last name</label><input type="text" data-signup-last class="auth-input" placeholder="Smith" autocomplete="family-name" value="${STATE.signupDraft?.lastName || ''}"></div>
-                <div class="auth-field"><label>Email address</label><input type="email" data-signup-email class="auth-input" placeholder="you@email.com" autocomplete="email" inputmode="email" value="${STATE.signupDraft?.email || STATE.signupEmail || ''}"></div>
+                <div class="auth-field"><label>First name</label><input type="text" data-signup-first class="auth-input" placeholder="John" autocomplete="given-name" value=""></div>
+                <div class="auth-field"><label>Last name</label><input type="text" data-signup-last class="auth-input" placeholder="Smith" autocomplete="family-name" value=""></div>
+                <div class="auth-field"><label>Email address</label><input type="email" data-signup-email class="auth-input" placeholder="${demo.email}" autocomplete="email" inputmode="email" value=""></div>
                 <div class="auth-field">
                     <label>Password</label>
                     <div class="auth-input-wrap">
-                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Min. 8 characters" style="padding-right:44px" autocomplete="new-password">
+                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Optional in prototype" style="padding-right:44px" autocomplete="new-password">
                         <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
                     </div>
                 </div>
-                <div class="auth-field"><label>Confirm Password</label><input type="password" data-signup-confirm class="auth-input" placeholder="Re-enter password" autocomplete="new-password"></div>
-                ${passwordRequirementsHtml()}
+                <div class="auth-field"><label>Confirm Password</label><input type="password" data-signup-confirm class="auth-input" placeholder="Optional in prototype" autocomplete="new-password"></div>
                 <button type="button" data-action="start-signup" class="btn-auth btn-auth-primary">Create Account</button>
             </div>
             <p class="auth-footer-text" style="margin-top:20px">Already have an account? <button type="button" data-go="sign-in">Sign In</button></p>
@@ -2183,10 +1974,9 @@ function go(screen, opts = {}) {
         if (opts.unit) STATE.maintUnitFilter = opts.unit;
     }
     if (screen === 'sign-up' && STATE.authRole === 'contractor') screen = 'contractor-sign-up';
-    // Prototype tenant: never trap login path on Create Account — enter demo portal
-    if (screen === 'sign-up' && STATE.authRole === 'tenant') {
-        demoLogin('tenant');
-        return;
+    if (['sign-in', 'sign-up', 'sign-up-phone', 'contractor-sign-up', 'forgot-password', 'verify-otp', 'reset-verify-code', 'reset-password', 'reset-success'].includes(screen)) {
+        screen = STATE.isAuthenticated ? getRoleHome() : 'role-select';
+        opts = { ...opts, noHistory: true };
     }
     if (screen === 'sign-up' && ['sign-in', 'role-select'].includes(from)) {
         STATE.authReturnScreen = from;
@@ -2195,20 +1985,8 @@ function go(screen, opts = {}) {
             STATE.authRole = 'landlord';
         }
     }
-    // Tenant without a landlord invite cannot use property-linked screens
-    if (STATE.userRole === 'tenant' && STATE.isAuthenticated) {
-        const linkedScreens = [
-            'log-maintenance', 'tenant-issues', 'tenant-active-tenancy', 'tenant-documents',
-            'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room',
-            'tenant-announcements', 'tenant-reminders', 'tenant-compliance',
-            'tenant-communication', 'tenant-referencing', 'tenant-ref-detail', 'tenant-inspection-upload',
-            'messages', 'transaction-history', 'invoice-detail', 'chat',
-        ];
-        if (linkedScreens.includes(screen) && typeof tenantHasPropertyLink === 'function' && !tenantHasPropertyLink()) {
-            toast('Join a flat with your landlord’s invitation link first');
-            screen = 'tenant-dashboard';
-            opts = {};
-        }
+    if (STATE.userRole === 'tenant' && STATE.isAuthenticated && typeof tenantHasPropertyLink === 'function') {
+        tenantHasPropertyLink();
     }
     if (screen === 'sign-in' && from === 'role-select') {
         STATE.signInOrigin = 'role-select';
@@ -2221,7 +1999,7 @@ function go(screen, opts = {}) {
     if (screen === 'document-preview') STATE.docReturnScreen = from;
     if (['privacy', 'terms'].includes(screen)) STATE.legalReturnScreen = from;
     if (!PUBLIC_SCREENS.includes(screen) && !STATE.isAuthenticated) {
-        screen = 'sign-in';
+        screen = 'role-select';
         opts = {};
     }
     if (from === 'flat-detail' && screen !== 'flat-detail' && FLAT_QUICK_ACTION_SCREENS.has(screen)) {
@@ -2436,8 +2214,7 @@ function go(screen, opts = {}) {
 function splashContinue() {
     clearTimeout(render._splashTimer);
     if (STATE.isAuthenticated) go(getRoleHome());
-    else if (STATE.onboardingComplete) go('role-select');
-    else go('onboarding');
+    else go('role-select');
 }
 
 function navigateBackFallback() {
@@ -2640,49 +2417,25 @@ function back() {
         setTenantTab('overview');
         return;
     }
-    if (STATE.screen === 'welcome') return;
-    if (STATE.screen === 'contractor-welcome' || STATE.screen === 'tenant-welcome') return;
-    if (STATE.screen === 'reset-success') return;
-    if (STATE.screen === 'onboarding') {
-        if (STATE.onboardingStep > 0) setOnboardingStep(STATE.onboardingStep - 1);
+    if (STATE.screen === 'welcome' || STATE.screen === 'contractor-welcome' || STATE.screen === 'tenant-welcome') {
+        go(getRoleHome(), { noHistory: true });
         return;
     }
-    if (STATE.screen === 'role-select') {
-        go('onboarding', { noHistory: true });
-        return;
-    }
-    if (STATE.screen === 'sign-up') {
-        go(STATE.authReturnScreen || 'role-select', { noHistory: true });
-        return;
-    }
-    if (STATE.screen === 'contractor-sign-up') {
-        if ((STATE.contractorSignupStep || 1) > 1) {
-            STATE.contractorSignupStep = (STATE.contractorSignupStep || 1) - 1;
-            render();
-            return;
-        }
-        go(STATE.contractorInviteContext ? 'contractor-invite' : (STATE.authReturnScreen || 'role-select'), { noHistory: true });
-        return;
-    }
-    if (STATE.screen === 'sign-in') {
+    if (STATE.screen === 'reset-success') {
         go('role-select', { noHistory: true });
         return;
     }
-    if (STATE.screen === 'sign-up-phone') {
-        go('sign-up', { noHistory: true });
+    if (STATE.screen === 'onboarding') {
+        go('role-select', { noHistory: true });
         return;
     }
-    if (STATE.screen === 'verify-otp') {
-        if (STATE.authRole === 'contractor') {
-            go('contractor-sign-up', { noHistory: true });
-            STATE.contractorSignupStep = 4;
-        } else {
-            go('sign-up-phone', { noHistory: true });
-        }
+    if (STATE.screen === 'role-select') return;
+    if (['sign-up', 'contractor-sign-up', 'sign-in', 'sign-up-phone', 'verify-otp'].includes(STATE.screen)) {
+        go('role-select', { noHistory: true });
         return;
     }
     if (STATE.screen === 'forgot-password') {
-        go(STATE.resetReturnScreen || 'sign-in', { noHistory: true });
+        go('role-select', { noHistory: true });
         return;
     }
     if (STATE.screen === 'reset-verify-code') {
@@ -2918,7 +2671,7 @@ function logout() {
     STATE.showPassword = false;
     clearNavStack();
     saveAuthSession();
-    go('sign-in', { noHistory: true });
+    go('role-select', { noHistory: true });
     setTimeout(() => toast('Signed out successfully'), 50);
 }
 
@@ -4615,7 +4368,7 @@ function confirmDeleteAccount() {
     STATE.drawer = false;
     clearNavStack();
     saveAuthSession();
-    go('sign-in', { noHistory: true });
+    go('role-select', { noHistory: true });
     setTimeout(() => toast('Your account has been permanently deleted'), 50);
 }
 
@@ -5652,7 +5405,7 @@ function _renderApp() {
     bindEvents();
     if (STATE.screen === 'splash') {
         clearTimeout(render._splashTimer);
-        render._splashTimer = setTimeout(splashContinue, 2500);
+        render._splashTimer = setTimeout(splashContinue, 800);
     }
     if (focusId) {
         const el = document.querySelector(`[data-search="${focusId}"]`);
@@ -6028,10 +5781,10 @@ function bindEvents() {
         el.onclick = roleContinue;
     });
     app.querySelectorAll('[data-action="contractor-signup"]').forEach(el => {
-        el.onclick = () => { STATE.authRole = 'contractor'; STATE.contractorInviteContext = true; go('contractor-sign-up'); };
+        el.onclick = () => { STATE.authRole = 'contractor'; demoLogin('contractor'); };
     });
     app.querySelectorAll('[data-action="contractor-sign-in"]').forEach(el => {
-        el.onclick = () => { STATE.authRole = 'contractor'; go('sign-in'); };
+        el.onclick = () => { STATE.authRole = 'contractor'; demoLogin('contractor'); };
     });
     app.querySelectorAll('[data-action="demo-login"]').forEach(el => {
         el.onclick = () => demoLogin(el.dataset.demoRole || STATE.authRole);

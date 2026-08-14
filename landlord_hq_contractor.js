@@ -1021,72 +1021,24 @@ function captureContractorSignupDraft() {
 }
 
 function validateContractorSignupStep(step) {
-    const d = captureContractorSignupDraft();
-    if (step === 1) {
-        if (!d.firstName) { toast('Enter your first name'); return false; }
-        if (!d.lastName) { toast('Enter your last name'); return false; }
-        if (!isValidEmail(d.email)) { toast('Enter a valid work email'); return false; }
-        loadContractorAccounts();
-        if (contractorAccountByEmail(d.email)) {
-            toast('This email is already registered — sign in instead');
-            return false;
-        }
-        if (!d.phone) { toast('Enter a mobile number for job updates'); return false; }
-        return true;
-    }
-    if (step === 2) {
-        if (!d.company) { toast('Enter your company or trading name'); return false; }
-        if (!d.trade) { toast('Select your trade category'); return false; }
-        return true;
-    }
-    if (step === 3) {
-        if (!d.password || d.password.length < 8) { toast('Password must be at least 8 characters'); return false; }
-        if (!/[A-Z]/.test(d.password) || !/[0-9]/.test(d.password)) {
-            toast('Include an uppercase letter and a number');
-            return false;
-        }
-        if (d.password !== d.confirmPassword) { toast('Passwords do not match'); return false; }
-        return true;
-    }
+    captureContractorSignupDraft();
     return true;
 }
 
 function advanceContractorSignup() {
-    const step = STATE.contractorSignupStep || 1;
-    if (!validateContractorSignupStep(step)) return;
-    if (step < 4) {
-        STATE.contractorSignupStep = step + 1;
-        render();
+    // Prototype: skip field checks — enter contractor demo from any signup step
+    if (typeof demoLogin === 'function') {
+        demoLogin('contractor');
         return;
     }
     submitContractorSignup();
 }
 
 function submitContractorSignup() {
-    const d = captureContractorSignupDraft();
-    if (!validateContractorSignupStep(1) || !validateContractorSignupStep(2) || !validateContractorSignupStep(3)) return;
-    STATE.authRole = 'contractor';
-    STATE.signupDraft = {
-        firstName: d.firstName,
-        lastName: d.lastName,
-        email: d.email,
-        phone: d.phone,
-        company: d.company,
-        tradeId: d.tradeId,
-        trade: d.trade,
-        category: d.category,
-        jobsFor: d.jobsFor,
-        companyReg: d.companyReg,
-        vatNumber: d.vatNumber,
-        gasSafe: d.gasSafe,
-        liabilityInsurance: d.liabilityInsurance,
-        password: d.password,
-    };
-    STATE.signupEmail = d.email;
-    STATE.otpContext = 'signup';
-    STATE.otpDigits = [];
-    go('verify-otp');
-    setTimeout(() => toast(`Verification code sent to ${d.email}`), 50);
+    if (typeof demoLogin === 'function') {
+        demoLogin('contractor');
+        return;
+    }
 }
 
 function screenContractorSignUp() {
@@ -1582,52 +1534,22 @@ function renderTenantHomeAnnouncement(t) {
 }
 
 function screenTenantDashboard() {
-    const t = getActiveTenant();
+    if (typeof ensureDemoTenantAccount === 'function') ensureDemoTenantAccount();
+    let t = getActiveTenant();
+    if (!t && typeof DEMO_CREDENTIALS !== 'undefined') {
+        t = tenantAccountByEmail(DEMO_CREDENTIALS.tenant.email);
+        if (t) STATE.activeTenantId = t.id;
+    }
     if (!t) {
-        // Prototype: never ask to create an account — one tap into demo tenant
         return `${topBar('Tenant Portal', { hideBell: true })}
         <div class="screen-content screen-enter">
             <div class="empty-state card">
-                <i data-lucide="user" class="w-10 h-10 text-[#16A34A]"></i>
-                <p class="empty-state-title">Enter tenant demo</p>
-                <p class="empty-state-desc">No account setup needed for this prototype.</p>
+                <p class="empty-state-title">Opening tenant demo…</p>
                 <button type="button" data-action="tenant-sign-in" class="btn-primary w-full py-3 text-[13px] mt-3">Enter as Tenant</button>
             </div>
         </div>`;
     }
-    const linked = typeof tenantHasPropertyLink === 'function' ? tenantHasPropertyLink(t) : !!(t.propertyId != null && t.unit);
-    if (!linked) {
-        const pending = typeof pendingInvitesForTenantEmail === 'function'
-            ? pendingInvitesForTenantEmail(t.email)
-            : [];
-        return `${tenantDashboardHeader(t, null)}
-        <div class="screen-content screen-enter">
-            <div class="empty-state card">
-                <i data-lucide="mail" class="w-10 h-10 text-[#16A34A]"></i>
-                <p class="empty-state-title">Waiting for landlord invitation</p>
-                <p class="empty-state-desc">Your account is ready, but you are not a flat member yet. Only your landlord can send the invitation link that adds you to a property.</p>
-            </div>
-            ${pending.length ? `
-            <p class="screen-section-title mt-4">Invitations for ${(typeof escapeHtml === 'function' ? escapeHtml(t.email) : t.email)}</p>
-            <div class="stack-sm">
-                ${pending.map(inv => {
-                    const prop = PROPERTIES[inv.propertyId];
-                    return `
-                <div class="card p-4">
-                    <p class="text-[14px] font-semibold text-[#0F172A]">${prop?.name || 'Property'} · ${inv.unit}</p>
-                    <p class="text-[12px] text-[#64748B] mt-1">From ${inv.landlord || 'your landlord'} · ${inv.sentAt || 'Pending'}</p>
-                    <button type="button" data-action="accept-tenant-invite" data-token="${inv.token}" class="btn-primary w-full py-3 text-[13px] mt-3">Accept & join flat</button>
-                </div>`;
-                }).join('')}
-            </div>` : `
-            <div class="card p-4 mt-3">
-                <p class="text-[13px] font-semibold text-[#0F172A]">Have an invite link?</p>
-                <p class="text-[12px] text-[#64748B] mt-1 mb-3">Paste the link or code from your landlord’s email.</p>
-                <input type="text" data-tenant-invite-code class="form-input mb-2" placeholder="Invite link or INV-XXXXXX">
-                <button type="button" data-action="open-invite-from-input" class="btn-secondary w-full py-3 text-[13px]">Open invitation</button>
-            </div>`}
-        </div>`;
-    }
+    if (typeof tenantHasPropertyLink === 'function') tenantHasPropertyLink(t);
     const p = PROPERTIES[t.propertyId];
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t.id;
     const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tid) : null;
