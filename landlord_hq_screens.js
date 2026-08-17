@@ -3520,6 +3520,36 @@ function screenDashboard() {
     </div>`;
 }
 
+function propertiesSummaryBar() {
+    const stats = typeof portfolioStats === 'function'
+        ? portfolioStats()
+        : { buildingCount: PROPERTIES.length, totalUnits: 0, occupancy: 0 };
+    return `
+    <div class="properties-summary-bar properties-summary-bar--top">
+        <div class="properties-summary-item">
+            <div class="properties-summary-icon properties-summary-icon--blue"><i data-lucide="building-2" class="w-4 h-4"></i></div>
+            <div>
+                <p class="properties-summary-val">${stats.buildingCount}</p>
+                <p class="properties-summary-lbl">Total Properties</p>
+            </div>
+        </div>
+        <div class="properties-summary-item">
+            <div class="properties-summary-icon properties-summary-icon--green"><i data-lucide="home" class="w-4 h-4"></i></div>
+            <div>
+                <p class="properties-summary-val">${stats.totalUnits}</p>
+                <p class="properties-summary-lbl">Total Units</p>
+            </div>
+        </div>
+        <div class="properties-summary-item">
+            <div class="properties-summary-icon properties-summary-icon--purple"><i data-lucide="pie-chart" class="w-4 h-4"></i></div>
+            <div>
+                <p class="properties-summary-val">${stats.occupancy}%</p>
+                <p class="properties-summary-lbl">Overall Occupancy</p>
+            </div>
+        </div>
+    </div>`;
+}
+
 function screenProperties() {
     if (typeof syncPropertyStatus === 'function') PROPERTIES.forEach(p => syncPropertyStatus(p.id));
     const filtered = filterProperties();
@@ -3599,6 +3629,7 @@ function screenProperties() {
         <button type="button" data-go="add-property" class="properties-add-btn properties-add-btn--header"><i data-lucide="plus" class="w-4 h-4"></i>Add Property</button>
     </div>
     <div class="screen-content screen-enter properties-page">
+        ${propertiesSummaryBar()}
         <div class="properties-search-row">
             <div class="search-bar flex-1">
                 <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
