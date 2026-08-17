@@ -406,6 +406,9 @@ Object.assign(STATE, {
     tenantInspectionPhotos: [],
     inspCollectMode: 'visit',
     inspScheduleDraft: null,
+    checkoutPhotos: [],
+    checkoutMeterPhotos: [],
+    checkoutRating: 4,
     invitePrefill: null,
     pendingPropertyPhotos: [],
     pendingPropertyCover: 0,
@@ -4020,6 +4023,27 @@ function setInspectionRating(rating) {
     render();
 }
 
+function renderCheckoutRatingPicker(value = 4) {
+    const num = Math.min(5, Math.max(1, Math.round(parseFloat(value) || 4)));
+    STATE.checkoutRating = num;
+    return `
+    <div class="form-group">
+        <label class="form-label">Overall tenant rating</label>
+        <div class="insp-rating-picker" role="radiogroup" aria-label="Tenant checkout rating">
+            ${[1, 2, 3, 4, 5].map(star => `
+            <button type="button" data-action="set-checkout-rating" data-rating="${star}" class="insp-rating-star ${star <= num ? 'active' : ''}" aria-label="${star} out of 5 stars" aria-pressed="${star === num}">
+                <i data-lucide="star" class="w-6 h-6"></i>
+            </button>`).join('')}
+        </div>
+        <p class="form-helper">${num}.0 / 5 — optional record for your files</p>
+    </div>`;
+}
+
+function setCheckoutRating(rating) {
+    STATE.checkoutRating = Math.min(5, Math.max(1, Math.round(+rating || 4)));
+    render();
+}
+
 function formatLeaseMonthYear(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -5452,6 +5476,10 @@ function screenTenancyDetail() {
     return `${topBar('Tenancy', { back: true, sub: `${p?.name || ''} · ${unit}` })}
     <div class="screen-content screen-enter tenancy-detail-page">
         ${renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead)}
+        ${renderTenancyDocumentsChecklist(propertyId, unit, tenancy)}
+        <button type="button" data-action="tenancy-esign-soon" class="btn-secondary w-full py-2.5 text-[13px] mb-3">
+            <i data-lucide="pen-line" class="w-4 h-4 inline-block mr-1"></i>Request e-signature <span class="text-[#94A3B8]">(coming soon)</span>
+        </button>
         <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mb-3">Edit deposit scheme</button>
         ${renderTenancyMembersSection(propertyId, unit, tenancy, members)}
         ${typeof renderTenantKeysCard === 'function' && lead ? renderTenantKeysCard(propertyId, unit, lead.name) : ''}
@@ -6532,6 +6560,122 @@ Please consider this my Request to Vacate Property Notice in accordance with my 
 Yours sincerely,
 ${tenantName || 'Tenant'}`;
 
+const TENANCY_SEND_DOC_OPTIONS = [
+    { type: 'Tenancy Agreement', label: 'Tenancy agreement' },
+    { type: 'Deposit Certificate', label: 'Deposit protection' },
+    { type: 'Gas Certificate', label: 'Gas safety (CP12)' },
+    { type: 'Electrical Certificate', label: 'Electrical (EICR)' },
+    { type: 'EPC Certificate', label: 'EPC certificate' },
+    { type: 'How to Rent Guide', label: 'How to Rent guide' },
+    { type: 'Signed Document', label: 'Signed document checklist' },
+];
+
+function propertyDocumentsForType(propertyId, type, unit) {
+    return AppStore.documents
+        .filter(d => d.propertyId === propertyId && d.type === type && (!unit || !d.unit || d.unit === unit))
+        .sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
+}
+
+function renderTenancyDocumentSendRows(propertyId, unit) {
+    return TENANCY_SEND_DOC_OPTIONS.map(opt => {
+        const onFile = propertyDocumentsForType(propertyId, opt.type, unit).length > 0;
+        return `
+        <label class="tenancy-doc-row card p-3 cursor-pointer">
+            <input type="checkbox" data-tenancy-doc="${opt.type}" class="accent-[#2563EB]" checked>
+            <span class="tenancy-doc-label">${escapeHtml(opt.label)}</span>
+            <span class="tenancy-doc-chip${onFile ? '' : ' tenancy-doc-chip--missing'}">${onFile ? 'On file' : 'Upload in Documents'}</span>
+        </label>`;
+    }).join('');
+}
+
+function renderTenancyDocumentsChecklist(propertyId, unit, tenancy) {
+    const sent = tenancy?.documentsSent || {};
+    const rows = TENANCY_SEND_DOC_OPTIONS.map(opt => {
+        const ticked = !!sent[opt.type];
+        const onFile = propertyDocumentsForType(propertyId, opt.type, unit).length > 0;
+        return `
+        <div class="tenancy-doc-status-row">
+            <i data-lucide="${ticked ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${ticked ? 'text-[#16A34A]' : 'text-[#CBD5E1]'}"></i>
+            <span class="flex-1">${escapeHtml(opt.label)}</span>
+            ${onFile ? '<span class="tenancy-doc-chip">On file</span>' : ''}
+        </div>`;
+    }).join('');
+    return `
+    <section class="card tenancy-docs-checklist p-4 mb-3">
+        <p class="screen-section-title mb-2">Documents sent</p>
+        <p class="form-helper mb-3">Ticked when shared with the tenant portal during lease setup.</p>
+        <div class="stack-sm">${rows}</div>
+    </section>`;
+}
+
+function collectTenancyDocSelections() {
+    const sent = {};
+    document.querySelectorAll('[data-tenancy-doc]').forEach(el => {
+        if (el.checked) sent[el.dataset.tenancyDoc] = true;
+    });
+    return sent;
+}
+
+function applyTenancyDocumentShare(tenancy, propertyId, unit) {
+    const sent = tenancy.documentsSent || {};
+    const types = Object.keys(sent).filter(k => sent[k]);
+    types.forEach(type => {
+        let doc = propertyDocumentsForType(propertyId, type, unit)[0];
+        if (doc) {
+            doc.shared = true;
+            if (unit && !doc.unit) doc.unit = unit;
+        } else {
+            const id = AppStore.nextId(AppStore.documents);
+            doc = {
+                id,
+                propertyId,
+                unit: unit || undefined,
+                type,
+                name: `${type}${unit ? ` — ${unit}` : ''}`,
+                date: typeof formatDocUploadDate === 'function' ? formatDocUploadDate() : 'Just now',
+                uploadedAt: Date.now(),
+                shared: true,
+                signed: false,
+                placeholder: true,
+            };
+            AppStore.documents.push(doc);
+        }
+        const targets = typeof getDocumentShareTargets === 'function'
+            ? getDocumentShareTargets(propertyId, unit)
+            : [];
+        if (targets.length && typeof syncSharedDocToTenants === 'function') {
+            syncSharedDocToTenants(doc, targets.map(t => t.id));
+        }
+    });
+}
+
+function renderLandlordTenantCheckoutSummary(tenantId) {
+    const co = getTenantCheckout(tenantId);
+    const checklist = co.checklist || {};
+    const done = Object.values(checklist).filter(Boolean).length;
+    const total = TENANT_CHECKOUT_CHECKLIST.length;
+    const submitted = co.submittedAt;
+    const checklistRows = TENANT_CHECKOUT_CHECKLIST.map(([key, label]) => `
+        <div class="checkout-tenant-check-row">
+            <i data-lucide="${checklist[key] ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${checklist[key] ? 'text-[#16A34A]' : 'text-[#CBD5E1]'}"></i>
+            <span>${escapeHtml(label)}</span>
+        </div>`).join('');
+    return `
+    <div class="card checkout-tenant-panel p-4">
+        <div class="checkout-tenant-panel-head">
+            <p class="screen-section-title mb-0">Tenant check-out submission</p>
+            <span class="checkout-tenant-badge${submitted ? ' checkout-tenant-badge--done' : ''}">${submitted ? 'Submitted' : `${done}/${total} checklist`}</span>
+        </div>
+        <div class="stack-sm mt-3">${checklistRows}</div>
+        ${co.meters?.electricity || co.meters?.gas || co.meters?.water ? `
+        <p class="form-helper mt-3 mb-1">Tenant meter readings</p>
+        <p class="text-[12px] text-[#64748B]">E: ${escapeHtml(co.meters.electricity || '—')} · G: ${escapeHtml(co.meters.gas || '—')} · W: ${escapeHtml(co.meters.water || '—')}</p>` : ''}
+        ${co.photos?.length ? `
+        <p class="form-helper mt-3 mb-1">Tenant photos (${co.photos.length})</p>
+        ${typeof renderPhotoPreviewStrip === 'function' ? renderPhotoPreviewStrip(co.photos, { removable: false }) : ''}` : ''}
+    </div>`;
+}
+
 function getTenantReferencing(tenantId) {
     if (!AppStore.tenantReferencing) AppStore.tenantReferencing = {};
     if (!AppStore.tenantReferencing[tenantId]) {
@@ -6717,9 +6861,11 @@ function getTenantCheckout(tenantId) {
             meters: normalizeCheckoutMeters({}),
             keys: [],
             photos: [],
+            meterPhotos: [],
             vacateNotice: null,
             submitted: false,
             submittedAt: '',
+            checklistSent: false,
             depositStatus: tenancy?.depositStatus || 'protected',
             depositScheme: tenancy?.depositScheme || 'MyDeposits',
             depositAmount: fin?.deposit || '—',
@@ -13769,6 +13915,15 @@ function screenCreateTenancyEnhanced() {
         <div><label class="form-label">Deposit protection scheme</label>
         <select data-field="depositScheme" class="form-input form-select"><option>MyDeposits</option><option>DPS</option><option>TDS</option><option>Not yet registered</option></select></div>
         ${formField('Protection reference', '', 'text', 'Optional scheme reference', 'protectionRef')}
+        <p class="screen-section-title">Documents to send</p>
+        <p class="form-helper mb-2">Select documents to share via the tenant portal. Items on file are sent when the tenant accepts their invite.</p>
+        <div class="stack-sm mb-3" id="tenancy-doc-checklist">
+            ${renderTenancyDocumentSendRows(STATE.propertyId, selectedUnit)}
+        </div>
+        <div class="ux-tip mb-3">
+            <p class="ux-tip-title">Electronic signature</p>
+            <p class="ux-tip-text">E-sign for tenancy agreements is coming soon. Documents selected above are shared through the tenant portal for now.</p>
+        </div>
         <button data-action="save-tenancy" class="btn-primary w-full py-3.5 text-[14px]">Save lease</button>
     </div>`;
 }
@@ -14070,7 +14225,8 @@ function screenCheckoutTenancy() {
     const missingKeys = checkoutMissingKeys(co);
     const reasonDefault = co.vacateNotice?.sent ? 'Tenant notice' : 'End of lease';
     const depositDefault = missingKeys.length ? 'Partial deduction' : 'Full return';
-    return `${topBar('Check-out Tenancy', { back: true })}
+    const depDigits = String(dep.deposit || '').replace(/[^\d]/g, '');
+    return `${topBar('End of Tenancy', { back: true })}
     <div class="screen-content screen-enter stack-sm">
         <div class="card p-4">
             <p class="text-[14px] font-bold">${escapeHtml(tenantName)}</p>
@@ -14095,11 +14251,19 @@ function screenCheckoutTenancy() {
         <select data-field="reason" class="form-input form-select">
             ${['End of lease', 'Tenant notice', 'Mutual agreement', 'Eviction'].map(r => `<option${r === reasonDefault ? ' selected' : ''}>${r}</option>`).join('')}
         </select></div>
-        ${formTextarea('Final Notes', missingKeys.length ? `Missing keys: ${missingKeys.map(k => k.label).join(', ')}. Charge for replacements if needed.` : '', 'Condition of property, deposit deductions, forwarding address...', 'checkoutNotes')}
+        <label class="member-row card p-3 cursor-pointer">
+            <input type="checkbox" data-field="sendCleaningChecklist" value="yes" class="accent-[#2563EB]" ${co.checklistSent ? 'checked' : ''}>
+            <span class="text-[13px]">Send cleaning checklist to tenant portal</span>
+        </label>
+        ${renderCheckoutRatingPicker(STATE.checkoutRating || 4)}
         <div><label class="form-label">Deposit Return</label>
         <select data-field="deposit" class="form-input form-select">
             ${['Full return', 'Partial deduction', 'Dispute'].map(r => `<option${r === depositDefault ? ' selected' : ''}>${r}</option>`).join('')}
         </select></div>
+        ${formField('Refund amount (£)', depDigits, 'number', 'Amount returned to tenant', 'depositRefundAmount')}
+        ${formField('Deduction amount (£)', '', 'number', 'If partial — amount withheld', 'depositDeductionAmount')}
+        ${formTextarea('Deduction reason', missingKeys.length ? `Missing keys: ${missingKeys.map(k => k.label).join(', ')}. Charge for replacements if needed.` : '', 'Cleaning, damage, unpaid rent…', 'depositDeductionReason')}
+        ${formTextarea('Final Notes', '', 'Condition of property, forwarding address...', 'checkoutNotes')}
         <button data-action="save-checkout" class="btn-primary w-full py-3.5 text-[14px]">Complete Check-out</button>
     </div>`;
 }
@@ -15805,6 +15969,7 @@ function saveTenancy() {
     const depositScheme = fieldVal('depositScheme') || 'MyDeposits';
     const protectionRef = fieldVal('protectionRef') || '';
     const depositStatus = resolveDepositStatus(depositScheme, protectionRef);
+    const documentsSent = typeof collectTenancyDocSelections === 'function' ? collectTenancyDocSelections() : {};
     const tenancy = {
         id: AppStore.nextId(AppStore.tenancies),
         propertyId: STATE.propertyId,
@@ -15822,8 +15987,12 @@ function saveTenancy() {
         occupants: type === 'group' ? (members.length || +fieldVal('occupants') || 2) : 1,
         members: type === 'group' ? members : [],
         leadName,
+        documentsSent,
     };
     AppStore.tenancies.push(tenancy);
+    if (typeof applyTenancyDocumentShare === 'function') {
+        applyTenancyDocumentShare(tenancy, STATE.propertyId, fieldVal('unit'));
+    }
     const unitRecord = getUnitByName(STATE.propertyId, fieldVal('unit'));
     if (unitRecord) unitRecord.rent = `£${parseInt(fieldVal('rent'), 10).toLocaleString()}`;
     if (type === 'group' && members.length) {
@@ -15852,7 +16021,28 @@ function saveCheckout() {
     const reason = fieldVal('reason') || 'End of lease';
     const notes = fieldVal('checkoutNotes') || '';
     const deposit = fieldVal('deposit') || 'Full return';
+    const depositRefundAmount = fieldVal('depositRefundAmount') || '';
+    const depositDeductionAmount = fieldVal('depositDeductionAmount') || '';
+    const depositDeductionReason = fieldVal('depositDeductionReason') || '';
+    const sendCleaningChecklist = document.querySelector('[data-field="sendCleaningChecklist"]')?.checked;
+    const tenantCo = getTenantCheckout(STATE.tenantId);
+    const meters = tenantCo.meters || {};
     const checkoutLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(checkoutDate) || checkoutDate : checkoutDate;
+    const checkoutPayload = {
+        reason,
+        notes,
+        deposit,
+        depositRefundAmount,
+        depositDeductionAmount,
+        depositDeductionReason,
+        meters,
+        meterPhotos: [...(tenantCo.meterPhotos || []), ...(STATE.checkoutMeterPhotos || [])],
+        inspectionPhotos: [...(STATE.checkoutPhotos || [])],
+        tenantPhotos: tenantCo.photos || [],
+        checklist: tenantCo.checklist,
+        tenantSubmittedAt: tenantCo.submittedAt,
+        rating: STATE.checkoutRating || 4,
+    };
     if (listItem) {
         listItem.status = 'inactive';
         listItem.lease = `Ended ${checkoutLabel}`;
@@ -15866,9 +16056,7 @@ function saveCheckout() {
             propertyId: listItem?.propertyId,
             unit: listItem?.unit,
             date: checkoutDate,
-            reason,
-            notes,
-            deposit,
+            ...checkoutPayload,
         });
     }
     const ten = AppStore.tenancies.find(x => x.propertyId === listItem?.propertyId && x.unit === listItem?.unit && x.status !== 'ended');
@@ -15883,7 +16071,7 @@ function saveCheckout() {
             if (ten.members.length === 0) {
                 ten.status = 'ended';
                 ten.end = checkoutDate;
-                ten.checkout = { reason, notes, deposit };
+                ten.checkout = checkoutPayload;
             } else if (ten.members[0] && !ten.members.some(m => m.role === 'lead')) {
                 ten.members[0].role = 'lead';
                 ten.leadName = ten.members[0].name;
@@ -15892,7 +16080,30 @@ function saveCheckout() {
         } else {
             ten.status = 'ended';
             ten.end = checkoutDate;
-            ten.checkout = { reason, notes, deposit };
+            ten.checkout = checkoutPayload;
+        }
+    }
+    if (sendCleaningChecklist || reason === 'Tenant notice') {
+        tenantCo.checklistSent = true;
+        if (typeof pushNotification === 'function') {
+            pushNotification({
+                icon: 'clipboard-check',
+                color: ['#EFF6FF', '#2563EB'],
+                title: 'Check-out cleaning checklist',
+                desc: 'Complete your end-of-tenancy checklist in the tenant portal.',
+                time: 'Just now',
+                unread: true,
+                screen: 'tenant-checkout',
+                opts: {},
+            });
+        }
+        if (listItem?.propertyId != null && typeof upsertSmartReminder === 'function') {
+            upsertSmartReminder({
+                type: 'custom',
+                propertyId: listItem.propertyId,
+                title: `Tenant leaving · ${listItem.unit || 'Unit'} — cleaning checklist`,
+                due: checkoutDate,
+            });
         }
     }
     if (listItem?.propertyId != null && listItem?.unit) {
@@ -15900,6 +16111,8 @@ function saveCheckout() {
             .forEach(i => { i.status = 'cancelled'; });
         syncPropertyStatus(listItem.propertyId);
     }
+    STATE.checkoutPhotos = [];
+    STATE.checkoutMeterPhotos = [];
     withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Check-out completed'); go('tenants'); });
 }
 
@@ -16874,7 +17087,7 @@ async function uploadMaintMediaAction() {
     }
 }
 
-async function uploadPhotoAction() {
+async function uploadPhotoAction(uploadKind = '') {
     const urls = await pickImageFiles({ multiple: true });
     if (!urls.length) return;
     const meta = AppStore.meta(STATE.propertyId);
@@ -16905,6 +17118,19 @@ async function uploadPhotoAction() {
         if (!STATE.tenantInspectionPhotos) STATE.tenantInspectionPhotos = [];
         STATE.tenantInspectionPhotos.push(...urls);
         toast(urls.length === 1 ? 'Inspection photo added' : `${urls.length} inspection photos added`);
+        render();
+        return;
+    }
+    if (STATE.screen === 'checkout-tenancy') {
+        if (uploadKind === 'meter') {
+            if (!STATE.checkoutMeterPhotos) STATE.checkoutMeterPhotos = [];
+            STATE.checkoutMeterPhotos.push(...urls);
+            toast(urls.length === 1 ? 'Meter photo added' : `${urls.length} meter photos added`);
+        } else {
+            if (!STATE.checkoutPhotos) STATE.checkoutPhotos = [];
+            STATE.checkoutPhotos.push(...urls);
+            toast(urls.length === 1 ? 'Inspection photo added' : `${urls.length} inspection photos added`);
+        }
         render();
         return;
     }
@@ -17490,7 +17716,9 @@ function bindFeatureEvents() {
         el.onclick = () => removeFieldPhotoAction(el.dataset.photoField);
     });
     app.querySelectorAll('[data-action="upload-document"]').forEach(el => { el.onclick = uploadDocumentAction; });
-    app.querySelectorAll('[data-action="upload-photo"]').forEach(el => { el.onclick = uploadPhotoAction; });
+    app.querySelectorAll('[data-action="upload-photo"]').forEach(el => {
+        el.onclick = () => uploadPhotoAction(el.dataset.uploadKind || '');
+    });
     app.querySelectorAll('[data-action="upload-floor-plan"]').forEach(el => { el.onclick = uploadFloorPlanAction; });
     app.querySelectorAll('[data-action="undo-rent-payment"]').forEach(el => {
         el.onclick = () => undoInvoicePayment(+el.dataset.iid);
@@ -17697,16 +17925,6 @@ function bindFeatureEvents() {
             render();
         };
     });
-    app.querySelectorAll('[data-action="remove-checkout-photo"]').forEach(el => {
-        el.onclick = () => {
-            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
-            const co = getTenantCheckout(tid);
-            if (!co.photos?.length) return;
-            co.photos.splice(+el.dataset.photoIdx, 1);
-            AppStore.save();
-            render();
-        };
-    });
     app.querySelectorAll('[data-action="submit-tenant-checkout"]').forEach(el => {
         el.onclick = () => {
             const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
@@ -17766,6 +17984,23 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="remove-inspection-photo"]').forEach(el => {
         el.onclick = () => removePhotoFromList(STATE.inspectionPhotos, +el.dataset.photoIdx);
+    });
+    app.querySelectorAll('[data-action="remove-checkout-photo"]').forEach(el => {
+        el.onclick = () => {
+            if (STATE.screen === 'checkout-tenancy') {
+                removePhotoFromList(STATE.checkoutPhotos, +el.dataset.photoIdx);
+                return;
+            }
+            const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
+            const co = getTenantCheckout(tid);
+            if (!co.photos?.length) return;
+            co.photos.splice(+el.dataset.photoIdx, 1);
+            AppStore.save();
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="remove-checkout-meter-photo"]').forEach(el => {
+        el.onclick = () => removePhotoFromList(STATE.checkoutMeterPhotos, +el.dataset.photoIdx);
     });
     app.querySelectorAll('[data-action="remove-inventory-photo"]').forEach(el => {
         el.onclick = () => {
@@ -17890,6 +18125,12 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="set-insp-rating"]').forEach(el => {
         el.onclick = () => setInspectionRating(+el.dataset.rating);
+    });
+    app.querySelectorAll('[data-action="set-checkout-rating"]').forEach(el => {
+        el.onclick = () => setCheckoutRating(+el.dataset.rating);
+    });
+    app.querySelectorAll('[data-action="tenancy-esign-soon"]').forEach(el => {
+        el.onclick = () => toast('Electronic signatures are coming soon — share documents via the tenant portal for now.');
     });
     app.querySelectorAll('[data-action="edit-tenant-note"]').forEach(el => {
         el.onclick = () => go('tenant-edit-note', { tenantId: STATE.tenantId, noteId: +el.dataset.nid });
@@ -18275,6 +18516,10 @@ function goFeature(screen, opts = {}) {
         } : null;
         STATE.inspectionRating = 4;
         STATE.inspectionPhotos = [...(upcoming?.tenantPhotoUrls || [])];
+    } else if (screen === 'checkout-tenancy') {
+        STATE.checkoutPhotos = [];
+        STATE.checkoutMeterPhotos = [];
+        STATE.checkoutRating = 4;
     } else if (STATE.screen === 'conduct-inspection') {
         STATE.inspectionPrefill = null;
         STATE.inspectionRating = 4;

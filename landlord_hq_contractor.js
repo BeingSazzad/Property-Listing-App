@@ -2315,6 +2315,7 @@ function screenTenantCheckout() {
     const co = typeof getTenantCheckout === 'function' ? getTenantCheckout(tid) : {};
     return `${topBar('Check-out', { back: true, sub: 'End of tenancy' })}
     <div class="screen-content screen-enter stack-sm">
+        ${co.checklistSent ? `<div class="ux-tip"><p class="ux-tip-title">Cleaning checklist from your landlord</p><p class="ux-tip-text">Complete each item below before submitting your check-out.</p></div>` : ''}
         ${typeof renderSharedCheckoutPack === 'function'
             ? renderSharedCheckoutPack(tid, { editable: true, showVacate: true })
             : '<p class="text-[13px] text-[#64748B]">Check-out form unavailable.</p>'}
