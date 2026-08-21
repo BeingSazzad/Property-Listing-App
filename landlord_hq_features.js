@@ -8412,89 +8412,109 @@ function openAlarmItemModal(alarmId) {
     let al = alarms.find(a => (a.id && String(a.id) === String(alarmId)) || a.name === alarmId);
     if (!al) al = alarms[0];
 
-    const modalHtml = `
-    <div id="alarm-item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                        <i data-lucide="${getAlarmIcon(al.name, al.icon)}" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-[16px] font-bold text-slate-900 m-0">${escapeHtml(al.name)}</h3>
-                        <p class="text-[11px] text-slate-500 m-0">Safety Alarm Details & Photo</p>
-                    </div>
-                </div>
-                <button type="button" onclick="document.getElementById('alarm-item-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>
-
-            <!-- Photo Upload Box -->
-            <div>
-                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Alarm Photo / Safety Certificate</label>
-                <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer group">
-                    <input type="file" id="alarm-photo-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
-                    <div id="alarm-photo-preview-box" class="flex flex-col items-center justify-center gap-2">
-                        ${al.photo ? `<img src="${al.photo}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Change photo</span>` : `<div class="w-10 h-10 rounded-full bg-white text-slate-400 flex items-center justify-center shadow-xs"><i data-lucide="camera" class="w-5 h-5 text-blue-600"></i></div><span class="text-[12px] font-bold text-slate-700">Upload Photo of ${escapeHtml(al.name)}</span><span class="text-[10px] text-slate-400">Tap to upload alarm photo or certificate</span>`}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Alarm Name</label>
-                    <input id="alarm-item-name-input" type="text" value="${escapeHtml(al.name || '')}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
-                </div>
-                <div>
-                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Location in Property</label>
-                    <input id="alarm-item-loc-input" type="text" value="${escapeHtml(al.location || '')}" placeholder="e.g. Hallway / Landing, Kitchen Ceiling" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
-                </div>
-                <div>
-                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Expiry / Battery Due</label>
-                    <input id="alarm-item-expiry-input" type="text" value="${escapeHtml(al.expiry || '')}" placeholder="e.g. Exp: 15 Jan 2028" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 pt-2">
-                <button type="button" onclick="document.getElementById('alarm-item-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="button" id="save-alarm-item-submit-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Changes</button>
-            </div>
-        </div>
-    </div>`;
-
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    if (window.lucide) lucide.createIcons();
-
+    const iconName = getAlarmIcon(al.name, al.icon);
     let uploadedPhoto = al.photo || '';
-    const fileInput = document.getElementById('alarm-photo-file-input');
-    if (fileInput) {
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    uploadedPhoto = evt.target.result;
-                    const preview = document.getElementById('alarm-photo-preview-box');
-                    if (preview) {
-                        preview.innerHTML = `<img src="${uploadedPhoto}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Photo updated! Tap to change</span>`;
-                    }
+
+    function renderModal(editMode) {
+        const existing = document.getElementById('alarm-item-modal');
+        if (existing) existing.remove();
+
+        const photoBlock = editMode
+            ? `<div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer">
+                <input type="file" id="alarm-photo-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                <div id="alarm-photo-preview-box" class="flex flex-col items-center justify-center gap-2">
+                    ${uploadedPhoto ? `<img src="${uploadedPhoto}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Tap to change</span>` : `<div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-xs"><i data-lucide="camera" class="w-5 h-5 text-blue-600"></i></div><span class="text-[12px] font-bold text-slate-700">Add photo or certificate</span>`}
+                </div>
+               </div>`
+            : uploadedPhoto
+                ? `<img src="${uploadedPhoto}" alt="" class="w-full max-h-44 object-cover rounded-2xl">`
+                : `<div class="flex flex-col items-center justify-center gap-1.5 py-5 rounded-2xl bg-slate-50 border border-slate-100">
+                    <i data-lucide="image" class="w-7 h-7 text-slate-300"></i>
+                    <span class="text-[11px] text-slate-400">No photo added yet</span>
+                   </div>`;
+
+        const bodyHtml = editMode
+            ? `<div class="space-y-3">
+                <div><label class="block text-[12px] font-bold text-slate-700 mb-1">Alarm Name</label>
+                    <input id="alarm-item-name-input" type="text" value="${escapeHtml(al.name || '')}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600"></div>
+                <div><label class="block text-[12px] font-bold text-slate-700 mb-1">Location</label>
+                    <input id="alarm-item-loc-input" type="text" value="${escapeHtml(al.location || '')}" placeholder="e.g. Hallway, Kitchen Ceiling" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600"></div>
+                <div><label class="block text-[12px] font-bold text-slate-700 mb-1">Expiry / Battery Due</label>
+                    <input id="alarm-item-expiry-input" type="text" value="${escapeHtml(al.expiry || '')}" placeholder="e.g. 15 Jan 2028" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600"></div>
+               </div>`
+            : `<div class="divide-y divide-slate-100">
+                ${[['Location', al.location], ['Expiry / Battery', al.expiry], ['Status', al.status]].map(([k, v]) =>
+                    v ? `<div class="flex justify-between py-2.5"><span class="text-[12px] text-slate-500">${k}</span><span class="text-[13px] font-semibold text-slate-900 text-right">${escapeHtml(String(v))}</span></div>` : ''
+                ).join('')}
+               </div>`;
+
+        const footerHtml = editMode
+            ? `<div class="flex gap-3 pt-1">
+                <button type="button" id="alarm-cancel-btn" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="button" id="alarm-save-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save</button>
+               </div>`
+            : `<button type="button" id="alarm-edit-btn" class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Edit Details</button>`;
+
+        const html = `
+        <div id="alarm-item-modal" class="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+            <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <i data-lucide="${iconName}" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-[16px] font-bold text-slate-900 m-0">${escapeHtml(al.name)}</h3>
+                            <p class="text-[11px] text-slate-500 m-0">${editMode ? 'Edit details' : 'Alarm details'}</p>
+                        </div>
+                    </div>
+                    <button type="button" id="alarm-close-btn" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                ${photoBlock}
+                ${bodyHtml}
+                ${footerHtml}
+            </div>
+        </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', html);
+        if (window.lucide) lucide.createIcons();
+
+        document.getElementById('alarm-close-btn').onclick = () => document.getElementById('alarm-item-modal').remove();
+
+        if (editMode) {
+            const fileInput = document.getElementById('alarm-photo-file-input');
+            if (fileInput) {
+                fileInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        uploadedPhoto = evt.target.result;
+                        const box = document.getElementById('alarm-photo-preview-box');
+                        if (box) box.innerHTML = `<img src="${uploadedPhoto}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Tap to change</span>`;
+                    };
+                    reader.readAsDataURL(file);
                 };
-                reader.readAsDataURL(file);
             }
-        };
+            document.getElementById('alarm-cancel-btn').onclick = () => renderModal(false);
+            document.getElementById('alarm-save-btn').onclick = () => {
+                al.name = document.getElementById('alarm-item-name-input').value.trim() || al.name;
+                al.location = document.getElementById('alarm-item-loc-input').value.trim() || al.location || 'Installed';
+                al.expiry = document.getElementById('alarm-item-expiry-input').value.trim() || al.expiry || '';
+                al.photo = uploadedPhoto;
+                AppStore.save();
+                document.getElementById('alarm-item-modal').remove();
+                toast(`${al.name} updated`);
+                render();
+            };
+        } else {
+            document.getElementById('alarm-edit-btn').onclick = () => renderModal(true);
+        }
     }
 
-    document.getElementById('save-alarm-item-submit-btn').onclick = () => {
-        al.name = document.getElementById('alarm-item-name-input').value.trim() || al.name;
-        al.location = document.getElementById('alarm-item-loc-input').value.trim() || 'Installed';
-        al.expiry = document.getElementById('alarm-item-expiry-input').value.trim() || 'Exp: 2028';
-        al.photo = uploadedPhoto;
-
-        document.getElementById('alarm-item-modal').remove();
-        toast(`Updated "${al.name}" photo & details!`);
-        render();
-    };
+    renderModal(false);
 }
 
 function screenPropertyAppliances() {
