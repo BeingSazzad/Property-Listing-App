@@ -8773,28 +8773,43 @@ function renderRecordsHubSmartRemindersSection(propertyId) {
 }
 
 function renderPropertyRecordsHub(propertyId) {
-    const activeSubTab = STATE.recordsSubTab || 'all';
+    const activeSubTab = STATE.recordsSubTab || 'certificates';
     const certIssues = propertyCertTileIssues(propertyId);
     const fireCount = propertyFolderFileCount(propertyId, 'fire');
     const otherCount = propertyFolderFileCount(propertyId, 'custom');
     const flatDocCount = propertyFlatDocumentCount(propertyId);
     const reminders = (AppStore.reminders || []).filter(r => !propertyId || r.propertyId === propertyId || r.propertyId == null);
+    const totalFiles = flatDocCount + otherCount + (fireCount ? 1 : 0) + 2;
+
     return `
     <div class="screen-content screen-content-sm prop-records-page prop-records-unified">
-        <div class="flex items-center gap-1.5 p-1 bg-[#F1F5F9] rounded-xl mb-4 text-[12px] font-semibold text-[#64748B]">
-            <button type="button" data-records-tab="all" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'all' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">All Records</button>
-            <button type="button" data-records-tab="reminders" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'reminders' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">Smart Reminders</button>
-            <button type="button" data-records-tab="safety" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'safety' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">Safety & Checks</button>
+        <!-- Senior Product Designer Segmented Control -->
+        <div class="flex items-center gap-1 p-1 bg-[#F1F5F9] rounded-2xl mb-4 text-[12px] font-semibold text-[#64748B] border border-[#E2E8F0]/70 shadow-sm">
+            <button type="button" data-records-tab="certificates" class="flex-1 py-2 px-2 rounded-xl text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeSubTab === 'certificates' || activeSubTab === 'all' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 shrink-0 ${activeSubTab === 'certificates' || activeSubTab === 'all' ? 'text-[#2563EB]' : 'text-[#94A3B8]'}"></i>
+                <span class="truncate">Certificates</span>
+                ${certIssues.length ? `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#FEF2F2] text-[#DC2626]">${certIssues.length}</span>` : `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#EFF6FF] text-[#2563EB]">4</span>`}
+            </button>
+            <button type="button" data-records-tab="reminders" class="flex-1 py-2 px-2 rounded-xl text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeSubTab === 'reminders' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">
+                <i data-lucide="bell" class="w-3.5 h-3.5 shrink-0 ${activeSubTab === 'reminders' ? 'text-[#2563EB]' : 'text-[#94A3B8]'}"></i>
+                <span class="truncate">Reminders</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold ${reminders.length ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-[#F8FAFC] text-[#64748B]'}">${reminders.length}</span>
+            </button>
+            <button type="button" data-records-tab="files" class="flex-1 py-2 px-2 rounded-xl text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeSubTab === 'files' || activeSubTab === 'safety' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">
+                <i data-lucide="folder-open" class="w-3.5 h-3.5 shrink-0 ${activeSubTab === 'files' || activeSubTab === 'safety' ? 'text-[#2563EB]' : 'text-[#94A3B8]'}"></i>
+                <span class="truncate">Files & Vault</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#F8FAFC] text-[#64748B]">${totalFiles}</span>
+            </button>
         </div>
 
         ${activeSubTab === 'reminders' ? renderRecordsHubSmartRemindersSection(propertyId) : ''}
 
-        ${activeSubTab === 'all' || activeSubTab === 'documents' ? `
+        ${activeSubTab === 'certificates' || activeSubTab === 'all' ? `
         <section class="records-hub-section records-hub-section--cert" id="records-compliance">
             <div class="records-hub-section-head records-hub-section-head--cert">
                 <div class="records-hub-section-copy">
-                    <h3 class="records-hub-section-title">Certificates & Documents</h3>
-                    ${certIssues.length ? `<span class="records-hub-section-badge records-hub-section-badge--warn">${certIssues.length} need attention</span>` : ''}
+                    <h3 class="records-hub-section-title">Certificates & Compliance</h3>
+                    ${certIssues.length ? `<span class="records-hub-section-badge records-hub-section-badge--warn">${certIssues.length} need attention</span>` : '<span class="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2 py-0.5 rounded-full">All 4 Up to Date</span>'}
                 </div>
                 <button type="button" data-action="open-add-document-flow" class="records-hub-upload-btn" aria-label="Upload certificate">
                     <i data-lucide="upload" class="w-3.5 h-3.5"></i><span>Upload</span>
@@ -8803,22 +8818,17 @@ function renderPropertyRecordsHub(propertyId) {
             ${renderBuildingCertTiles(propertyId)}
         </section>` : ''}
 
-        ${activeSubTab === 'all' || activeSubTab === 'safety' ? `
-        <section class="records-hub-section">
-            <h3 class="records-hub-section-title">Safety</h3>
-            <div class="records-hub-nav-list card">
-                ${renderRecordsHubNavRow('bell-ring', 'Alarms', `data-go="property-alarms" data-pid="${propertyId}"`, 'Test dates & expiry')}
-                ${renderRecordsHubApplianceRow(propertyId)}
-                ${fireCount ? renderRecordsHubNavRow('flame-kindling', 'Fire safety', `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`, `${fireCount} file${fireCount === 1 ? '' : 's'}`) : ''}
-            </div>
-        </section>
+        ${activeSubTab === 'files' || activeSubTab === 'safety' ? `
         <section class="records-hub-section records-hub-section--split" id="records-checks">
-            <h3 class="records-hub-section-title">Checks & files</h3>
-            <div class="records-hub-nav-list card">
+            <div class="records-hub-section-head mb-3">
+                <h3 class="records-hub-section-title">Inspections & Property Vault</h3>
+            </div>
+            <div class="records-hub-nav-list card divide-y divide-[#F1F5F9]">
                 ${renderRecordsHubInspectionRow(propertyId)}
                 ${renderRecordsHubInventoryRow(propertyId)}
                 ${renderRecordsHubNavRow('home', 'Flat documents', `data-go="property-flat-documents" data-pid="${propertyId}"`, flatDocCount ? `${flatDocCount} file${flatDocCount === 1 ? '' : 's'}` : 'Open by unit')}
-                ${renderRecordsHubNavRow('folder', 'Other files', `data-go="property-doc-folder" data-folder="custom" data-pid="${propertyId}"`, otherCount ? `${otherCount} file${otherCount === 1 ? '' : 's'}` : 'No files yet')}
+                ${fireCount ? renderRecordsHubNavRow('flame-kindling', 'Fire safety archive', `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`, `${fireCount} file${fireCount === 1 ? '' : 's'}`) : ''}
+                ${renderRecordsHubNavRow('folder', 'Other building files', `data-go="property-doc-folder" data-folder="custom" data-pid="${propertyId}"`, otherCount ? `${otherCount} file${otherCount === 1 ? '' : 's'}` : 'No files yet')}
             </div>
         </section>` : ''}
     </div>`;
