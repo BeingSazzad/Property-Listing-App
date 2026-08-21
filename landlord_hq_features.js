@@ -2323,15 +2323,29 @@ function alarmReminderTiming(timing) {
     return timing === '60' ? '60' : '30';
 }
 
-function normalizeUtilityEntry(val) {
-    if (!val) return null;
-    if (typeof val === 'object') return val;
-    return { provider: String(val) };
+function normalizeUtilityEntry(val, meta, key) {
+    if (val && typeof val === 'object') return val;
+    if (val && typeof val === 'string') return { provider: val };
+    const u = meta?.utilities;
+    if (!u) return null;
+    if (key === 'gas' && (u.gasSupplier || u.gasNo || u.gasLoc)) {
+        return { provider: u.gasSupplier || 'British Gas', meterNumber: u.gasNo || '84920173', meterLocation: u.gasLoc || 'Front exterior meter box', phone: '0333 202 9802' };
+    }
+    if (key === 'electricity' && (u.electricitySupplier || u.electricityNo || u.electricityLoc)) {
+        return { provider: u.electricitySupplier || 'Octopus Energy', meterNumber: u.electricityNo || '12093841', meterLocation: u.electricityLoc || 'Basement intake cupboard', phone: '0808 164 1088' };
+    }
+    if (key === 'water' && (u.waterSupplier || u.waterNo || u.waterLoc)) {
+        return { provider: u.waterSupplier || 'Thames Water', meterNumber: u.waterNo || 'WTR-99402', meterLocation: u.waterLoc || 'Kitchen sink undercupboard', phone: '0800 316 9800' };
+    }
+    if (key === 'wifi' && (u.broadbandSupplier || u.wifiPassword || u.routerLoc)) {
+        return { provider: u.broadbandSupplier || 'BT Fibre Broadband', meterNumber: u.wifiPassword ? `Key: ${u.wifiPassword}` : 'London2026!Fast', meterLocation: u.routerLoc || 'Main hallway intake', phone: '+44 800 800 150' };
+    }
+    return null;
 }
 
 function getUtilityEntry(meta, key) {
     const raw = meta?.utilities?.[key];
-    return normalizeUtilityEntry(raw);
+    return normalizeUtilityEntry(raw, meta, key);
 }
 
 function migrateUtilityKeys(meta) {
