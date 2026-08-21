@@ -117,7 +117,7 @@ const AppStore = {
             if (typeof migratePropertyInfoFields === 'function') migratePropertyInfoFields();
             if (typeof migrateTenancyLeadUniqueness === 'function') migrateTenancyLeadUniqueness();
             // Backfill rich demo datasets if missing or partial
-            if (!this.inventory || Object.keys(this.inventory).length < 4) {
+            if (!this.inventory || Object.keys(this.inventory).length < 8) {
                 const tempStore = {};
                 this.seed.call(tempStore);
                 this.inventory = Object.assign({}, tempStore.inventory, this.inventory);
@@ -146,6 +146,26 @@ const AppStore = {
                 const tempStore = {};
                 this.seed.call(tempStore);
                 this.inspections = tempStore.inspections;
+            }
+            if (!this.contractorInvoices || !this.contractorInvoices.length) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.contractorInvoices = tempStore.contractorInvoices;
+            }
+            if (!this.paymentMethods || !this.paymentMethods.length) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.paymentMethods = tempStore.paymentMethods;
+            }
+            if (!this.tenantCheckout || !this.tenantCheckout[3]) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.tenantCheckout = Object.assign({}, tempStore.tenantCheckout, this.tenantCheckout);
+            }
+            if (!this.reminders || this.reminders.length < 5) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.reminders = tempStore.reminders;
             }
             if (this.propertyMeta) {
                 [0, 1, 2, 3].forEach(pid => {
