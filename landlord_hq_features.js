@@ -4803,8 +4803,8 @@ function renderPropertyOverviewDetails(propertyId) {
                         <i data-lucide="layout-grid" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#16A34A] transition-colors m-0">Floor Plans</h3>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${(meta.floorPlans || []).length ? `${meta.floorPlans.length} layout plan${meta.floorPlans.length === 1 ? '' : 's'} uploaded` : 'Add floor plans & layout'}</p>
+                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#16A34A] transition-colors m-0">Floor Plans & Layouts</h3>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${(meta.floorPlans || []).length ? `${meta.floorPlans.length} layout plan${meta.floorPlans.length === 1 ? '' : 's'} uploaded` : 'Full building architectural plans'}</p>
                     </div>
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#16A34A] transition-colors shrink-0"></i>
@@ -4816,34 +4816,21 @@ function renderPropertyOverviewDetails(propertyId) {
                         <i data-lucide="zap" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Utilities & Parking</h3>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${utilItems.length ? `${utilItems.length} registered items (Gas, Electric, Water, Wi-Fi...)` : 'Configure utilities'}</p>
+                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Building Communal Services</h3>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Main Stopcock, Bin collection, Common power & bays</p>
                     </div>
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
             </button>
 
-            <button type="button" data-go="property-appliances" data-pid="${propertyId}" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                        <i data-lucide="plug" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Appliances</h3>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${(meta.appliances || []).length ? `${(meta.appliances || []).length} items recorded (Boiler, Oven, Fridge...)` : 'Add appliances'}</p>
-                    </div>
-                </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
-            </button>
-
-            <button type="button" data-go="property-alarms" data-pid="${propertyId}" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
+            <button type="button" data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-[#FEF2F2] text-[#DC2626] flex items-center justify-center shrink-0">
-                        <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#DC2626] transition-colors m-0">Safety Alarms</h3>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${(meta.alarms || []).length ? `${(meta.alarms || []).length} alarms on file (Smoke, Heat, CO...)` : 'Add safety alarms'}</p>
+                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#DC2626] transition-colors m-0">Building Compliance & Insurance</h3>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Fire Safety (FRA), Asbestos, EPC & Insurance</p>
                     </div>
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#DC2626] transition-colors shrink-0"></i>
@@ -9420,9 +9407,12 @@ function memberRentOverview(propertyId, unit, member, tenancy) {
 
 function flatDetailQuickLinks(propertyId, unit) {
     const meta = flatQuickActionMeta(propertyId, unit);
+    const pMeta = AppStore.meta(propertyId);
+    const applianceCount = (pMeta.appliances || []).length || 4;
     const links = [
         { icon: 'banknote', tone: 'pay', title: 'Payments', sub: meta.pay, ftab: 'payments' },
-        { icon: 'droplets', tone: 'util', title: 'Utilities', sub: meta.utilities, go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'zap', tone: 'util', title: 'Utilities', sub: meta.utilities, go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'plug', tone: 'docs', title: 'Appliances', sub: `${applianceCount} items`, go: 'property-appliances', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
         { icon: 'folder-open', tone: 'docs', title: 'Records', sub: meta.records, ftab: 'records' },
     ];
     return `
@@ -9691,18 +9681,20 @@ function renderFlatDetailRecordsTab(propertyId, unit, p) {
         ${renderFlatUnitDocumentsSection(propertyId, unit, { full: true })}
         ${renderFlatTenantIdentitySection(propertyId, unit)}
         <section class="card flat-records-nav-list">
-            ${navRow('key-round', 'Keys', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register key sets')}
-            ${navRow('droplets', 'Utilities', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters & providers')}
+            ${navRow('zap', 'Utilities & Wi-Fi', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters, Wi-Fi & Council Tax')}
+            ${navRow('plug', 'Appliances', `data-go="property-appliances" data-pid="${propertyId}" data-unit="${unit}"`, 'Boiler, Oven, Fridge & White Goods')}
+            ${navRow('shield-alert', 'Safety Alarms', `data-go="property-alarms" data-pid="${propertyId}" data-unit="${unit}"`, 'Smoke, Heat & CO Detectors')}
+            ${navRow('key-round', 'Keys & Fobs', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register key sets')}
             ${navRow('images', 'Unit photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
         </section>
         <section class="flat-records-building-block">
-            <p class="flat-section-eyebrow">Building</p>
+            <p class="flat-section-eyebrow">Building & Asset Records</p>
             <p class="flat-records-building-hint">Shared across all units in this property</p>
             <div class="card flat-records-nav-list">
-                ${navRow('shield-check', 'Certificates', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance"`, issues ? `${issues} need attention` : 'Gas, EICR, EPC & safety')}
+                ${navRow('shield-check', 'Building Certificates', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance"`, issues ? `${issues} need attention` : 'Gas, EICR, EPC & safety')}
                 ${navRow('clipboard-list', 'Inspections', `data-go="property-inspections" data-pid="${propertyId}"`, inspMeta)}
                 ${navRow('package', 'Inventory', `data-go="property-inventory" data-pid="${propertyId}"`, invMeta)}
-                ${navRow('folder-open', 'Property files', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="documents"`, 'Building documents & folders')}
+                ${navRow('folder-open', 'Building files', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="documents"`, 'Building documents & folders')}
             </div>
         </section>
     </div>`;
@@ -16139,7 +16131,7 @@ function screenPropertyUtilitiesView() {
         <span>Edit</span>
     </button>`;
 
-    return `${topBar('Utilities & Parking', { back: true, sub: p?.name || '', rightBtn: editBtn })}
+    return `${topBar('Building Services & Meters', { back: true, sub: `${p?.name || ''} · Whole building & meters`, rightBtn: editBtn })}
     <div class="screen-content screen-enter space-y-4 text-left">
         <div class="grid grid-cols-2 gap-3">
             ${gridCards.map(c => `
