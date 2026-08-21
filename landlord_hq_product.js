@@ -405,7 +405,7 @@ function screenDocFolderView() {
                     </div>` : `
                     <button type="button" data-action="request-cert-contractor" data-folder="${folderId}" data-pid="${propertyId}" class="cert-request-cta">
                         <i data-lucide="send" class="w-4 h-4"></i>
-                        <span>Request from contractor</span>
+                        <span>Request certificate from contractor</span>
                     </button>`}
                 </div>
                 <p class="cert-folder-hint">Contractor uploads auto-file here. New files become Current; older ones move to history.</p>
