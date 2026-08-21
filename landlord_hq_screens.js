@@ -2718,6 +2718,7 @@ const topBar = (title, opts = {}) => {
                 <h1 class="sub-header-title">${title}</h1>
             </div>
         </div>
+        ${opts.rightBtn ? opts.rightBtn : ''}
         ${opts.search ? `<button data-focus-search="${opts.searchKey || 'main'}" class="top-icon-btn shrink-0 w-10 h-10 rounded-full border border-[#E2E8F0] bg-white"><i data-lucide="search" class="w-[18px] h-[18px]"></i></button>` : ''}
         ${opts.more ? `<button data-go="edit-property" data-pid="${opts.pid != null ? opts.pid : STATE.propertyId}" class="top-icon-btn shrink-0 w-10 h-10 rounded-full border border-[#E2E8F0] bg-white" title="Property options"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>` : ''}
     </div>
@@ -6013,6 +6014,26 @@ function bindEvents() {
         el.onclick = () => {
             if (typeof toggleContractorTradeHandler === 'function') {
                 toggleContractorTradeHandler(el.dataset.trade);
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="view-utility-detail-modal"]').forEach(el => {
+        el.onclick = () => {
+            if (typeof openUtilityDetailModal === 'function') {
+                openUtilityDetailModal(el.dataset.utilityId);
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="toggle-accordion"]').forEach(el => {
+        el.onclick = () => {
+            const id = el.dataset.accordion;
+            const body = document.querySelector(`.accordion-body-${id}`);
+            const chevron = document.querySelector(`.accordion-chevron-${id}`);
+            if (body) {
+                body.classList.toggle('hidden');
+                if (chevron) {
+                    chevron.classList.toggle('rotate-180');
+                }
             }
         };
     });

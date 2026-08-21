@@ -1882,6 +1882,9 @@ const UTILITY_CATALOG = [
     { key: 'electric', label: 'Electricity', icon: 'zap' },
     { key: 'water', label: 'Water', icon: 'droplets' },
     { key: 'wifi', label: 'Wi-Fi', icon: 'wifi' },
+    { key: 'council', label: 'Council Tax', icon: 'landmark' },
+    { key: 'parking', label: 'Parking', icon: 'car' },
+    { key: 'others', label: 'Other Utility', icon: 'plus-circle' },
 ];
 
 const REMINDER_TIMING_OPTIONS = [
@@ -2146,43 +2149,72 @@ function utilityProviderPlaceholder(key) {
         gas: 'e.g. British Gas, Octopus Energy',
         electric: 'e.g. Octopus Energy, EDF',
         water: 'e.g. Thames Water, Anglian Water',
-        broadband: 'e.g. BT, Sky, Virgin Media',
-        oil: 'e.g. Certas Energy, local LPG supplier',
-        heating: 'e.g. Communal scheme, heat network',
+        wifi: 'e.g. BT Fibre Hub, Sky Broadband',
+        council: 'e.g. Westminster City Council',
+        parking: 'e.g. Bay #12, Permit LB-4421',
+        others: 'e.g. Communal Heat, LPG, Solar',
     };
-    return hints[key] || 'Enter provider name';
+    return hints[key] || 'Enter provider or detail';
 }
 
 function renderUtilityProviderFields(meta) {
     migrateUtilityKeys(meta);
     const utilities = meta.utilities || {};
-    const utilityCards = UTILITY_CATALOG
-        .filter(u => utilities[u.key] != null)
+    const parking = meta.parking || {};
+
+    return UTILITY_CATALOG
+        .filter(u => utilities[u.key] != null || (u.key === 'parking' && (parking.details || parking.type)))
         .map(u => {
             const entry = getUtilityEntry(meta, u.key) || {};
-            return `<div class="utility-provider-card card p-4 mb-2">
-                <div class="utility-provider-head">
-                    <span class="feature-pick-chip-icon"><i data-lucide="${u.icon}" class="w-4 h-4"></i></span>
-                    <p class="utility-provider-title">${u.label}</p>
+
+            if (u.key === 'council') {
+                const council = utilities.council || {};
+                return `<div class="utility-provider-card card p-4 mb-3 border border-[#E2E8F0] rounded-2xl">
+                    <div class="utility-provider-head flex items-center gap-2.5 mb-3">
+                        <span class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                            <i data-lucide="${u.icon}" class="w-4 h-4"></i>
+                        </span>
+                        <p class="utility-provider-title text-[14px] font-bold text-[#0F172A] m-0">${u.label}</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div><label class="form-label">Council name</label><input data-field="util_council_name" class="form-input" value="${escapeHtml(council.name || '')}" placeholder="e.g. Westminster City Council"></div>
+                        <div><label class="form-label">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></label><textarea data-field="util_council_notes" class="form-input min-h-[64px] resize-none" placeholder="Account reference, contact details…">${escapeHtml(council.notes || '')}</textarea></div>
+                    </div>
+                </div>`;
+            }
+
+            if (u.key === 'parking') {
+                const pk = meta.parking || {};
+                return `<div class="utility-provider-card card p-4 mb-3 border border-[#E2E8F0] rounded-2xl">
+                    <div class="utility-provider-head flex items-center gap-2.5 mb-3">
+                        <span class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                            <i data-lucide="${u.icon}" class="w-4 h-4"></i>
+                        </span>
+                        <p class="utility-provider-title text-[14px] font-bold text-[#0F172A] m-0">${u.label}</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div><label class="form-label">Parking type</label><input data-field="parking_type" class="form-input" value="${escapeHtml(pk.type || 'Off-street')}" placeholder="e.g. Off-street, Allocated Bay, Driveway"></div>
+                        <div><label class="form-label">Space / Permit details</label><input data-field="parking_details" class="form-input" value="${escapeHtml(pk.details || 'Allocated bay #12')}" placeholder="e.g. Bay #12, Permit LB-4421"></div>
+                    </div>
+                </div>`;
+            }
+
+            return `<div class="utility-provider-card card p-4 mb-3 border border-[#E2E8F0] rounded-2xl">
+                <div class="utility-provider-head flex items-center gap-2.5 mb-3">
+                    <span class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="${u.icon}" class="w-4 h-4"></i>
+                    </span>
+                    <p class="utility-provider-title text-[14px] font-bold text-[#0F172A] m-0">${u.label}</p>
                 </div>
-                <div><label class="form-label">Provider name</label><input data-field="util_${u.key}_provider" class="form-input" value="${escapeHtml(entry.provider || '')}" placeholder="${utilityProviderPlaceholder(u.key)}"></div>
-                <div><label class="form-label">Meter number</label><input data-field="util_${u.key}_meter" class="form-input" value="${escapeHtml(entry.meterNumber || '')}" placeholder="e.g. MPAN / MPRN"></div>
-                <div><label class="form-label">Meter location</label><input data-field="util_${u.key}_location" class="form-input" value="${escapeHtml(entry.meterLocation || '')}" placeholder="e.g. Under stairs cupboard"></div>
-                <div><label class="form-label">Phone number</label><input data-field="util_${u.key}_phone" type="tel" class="form-input" value="${escapeHtml(entry.phone || '')}" placeholder="Provider contact"></div>
-                <div>${renderFieldPhotoUpload('Meter picture', `util_${u.key}_picture`, entry.meterPicture || '')}</div>
+                <div class="space-y-3">
+                    <div><label class="form-label">Provider name</label><input data-field="util_${u.key}_provider" class="form-input" value="${escapeHtml(entry.provider || '')}" placeholder="${utilityProviderPlaceholder(u.key)}"></div>
+                    <div><label class="form-label">Meter / Account number</label><input data-field="util_${u.key}_meter" class="form-input" value="${escapeHtml(entry.meterNumber || '')}" placeholder="e.g. MPAN / MPRN / Account ID"></div>
+                    <div><label class="form-label">Meter location / Details</label><input data-field="util_${u.key}_location" class="form-input" value="${escapeHtml(entry.meterLocation || '')}" placeholder="e.g. Under stairs cupboard, Outside box"></div>
+                    <div><label class="form-label">Phone number</label><input data-field="util_${u.key}_phone" type="tel" class="form-input" value="${escapeHtml(entry.phone || '')}" placeholder="Provider contact phone"></div>
+                    <div>${renderFieldPhotoUpload('Meter picture', `util_${u.key}_picture`, entry.meterPicture || '')}</div>
+                </div>
             </div>`;
         }).join('');
-    const council = utilities.council || {};
-    const councilCard = `
-    <div class="utility-provider-card card p-4 mb-2">
-        <div class="utility-provider-head">
-            <span class="feature-pick-chip-icon"><i data-lucide="landmark" class="w-4 h-4"></i></span>
-            <p class="utility-provider-title">Council</p>
-        </div>
-        <div><label class="form-label">Council name</label><input data-field="util_council_name" class="form-input" value="${escapeHtml(council.name || '')}" placeholder="e.g. Westminster City Council"></div>
-        <div><label class="form-label">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></label><textarea data-field="util_council_notes" class="form-input min-h-[72px] resize-none" placeholder="Account reference, contact details…">${escapeHtml(council.notes || '')}</textarea></div>
-    </div>`;
-    return `${utilityCards}${councilCard}`;
 }
 
 function escapeHtml(s) {
@@ -4716,10 +4748,12 @@ function renderPropertyOverviewDetails(propertyId) {
                         </div>
                         <span class="building-info-row-value">${escapeHtml(String(value))}</span>
                     </div>`).join('');
+
     return `
     <div class="screen-content screen-content-sm building-info-page building-info-page--v2">
         ${justSaved ? `<p class="text-[12px] font-semibold text-[#16A34A] mb-3" id="property-saved-output">Property saved</p>` : ''}
-        <div class="prop-overview-strip card">
+        
+        <div class="prop-overview-strip card mb-3">
             <div class="prop-overview-stat"><strong>${occupied}</strong><span>Occupied</span></div>
             <div class="prop-overview-divider"></div>
             <div class="prop-overview-stat"><strong>${vacant}</strong><span>Vacant</span></div>
@@ -4728,7 +4762,21 @@ function renderPropertyOverviewDetails(propertyId) {
             <div class="prop-overview-divider"></div>
             <div class="prop-overview-stat"><strong>${floors}</strong><span>Floors</span></div>
         </div>
-        <div class="${buildingSectionCardClass()}" id="property-info-output">
+
+        <div class="${buildingSectionCardClass()} mb-3">
+            ${renderBuildingSectionHead('Property Photos', `<span class="building-section-meta">${photoCount} photo${photoCount === 1 ? '' : 's'}</span>`)}
+            ${photoCount ? `
+            <button type="button" data-go="property-photos" data-pid="${propertyId}" class="building-photo-grid building-photo-grid--tap" aria-label="Manage property photos">
+                ${photos.slice(0, 3).map((src, i) => `
+                <div class="building-photo-thumb">
+                    <img src="${src}" alt="">
+                    ${i === 0 ? '<span class="photo-cover-badge">COVER</span>' : ''}
+                </div>`).join('')}
+            </button>` : `
+            <p class="building-empty-copy">No photos yet. <button type="button" data-go="property-photos" data-pid="${propertyId}" class="header-text-link">Add photos</button></p>`}
+        </div>
+
+        <div class="${buildingSectionCardClass()} mb-3" id="property-info-output">
             ${renderBuildingSectionHead('Property Information', `<button type="button" data-go="property-info" data-pid="${propertyId}" class="header-text-link">Edit</button>`)}
             <button type="button" data-go="property-info" data-pid="${propertyId}" class="building-section-tap building-info-tap" aria-label="Edit property information">
                 <div class="building-info-rows">
@@ -4747,58 +4795,59 @@ function renderPropertyOverviewDetails(propertyId) {
                 </div>` : ''}
             </button>
         </div>
-        <div class="${buildingSectionCardClass()}">
-            ${renderBuildingSectionHead('Property Photos', `<span class="building-section-meta">${photoCount} photo${photoCount === 1 ? '' : 's'}</span>`)}
-            ${photoCount ? `
-            <button type="button" data-go="property-photos" data-pid="${propertyId}" class="building-photo-grid building-photo-grid--tap" aria-label="Manage property photos">
-                ${photos.slice(0, 3).map((src, i) => `
-                <div class="building-photo-thumb">
-                    <img src="${src}" alt="">
-                    ${i === 0 ? '<span class="photo-cover-badge">COVER</span>' : ''}
-                </div>`).join('')}
-            </button>` : `
-            <p class="building-empty-copy">No photos yet. <button type="button" data-go="property-photos" data-pid="${propertyId}" class="header-text-link">Add photos</button></p>`}
-        </div>
-        <div class="${buildingSectionCardClass()}">
-            ${renderBuildingSectionHead('Floor Plans', `<span class="building-section-meta">${(meta.floorPlans || []).length} plan${(meta.floorPlans || []).length === 1 ? '' : 's'}</span>`)}
-            <button type="button" data-go="property-floor-plans" data-pid="${propertyId}" class="building-section-tap building-info-tap building-info-tap--link" aria-label="Manage floor plans">
-                <div class="building-info-row building-info-row--link">
-                    <div class="building-info-row-left">
-                        <i data-lucide="layout-grid" class="w-4 h-4 text-[#94A3B8]"></i>
-                        <span class="building-info-row-label">Floor plans</span>
+
+        <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden mb-3">
+            <button type="button" data-go="property-floor-plans" data-pid="${propertyId}" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
+                        <i data-lucide="layout-grid" class="w-5 h-5"></i>
                     </div>
-                    <span class="building-info-row-value">${(meta.floorPlans || []).length ? `${meta.floorPlans.length} uploaded` : 'Add floor plans'}</span>
-                    <span class="building-section-chevron" aria-hidden="true"><i data-lucide="chevron-right" class="w-4 h-4"></i></span>
+                    <div>
+                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#16A34A] transition-colors m-0">Floor Plans</h3>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${(meta.floorPlans || []).length ? `${meta.floorPlans.length} layout plan${meta.floorPlans.length === 1 ? '' : 's'} uploaded` : 'Add floor plans & layout'}</p>
+                    </div>
                 </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#16A34A] transition-colors shrink-0"></i>
             </button>
-        </div>
-        <div class="${buildingSectionCardClass()}">
-            ${renderBuildingSectionHead('Utilities & Parking')}
-            ${utilItems.length ? `
-            <button type="button" data-go="property-utilities" data-pid="${propertyId}" class="building-section-tap" aria-label="Edit utilities">
-            <div class="building-icon-grid cols-3">
-                ${utilItems.map(item => renderBuildingIconItem(item)).join('')}
-            </div>
-            </button>` : `<p class="building-empty-copy">No utilities set yet. <button type="button" data-go="property-utilities" data-pid="${propertyId}" class="header-text-link">Add utilities</button></p>`}
-            ${renderBuildingParkingBlock(meta, propertyId)}
-        </div>
-        <div class="${buildingSectionCardClass()}">
-            ${renderBuildingSectionHead('Appliances & Alarms')}
-            ${featureItems.length ? `
-            ${applianceItems.length ? `
-            <button type="button" data-go="property-appliances" data-pid="${propertyId}" class="building-section-tap" aria-label="Edit appliances">
-                ${applianceItems.length && alarmItems.length ? '<p class="building-subsection-label">Appliances</p>' : ''}
-                <div class="building-icon-grid cols-2">
-                    ${applianceItems.map(item => renderBuildingIconItem(item)).join('')}
+
+            <button type="button" data-go="property-utilities" data-pid="${propertyId}" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Utilities & Parking</h3>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${utilItems.length ? `${utilItems.length} registered items (Gas, Electric, Water, Wi-Fi...)` : 'Configure utilities'}</p>
+                    </div>
                 </div>
-            </button>` : ''}
-            ${alarmItems.length ? `
-            <button type="button" data-go="property-alarms" data-pid="${propertyId}" class="building-section-tap building-subsection-tap${applianceItems.length ? ' building-subsection-tap--divider' : ''}" aria-label="Edit alarms">
-                ${applianceItems.length ? '<p class="building-subsection-label">Alarms</p>' : ''}
-                <div class="building-icon-grid cols-2">
-                    ${alarmItems.map(item => renderBuildingIconItem(item)).join('')}
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
+            </button>
+
+            <button type="button" data-go="property-appliances" data-pid="${propertyId}" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="plug" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Appliances</h3>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${(meta.appliances || []).length ? `${(meta.appliances || []).length} items recorded (Boiler, Oven, Fridge...)` : 'Add appliances'}</p>
+                    </div>
                 </div>
-            </button>` : ''}` : `<p class="building-empty-copy">No appliances or alarms added yet. <button type="button" data-go="property-appliances" data-pid="${propertyId}" class="header-text-link">Add items</button></p>`}
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
+            </button>
+
+            <button type="button" data-go="property-alarms" data-pid="${propertyId}" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-[#FEF2F2] text-[#DC2626] flex items-center justify-center shrink-0">
+                        <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#DC2626] transition-colors m-0">Safety Alarms</h3>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${(meta.alarms || []).length ? `${(meta.alarms || []).length} alarms on file (Smoke, Heat, CO...)` : 'Add safety alarms'}</p>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#DC2626] transition-colors shrink-0"></i>
+            </button>
         </div>
     </div>`;
 }
@@ -5477,9 +5526,6 @@ function screenTenancyDetail() {
     <div class="screen-content screen-enter tenancy-detail-page">
         ${renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead)}
         ${renderTenancyDocumentsChecklist(propertyId, unit, tenancy)}
-        <button type="button" data-action="tenancy-esign-soon" class="btn-secondary w-full py-2.5 text-[13px] mb-3">
-            <i data-lucide="pen-line" class="w-4 h-4 inline-block mr-1"></i>Request e-signature <span class="text-[#94A3B8]">(coming soon)</span>
-        </button>
         <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mb-3">Edit deposit scheme</button>
         ${renderTenancyMembersSection(propertyId, unit, tenancy, members)}
         ${typeof renderTenantKeysCard === 'function' && lead ? renderTenantKeysCard(propertyId, unit, lead.name) : ''}
@@ -7888,7 +7934,7 @@ function renderBuildingCertTiles(propertyId) {
     const folderCount = (folderId) => (typeof docsForFolder === 'function' ? docsForFolder(allDocs, folderId).length : 0);
     const tileDefs = [
         { folderId: 'gas', cid: 0, label: 'Gas (CP12)', icon: 'flame', bg: '#FEE2E2', color: '#DC2626' },
-        { folderId: 'eicr', cid: 1, label: 'EICR', icon: 'zap', bg: '#FEF3C7', color: '#D97706' },
+        { folderId: 'eicr', cid: 1, label: 'EICR', icon: 'zap', bg: '#EFF6FF', color: '#2563EB' },
         { folderId: 'epc', cid: 7, label: 'EPC', icon: 'leaf', bg: '#ECFDF5', color: '#16A34A' },
         { folderId: 'deposit', label: 'Deposit', icon: 'shield', bg: '#DBEAFE', color: '#2563EB', folderOnly: true },
         { folderId: 'license', label: 'Property License', icon: 'badge-check', bg: '#DBEAFE', color: '#2563EB', folderOnly: true, optional: true },
@@ -8059,7 +8105,7 @@ function renderRecordsHubApplianceRow(propertyId) {
 }
 
 function renderApplianceRecordCard(a) {
-    const icon = applianceIcon(a.name);
+    const icon = getApplianceIcon(a.name, a.icon);
     const photo = isFieldPhotoPreviewable(a.photo) ? a.photo : '';
     return `
     <div class="card p-4 mb-2">
@@ -8075,50 +8121,545 @@ function renderApplianceRecordCard(a) {
     </div>`;
 }
 
-function screenPropertyApplianceRecords() {
-    const propertyId = STATE.propertyId;
-    const p = PROPERTIES[propertyId];
-    const appliances = AppStore.meta(propertyId).appliances || [];
-    return `${topBar('Appliances', { back: true, sub: p?.name || '' })}
-    <div class="screen-content screen-enter">
-        <p class="form-helper mb-3">Detailed appliance records for this property. Summary counts appear on the Info tab.</p>
-        ${appliances.length ? appliances.map(a => renderApplianceRecordCard(a)).join('') : emptyState('plug', 'No appliances recorded', 'Tick the appliances in this property, then add brand, photo and warranty details.', 'Add appliances', null, 'property-appliances')}
-        <button type="button" data-go="property-appliances" data-pid="${propertyId}" class="btn-primary w-full py-3.5 text-[14px] mt-2">${appliances.length ? 'Edit appliances' : 'Add appliances'}</button>
+function getApplianceIcon(name = '', iconOverride = '') {
+    if (iconOverride && iconOverride !== 'plug') return iconOverride;
+    const n = name.toLowerCase();
+    if (n.includes('boiler') || n.includes('heater') || n.includes('heating')) return 'flame';
+    if (n.includes('oven') || n.includes('cooker') || n.includes('stove') || n.includes('hob') || n.includes('microwave')) return 'microwave';
+    if (n.includes('fridge') || n.includes('freezer') || n.includes('refrigerator')) return 'refrigerator';
+    if (n.includes('wash') || n.includes('laundry')) return 'washing-machine';
+    if (n.includes('dish')) return 'utensils';
+    if (n.includes('tv') || n.includes('television')) return 'tv';
+    if (n.includes('ac') || n.includes('air') || n.includes('fan')) return 'wind';
+    if (n.includes('alarm') || n.includes('smoke') || n.includes('fire')) return 'shield-alert';
+    return 'plug';
+}
+
+function getAlarmIcon(name = '', iconOverride = '') {
+    if (iconOverride && iconOverride !== 'bell') return iconOverride;
+    const n = name.toLowerCase();
+    if (n.includes('smoke')) return 'bell-ring';
+    if (n.includes('heat')) return 'thermometer';
+    if (n.includes('co') || n.includes('carbon')) return 'shield-alert';
+    return 'bell';
+}
+
+function openAddApplianceModal(propertyId) {
+    const pid = propertyId ?? STATE.propertyId ?? 0;
+    const modalHtml = `
+    <div id="add-appliance-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i data-lucide="plug" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-[16px] font-bold text-slate-900 m-0">Add New Appliance</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('add-appliance-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Appliance Name *</label>
+                    <input id="new-appliance-name" type="text" placeholder="e.g. Microwave, Washing Machine, Boiler, Air Fryer" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Brand / Manufacturer</label>
+                    <input id="new-appliance-brand" type="text" placeholder="e.g. Bosch, Samsung, Worcester, Beko" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Warranty / Cover Details</label>
+                    <input id="new-appliance-warranty" type="text" placeholder="e.g. Parts & Labour until 2028, Manufacturer warranty" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Type / Model Note</label>
+                    <input id="new-appliance-type" type="text" placeholder="e.g. Built-in, 70/30 Frost Free, Combi Boiler" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" onclick="document.getElementById('add-appliance-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="button" id="submit-new-appliance-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Appliance</button>
+            </div>
+        </div>
     </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.lucide) lucide.createIcons();
+
+    document.getElementById('submit-new-appliance-btn').onclick = () => {
+        const name = document.getElementById('new-appliance-name').value.trim();
+        const brand = document.getElementById('new-appliance-brand').value.trim() || 'Recorded';
+        const warranty = document.getElementById('new-appliance-warranty').value.trim() || 'On record';
+        const type = document.getElementById('new-appliance-type').value.trim() || 'Recorded';
+
+        if (!name) {
+            toast('Please enter appliance name');
+            return;
+        }
+
+        const meta = AppStore.meta(pid);
+        if (!meta.appliances) meta.appliances = [];
+        meta.appliances.push({
+            id: 'custom-' + Date.now(),
+            name,
+            brand,
+            type,
+            warranty,
+            icon: getApplianceIcon(name),
+            tag: 'Recorded'
+        });
+
+        document.getElementById('add-appliance-modal').remove();
+        toast(`Appliance "${name}" added successfully!`);
+        render();
+    };
+}
+
+function openAddAlarmModal(propertyId) {
+    const pid = propertyId ?? STATE.propertyId ?? 0;
+    const modalHtml = `
+    <div id="add-alarm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-[16px] font-bold text-slate-900 m-0">Add Safety Alarm / Detector</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('add-alarm-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Alarm Type / Name *</label>
+                    <input id="new-alarm-name" type="text" placeholder="e.g. Smoke Alarm, CO Alarm, Heat Detector, Burglar Alarm" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Location in Property</label>
+                    <input id="new-alarm-location" type="text" placeholder="e.g. Hallway / Landing, Kitchen Ceiling, Boiler Room" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Expiry Date / Battery Due</label>
+                    <input id="new-alarm-expiry" type="text" placeholder="e.g. Exp: 15 Jan 2028" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" onclick="document.getElementById('add-alarm-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="button" id="submit-new-alarm-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Alarm</button>
+            </div>
+        </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.lucide) lucide.createIcons();
+
+    document.getElementById('submit-new-alarm-btn').onclick = () => {
+        const name = document.getElementById('new-alarm-name').value.trim();
+        const location = document.getElementById('new-alarm-location').value.trim() || 'Installed';
+        const expiry = document.getElementById('new-alarm-expiry').value.trim() || 'Exp: 2028';
+
+        if (!name) {
+            toast('Please enter alarm name');
+            return;
+        }
+
+        const meta = AppStore.meta(pid);
+        if (!meta.alarms) meta.alarms = [];
+        meta.alarms.push({
+            id: 'alarm-' + Date.now(),
+            name,
+            location,
+            expiry,
+            status: 'Tested OK',
+            icon: getAlarmIcon(name)
+        });
+
+        document.getElementById('add-alarm-modal').remove();
+        toast(`Safety Alarm "${name}" added successfully!`);
+        render();
+    };
+}
+
+function openApplianceItemModal(applianceId) {
+    const pid = STATE.propertyId ?? 0;
+    const meta = AppStore.meta(pid);
+    let appliances = meta.appliances || [];
+
+    if (!appliances.length) {
+        appliances = [
+            { id: 'boiler', name: 'Boiler', brand: 'Worcester Bosch', type: 'Gas Combi Boiler', warranty: 'Parts & labour', icon: 'flame', tag: 'Recorded' },
+            { id: 'oven', name: 'Oven', brand: 'Bosch', type: 'Electric Built-in Oven', warranty: 'Manufacturer warranty', icon: 'microwave', tag: 'Recorded' },
+            { id: 'fridge', name: 'Fridge Freezer', brand: 'Samsung', type: 'Frost Free 70/30', warranty: 'Standard warranty', icon: 'refrigerator', tag: 'Recorded' },
+        ];
+        meta.appliances = appliances;
+    }
+
+    let item = appliances.find(a => (a.id && String(a.id) === String(applianceId)) || a.name === applianceId);
+    if (!item) item = appliances[0];
+
+    const modalHtml = `
+    <div id="appliance-item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i data-lucide="${getApplianceIcon(item.name, item.icon)}" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[16px] font-bold text-slate-900 m-0">${escapeHtml(item.name)}</h3>
+                        <p class="text-[11px] text-slate-500 m-0">Appliance Details & Photo Upload</p>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('appliance-item-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Photo Upload Box -->
+            <div>
+                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Appliance Photo / Serial Label</label>
+                <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer group">
+                    <input type="file" id="appliance-photo-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                    <div id="appliance-photo-preview-box" class="flex flex-col items-center justify-center gap-2">
+                        ${item.photo ? `<img src="${item.photo}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Change photo</span>` : `<div class="w-10 h-10 rounded-full bg-white text-slate-400 flex items-center justify-center shadow-xs"><i data-lucide="camera" class="w-5 h-5 text-blue-600"></i></div><span class="text-[12px] font-bold text-slate-700">Upload Photo of ${escapeHtml(item.name)}</span><span class="text-[10px] text-slate-400">Tap to upload unit photo or serial label</span>`}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Appliance Name</label>
+                    <input id="item-name-input" type="text" value="${escapeHtml(item.name || '')}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Brand / Manufacturer</label>
+                    <input id="item-brand-input" type="text" value="${escapeHtml(item.brand || '')}" placeholder="e.g. Bosch, Samsung, Worcester" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Warranty & Cover Details</label>
+                    <input id="item-warranty-input" type="text" value="${escapeHtml(item.warranty || '')}" placeholder="e.g. Parts & Labour until Jan 2028" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Model / Type Notes</label>
+                    <input id="item-type-input" type="text" value="${escapeHtml(item.type || '')}" placeholder="e.g. Combi Boiler 30kW, Built-in Oven" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" onclick="document.getElementById('appliance-item-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="button" id="save-appliance-item-submit-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Changes</button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.lucide) lucide.createIcons();
+
+    let uploadedPhoto = item.photo || '';
+    const fileInput = document.getElementById('appliance-photo-file-input');
+    if (fileInput) {
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    uploadedPhoto = evt.target.result;
+                    const preview = document.getElementById('appliance-photo-preview-box');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${uploadedPhoto}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Photo updated! Tap to change</span>`;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+
+    document.getElementById('save-appliance-item-submit-btn').onclick = () => {
+        item.name = document.getElementById('item-name-input').value.trim() || item.name;
+        item.brand = document.getElementById('item-brand-input').value.trim() || 'Recorded';
+        item.warranty = document.getElementById('item-warranty-input').value.trim() || 'On record';
+        item.type = document.getElementById('item-type-input').value.trim() || 'Recorded';
+        item.photo = uploadedPhoto;
+
+        document.getElementById('appliance-item-modal').remove();
+        toast(`Updated "${item.name}" photo & details!`);
+        render();
+    };
+}
+
+function openAlarmItemModal(alarmId) {
+    const pid = STATE.propertyId ?? 0;
+    const meta = AppStore.meta(pid);
+    let alarms = meta.alarms || [];
+
+    if (!alarms.length) {
+        alarms = [
+            { id: 'smoke', name: 'Smoke Alarm', location: 'Hallway / Landing', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', icon: 'bell-ring' },
+            { id: 'heat', name: 'Heat Alarm', location: 'Kitchen Ceiling', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', icon: 'thermometer' },
+            { id: 'co', name: 'CO Alarm', location: 'Boiler Room / Bedroom', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', icon: 'shield-alert' },
+        ];
+        meta.alarms = alarms;
+    }
+
+    let al = alarms.find(a => (a.id && String(a.id) === String(alarmId)) || a.name === alarmId);
+    if (!al) al = alarms[0];
+
+    const modalHtml = `
+    <div id="alarm-item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i data-lucide="${getAlarmIcon(al.name, al.icon)}" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[16px] font-bold text-slate-900 m-0">${escapeHtml(al.name)}</h3>
+                        <p class="text-[11px] text-slate-500 m-0">Safety Alarm Details & Photo</p>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('alarm-item-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Photo Upload Box -->
+            <div>
+                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Alarm Photo / Safety Certificate</label>
+                <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer group">
+                    <input type="file" id="alarm-photo-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                    <div id="alarm-photo-preview-box" class="flex flex-col items-center justify-center gap-2">
+                        ${al.photo ? `<img src="${al.photo}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Change photo</span>` : `<div class="w-10 h-10 rounded-full bg-white text-slate-400 flex items-center justify-center shadow-xs"><i data-lucide="camera" class="w-5 h-5 text-blue-600"></i></div><span class="text-[12px] font-bold text-slate-700">Upload Photo of ${escapeHtml(al.name)}</span><span class="text-[10px] text-slate-400">Tap to upload alarm photo or certificate</span>`}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Alarm Name</label>
+                    <input id="alarm-item-name-input" type="text" value="${escapeHtml(al.name || '')}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Location in Property</label>
+                    <input id="alarm-item-loc-input" type="text" value="${escapeHtml(al.location || '')}" placeholder="e.g. Hallway / Landing, Kitchen Ceiling" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Expiry / Battery Due</label>
+                    <input id="alarm-item-expiry-input" type="text" value="${escapeHtml(al.expiry || '')}" placeholder="e.g. Exp: 15 Jan 2028" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" onclick="document.getElementById('alarm-item-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="button" id="save-alarm-item-submit-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Changes</button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.lucide) lucide.createIcons();
+
+    let uploadedPhoto = al.photo || '';
+    const fileInput = document.getElementById('alarm-photo-file-input');
+    if (fileInput) {
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    uploadedPhoto = evt.target.result;
+                    const preview = document.getElementById('alarm-photo-preview-box');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${uploadedPhoto}" alt="" class="max-h-36 rounded-xl object-cover shadow-sm mb-1"><span class="text-[11px] font-bold text-blue-600">Photo updated! Tap to change</span>`;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+
+    document.getElementById('save-alarm-item-submit-btn').onclick = () => {
+        al.name = document.getElementById('alarm-item-name-input').value.trim() || al.name;
+        al.location = document.getElementById('alarm-item-loc-input').value.trim() || 'Installed';
+        al.expiry = document.getElementById('alarm-item-expiry-input').value.trim() || 'Exp: 2028';
+        al.photo = uploadedPhoto;
+
+        document.getElementById('alarm-item-modal').remove();
+        toast(`Updated "${al.name}" photo & details!`);
+        render();
+    };
+}
+
+function screenPropertyAppliances() {
+    const propertyId = STATE.propertyId ?? 0;
+    const p = PROPERTIES[propertyId];
+    const meta = AppStore.meta(propertyId);
+    const appliances = meta.appliances || [];
+
+    const defaultAppliances = [
+        { id: 'boiler', name: 'Boiler', brand: 'Worcester Bosch', type: 'Gas Combi Boiler', warranty: 'Parts & labour', icon: 'flame', tag: 'Recorded' },
+        { id: 'oven', name: 'Oven', brand: 'Bosch', type: 'Electric Built-in Oven', warranty: 'Manufacturer warranty', icon: 'microwave', tag: 'Recorded' },
+        { id: 'fridge', name: 'Fridge Freezer', brand: 'Samsung', type: 'Frost Free 70/30', warranty: 'Standard warranty', icon: 'refrigerator', tag: 'Recorded' },
+    ];
+
+    const displayAppliances = appliances.length ? appliances : defaultAppliances;
+
+    const editBtn = `<button type="button" data-go="edit-property-appliances" data-pid="${propertyId}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+        <span>Edit</span>
+    </button>`;
+
+    return `${topBar('Appliances', { back: true, sub: p?.name || '', rightBtn: editBtn })}
+    <div class="screen-content screen-enter space-y-6 text-left pb-6">
+        <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Appliances (${displayAppliances.length})</span>
+            </div>
+            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
+                ${displayAppliances.map(a => {
+                    const iconName = getApplianceIcon(a.name, a.icon);
+                    const photoHtml = a.photo
+                        ? `<img src="${a.photo}" alt="" class="w-10 h-10 rounded-xl object-cover shrink-0">`
+                        : `<div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"><i data-lucide="${iconName}" class="w-5 h-5"></i></div>`;
+                    return `
+                    <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="w-full p-4 flex items-center justify-between gap-3.5 hover:bg-[#F8FAFC] transition-colors group cursor-pointer text-left">
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            ${photoHtml}
+                            <div class="min-w-0">
+                                <h4 class="text-[15px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(a.name || 'Appliance')}</h4>
+                                <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5">${escapeHtml(a.brand || 'Recorded')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 text-right">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
+                                ${escapeHtml(a.warranty || a.type || 'On record')}
+                            </span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                        </div>
+                    </button>`;
+                }).join('')}
+            </div>
+            <button type="button" data-action="open-add-appliance-modal" data-pid="${propertyId}" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer mt-3">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add New Appliance</span>
+            </button>
+        </div>
+    </div>`;
+}
+
+function screenPropertyAlarms() {
+    const propertyId = STATE.propertyId ?? 0;
+    const p = PROPERTIES[propertyId];
+    const meta = AppStore.meta(propertyId);
+    const alarms = meta.alarms || [];
+
+    const defaultAlarms = [
+        { id: 'smoke', name: 'Smoke Alarm', location: 'Hallway / Landing', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', icon: 'bell-ring' },
+        { id: 'heat', name: 'Heat Alarm', location: 'Kitchen Ceiling', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', icon: 'thermometer' },
+        { id: 'co', name: 'CO Alarm', location: 'Boiler Room / Bedroom', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', icon: 'shield-alert' },
+    ];
+
+    const displayAlarms = alarms.length ? alarms : defaultAlarms;
+
+    const editBtn = `<button type="button" data-go="edit-property-alarms" data-pid="${propertyId}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+        <span>Edit</span>
+    </button>`;
+
+    return `${topBar('Safety Alarms', { back: true, sub: p?.name || '', rightBtn: editBtn })}
+    <div class="screen-content screen-enter space-y-6 text-left pb-6">
+        <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Safety Alarms (${displayAlarms.length})</span>
+            </div>
+            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
+                ${displayAlarms.map(al => {
+                    const alarmIcon = getAlarmIcon(al.name, al.icon);
+                    const photoHtml = al.photo
+                        ? `<img src="${al.photo}" alt="" class="w-10 h-10 rounded-xl object-cover shrink-0">`
+                        : `<div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"><i data-lucide="${alarmIcon}" class="w-5 h-5"></i></div>`;
+                    return `
+                    <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="w-full p-4 flex items-center justify-between gap-3.5 hover:bg-[#F8FAFC] transition-colors group cursor-pointer text-left">
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            ${photoHtml}
+                            <div class="min-w-0">
+                                <h4 class="text-[15px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(al.name || 'Alarm')}</h4>
+                                <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(al.location || 'Installed')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 text-right">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
+                                ${escapeHtml(al.expiry || '2026')}
+                            </span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                        </div>
+                    </button>`;
+                }).join('')}
+            </div>
+            <button type="button" data-action="open-add-alarm-modal" data-pid="${propertyId}" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer mt-3">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add Safety Alarm</span>
+            </button>
+        </div>
+    </div>`;
+}
+
+function getReminderCategoryMeta(title = '') {
+    const t = title.toLowerCase();
+    if (t.includes('gas')) return { icon: 'flame', bg: 'bg-[#FFF7ED]', text: 'text-[#EA580C]', border: 'border-[#FFEDD5]' };
+    if (t.includes('electric')) return { icon: 'zap', bg: 'bg-[#EFF6FF]', text: 'text-[#2563EB]', border: 'border-[#DBEAFE]' };
+    if (t.includes('inspection')) return { icon: 'clipboard-check', bg: 'bg-[#F3E8FF]', text: 'text-[#9333EA]', border: 'border-[#F3E8FF]' };
+    if (t.includes('rent')) return { icon: 'banknote', bg: 'bg-[#F0FDF4]', text: 'text-[#16A34A]', border: 'border-[#DCFCE7]' };
+    if (t.includes('alarm') || t.includes('smoke') || t.includes('fire')) return { icon: 'shield-alert', bg: 'bg-[#FEF2F2]', text: 'text-[#DC2626]', border: 'border-[#FEE2E2]' };
+    return { icon: 'bell-ring', bg: 'bg-[#EFF6FF]', text: 'text-[#2563EB]', border: 'border-[#DBEAFE]' };
 }
 
 function renderRecordsHubSmartRemindersSection(propertyId) {
     const list = (AppStore.reminders || []).filter(r => !propertyId || r.propertyId === propertyId || r.propertyId == null);
     if (!list.length) {
         return `
-        <div class="card p-6 text-center text-[13px] text-[#64748B] mb-4">
+        <div class="card p-6 text-center text-[13px] text-[#64748B] mb-4 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm">
             <i data-lucide="bell" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
             <p class="font-bold text-[#0F172A] text-[14px]">No active Smart Reminders</p>
             <p class="mt-1 text-[12px]">All property compliance and tenancy reminders are up to date.</p>
         </div>`;
     }
     return `
-    <div class="space-y-2 mb-4">
-        <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider px-1">Active Smart Reminders (${list.length})</p>
-        ${list.map(r => {
-            const title = r.title || r.type || 'Reminder';
-            const due = r.due || r.expiryDate || 'On file';
-            const prop = PROPERTIES[r.propertyId]?.name || 'All properties';
-            return `
-            <button type="button" data-action="open-reminder-detail" data-rid="${r.id}" class="personal-id-card-row p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9] hover:border-[#CBD5E1] flex items-center justify-between gap-3 w-full text-left transition-all cursor-pointer">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-[#2563EB] shrink-0">
-                        <i data-lucide="bell-ring" class="w-4 h-4"></i>
+    <div class="space-y-3 mb-6">
+        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Active Smart Reminders (${list.length})</p>
+        <div class="space-y-2.5">
+            ${list.map(r => {
+                const title = r.title || r.type || 'Reminder';
+                const due = r.due || r.expiryDate || 'On file';
+                const prop = PROPERTIES[r.propertyId]?.name || 'All properties';
+                const cat = getReminderCategoryMeta(title);
+                return `
+                <button type="button" data-action="open-reminder-detail" data-rid="${r.id}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] flex items-center justify-between gap-3.5 w-full text-left transition-all cursor-pointer group">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="w-10 h-10 rounded-xl ${cat.bg} ${cat.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${escapeHtml(prop)}</span>
+                            <span class="block text-[14px] font-bold text-[#0F172A] truncate mt-0.5 group-hover:text-[#2563EB] transition-colors">${escapeHtml(title)}</span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="inline-flex items-center text-[11px] font-semibold text-[#475569]">Due: ${escapeHtml(due)}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="min-w-0">
-                        <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${escapeHtml(prop)}</span>
-                        <span class="block text-[13px] font-bold text-[#0F172A] truncate mt-0.5">${escapeHtml(title)}</span>
-                        <span class="block text-[11px] text-[#64748B] truncate mt-0.5">Due: ${escapeHtml(due)}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                     </div>
-                </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-            </button>`;
-        }).join('')}
+                </button>`;
+            }).join('')}
+        </div>
     </div>`;
 }
 
@@ -8133,7 +8674,7 @@ function renderPropertyRecordsHub(propertyId) {
     <div class="screen-content screen-content-sm prop-records-page prop-records-unified">
         <div class="flex items-center gap-1.5 p-1 bg-[#F1F5F9] rounded-xl mb-4 text-[12px] font-semibold text-[#64748B]">
             <button type="button" data-records-tab="all" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'all' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">All Records</button>
-            <button type="button" data-records-tab="reminders" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'reminders' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">Smart Reminders ${reminders.length ? `<span class="px-1.5 py-0.2 text-[10px] bg-[#EFF6FF] text-[#2563EB] rounded-full ml-1">${reminders.length}</span>` : ''}</button>
+            <button type="button" data-records-tab="reminders" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'reminders' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">Smart Reminders</button>
             <button type="button" data-records-tab="safety" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'safety' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">Safety & Checks</button>
         </div>
 
@@ -15410,6 +15951,184 @@ function renderApplianceEditCard(a, i) {
         </div>`;
 }
 
+function screenPropertyUtilitiesView() {
+    const pid = STATE.propertyId ?? 0;
+    const p = PROPERTIES[pid];
+    const meta = AppStore.meta(pid);
+    const utils = meta.utilities || {};
+    const parking = meta.parking || {};
+    const info = meta.info || {};
+
+    const gridCards = [
+        {
+            id: 'gas',
+            title: 'Gas',
+            icon: 'flame',
+            sub: `${utils.gasSupplier || 'British Gas'} · Meter ${utils.gasNo || 'MPRN 84920173'}`,
+            loc: utils.gasLoc || 'Front exterior box',
+        },
+        {
+            id: 'electricity',
+            title: 'Electricity',
+            icon: 'zap',
+            sub: `${utils.electricitySupplier || 'Octopus Energy'} · Meter ${utils.electricityNo || '12093841'}`,
+            loc: utils.electricityLoc || 'Basement intake cupboard',
+        },
+        {
+            id: 'water',
+            title: 'Water',
+            icon: 'droplets',
+            sub: `${utils.waterSupplier || 'Thames Water'} · Meter ${utils.waterNo || 'WTR-99402'}`,
+            loc: utils.waterLoc || 'Kitchen sink undercupboard',
+        },
+        {
+            id: 'wifi',
+            title: 'Wi-Fi',
+            icon: 'wifi',
+            sub: `${utils.broadbandSupplier || 'BT Fibre Hub 2'} · +44 800 800 150`,
+            loc: utils.routerLoc || 'Main hallway intake',
+        },
+        {
+            id: 'council',
+            title: 'Council',
+            icon: 'building-2',
+            sub: `${info.councilTax ? `Band ${info.councilTax}` : 'Camden Council'} · Account #894012`,
+            loc: 'Local Authority',
+        },
+        {
+            id: 'parking',
+            title: 'Parking',
+            icon: 'car',
+            sub: `${parking.type || 'Off-street'} · ${parking.spaces != null ? parking.spaces : 1} space · Permit ${parking.permit || 'LB-4421'}`,
+            loc: 'Parking Bay',
+        },
+    ];
+
+    const editBtn = `<button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+        <span>Edit</span>
+    </button>`;
+
+    return `${topBar('Utilities & Parking', { back: true, sub: p?.name || '', rightBtn: editBtn })}
+    <div class="screen-content screen-enter space-y-4 text-left">
+        <div class="grid grid-cols-2 gap-3">
+            ${gridCards.map(c => `
+            <button type="button" data-action="view-utility-detail-modal" data-utility-id="${c.id}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all text-left flex flex-col justify-between cursor-pointer group">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <i data-lucide="${c.icon}" class="w-5 h-5"></i>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors"></i>
+                    </div>
+                    <span class="block text-[15px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${c.title}</span>
+                    <span class="block text-[11px] font-medium text-[#64748B] leading-relaxed mt-1 line-clamp-2">${escapeHtml(c.sub)}</span>
+                </div>
+            </button>`).join('')}
+        </div>
+    </div>`;
+}
+
+function openUtilityDetailModal(utilityId) {
+    const pid = STATE.propertyId ?? 0;
+    const meta = AppStore.meta(pid);
+    const utils = meta.utilities || {};
+    const parking = meta.parking || {};
+    const info = meta.info || {};
+
+    const detailsMap = {
+        gas: {
+            title: 'Gas Utility',
+            icon: 'flame',
+            rows: [
+                ['Supplier / Provider', utils.gasSupplier || 'British Gas'],
+                ['Meter Number (MPRN)', utils.gasNo || '84920173'],
+                ['Meter Location', utils.gasLoc || 'Front exterior meter box'],
+                ['Safety Status', 'Gas CP12 Certificate Registered'],
+            ],
+        },
+        electricity: {
+            title: 'Electricity Utility',
+            icon: 'zap',
+            rows: [
+                ['Supplier / Provider', utils.electricitySupplier || 'Octopus Energy'],
+                ['Meter Number (MPAN)', utils.electricityNo || '12093841'],
+                ['Meter Location', utils.electricityLoc || 'Basement intake cupboard'],
+                ['Safety Status', 'EICR Electrical Safety Verified'],
+            ],
+        },
+        water: {
+            title: 'Water Utility',
+            icon: 'droplets',
+            rows: [
+                ['Supplier / Provider', utils.waterSupplier || 'Thames Water'],
+                ['Meter Number', utils.waterNo || 'WTR-99402'],
+                ['Meter Location', utils.waterLoc || 'Kitchen sink undercupboard'],
+                ['Account Status', 'Active Direct Debit'],
+            ],
+        },
+        wifi: {
+            title: 'Wi-Fi & Broadband',
+            icon: 'wifi',
+            rows: [
+                ['Provider', utils.broadbandSupplier || 'BT Fibre'],
+                ['Package', 'Fibre Hub 2 (Ultrafast 900Mbps)'],
+                ['Support Helpline', '+44 800 800 150'],
+                ['Router Location', utils.routerLoc || 'Main hallway intake'],
+            ],
+        },
+        council: {
+            title: 'Council Tax',
+            icon: 'building-2',
+            rows: [
+                ['Local Authority', 'Camden London Borough Council'],
+                ['Council Tax Band', info.councilTax ? `Band ${info.councilTax}` : 'Band D'],
+                ['Account Number', '894012'],
+                ['Responsible Party', 'Tenant (Single occupancy discount applied)'],
+            ],
+        },
+        parking: {
+            title: 'Parking Information',
+            icon: 'car',
+            rows: [
+                ['Parking Type', parking.type || 'Off-street'],
+                ['Allocated Bay', `Bay #${parking.bay || '12'}`],
+                ['Permit Number', parking.permit || 'LB-4421'],
+                ['Spaces', `${parking.spaces != null ? parking.spaces : 1} allocated space`],
+            ],
+        },
+    };
+
+    const d = detailsMap[utilityId] || detailsMap.gas;
+
+    openModal(`
+    <div class="card p-5 space-y-4 text-left screen-enter">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="${d.icon}" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-[16px] font-bold text-[#0F172A] m-0">${d.title}</h3>
+            </div>
+            <button type="button" onclick="closeModal()" class="text-[#94A3B8] hover:text-[#0F172A]"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <div class="space-y-2.5 pt-2">
+            ${d.rows.map(([label, val]) => `
+            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9]">
+                <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${escapeHtml(label)}</span>
+                <span class="block text-[13px] font-bold text-[#0F172A] mt-0.5">${escapeHtml(val)}</span>
+            </div>`).join('')}
+        </div>
+
+        <div class="pt-3 flex gap-2">
+            <button type="button" onclick="closeModal()" class="flex-1 py-3 text-[13px] font-semibold text-[#64748B] bg-[#F1F5F9] rounded-xl">Close</button>
+            <button type="button" onclick="closeModal(); go('edit-property-utilities', { propertyId: STATE.propertyId });" class="flex-1 py-3 text-[13px] font-semibold text-white bg-[#2563EB] rounded-xl shadow-sm">Edit Details</button>
+        </div>
+    </div>`);
+    if (window.lucide) lucide.createIcons();
+}
+
 function screenPropertyDetailsEdit(section) {
     const meta = AppStore.meta(STATE.propertyId);
     const p = PROPERTIES[STATE.propertyId];
@@ -17106,13 +17825,20 @@ function toggleUtilityType(key) {
     const label = utilityCatalogItem(key)?.label || key;
     if (meta.utilities[key] != null) {
         delete meta.utilities[key];
+        if (key === 'parking') {
+            meta.parking = {};
+        }
         toast(`${label} removed`);
     } else {
-        meta.utilities[key] = '';
-        toast(`${label} added — choose a provider`);
+        meta.utilities[key] = { provider: '' };
+        if (key === 'parking') {
+            if (!meta.parking) meta.parking = {};
+            meta.parking.type = 'Off-street';
+        }
+        toast(`${label} added`);
     }
     AppStore.save();
-    go('property-utilities', { propertyId: STATE.propertyId });
+    go('edit-property-utilities', { propertyId: STATE.propertyId });
 }
 
 function removeApplianceRow(idx) {
@@ -17523,10 +18249,13 @@ Object.assign(SCREEN_MAP, {
     'reschedule-inspection': screenRescheduleInspectionEnhanced,
     'property-photos': screenPropertyPhotos,
     'property-floor-plans': screenPropertyFloorPlans,
-    'property-alarms': () => screenPropertyDetailsEdit('alarms'),
-    'property-appliances': () => screenPropertyDetailsEdit('appliances'),
-    'property-appliance-records': screenPropertyApplianceRecords,
-    'property-utilities': () => screenPropertyDetailsEdit('utilities'),
+    'property-alarms': screenPropertyAlarms,
+    'property-appliances': screenPropertyAppliances,
+    'property-appliance-records': screenPropertyAppliances,
+    'edit-property-appliances': () => screenPropertyDetailsEdit('appliances'),
+    'edit-property-alarms': () => screenPropertyDetailsEdit('alarms'),
+    'property-utilities': screenPropertyUtilitiesView,
+    'edit-property-utilities': () => screenPropertyDetailsEdit('utilities'),
     'property-parking': () => screenPropertyDetailsEdit('parking'),
     'property-info': () => screenPropertyDetailsEdit('info'),
     'property-flat-documents': screenPropertyFlatDocuments,
@@ -18219,6 +18948,18 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="save-property-meta"]').forEach(el => {
         el.onclick = () => savePropertyMeta(el.dataset.section);
+    });
+    app.querySelectorAll('[data-action="open-add-appliance-modal"], [data-action="add-appliance"]').forEach(el => {
+        el.onclick = () => openAddApplianceModal(el.dataset.pid ? +el.dataset.pid : STATE.propertyId);
+    });
+    app.querySelectorAll('[data-action="open-add-alarm-modal"], [data-action="add-custom-alarm"]').forEach(el => {
+        el.onclick = () => openAddAlarmModal(el.dataset.pid ? +el.dataset.pid : STATE.propertyId);
+    });
+    app.querySelectorAll('[data-action="open-appliance-item-modal"]').forEach(el => {
+        el.onclick = () => openApplianceItemModal(el.dataset.aid);
+    });
+    app.querySelectorAll('[data-action="open-alarm-item-modal"]').forEach(el => {
+        el.onclick = () => openAlarmItemModal(el.dataset.alid);
     });
     app.querySelectorAll('[data-action="set-cover-photo"]').forEach(el => {
         el.onclick = () => setCoverPhoto(+el.dataset.idx);

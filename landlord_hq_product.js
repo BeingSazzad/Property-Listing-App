@@ -2,7 +2,7 @@
 
 const DOC_FOLDER_DEFS = [
     { id: 'gas', label: 'Gas Certificates', icon: 'flame', color: '#DC2626', bg: '#FEE2E2', match: d => d.type === 'Gas Certificate' },
-    { id: 'eicr', label: 'Electrical Certificates', icon: 'zap', color: '#D97706', bg: '#FEF3C7', match: d => d.type === 'Electrical Certificate' },
+    { id: 'eicr', label: 'Electrical Certificates', icon: 'zap', color: '#2563EB', bg: '#EFF6FF', match: d => d.type === 'Electrical Certificate' },
     { id: 'epc', label: 'EPC', icon: 'leaf', color: '#16A34A', bg: '#ECFDF5', match: d => d.type === 'EPC Certificate' },
     { id: 'deposit', label: 'Deposit Certificate', icon: 'shield', color: '#2563EB', bg: '#DBEAFE', match: d => d.type === 'Deposit Certificate' || /deposit protection/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', match: d => d.type === 'Property Licence' || /property\s*licence|property\s*license|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
@@ -373,7 +373,7 @@ function screenDocFolderView() {
                 </span>
                 <span class="doc-file-row-sub">${escapeHtml(sub)}</span>
             </span>
-            ${isCertFolder ? statusMark(isCur ? st.tone : 'muted', { label: isCur ? st.label : 'Archive', size: 'sm' }) : ''}
+            ${isCertFolder ? statusMark(isCur ? 'ok' : 'muted', { label: isCur ? 'Valid' : 'Archive', size: 'sm' }) : ''}
             <i data-lucide="chevron-right" class="w-4 h-4 doc-file-row-chevron"></i>
         </button>`;
     }).join('');
