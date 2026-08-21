@@ -6538,10 +6538,15 @@ const TENANT_REF_SECTIONS = [
 ];
 
 const TENANT_CHECKOUT_CHECKLIST = [
-    ['kitchen', 'Kitchen cleaned & appliances wiped'],
-    ['bathroom', 'Bathroom cleaned & fixtures wiped'],
-    ['bedroom', 'Bedrooms vacuumed & surfaces dusted'],
-    ['living', 'Living areas tidy & floors cleaned'],
+    ['walls', 'Walls Cleaned'],
+    ['floors', 'Carpet cleaned / Floors cleaned'],
+    ['kitchen', 'Kitchen Cleaned including Hob, Oven, Extractor fan, Washing Machine, Fridge & Freezer'],
+    ['bathroom', 'All Bathroom and Toilets Cleaned'],
+    ['gardens_hallways', 'All Gardens and Hallways clean if any'],
+    ['windows', 'Windows cleaned inside & out'],
+    ['mopped', 'Property hoovered and mopped'],
+    ['bins', 'All waste bins cleaned'],
+    ['just_as_received', 'Just as received'],
 ];
 
 const CHECKOUT_METER_KEYS = [
@@ -7065,22 +7070,51 @@ function buildVacateNoticeDraft(tenantId, vacateDate) {
 
 function renderCheckoutMeterFields(co, opts = {}) {
     const editable = opts.editable !== false;
-    return CHECKOUT_METER_KEYS.map(([key, label]) => {
+    const pid = co.propertyId ?? 0;
+    const meta = typeof AppStore !== 'undefined' ? AppStore.meta(pid) : {};
+    const utils = meta.utilities || {};
+
+    const defaultMeterInfo = {
+        electricity: { num: utils.electricityNo || '12093841', loc: utils.electricityLoc || 'Basement intake cupboard' },
+        gas: { num: utils.gasNo || '84920173', loc: utils.gasLoc || 'Front exterior meter box' },
+        water: { num: utils.waterNo || 'WTR-99402', loc: utils.waterLoc || 'Kitchen sink undercupboard' },
+    };
+
+    const meterDate = co.meterReadingDate || new Date().toISOString().slice(0, 10);
+
+    return `
+    ${editable ? `
+    <div class="card p-4 mb-3 bg-white border border-[#E2E8F0]">
+        <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-1">Meter Reading Date (Applies to Electric, Gas & Water)</label>
+        <input type="date" id="unified-meter-date" data-field="co_meter_unified_date" class="form-input w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] font-semibold text-[#0F172A]" value="${escapeHtml(meterDate)}">
+    </div>` : ''}
+
+    ${CHECKOUT_METER_KEYS.map(([key, label]) => {
         const entry = co.meters?.[key] || { reading: '', photo: '' };
         const photoOk = isFieldPhotoPreviewable(entry.photo);
+        const landlordInfo = defaultMeterInfo[key] || { num: 'On file', loc: 'Registered by landlord' };
+
         return `
-        <div class="card p-4 checkout-meter-card" data-checkout-meter="${key}">
-            <p class="text-[13px] font-bold text-[#0F172A] mb-2">${label} meter</p>
+        <div class="card p-4 checkout-meter-card mb-3" data-checkout-meter="${key}">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-[14px] font-bold text-[#0F172A] m-0">${label} Meter</p>
+                <span class="text-[10px] font-bold text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-full uppercase">Read-only Location Info</span>
+            </div>
+            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9] mb-3">
+                <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Landlord Registered Meter</p>
+                <p class="text-[13px] font-bold text-[#0F172A] mt-0.5">${label} Meter #${escapeHtml(landlordInfo.num)}</p>
+                <p class="text-[11px] text-[#64748B] mt-0.5">Location: <span class="font-medium text-[#334155]">${escapeHtml(landlordInfo.loc)}</span></p>
+            </div>
             ${editable
-                ? `<div class="form-field"><label class="form-label">Reading</label><input data-field="co_meter_${key}" class="form-input" value="${escapeHtml(entry.reading || '')}" placeholder="Enter final reading" inputmode="decimal"></div>
+                ? `<div class="form-field"><label class="form-label">Final Reading (${escapeHtml(label)})</label><input data-field="co_meter_${key}" class="form-input" value="${escapeHtml(entry.reading || '')}" placeholder="Enter ${label.toLowerCase()} reading" inputmode="decimal"></div>
                    ${renderFieldPhotoUpload('Meter picture', `co_meter_${key}_photo`, entry.photo || '', { helper: 'Required — photo of the meter display.' })}`
                 : `<div class="checkout-meter-readonly">
-                    <p class="text-[12px] text-[#64748B]">Reading</p>
+                    <p class="text-[12px] text-[#64748B]">Final Reading</p>
                     <p class="text-[14px] font-semibold text-[#0F172A]">${escapeHtml(entry.reading || '—')}</p>
                     ${photoOk ? `<img src="${entry.photo}" alt="${label} meter" class="checkout-meter-photo mt-2">` : `<p class="text-[12px] text-[#DC2626] mt-2">No picture uploaded</p>`}
                    </div>`}
         </div>`;
-    }).join('');
+    }).join('')}`;
 }
 
 function renderCheckoutKeysSection(co, opts = {}) {
@@ -7097,23 +7131,23 @@ function renderCheckoutKeysSection(co, opts = {}) {
     return `
     <div class="card p-4 checkout-keys-card">
         <p class="text-[13px] font-bold text-[#0F172A]">Keys issued at start of tenancy</p>
-        <p class="text-[12px] text-[#64748B] mt-1 mb-3">Auto-filled from the key register. Mark each set returned — missing keys may be charged by the landlord.</p>
+        <p class="text-[12px] text-[#64748B] mt-1 mb-3">Auto-filled from key register. Tick each key box to confirm return.</p>
         <div class="stack-sm">
             ${keys.map((k, i) => `
-            <div class="checkout-key-row${k.missing || (!k.returned && !editable) ? ' checkout-key-row--missing' : ''}${k.returned ? ' checkout-key-row--returned' : ''}">
+            <div class="checkout-key-row flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9]">
                 <div class="min-w-0 flex-1">
                     <p class="text-[13px] font-semibold text-[#0F172A]">${escapeHtml(k.label || 'Key')}${k.qty && k.qty !== '1' ? ` × ${escapeHtml(String(k.qty))}` : ''}</p>
                     <p class="text-[11px] text-[#64748B]">${escapeHtml([k.location, k.holder ? `Issued to ${k.holder}` : ''].filter(Boolean).join(' · ') || 'On issue')}</p>
                 </div>
                 ${editable
-                    ? `<label class="checkout-key-toggle"><input type="checkbox" data-action="toggle-checkout-key" data-key-idx="${i}" ${k.returned ? 'checked' : ''}><span>Returned</span></label>`
-                    : `<span class="badge ${k.returned ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FEF2F2] text-[#DC2626]'}">${k.returned ? 'Returned' : 'Missing'}</span>`}
+                    ? `<label class="checkout-key-toggle flex items-center gap-2"><input type="checkbox" data-action="toggle-checkout-key" data-key-idx="${i}" ${k.returned ? 'checked' : ''} class="w-5 h-5 accent-[#2563EB] cursor-pointer"></label>`
+                    : `<span class="badge ${k.returned ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FEF2F2] text-[#DC2626]'}">${k.returned ? 'Ticked' : 'Missing'}</span>`}
             </div>`).join('')}
         </div>
         ${missing.length ? `
         <div class="checkout-keys-charge-note mt-3">
             <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
-            <p>${missing.length} key set${missing.length === 1 ? '' : 's'} not returned. Landlord may charge for replacements from the deposit.</p>
+            <p>${missing.length} key set${missing.length === 1 ? '' : 's'} unticked. Landlord may charge for replacements from deposit.</p>
         </div>` : ''}
     </div>`;
 }
@@ -7183,13 +7217,13 @@ function renderSharedCheckoutPack(tenantId, opts = {}) {
             </div>
             <p class="text-[11px] text-[#64748B] mt-3">Check-out details are shared with landlord and tenant so both parties see the same information.</p>
         </div>
-        <p class="section-title">Keys to return</p>
-        ${renderCheckoutKeysSection(co, { editable })}
+        ${renderCheckoutCleaningSection(co, tenantId, { editable, landlordManage })}
         <p class="section-title">Final meter readings</p>
-        <p class="form-helper mb-2">Each meter reading needs a picture uploaded. These readings are shared with the landlord for check-out.</p>
+        <p class="form-helper mb-2">Landlord-registered meter location info is shown below. Each meter reading needs a picture uploaded.</p>
         ${renderCheckoutMeterFields(co, { editable })}
         ${editable ? `<button type="button" data-action="save-checkout-meters" class="btn-secondary w-full py-3 text-[13px]">Save meter readings</button>` : ''}
-        ${renderCheckoutCleaningSection(co, tenantId, { editable, landlordManage })}
+        <p class="section-title">Keys to return</p>
+        ${renderCheckoutKeysSection(co, { editable })}
         <p class="section-title">Final photos</p>
         ${renderPhotoPreviewStrip(co.photos || [], { removable: editable, removeAction: 'remove-checkout-photo' }) || `<p class="text-[12px] text-[#64748B] mb-2">No final photos yet.</p>`}
         ${editable ? `
@@ -8053,17 +8087,63 @@ function screenPropertyApplianceRecords() {
     </div>`;
 }
 
+function renderRecordsHubSmartRemindersSection(propertyId) {
+    const list = (AppStore.reminders || []).filter(r => !propertyId || r.propertyId === propertyId || r.propertyId == null);
+    if (!list.length) {
+        return `
+        <div class="card p-6 text-center text-[13px] text-[#64748B] mb-4">
+            <i data-lucide="bell" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
+            <p class="font-bold text-[#0F172A] text-[14px]">No active Smart Reminders</p>
+            <p class="mt-1 text-[12px]">All property compliance and tenancy reminders are up to date.</p>
+        </div>`;
+    }
+    return `
+    <div class="space-y-2 mb-4">
+        <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider px-1">Active Smart Reminders (${list.length})</p>
+        ${list.map(r => {
+            const title = r.title || r.type || 'Reminder';
+            const due = r.due || r.expiryDate || 'On file';
+            const prop = PROPERTIES[r.propertyId]?.name || 'All properties';
+            return `
+            <button type="button" data-action="open-reminder-detail" data-rid="${r.id}" class="personal-id-card-row p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9] hover:border-[#CBD5E1] flex items-center justify-between gap-3 w-full text-left transition-all cursor-pointer">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-[#2563EB] shrink-0">
+                        <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${escapeHtml(prop)}</span>
+                        <span class="block text-[13px] font-bold text-[#0F172A] truncate mt-0.5">${escapeHtml(title)}</span>
+                        <span class="block text-[11px] text-[#64748B] truncate mt-0.5">Due: ${escapeHtml(due)}</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>`;
+        }).join('')}
+    </div>`;
+}
+
 function renderPropertyRecordsHub(propertyId) {
+    const activeSubTab = STATE.recordsSubTab || 'all';
     const certIssues = propertyCertTileIssues(propertyId);
     const fireCount = propertyFolderFileCount(propertyId, 'fire');
     const otherCount = propertyFolderFileCount(propertyId, 'custom');
     const flatDocCount = propertyFlatDocumentCount(propertyId);
+    const reminders = (AppStore.reminders || []).filter(r => !propertyId || r.propertyId === propertyId || r.propertyId == null);
     return `
     <div class="screen-content screen-content-sm prop-records-page prop-records-unified">
+        <div class="flex items-center gap-1.5 p-1 bg-[#F1F5F9] rounded-xl mb-4 text-[12px] font-semibold text-[#64748B]">
+            <button type="button" data-records-tab="all" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'all' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">All Records</button>
+            <button type="button" data-records-tab="reminders" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'reminders' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">Smart Reminders ${reminders.length ? `<span class="px-1.5 py-0.2 text-[10px] bg-[#EFF6FF] text-[#2563EB] rounded-full ml-1">${reminders.length}</span>` : ''}</button>
+            <button type="button" data-records-tab="safety" class="flex-1 py-1.5 px-3 rounded-lg text-center transition-all ${activeSubTab === 'safety' ? 'bg-white text-[#0F172A] shadow-sm font-bold' : 'hover:text-[#0F172A]'}">Safety & Checks</button>
+        </div>
+
+        ${activeSubTab === 'reminders' ? renderRecordsHubSmartRemindersSection(propertyId) : ''}
+
+        ${activeSubTab === 'all' || activeSubTab === 'documents' ? `
         <section class="records-hub-section records-hub-section--cert" id="records-compliance">
             <div class="records-hub-section-head records-hub-section-head--cert">
                 <div class="records-hub-section-copy">
-                    <h3 class="records-hub-section-title">Certificates</h3>
+                    <h3 class="records-hub-section-title">Certificates & Documents</h3>
                     ${certIssues.length ? `<span class="records-hub-section-badge records-hub-section-badge--warn">${certIssues.length} need attention</span>` : ''}
                 </div>
                 <button type="button" data-action="open-add-document-flow" class="records-hub-upload-btn" aria-label="Upload certificate">
@@ -8071,7 +8151,9 @@ function renderPropertyRecordsHub(propertyId) {
                 </button>
             </div>
             ${renderBuildingCertTiles(propertyId)}
-        </section>
+        </section>` : ''}
+
+        ${activeSubTab === 'all' || activeSubTab === 'safety' ? `
         <section class="records-hub-section">
             <h3 class="records-hub-section-title">Safety</h3>
             <div class="records-hub-nav-list card">
@@ -8088,7 +8170,7 @@ function renderPropertyRecordsHub(propertyId) {
                 ${renderRecordsHubNavRow('home', 'Flat documents', `data-go="property-flat-documents" data-pid="${propertyId}"`, flatDocCount ? `${flatDocCount} file${flatDocCount === 1 ? '' : 's'}` : 'Open by unit')}
                 ${renderRecordsHubNavRow('folder', 'Other files', `data-go="property-doc-folder" data-folder="custom" data-pid="${propertyId}"`, otherCount ? `${otherCount} file${otherCount === 1 ? '' : 's'}` : 'No files yet')}
             </div>
-        </section>
+        </section>` : ''}
     </div>`;
 }
 

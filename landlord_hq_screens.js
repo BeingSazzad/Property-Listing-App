@@ -4714,25 +4714,136 @@ function renderHelpFaqListSimple(items) {
 }
 
 function renderHelpContactCard(role, help) {
-    if (role === 'tenant') {
-        return `
-        <button type="button" data-action="tenant-support-chat" data-support-topic="general" class="help-contact-row card w-full text-left">
-            <span class="help-contact-row-icon"><i data-lucide="message-circle" class="w-5 h-5"></i></span>
-            <span class="help-contact-row-body">
-                <span class="help-contact-row-title">Message landlord</span>
+    return `
+    <div class="space-y-2 mt-4">
+        <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider px-1">Feedback & Support</p>
+        <button type="button" data-action="open-suggestion-modal" class="help-contact-row card w-full text-left p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9] hover:border-[#CBD5E1] flex items-center justify-between gap-3 cursor-pointer">
+            <span class="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-[#2563EB] shrink-0">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </span>
+            <span class="flex-1 min-w-0">
+                <span class="block text-[13px] font-bold text-[#0F172A]">Make a suggestion for improvement</span>
+                <span class="block text-[11px] text-[#64748B] mt-0.5">Share feedback or feature ideas with admin</span>
             </span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-        </button>`;
+        </button>
+
+        <button type="button" data-action="open-contact-admin-modal" class="help-contact-row card w-full text-left p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9] hover:border-[#CBD5E1] flex items-center justify-between gap-3 cursor-pointer">
+            <span class="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-[#2563EB] shrink-0">
+                <i data-lucide="headset" class="w-5 h-5"></i>
+            </span>
+            <span class="flex-1 min-w-0">
+                <span class="block text-[13px] font-bold text-[#0F172A]">Contact Admin</span>
+                <span class="block text-[11px] text-[#64748B] mt-0.5">Submit a ticket to message app support</span>
+            </span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+        </button>
+    </div>`;
+}
+
+function openSuggestionModal() {
+    openModal(`
+    <div class="card p-5 space-y-4 text-left screen-enter">
+        <div class="flex items-center justify-between">
+            <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Make a Suggestion</h3>
+            <button type="button" onclick="closeModal()" class="text-[#94A3B8] hover:text-[#0F172A]"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <p class="text-[12px] text-[#64748B] m-0">Help us improve Landlord HQ! Share your feedback or feature ideas directly with our product team.</p>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Feedback Category</label>
+            <select id="suggestion-category" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none">
+                <option value="Feature Request">Feature Request</option>
+                <option value="UX / UI Improvement">UX / UI Improvement</option>
+                <option value="General Feedback">General Feedback</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Your Suggestion</label>
+            <textarea id="suggestion-text" rows="4" class="w-full p-3 rounded-xl border border-[#CBD5E1] text-[13px] outline-none" placeholder="Type your ideas or improvements here..."></textarea>
+        </div>
+        <div class="pt-2 flex gap-2">
+            <button type="button" onclick="closeModal()" class="flex-1 py-3 text-[13px] font-semibold text-[#64748B] bg-[#F1F5F9] rounded-xl">Cancel</button>
+            <button type="button" onclick="submitSuggestionHandler()" class="flex-1 py-3 text-[13px] font-semibold text-white bg-[#2563EB] rounded-xl shadow-sm">Submit Suggestion</button>
+        </div>
+    </div>`);
+    if (window.lucide) lucide.createIcons();
+}
+
+function submitSuggestionHandler() {
+    const text = (document.getElementById('suggestion-text')?.value || '').trim();
+    const cat = document.getElementById('suggestion-category')?.value || 'Feature Request';
+    if (!text) {
+        toast('Please enter your suggestion before submitting');
+        return;
     }
-    return `
-    <a href="mailto:support@landlordhq.com" class="help-contact-row card w-full text-left">
-        <span class="help-contact-row-icon"><i data-lucide="mail" class="w-5 h-5"></i></span>
-        <span class="help-contact-row-body">
-            <span class="help-contact-row-title">${help.supportTitle}</span>
-            <span class="help-contact-row-meta">support@landlordhq.com</span>
-        </span>
-        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-    </a>`;
+    if (!AppStore.tickets) AppStore.tickets = [];
+    const ticket = {
+        id: `TICK-${Date.now().toString().slice(-5)}`,
+        type: 'suggestion',
+        role: STATE.userRole || 'landlord',
+        category: cat,
+        message: text,
+        createdAt: new Date().toISOString(),
+        status: 'Open',
+    };
+    AppStore.tickets.push(ticket);
+    closeModal();
+    toast('Thank you! Your suggestion has been submitted to Admin.');
+}
+
+function openContactAdminModal() {
+    openModal(`
+    <div class="card p-5 space-y-4 text-left screen-enter">
+        <div class="flex items-center justify-between">
+            <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Contact Admin (Ticket)</h3>
+            <button type="button" onclick="closeModal()" class="text-[#94A3B8] hover:text-[#0F172A]"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <p class="text-[12px] text-[#64748B] m-0">Submit a support ticket to message app administrators regarding your account or issues.</p>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Subject</label>
+            <input type="text" id="ticket-subject" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none" placeholder="e.g. Question about billing or property sync">
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Priority</label>
+            <select id="ticket-priority" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none">
+                <option value="Normal">Normal Priority</option>
+                <option value="Urgent">Urgent Issue</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Message / Details</label>
+            <textarea id="ticket-message" rows="4" class="w-full p-3 rounded-xl border border-[#CBD5E1] text-[13px] outline-none" placeholder="Describe your issue or question in detail..."></textarea>
+        </div>
+        <div class="pt-2 flex gap-2">
+            <button type="button" onclick="closeModal()" class="flex-1 py-3 text-[13px] font-semibold text-[#64748B] bg-[#F1F5F9] rounded-xl">Cancel</button>
+            <button type="button" onclick="submitContactAdminHandler()" class="flex-1 py-3 text-[13px] font-semibold text-white bg-[#2563EB] rounded-xl shadow-sm">Send Ticket</button>
+        </div>
+    </div>`);
+    if (window.lucide) lucide.createIcons();
+}
+
+function submitContactAdminHandler() {
+    const subject = (document.getElementById('ticket-subject')?.value || '').trim();
+    const message = (document.getElementById('ticket-message')?.value || '').trim();
+    const priority = document.getElementById('ticket-priority')?.value || 'Normal';
+    if (!subject || !message) {
+        toast('Please fill in both subject and message details');
+        return;
+    }
+    if (!AppStore.tickets) AppStore.tickets = [];
+    const ticket = {
+        id: `TICK-${Date.now().toString().slice(-5)}`,
+        type: 'support_ticket',
+        role: STATE.userRole || 'landlord',
+        subject,
+        message,
+        priority,
+        createdAt: new Date().toISOString(),
+        status: 'Open',
+    };
+    AppStore.tickets.push(ticket);
+    closeModal();
+    toast(`Ticket #${ticket.id} created! Admin has been notified.`);
 }
 
 function renderHelpLegalLinks() {
@@ -5885,6 +5996,25 @@ function bindEvents() {
     });
     app.querySelectorAll('[data-action="enter-app"]').forEach(el => {
         el.onclick = () => enterApp(el.dataset.goAfter);
+    });
+    app.querySelectorAll('[data-action="open-suggestion-modal"]').forEach(el => {
+        el.onclick = openSuggestionModal;
+    });
+    app.querySelectorAll('[data-action="open-contact-admin-modal"]').forEach(el => {
+        el.onclick = openContactAdminModal;
+    });
+    app.querySelectorAll('[data-records-tab]').forEach(el => {
+        el.onclick = () => {
+            STATE.recordsSubTab = el.dataset.recordsTab;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="toggle-contractor-trade"]').forEach(el => {
+        el.onclick = () => {
+            if (typeof toggleContractorTradeHandler === 'function') {
+                toggleContractorTradeHandler(el.dataset.trade);
+            }
+        };
     });
     if (STATE.fab) {
         app.querySelector('.fab-menu')?.addEventListener('click', e => { if (e.target === e.currentTarget) toggleFab(); });

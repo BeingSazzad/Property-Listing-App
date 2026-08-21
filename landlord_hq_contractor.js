@@ -3184,25 +3184,185 @@ function saveContractorCompany() {
     return true;
 }
 
+function renderContractorMultiTradesPicker() {
+    const activeTrades = CONTRACTOR_USER.trades || (CONTRACTOR_USER.trade ? [CONTRACTOR_USER.trade] : [CONTRACTOR_TRADES[0]]);
+    const selectedTrades = new Set(activeTrades);
+    return `
+    <div class="mb-4">
+        <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Trades & Services Offered (Select all that apply)</label>
+        <div class="flex flex-wrap gap-2 p-3 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]">
+            ${CONTRACTOR_TRADES.map(t => {
+                const active = selectedTrades.has(t);
+                return `
+                <button type="button" data-action="toggle-contractor-trade" data-trade="${escapeHtml(t)}" class="px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${active ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-white text-[#334155] border border-[#E2E8F0] hover:border-[#CBD5E1]'}">
+                    ${active ? '✓ ' : '+ '}${escapeHtml(t)}
+                </button>`;
+            }).join('')}
+        </div>
+    </div>`;
+}
+
+function toggleContractorTradeHandler(trade) {
+    if (!CONTRACTOR_USER.trades) {
+        CONTRACTOR_USER.trades = CONTRACTOR_USER.trade ? [CONTRACTOR_USER.trade] : [CONTRACTOR_TRADES[0]];
+    }
+    const idx = CONTRACTOR_USER.trades.indexOf(trade);
+    if (idx >= 0) {
+        if (CONTRACTOR_USER.trades.length > 1) {
+            CONTRACTOR_USER.trades.splice(idx, 1);
+        } else {
+            toast('You must select at least one trade');
+            return;
+        }
+    } else {
+        CONTRACTOR_USER.trades.push(trade);
+    }
+    CONTRACTOR_USER.trade = CONTRACTOR_USER.trades[0];
+    if (typeof syncContractorUserToDirectory === 'function') syncContractorUserToDirectory();
+    render();
+}
+
 function screenContractorCompany() {
     return `${topBar('Company Information', { back: true })}
     <div class="screen-content screen-enter">
         ${formField('Company Name', CONTRACTOR_USER.company || '', 'text', 'Plumber Pro Ltd', 'companyName')}
-        ${formSelect('Contractor type', CONTRACTOR_USER.trade || CONTRACTOR_TRADES[0], CONTRACTOR_TRADES, 'trade')}
+        ${renderContractorMultiTradesPicker()}
         <div class="ctr-signup-trade-hint card p-3" style="margin-bottom:16px">
-            <p class="ctr-signup-trade-hint-label">Category shown to landlords</p>
-            <div class="flex flex-wrap gap-2 mt-2">${renderContractorTradeBadge(CONTRACTOR_USER)}</div>
-            <p class="ctr-signup-trade-hint-text" style="margin-top:8px">For: ${contractorJobsForLabel(CONTRACTOR_USER)}</p>
+            <p class="ctr-signup-trade-hint-label">Categories shown to landlords</p>
+            <div class="flex flex-wrap gap-2 mt-2">
+                ${(CONTRACTOR_USER.trades || [CONTRACTOR_USER.trade]).map(tr => `<span class="badge bg-[#EFF6FF] text-[#2563EB] font-bold text-[11px] px-2.5 py-1 rounded-lg">${escapeHtml(tr)}</span>`).join('')}
+            </div>
         </div>
         ${formField('Company Reg. No.', CONTRACTOR_USER.companyReg || '', 'text', '12345678', 'companyReg')}
         ${formField('VAT Number', CONTRACTOR_USER.vatNumber || '', 'text', 'GB123456789', 'vatNumber')}
         ${formField('Phone', CONTRACTOR_USER.phone || '', 'tel', '', 'phone')}
         ${formField('Email', CONTRACTOR_USER.email || '', 'email', '', 'email')}
         <p class="section-title">Certifications</p>
-        <p class="text-[12px] text-[#64748B] mb-3">Manage certificates and upload documents landlords and tenants can verify.</p>
-        <button type="button" data-go="contractor-certifications" class="btn-secondary w-full py-3 text-[13px] mb-3">Manage certifications (${ensureContractorCertificates(CONTRACTOR_USER).length})</button>
         ${saveBtn('Save Changes', 'Company info updated')}
     </div>`;
+}
+
+function screenContractorDocuments() {
+    const docs = AppStore.documents || [];
+    return `${topBar('Property Documents', { back: true })}
+    <div class="screen-content screen-enter space-y-4">
+        <div class="card p-4 bg-[#EFF6FF] border border-[#BFDBFE]">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center text-white shrink-0">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-[13px] font-bold text-[#0F172A]">Property Compliance Portal</p>
+                    <p class="text-[11px] text-[#64748B] mt-0.5">Certificates uploaded here automatically sync to the Landlord and Tenant accounts for the property.</p>
+                </div>
+            </div>
+            <button type="button" onclick="openContractorCertUploadModal()" class="btn-primary w-full py-3 text-[13px] font-semibold mt-3 flex items-center justify-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Upload Certificate to Landlord & Tenant
+            </button>
+        </div>
+
+        <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider px-1">Uploaded & Synced Property Certificates (${docs.length})</p>
+
+        <div class="space-y-2">
+            ${docs.slice(0, 10).map(d => `
+            <div class="card p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9] flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-[#2563EB] shrink-0">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="block text-[13px] font-bold text-[#0F172A] truncate">${escapeHtml(d.name || d.type || 'Certificate')}</span>
+                        <span class="block text-[11px] text-[#64748B] truncate mt-0.5">${escapeHtml(d.type || 'Document')} · ${escapeHtml(d.date || 'Synced')}</span>
+                    </div>
+                </div>
+                <span class="badge bg-[#ECFDF5] text-[#059669] text-[10px] shrink-0">Synced to 3 Roles</span>
+            </div>`).join('')}
+        </div>
+    </div>`;
+}
+
+function openContractorCertUploadModal() {
+    openModal(`
+    <div class="card p-5 space-y-4 text-left screen-enter">
+        <div class="flex items-center justify-between">
+            <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Upload Property Certificate</h3>
+            <button type="button" onclick="closeModal()" class="text-[#94A3B8] hover:text-[#0F172A]"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <p class="text-[12px] text-[#64748B] m-0">Select property and certificate category. Uploaded file will immediately sync to the Landlord and Tenant document folders.</p>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Target Property</label>
+            <select id="contractor-upload-property" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none">
+                ${PROPERTIES.map((p, i) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
+            </select>
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Certificate Type / Folder</label>
+            <select id="contractor-upload-type" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none">
+                <option value="Gas Safety Certificate">Gas Safety Certificate (CP12)</option>
+                <option value="EICR">Electrical Safety (EICR)</option>
+                <option value="Energy Performance Certificate">Energy Performance Certificate (EPC)</option>
+                <option value="Property Licence">Property Licence</option>
+                <option value="Maintenance Record">Maintenance / Inspection Certificate</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Expiry Date (Optional)</label>
+            <input type="date" id="contractor-upload-expiry" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none">
+        </div>
+        <div>
+            <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Certificate Document File</label>
+            <input type="file" id="contractor-upload-file" accept="image/*,.pdf" class="w-full p-2 rounded-xl border border-[#CBD5E1] text-[12px]">
+        </div>
+        <div class="pt-2 flex gap-2">
+            <button type="button" onclick="closeModal()" class="flex-1 py-3 text-[13px] font-semibold text-[#64748B] bg-[#F1F5F9] rounded-xl">Cancel</button>
+            <button type="button" onclick="submitContractorCertUploadHandler()" class="flex-1 py-3 text-[13px] font-semibold text-white bg-[#2563EB] rounded-xl shadow-sm">Upload & Sync</button>
+        </div>
+    </div>`);
+    if (window.lucide) lucide.createIcons();
+}
+
+function submitContractorCertUploadHandler() {
+    const pid = Number(document.getElementById('contractor-upload-property')?.value || 0);
+    const certType = document.getElementById('contractor-upload-type')?.value || 'Gas Safety Certificate';
+    const expiry = document.getElementById('contractor-upload-expiry')?.value || '';
+    const fileInput = document.getElementById('contractor-upload-file');
+    const fileName = fileInput?.files?.[0]?.name || `${certType}.pdf`;
+
+    if (!AppStore.documents) AppStore.documents = [];
+    const docId = AppStore.nextId(AppStore.documents);
+    const newDoc = {
+        id: docId,
+        propertyId: pid,
+        type: certType,
+        name: fileName,
+        url: 'assets/sample_cert.pdf',
+        date: new Date().toISOString().slice(0, 10),
+        expiryDate: expiry,
+        uploadedByRole: 'contractor',
+        sharedWith: ['landlord', 'tenant', 'contractor'],
+        autoSynced: true,
+    };
+    AppStore.documents.push(newDoc);
+
+    if (expiry) {
+        if (!AppStore.complianceCerts) AppStore.complianceCerts = {};
+        let cid = 0;
+        if (certType.includes('Gas')) cid = 0;
+        else if (certType.includes('EICR')) cid = 1;
+        else if (certType.includes('Energy')) cid = 5;
+        const certKey = `${pid}-${cid}`;
+        AppStore.complianceCerts[certKey] = {
+            expiryDate: expiry,
+            issuedBy: CONTRACTOR_USER.company || 'Contractor',
+            certNumber: `CERT-${Date.now().toString().slice(-6)}`,
+            file: fileName,
+        };
+    }
+
+    closeModal();
+    toast('Certificate uploaded & synced to Landlord and Tenant portals!');
+    render();
 }
 
 /* Register contractor screens */
