@@ -4822,19 +4822,6 @@ function renderPropertyOverviewDetails(propertyId) {
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
             </button>
-
-            <button type="button" data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance" class="w-full p-4 flex items-center justify-between text-left cursor-pointer hover:bg-[#F8FAFC] transition-colors group">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-[#FEF2F2] text-[#DC2626] flex items-center justify-center shrink-0">
-                        <i data-lucide="shield-check" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#DC2626] transition-colors m-0">Building Compliance & Insurance</h3>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Fire Safety (FRA), Asbestos, EPC & Insurance</p>
-                    </div>
-                </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#DC2626] transition-colors shrink-0"></i>
-            </button>
         </div>
     </div>`;
 }
