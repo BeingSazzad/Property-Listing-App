@@ -6083,6 +6083,12 @@ function bindEvents() {
             }
         };
     });
+    app.querySelectorAll('[data-action="select-inventory-unit"]').forEach(el => {
+        el.onclick = () => {
+            STATE.selectedUnit = el.dataset.unit;
+            render();
+        };
+    });
     app.querySelectorAll('[data-action="toggle-accordion"]').forEach(el => {
         el.onclick = () => {
             const id = el.dataset.accordion;

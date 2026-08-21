@@ -3218,17 +3218,33 @@ function renderInventoryLayoutSection(propertyId) {
 }
 
 function renderPropertyInventoryTab(propertyId) {
+    const units = getPropertyUnits(propertyId);
+    const selectedUnit = STATE.selectedUnit || (units[0] ? unitName(units[0]) : '');
     const rooms = getInventoryRooms(propertyId);
     return `
     <div class="screen-content screen-content-sm">
+        ${units.length > 1 ? `
+        <div class="mb-3">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Select Unit Inventory</p>
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+                ${units.map(u => {
+                    const name = unitName(u);
+                    const active = selectedUnit === name;
+                    return `<button type="button" data-action="select-inventory-unit" data-unit="${escapeHtml(name)}" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer ${active ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-white text-[#475569] border border-[#E2E8F0] hover:border-[#CBD5E1]'}">${escapeHtml(name)}</button>`;
+                }).join('')}
+            </div>
+        </div>` : ''}
         ${renderInventoryLayoutSection(propertyId)}
-        <p class="screen-section-title mt-2">Room checklists</p>
+        <div class="flex items-center justify-between mt-3 mb-1.5">
+            <p class="screen-section-title m-0">${units.length > 1 ? `${selectedUnit} Room Checklists` : 'Room Checklists'}</p>
+            <span class="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2 py-0.5 rounded-full">${rooms.length} Rooms Tracked</span>
+        </div>
         <div class="stack-sm">
         ${rooms.map(([r, n, icon, idx]) => `
-        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-4 flex items-center justify-between card-hover text-left">
+        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" data-unit="${selectedUnit}" class="card w-full p-4 flex items-center justify-between card-hover text-left">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-[18px] h-[18px] text-[#64748B]"></i></div>
-                <div class="min-w-0"><p class="text-[13px] font-semibold">${r}</p><p class="text-[11px] text-[#64748B] truncate">${n}</p></div>
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-[18px] h-[18px]"></i></div>
+                <div class="min-w-0"><p class="text-[14px] font-bold text-[#0F172A]">${r}</p><p class="text-[11px] text-[#64748B] truncate mt-0.5">${n}</p></div>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>`).join('')}
@@ -13551,11 +13567,15 @@ function inspReportRow(report) {
     const dateLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(report.date) || report.date : report.date;
     const title = `${report.type || 'Inspection'} · ${dateLabel}`;
     const meta = report.rating ? `★ ${report.rating} condition` : '';
+    const unitBadge = report.unit || (report.propertyId ? getPropertyUnits(report.propertyId)[0]?.name || '' : '');
     return `
-    <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="insp-row card w-full text-left">
-        <div class="insp-row-body">
-            <p class="insp-row-title">${title}</p>
-            ${meta ? `<p class="insp-row-meta">${meta}</p>` : ''}
+    <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="insp-row card w-full text-left flex items-center justify-between p-3.5 hover:bg-[#F8FAFC] transition-colors">
+        <div class="insp-row-body min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-0.5">
+                ${unitBadge ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] shrink-0">${escapeHtml(unitBadge)}</span>` : ''}
+                <p class="insp-row-title text-[13px] font-bold text-[#0F172A] truncate m-0">${title}</p>
+            </div>
+            ${meta ? `<p class="insp-row-meta text-[11px] text-[#64748B] m-0">${meta}</p>` : ''}
         </div>
         <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
     </button>`;
