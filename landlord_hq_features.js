@@ -16060,6 +16060,15 @@ function renderApplianceEditCard(a, i) {
         </div>`;
 }
 
+const DEMO_UTILITY_PHOTOS = {
+    gas: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+    electricity: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+    water: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80',
+    wifi: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&auto=format&fit=crop&q=80',
+    council: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=800&auto=format&fit=crop&q=80',
+    parking: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&auto=format&fit=crop&q=80',
+};
+
 function screenPropertyUtilitiesView() {
     const pid = STATE.propertyId ?? 0;
     const p = PROPERTIES[pid];
@@ -16073,43 +16082,55 @@ function screenPropertyUtilitiesView() {
             id: 'gas',
             title: 'Gas',
             icon: 'flame',
-            sub: `${utils.gasSupplier || 'British Gas'} · Meter ${utils.gasNo || 'MPRN 84920173'}`,
-            loc: utils.gasLoc || 'Front exterior box',
+            photo: utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
+            sub: `${utils.gasSupplier || 'British Gas'} · MPRN ${utils.gasNo || '84920173'}`,
+            loc: utils.gasLoc || 'Front exterior meter box',
+            badge: 'CP12 On File',
         },
         {
             id: 'electricity',
             title: 'Electricity',
             icon: 'zap',
-            sub: `${utils.electricitySupplier || 'Octopus Energy'} · Meter ${utils.electricityNo || '12093841'}`,
+            photo: utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
+            sub: `${utils.electricitySupplier || 'Octopus Energy'} · MPAN ${utils.electricityNo || '12093841'}`,
             loc: utils.electricityLoc || 'Basement intake cupboard',
+            badge: 'EICR Verified',
         },
         {
             id: 'water',
             title: 'Water',
             icon: 'droplets',
+            photo: utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
             sub: `${utils.waterSupplier || 'Thames Water'} · Meter ${utils.waterNo || 'WTR-99402'}`,
             loc: utils.waterLoc || 'Kitchen sink undercupboard',
+            badge: 'Stopcock Active',
         },
         {
             id: 'wifi',
             title: 'Wi-Fi',
             icon: 'wifi',
-            sub: `${utils.broadbandSupplier || 'BT Fibre Hub 2'} · +44 800 800 150`,
+            photo: utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
+            sub: `${utils.broadbandSupplier || 'BT Fibre Hub 2'} · 900 Mbps`,
             loc: utils.routerLoc || 'Main hallway intake',
+            badge: 'Broadband Live',
         },
         {
             id: 'council',
             title: 'Council',
             icon: 'building-2',
-            sub: `${info.councilTax ? `Band ${info.councilTax}` : 'Camden Council'} · Account #894012`,
+            photo: DEMO_UTILITY_PHOTOS.council,
+            sub: `${info.councilTax ? `Band ${info.councilTax}` : 'Band D'} · Camden Council`,
             loc: 'Local Authority',
+            badge: 'Tax Band D',
         },
         {
             id: 'parking',
             title: 'Parking',
             icon: 'car',
-            sub: `${parking.type || 'Off-street'} · ${parking.spaces != null ? parking.spaces : 1} space · Permit ${parking.permit || 'LB-4421'}`,
+            photo: DEMO_UTILITY_PHOTOS.parking,
+            sub: `${parking.type || 'Off-street'} · Bay #${parking.bay || '12'}`,
             loc: 'Parking Bay',
+            badge: parking.permit ? `Permit ${parking.permit}` : 'Permit LB-4421',
         },
     ];
 
@@ -16122,16 +16143,21 @@ function screenPropertyUtilitiesView() {
     <div class="screen-content screen-enter space-y-4 text-left">
         <div class="grid grid-cols-2 gap-3">
             ${gridCards.map(c => `
-            <button type="button" data-action="view-utility-detail-modal" data-utility-id="${c.id}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all text-left flex flex-col justify-between cursor-pointer group">
+            <button type="button" data-action="view-utility-detail-modal" data-utility-id="${c.id}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all text-left flex flex-col justify-between cursor-pointer group overflow-hidden">
                 <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                            <i data-lucide="${c.icon}" class="w-5 h-5"></i>
+                    <div class="relative w-full h-24 rounded-xl overflow-hidden mb-2.5 bg-[#F1F5F9]">
+                        <img src="${c.photo}" alt="${c.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                        <div class="absolute top-2 left-2 w-7 h-7 rounded-lg bg-white/90 backdrop-blur-sm text-[#2563EB] flex items-center justify-center shadow-sm">
+                            <i data-lucide="${c.icon}" class="w-4 h-4"></i>
                         </div>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors"></i>
+                        <span class="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/90 text-[#0F172A] backdrop-blur-sm">${c.badge}</span>
                     </div>
-                    <span class="block text-[15px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${c.title}</span>
-                    <span class="block text-[11px] font-medium text-[#64748B] leading-relaxed mt-1 line-clamp-2">${escapeHtml(c.sub)}</span>
+                    <div class="flex items-center justify-between">
+                        <span class="block text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${c.title}</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors"></i>
+                    </div>
+                    <span class="block text-[11px] font-medium text-[#64748B] leading-relaxed mt-0.5 line-clamp-2">${escapeHtml(c.sub)}</span>
                 </div>
             </button>`).join('')}
         </div>
@@ -16147,63 +16173,93 @@ function openUtilityDetailModal(utilityId) {
 
     const detailsMap = {
         gas: {
-            title: 'Gas Utility',
+            title: 'Gas Utility & Meter',
             icon: 'flame',
+            photo: utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
+            badge: 'Gas CP12 Registered',
+            badgeBg: 'bg-[#22C55E]',
             rows: [
                 ['Supplier / Provider', utils.gasSupplier || 'British Gas'],
                 ['Meter Number (MPRN)', utils.gasNo || '84920173'],
-                ['Meter Location', utils.gasLoc || 'Front exterior meter box'],
-                ['Safety Status', 'Gas CP12 Certificate Registered'],
+                ['Meter Location', utils.gasLoc || 'Front exterior meter box (Wall-mounted)'],
+                ['Emergency Shutoff', 'Brass lever valve beside meter (Turn 90° clockwise)'],
+                ['Safety Status', 'Gas Safe CP12 Certified (Valid until 15 Nov 2026)'],
+                ['Customer Helpline', '0333 202 9802 · National Gas Emergency: 0800 111 999'],
             ],
         },
         electricity: {
-            title: 'Electricity Utility',
+            title: 'Electricity & Consumer Unit',
             icon: 'zap',
+            photo: utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
+            badge: 'EICR Electrical Certified',
+            badgeBg: 'bg-[#22C55E]',
             rows: [
                 ['Supplier / Provider', utils.electricitySupplier || 'Octopus Energy'],
                 ['Meter Number (MPAN)', utils.electricityNo || '12093841'],
-                ['Meter Location', utils.electricityLoc || 'Basement intake cupboard'],
-                ['Safety Status', 'EICR Electrical Safety Verified'],
+                ['Meter Location', utils.electricityLoc || 'Basement intake cupboard & hallway intake'],
+                ['Consumer Unit / Fusebox', 'High level hallway cupboard with main RCD isolation switch'],
+                ['Safety Status', 'EICR 5-Year Inspection Satisfactory (Valid to Oct 2027)'],
+                ['Helpline / Power Cut', 'Octopus: 0808 164 1088 · UK Power Networks: 105'],
             ],
         },
         water: {
-            title: 'Water Utility',
+            title: 'Water Supply & Stopcock',
             icon: 'droplets',
+            photo: utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
+            badge: 'Direct Debit Active',
+            badgeBg: 'bg-[#0284C7]',
             rows: [
                 ['Supplier / Provider', utils.waterSupplier || 'Thames Water'],
                 ['Meter Number', utils.waterNo || 'WTR-99402'],
-                ['Meter Location', utils.waterLoc || 'Kitchen sink undercupboard'],
-                ['Account Status', 'Active Direct Debit'],
+                ['Internal Stopcock', utils.waterLoc || 'Under kitchen sink (Turn clockwise to isolate supply)'],
+                ['External Street Valve', 'Pavement outside front boundary (Blue meter cover)'],
+                ['Account Status', 'Metered active account · Direct Debit'],
+                ['Helpline / Emergencies', 'Thames Water 24/7 Helpline: 0800 316 9800'],
             ],
         },
         wifi: {
             title: 'Wi-Fi & Broadband',
             icon: 'wifi',
+            photo: utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
+            badge: 'Fibre 900 Mbps Active',
+            badgeBg: 'bg-[#8B5CF6]',
             rows: [
-                ['Provider', utils.broadbandSupplier || 'BT Fibre'],
-                ['Package', 'Fibre Hub 2 (Ultrafast 900Mbps)'],
-                ['Support Helpline', '+44 800 800 150'],
-                ['Router Location', utils.routerLoc || 'Main hallway intake'],
+                ['Broadband Provider', utils.broadbandSupplier || 'BT Fibre Broadband'],
+                ['Network Name (SSID)', utils.wifiSsid || 'BT-Hub-2-ParkLane'],
+                ['Wi-Fi Password', utils.wifiPassword || 'London2026!Fast'],
+                ['Package & Speed', 'BT Smart Hub 2 · Ultrafast Full Fibre (900 Mbps)'],
+                ['Router Location', utils.routerLoc || 'Main hallway entrance console table'],
+                ['Support Helpline', '+44 800 800 150 · Account #992812'],
             ],
         },
         council: {
-            title: 'Council Tax',
+            title: 'Council Tax & Local Authority',
             icon: 'building-2',
+            photo: DEMO_UTILITY_PHOTOS.council,
+            badge: 'Tax Band D',
+            badgeBg: 'bg-[#3B82F6]',
             rows: [
-                ['Local Authority', 'Camden London Borough Council'],
-                ['Council Tax Band', info.councilTax ? `Band ${info.councilTax}` : 'Band D'],
-                ['Account Number', '894012'],
-                ['Responsible Party', 'Tenant (Single occupancy discount applied)'],
+                ['Local Authority', 'London Borough of Camden'],
+                ['Council Tax Band', info.councilTax ? `Band ${info.councilTax}` : 'Band D (£1,988 / year)'],
+                ['Council Reference / Account', 'CAM-894012-TX'],
+                ['Bin Collection Schedule', 'General Waste: Tuesdays · Recycling: Fridays'],
+                ['Responsible Party', 'Tenant (Single occupancy & student exemptions applicable)'],
+                ['Council Contact', '020 7974 4444 · camden.gov.uk/council-tax'],
             ],
         },
         parking: {
-            title: 'Parking Information',
+            title: 'Parking Allocation & Permits',
             icon: 'car',
+            photo: DEMO_UTILITY_PHOTOS.parking,
+            badge: 'Allocated Space',
+            badgeBg: 'bg-[#10B981]',
             rows: [
-                ['Parking Type', parking.type || 'Off-street'],
-                ['Allocated Bay', `Bay #${parking.bay || '12'}`],
-                ['Permit Number', parking.permit || 'LB-4421'],
-                ['Spaces', `${parking.spaces != null ? parking.spaces : 1} allocated space`],
+                ['Parking Type', parking.type || 'Off-Street Allocated Bay'],
+                ['Allocated Space', `Bay #${parking.bay || '12'} (Clearly marked)`],
+                ['Permit Number', parking.permit || 'LB-4421 (Camden Resident Parking Permit)'],
+                ['Access & Security', 'Electronic barrier fob #04 / Keypad gate code #4492'],
+                ['Visitor Parking', 'Visitor scratchcards available from managing agent'],
+                ['EV Charging', '7.4kW Type 2 Pod Point Charger installed at Bay #12'],
             ],
         },
     };
@@ -16211,28 +16267,37 @@ function openUtilityDetailModal(utilityId) {
     const d = detailsMap[utilityId] || detailsMap.gas;
 
     openModal(`
-    <div class="card p-5 space-y-4 text-left screen-enter">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                    <i data-lucide="${d.icon}" class="w-5 h-5"></i>
-                </div>
-                <h3 class="text-[16px] font-bold text-[#0F172A] m-0">${d.title}</h3>
+    <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-xl overflow-hidden text-left screen-enter max-w-md mx-auto">
+        <div class="relative h-44 w-full bg-[#0F172A]">
+            <img src="${d.photo}" alt="${d.title}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+            
+            <button type="button" onclick="closeModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-colors cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            
+            <div class="absolute bottom-3 left-4 right-4">
+                <span class="inline-block text-[11px] font-bold text-white px-2.5 py-0.5 rounded-full ${d.badgeBg} shadow-sm mb-1.5">${d.badge}</span>
+                <h3 class="text-[17px] font-bold text-white leading-snug m-0 drop-shadow-sm">${d.title}</h3>
             </div>
-            <button type="button" onclick="closeModal()" class="text-[#94A3B8] hover:text-[#0F172A]"><i data-lucide="x" class="w-5 h-5"></i></button>
-        </div>
-        
-        <div class="space-y-2.5 pt-2">
-            ${d.rows.map(([label, val]) => `
-            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9]">
-                <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${escapeHtml(label)}</span>
-                <span class="block text-[13px] font-bold text-[#0F172A] mt-0.5">${escapeHtml(val)}</span>
-            </div>`).join('')}
         </div>
 
-        <div class="pt-3 flex gap-2">
-            <button type="button" onclick="closeModal()" class="flex-1 py-3 text-[13px] font-semibold text-[#64748B] bg-[#F1F5F9] rounded-xl">Close</button>
-            <button type="button" onclick="closeModal(); go('edit-property-utilities', { propertyId: STATE.propertyId });" class="flex-1 py-3 text-[13px] font-semibold text-white bg-[#2563EB] rounded-xl shadow-sm">Edit Details</button>
+        <div class="p-4 space-y-3 max-h-[50vh] overflow-y-auto">
+            <div class="space-y-2">
+                ${d.rows.map(([label, val]) => `
+                <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9]">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${escapeHtml(label)}</span>
+                    <span class="block text-[12px] font-semibold text-[#0F172A] mt-0.5 leading-relaxed">${escapeHtml(val)}</span>
+                </div>`).join('')}
+            </div>
+        </div>
+
+        <div class="p-4 pt-2 border-t border-[#F1F5F9] bg-[#FAFAFA] flex gap-2">
+            <button type="button" onclick="closeModal()" class="flex-1 py-2.5 text-[13px] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] transition-colors cursor-pointer">Close</button>
+            <button type="button" onclick="closeModal(); go('edit-property-utilities', { propertyId: STATE.propertyId });" class="flex-1 py-2.5 text-[13px] font-bold text-white bg-[#2563EB] rounded-xl shadow-sm hover:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                <span>Edit Details</span>
+            </button>
         </div>
     </div>`);
     if (window.lucide) lucide.createIcons();
