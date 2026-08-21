@@ -17342,12 +17342,6 @@ function screenUtilityDetail() {
                 </div>`).join('')}
             </div>
         </div>
-
-        <!-- Edit Action Button -->
-        <button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] shadow-sm hover:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="pencil" class="w-4 h-4"></i>
-            <span>Edit Utility Details</span>
-        </button>
     </div>`;
 }
 
