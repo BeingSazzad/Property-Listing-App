@@ -116,12 +116,55 @@ const AppStore = {
             migrateInventoryKeys();
             if (typeof migratePropertyInfoFields === 'function') migratePropertyInfoFields();
             if (typeof migrateTenancyLeadUniqueness === 'function') migrateTenancyLeadUniqueness();
+            // Backfill rich demo datasets if missing or partial
+            if (!this.inventory || Object.keys(this.inventory).length < 4) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.inventory = Object.assign({}, tempStore.inventory, this.inventory);
+            }
+            if (!this.tenantReferencing || !this.tenantReferencing[1]) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.tenantReferencing = Object.assign({}, tempStore.tenantReferencing, this.tenantReferencing);
+            }
+            if (!this.tenantNotes || !this.tenantNotes[2]?.length) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.tenantNotes = Object.assign({}, tempStore.tenantNotes, this.tenantNotes);
+            }
+            if (!this.tenantDocuments || !this.tenantDocuments[2]?.length) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.tenantDocuments = Object.assign({}, tempStore.tenantDocuments, this.tenantDocuments);
+            }
+            if (!this.complianceCerts || Object.keys(this.complianceCerts).length < 6) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.complianceCerts = Object.assign({}, tempStore.complianceCerts, this.complianceCerts);
+            }
+            if (!this.inspections || this.inspections.length < 5) {
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.inspections = tempStore.inspections;
+            }
+            if (this.propertyMeta) {
+                [0, 1, 2, 3].forEach(pid => {
+                    const tempStore = {};
+                    this.seed.call(tempStore);
+                    if (tempStore.propertyMeta?.[pid]) {
+                        this.propertyMeta[pid] = Object.assign({}, tempStore.propertyMeta[pid], this.propertyMeta[pid]);
+                        ['alarms', 'appliances', 'unitKeys', 'utilities', 'parking', 'floorPlans', 'photos'].forEach(key => {
+                            if (!this.propertyMeta[pid][key] && tempStore.propertyMeta[pid][key]) {
+                                this.propertyMeta[pid][key] = tempStore.propertyMeta[pid][key];
+                            }
+                        });
+                    }
+                });
+            }
             if (!this.broadcasts?.length) {
-                this.broadcasts = [
-                    { id: 0, propertyId: 0, title: 'Boiler service next week', body: 'Heating Co. will access units on Mon 28 Jul, 9–11am. Please ensure someone is home or leave a key with reception.', date: 'Jul 22, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [], image: IMG.maint[2] },
-                    { id: 1, propertyId: 0, title: 'Rubbish collection change', body: 'Bins go out on Thursday instead of Wednesday for the rest of July.', date: 'Jul 18, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
-                    { id: 2, propertyId: 1, title: 'Garden maintenance', body: 'Shared garden will be serviced Fri 25 Jul. Please keep the gate unlocked.', date: 'Jul 15, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [], image: IMG.interior[1] },
-                ];
+                const tempStore = {};
+                this.seed.call(tempStore);
+                this.broadcasts = tempStore.broadcasts;
             }
         } catch (_) { this.seed(); }
     },
@@ -161,30 +204,57 @@ const AppStore = {
     seed() {
         this.reminders = [
             { id: 0, type: 'gas', propertyId: 0, title: 'Gas Certificate Expiry', due: '2026-03-12', daysLeft: 3, urgency: 'high' },
-            { id: 1, type: 'inspection', propertyId: 1, title: 'Inspection Due', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
-            { id: 2, type: 'rent-review', propertyId: 2, title: 'Rent Review', due: '2026-09-01', daysLeft: 33, urgency: 'medium' },
-            { id: 3, type: 'electrical', propertyId: 0, title: 'Electrical Certificate Expiry', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
-            { id: 4, type: 'leasehold', propertyId: 0, title: 'Leasehold Service Charge', due: '2026-12-01', daysLeft: 124, urgency: 'low' },
+            { id: 1, type: 'gas', propertyId: 1, title: 'Gas Safety CP12 Inspection', due: '2026-03-25', daysLeft: 14, urgency: 'high' },
+            { id: 2, type: 'electrical', propertyId: 0, title: 'Electrical Certificate Expiry', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
+            { id: 3, type: 'inspection', propertyId: 1, title: 'Mid-term Inspection Due', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
+            { id: 4, type: 'rent-review', propertyId: 2, title: 'Annual Rent Review', due: '2026-09-01', daysLeft: 33, urgency: 'medium' },
+            { id: 5, type: 'smoke', propertyId: 0, title: 'Smoke & CO Alarm Test', due: '2026-09-10', daysLeft: 42, urgency: 'medium' },
+            { id: 6, type: 'epc', propertyId: 3, title: 'EPC Rating Renewal', due: '2026-10-01', daysLeft: 63, urgency: 'medium' },
+            { id: 7, type: 'insurance', propertyId: 0, title: 'Landlord Insurance Renewal', due: '2026-11-30', daysLeft: 123, urgency: 'low' },
+            { id: 8, type: 'leasehold', propertyId: 0, title: 'Leasehold Service Charge', due: '2026-12-01', daysLeft: 124, urgency: 'low' },
+            { id: 9, type: 'mortgage', propertyId: 1, title: 'Mortgage Fixed Rate Review', due: '2027-01-15', daysLeft: 169, urgency: 'low' },
         ];
         this.documents = [
-            { id: 0, propertyId: 0, type: 'Tenancy Agreement', name: 'Lease Agreement.pdf', date: 'Jan 15, 2024', shared: true, signed: true },
-            { id: 1, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2029', date: 'Mar 2029', shared: true, signed: false },
-            { id: 6, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2028', date: 'Mar 2028', shared: true, signed: false },
-            { id: 7, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2027', date: 'Mar 2027', shared: true, signed: false },
-            { id: 8, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2026', date: 'Mar 2026', shared: true, signed: false },
-            { id: 9, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2025', date: 'Mar 2025', shared: true, signed: false },
-            { id: 2, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2024', date: 'Apr 2024', shared: true, signed: false },
-            { id: 10, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2023', date: 'Apr 2023', shared: true, signed: false },
-            { id: 11, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2022', date: 'Apr 2022', shared: true, signed: false },
-            { id: 3, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B', date: 'Jun 2023', shared: true, signed: false },
-            { id: 12, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B (renewal)', date: 'Jun 2020', shared: true, signed: false },
+            // Property 0 - 12 Park Lane
+            { id: 0, propertyId: 0, type: 'Tenancy Agreement', name: 'Lease Agreement Flat 2A.pdf', date: 'Jan 15, 2024', shared: true, signed: true },
+            { id: 1, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2026', date: 'Mar 2026', shared: true, signed: false },
+            { id: 6, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2025', date: 'Mar 2025', shared: true, signed: false },
+            { id: 7, propertyId: 0, type: 'Gas Certificate', name: 'Gas Certificate 2024', date: 'Mar 2024', shared: true, signed: false },
+            { id: 2, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2025', date: 'Aug 2025', shared: true, signed: false },
+            { id: 10, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2020', date: 'Aug 2020', shared: true, signed: false },
+            { id: 3, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B.pdf', date: 'Jun 2023', shared: true, signed: false },
+            { id: 4, propertyId: 0, type: 'Deposit Certificate', name: 'Deposit Protection Flat 2A.pdf', date: 'Jan 2024', shared: true, signed: true },
             { id: 13, propertyId: 0, type: 'Custom Document', name: 'Fire Risk Assessment 2025', date: 'Jan 2025', shared: true, signed: false },
             { id: 14, propertyId: 0, type: 'Custom Document', name: 'Smoke Alarm Test Log', date: 'Feb 2025', shared: true, signed: false },
             { id: 15, propertyId: 0, type: 'Custom Document', name: 'Fire Door Inspection', date: 'Mar 2025', shared: true, signed: false },
             { id: 16, propertyId: 0, type: 'Custom Document', name: 'Emergency Lighting Check', date: 'Apr 2025', shared: true, signed: false },
             { id: 17, propertyId: 0, type: 'Custom Document', name: 'Landlord Insurance Policy', date: 'Jan 2025', shared: false, signed: false },
-            { id: 4, propertyId: 0, type: 'Deposit Certificate', name: 'Deposit Protection.pdf', date: 'Jan 2024', shared: true, signed: true },
-            { id: 5, propertyId: 1, type: 'How to Rent Guide', name: 'How to Rent.pdf', date: 'Jun 2023', shared: true, signed: false },
+            { id: 18, propertyId: 0, type: 'Property Licence', name: 'Selective Licensing Certificate.pdf', date: 'Sep 2024', shared: true, signed: false },
+            { id: 19, propertyId: 0, type: 'Custom Document', name: 'Legionella Risk Assessment.pdf', date: 'Nov 2024', shared: true, signed: false },
+
+            // Property 1 - 45 Queens Road
+            { id: 5, propertyId: 1, type: 'How to Rent Guide', name: 'How to Rent Guide UK.pdf', date: 'Jun 2023', shared: true, signed: false },
+            { id: 20, propertyId: 1, type: 'Tenancy Agreement', name: 'Lease Agreement Flat 1A.pdf', date: 'Jun 1, 2023', shared: true, signed: true },
+            { id: 21, propertyId: 1, type: 'Gas Certificate', name: 'Gas Safety Certificate 2025.pdf', date: 'Nov 2024', shared: true, signed: false },
+            { id: 22, propertyId: 1, type: 'Electrical Certificate', name: 'EICR Condition Report.pdf', date: 'Jul 2023', shared: true, signed: false },
+            { id: 23, propertyId: 1, type: 'EPC Certificate', name: 'EPC Energy Rating C.pdf', date: 'Sep 2023', shared: true, signed: false },
+            { id: 24, propertyId: 1, type: 'Deposit Certificate', name: 'Deposit Protection Certificate.pdf', date: 'Jun 2023', shared: true, signed: true },
+            { id: 25, propertyId: 1, type: 'Custom Document', name: 'Buildings & Contents Insurance.pdf', date: 'Oct 2025', shared: false, signed: false },
+
+            // Property 2 - 88 King Street
+            { id: 26, propertyId: 2, type: 'EPC Certificate', name: 'EPC Rating A Certificate.pdf', date: 'Apr 2021', shared: true, signed: false },
+            { id: 27, propertyId: 2, type: 'Electrical Certificate', name: 'EICR Report 2024.pdf', date: 'Jan 2024', shared: true, signed: false },
+            { id: 28, propertyId: 2, type: 'Gas Certificate', name: 'Gas Safety CP12 Certificate.pdf', date: 'Jan 2025', shared: true, signed: false },
+            { id: 29, propertyId: 2, type: 'Custom Document', name: 'Building Insurance Policy 2026.pdf', date: 'Jan 2025', shared: false, signed: false },
+            { id: 30, propertyId: 2, type: 'Property Licence', name: 'HMO Licensing Approval.pdf', date: 'Feb 2024', shared: true, signed: false },
+
+            // Property 3 - 15 Victoria Ave
+            { id: 31, propertyId: 3, type: 'Tenancy Agreement', name: 'Lease Agreement Flat 2A.pdf', date: 'Mar 10, 2024', shared: true, signed: true },
+            { id: 32, propertyId: 3, type: 'Gas Certificate', name: 'Gas Safety CP12 2025.pdf', date: 'Jan 2025', shared: true, signed: false },
+            { id: 33, propertyId: 3, type: 'Electrical Certificate', name: 'EICR Inspection Report.pdf', date: 'May 2024', shared: true, signed: false },
+            { id: 34, propertyId: 3, type: 'EPC Certificate', name: 'EPC Rating C Report.pdf', date: 'Mar 2022', shared: true, signed: false },
+            { id: 35, propertyId: 3, type: 'Deposit Certificate', name: 'TDS Deposit Certificate.pdf', date: 'Mar 2024', shared: true, signed: true },
+            { id: 36, propertyId: 3, type: 'Custom Document', name: 'Landlord Comprehensive Insurance.pdf', date: 'Dec 2024', shared: false, signed: false },
         ];
         this.tenancies = [
             { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active' },
@@ -195,61 +265,169 @@ const AppStore = {
                 { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
                 { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
             ]},
+            { id: 4, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 1', rent: '£1,400', start: '2023-09-01', end: '2026-08-31', status: 'active' },
+            { id: 5, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 3', rent: '£1,650', start: '2024-02-01', end: '2027-01-31', status: 'active' },
+            { id: 6, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1B', rent: '£1,750', start: '2023-11-01', end: '2026-10-31', status: 'active' },
+            { id: 7, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 1', rent: '£1,700', start: '2024-04-01', end: '2027-03-31', status: 'active' },
+            { id: 8, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2B', rent: '£1,850', start: '2024-05-01', end: '2027-04-30', status: 'active' },
         ];
         this.inspections = [
             { id: 0, propertyId: 0, type: 'Check-in', date: '2024-01-15', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(0, 3), notes: 'Property in excellent condition at move-in. Minor scuff on hallway skirting noted.', report: 'Check-in report.pdf' },
-            { id: 1, propertyId: 0, type: 'Annual', date: '2023-01-10', rating: '4.5', photos: 8, photoUrls: IMG.interior.slice(1, 4), notes: 'Annual check complete. Kitchen extractor filter replaced.', report: 'Annual 2023.pdf' },
+            { id: 1, propertyId: 0, type: 'Annual', date: '2025-01-10', rating: '4.7', photos: 8, photoUrls: IMG.interior.slice(1, 3), notes: 'Annual check complete. Kitchen extractor filter replaced. Smoke alarms tested OK.', report: 'Annual Inspection 2025.pdf' },
             { id: 2, propertyId: 1, type: 'Mid-term', date: '2026-08-15', rating: null, photos: 0, report: null, scheduled: true, notes: 'Tenant requested afternoon slot. Parking on street.' },
+            { id: 3, propertyId: 1, type: 'Check-in', date: '2023-06-01', rating: '4.9', photos: 7, photoUrls: IMG.interior.slice(0, 2), notes: 'Move-in inspection complete. All appliances clean and tested.', report: 'Check-in 45 Queens Rd.pdf' },
+            { id: 4, propertyId: 2, type: 'Pre-tenancy', date: '2025-02-10', rating: '5.0', photos: 6, photoUrls: IMG.interior.slice(1, 3), notes: 'Brand new luxury build condition. All fittings immaculate and certified.', report: 'Pre-tenancy 88 King St.pdf' },
+            { id: 5, propertyId: 3, type: 'Check-in', date: '2024-03-10', rating: '4.6', photos: 5, photoUrls: IMG.interior.slice(0, 2), notes: 'Move-in report signed. Keys handed over with signed inventory schedule.', report: 'Check-in 15 Victoria Ave.pdf' },
+            { id: 6, propertyId: 3, type: 'Annual', date: '2025-03-05', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(2, 3), notes: 'Routine check complete. Radiators bled, no signs of damp or leaks.', report: 'Annual Report 2025.pdf' },
         ];
         this.complianceCerts = {
-            '0-0': { certNumber: 'GS-2026-001', issueDate: '2025-03-15', expiryDate: '2026-03-15', issuedBy: 'SafeGas Ltd' },
-            '0-1': { certNumber: 'EICR-8821', issueDate: '2025-08-15', expiryDate: '2026-08-15', issuedBy: 'Spark Electrical' },
-            '0-7': { certNumber: 'EPC-B-4421', issueDate: '2022-06-15', expiryDate: '2027-06-15', issuedBy: 'Green Assessors', notes: 'Rating B' },
-            '1-0': { certNumber: 'GS-2025-114', issueDate: '2024-11-01', expiryDate: '2025-11-01', issuedBy: 'HeatSafe' },
+            '0-0': { certNumber: 'GS-2026-001', issueDate: '2025-03-15', expiryDate: '2026-03-15', issuedBy: 'SafeGas Ltd', notes: 'All 4 boilers passed safety inspection' },
+            '0-1': { certNumber: 'EICR-8821', issueDate: '2025-08-15', expiryDate: '2026-08-15', issuedBy: 'Spark Electrical Ltd', notes: 'Satisfactory condition rating' },
+            '0-2': { certNumber: 'SMK-2025-12', issueDate: '2025-01-15', expiryDate: '2026-01-15', issuedBy: 'FireGuard UK', notes: 'Mains interlinked alarms tested' },
+            '0-3': { certNumber: 'HT-2025-09', issueDate: '2025-01-15', expiryDate: '2026-01-15', issuedBy: 'FireGuard UK', notes: 'Kitchen heat detector tested' },
+            '0-4': { certNumber: 'CO-2025-44', issueDate: '2025-01-15', expiryDate: '2026-01-15', issuedBy: 'FireGuard UK', notes: 'CO sensor battery replaced' },
+            '0-5': { certNumber: 'POL-AXA-882', issueDate: '2024-06-01', expiryDate: '2027-06-01', issuedBy: 'AXA Landlord Direct', notes: '£5M public liability included' },
+            '0-6': { certNumber: 'MTG-NW-5519', issueDate: '2022-12-01', expiryDate: '2027-12-01', issuedBy: 'Nationwide BTL', notes: 'Fixed rate 3.49%' },
+            '0-7': { certNumber: 'EPC-B-4421', issueDate: '2022-06-15', expiryDate: '2027-06-15', issuedBy: 'Green Assessors Ltd', notes: 'Energy Rating B (84/100)' },
+            '0-8': { certNumber: 'LIC-WES-991', issueDate: '2024-09-01', expiryDate: '2029-09-01', issuedBy: 'Westminster City Council', notes: 'Selective Licence Approved' },
+
+            '1-0': { certNumber: 'GS-2025-114', issueDate: '2024-11-01', expiryDate: '2025-11-01', issuedBy: 'HeatSafe Heating Ltd', notes: 'CP12 issued for Worcester boiler' },
+            '1-1': { certNumber: 'EICR-9932', issueDate: '2023-07-20', expiryDate: '2028-07-20', issuedBy: 'BrightFix Electrics', notes: '5-year certificate valid' },
+            '1-7': { certNumber: 'EPC-C-5510', issueDate: '2023-09-14', expiryDate: '2028-09-14', issuedBy: 'EcoCheck London', notes: 'Rating C (72/100)' },
+
+            '2-0': { certNumber: 'GS-2025-303', issueDate: '2025-01-10', expiryDate: '2026-01-10', issuedBy: 'Premier Gas Safe', notes: 'Combi boiler annual check passed' },
+            '2-1': { certNumber: 'EICR-10492', issueDate: '2024-01-15', expiryDate: '2029-01-15', issuedBy: 'Spark Electrical Ltd', notes: 'Full test passed — Rating: Satisfactory' },
+            '2-7': { certNumber: 'EPC-A-1082', issueDate: '2021-04-05', expiryDate: '2031-04-05', issuedBy: 'Green Assessors Ltd', notes: 'Energy Rating A (93/100)' },
+
+            '3-0': { certNumber: 'GS-2025-228', issueDate: '2025-01-20', expiryDate: '2026-01-20', issuedBy: 'HeatSafe Heating Ltd', notes: 'Annual safety certificate issued' },
+            '3-1': { certNumber: 'EICR-8411', issueDate: '2024-05-18', expiryDate: '2029-05-18', issuedBy: 'Electric Fix Ltd', notes: 'Full compliance verified' },
+            '3-7': { certNumber: 'EPC-C-3382', issueDate: '2022-03-20', expiryDate: '2027-03-20', issuedBy: 'EcoCheck London', notes: 'Rating C (70/100)' },
         };
         this.certHistory = {};
         this.inventory = {
+            // Property 0 - 12 Park Lane
             '0-kitchen-0': {
                 sizeSqft: '120',
-                notes: 'Minor wear on worktop near sink.',
-                items: ['Oven / hob', 'Fridge freezer', 'Microwave', 'Extractor fan', 'Worktops'],
+                notes: 'Modern integrated kitchen. Minor wear on worktop near sink. All appliances clean.',
+                items: ['Oven & induction hob', 'Integrated fridge freezer', 'Dishwasher', 'Microwave', 'Extractor hood', 'Solid oak worktops'],
                 photos: IMG.interior.slice(0, 2),
             },
             '0-reception-0': {
                 sizeSqft: '180',
-                notes: 'Sofa in good condition.',
-                items: ['Sofa', 'Coffee table', 'Curtains / blinds', 'Flooring', 'Radiator'],
+                notes: 'Spacious reception with hardwood flooring. 3-seater sofa and coffee table in great condition.',
+                items: ['3-Seater fabric sofa', 'Solid wood coffee table', 'Smart TV stand', 'Floor-to-ceiling curtains', 'Hardwood flooring', 'Double radiator'],
                 photos: [IMG.interior[2]],
             },
             '0-bedroom-0': {
                 sizeSqft: '140',
-                notes: 'Carpet showing light wear in corner.',
-                items: ['Bed frame', 'Mattress', 'Wardrobe', 'Curtains / blinds', 'Radiator'],
-                photos: IMG.interior.slice(3, 5),
+                notes: 'Master bedroom. Carpet professionally cleaned Jan 2024. Bed frame and mattress in very good condition.',
+                items: ['King size bed & mattress', 'Built-in double wardrobe', 'Bedside tables (x2)', 'Blackout blinds', 'Radiator'],
+                photos: IMG.interior.slice(0, 2),
             },
             '0-bedroom-1': {
                 sizeSqft: '110',
-                notes: 'Second bedroom — used as home office.',
-                items: ['Bed frame', 'Mattress', 'Wardrobe', 'Curtains / blinds', 'Radiator'],
-                photos: [],
+                notes: 'Second bedroom currently styled as study / guest bedroom. Freshly painted walls.',
+                items: ['Double bed frame', 'Orthopaedic mattress', 'Fitted wardrobe', 'Desk & ergonomic chair', 'Radiator'],
+                photos: [IMG.interior[1]],
             },
             '0-bathroom-0': {
-                sizeSqft: '45',
-                notes: '',
-                items: ['Bath / shower', 'Toilet', 'Basin', 'Tiles / grouting', 'Extractor fan'],
-                photos: [],
+                sizeSqft: '55',
+                notes: 'Ceramic tiles throughout. Thermostatic rainfall shower, heated towel rail, and vanity mirror cabinet.',
+                items: ['Bathtub with glass shower screen', 'Rainfall shower mixer', 'Toilet & soft-close seat', 'Basin with vanity unit', 'Heated chrome towel rail', 'Extractor fan'],
+                photos: [IMG.interior[0]],
             },
             '0-hallway-0': {
-                sizeSqft: '35',
-                notes: 'Smoke alarm tested Jan 2025.',
-                items: ['Smoke alarm', 'CO alarm', 'Flooring', 'Doors', 'Lighting'],
+                sizeSqft: '40',
+                notes: 'Entrance hallway with video intercom entry, mains interlinked smoke & CO alarms tested Jan 2025.',
+                items: ['Intercom handset', 'Mains smoke alarm', 'CO alarm', 'Coat rack', 'Engineered wood flooring'],
+                photos: [],
+            },
+
+            // Property 1 - 45 Queens Road
+            '1-kitchen-0': {
+                sizeSqft: '115',
+                notes: 'Period kitchen with bespoke cabinets. Worcester combi boiler in dedicated cupboard.',
+                items: ['Gas hob & fan oven', 'Bosch washing machine', 'Beko fridge freezer', 'Granite worktops', 'Extractor fan'],
+                photos: [IMG.interior[1]],
+            },
+            '1-reception-0': {
+                sizeSqft: '165',
+                notes: 'Bright living room with bay window and original Victorian cornicing. Excellent natural light.',
+                items: ['Corner sofa', 'Dining table & 4 chairs', 'Curtains & poles', 'Carpet', 'Victorian fireplace (decorative)'],
+                photos: [IMG.interior[0]],
+            },
+            '1-bedroom-0': {
+                sizeSqft: '135',
+                notes: 'Quiet rear-facing bedroom overlooking the garden. Neutral decor throughout.',
+                items: ['Double bed & pocket sprung mattress', 'Freestanding wardrobe', 'Chest of 4 drawers', 'Roller blinds'],
+                photos: [IMG.interior[2]],
+            },
+            '1-bathroom-0': {
+                sizeSqft: '48',
+                notes: 'Contemporary white suite. Shower enclosure, pedestal sink, and tiled floor.',
+                items: ['Walk-in shower enclosure', 'Basin & chrome mixer tap', 'WC', 'Mirrored cabinet', 'Extractor fan'],
+                photos: [],
+            },
+
+            // Property 2 - 88 King Street
+            '2-kitchen-0': {
+                sizeSqft: '140',
+                notes: 'Open-plan designer kitchen with quartz countertops and integrated Siemens appliances.',
+                items: ['Siemens induction hob & oven', 'Integrated dishwasher', 'Wine cooler', 'Breakfast bar with 2 stools', 'LED under-cabinet lighting'],
+                photos: [IMG.interior[2]],
+            },
+            '2-reception-0': {
+                sizeSqft: '210',
+                notes: 'Floor-to-ceiling windows with panoramic city views. Designer engineered flooring.',
+                items: ['Leather designer sofa', 'Media console unit', 'Glass coffee table', 'Floor lamp', 'Motorised blinds'],
+                photos: [IMG.interior[1]],
+            },
+            '2-bedroom-0': {
+                sizeSqft: '150',
+                notes: 'Master suite with en-suite access. Custom fitted wardrobes with integrated LED strips.',
+                items: ['Super king bed & mattress', 'Fitted floor-to-ceiling wardrobe', 'Bedside tables (x2)', 'Smart thermostat'],
+                photos: [IMG.interior[0]],
+            },
+            '2-bathroom-0': {
+                sizeSqft: '60',
+                notes: 'Marble tile finish with underfloor heating, walk-in rainfall shower, and touch-lit mirror.',
+                items: ['Walk-in rainfall shower', 'Floating vanity sink', 'Wall-hung toilet', 'Illuminated LED mirror', 'Underfloor heating controller'],
+                photos: [],
+            },
+
+            // Property 3 - 15 Victoria Ave
+            '3-kitchen-0': {
+                sizeSqft: '100',
+                notes: 'Fitted kitchen with laminate worktops. Stainless steel sink with mixer tap.',
+                items: ['Electric hob & oven', 'Under-counter fridge', 'Washing machine', 'Tiled splashback', 'Cooker hood'],
+                photos: [IMG.interior[0]],
+            },
+            '3-reception-0': {
+                sizeSqft: '150',
+                notes: 'Spacious lounge with high ceilings, feature wall, and large sash windows.',
+                items: ['2-Seater fabric sofa', 'Armchair', 'Coffee table', 'Sash window curtains', 'Radiator'],
+                photos: [IMG.interior[2]],
+            },
+            '3-bedroom-0': {
+                sizeSqft: '125',
+                notes: 'Well-proportioned bedroom with fitted carpet and built-in wardrobe.',
+                items: ['Double bed & mattress', '2-Door wardrobe', 'Bedside cabinet', 'Blackout blinds', 'Radiator'],
+                photos: [IMG.interior[1]],
+            },
+            '3-bathroom-0': {
+                sizeSqft: '45',
+                notes: 'White bathroom suite with electric shower over bath.',
+                items: ['Bath with electric shower', 'Wash basin', 'WC', 'Medicine cabinet', 'Towel rail'],
                 photos: [],
             },
         };
         this.contractorInvoices = [
             { id: 0, contractor: 'Plumber Pro', job: 'Kitchen sink leaking', amount: '£185', status: 'Unpaid', propertyId: 0, maintId: 0 },
-            { id: 1, contractor: 'Heating Co.', job: 'Boiler service', amount: '£220', status: 'Paid', propertyId: 1, maintId: 3 },
-            { id: 2, contractor: 'Plumber Pro', job: 'Tap replacement', amount: '£185', status: 'Unpaid', propertyId: 0, maintId: 6 },
+            { id: 1, contractor: 'Heating Co.', job: 'Boiler service & CP12', amount: '£220', status: 'Paid', propertyId: 1, maintId: 3 },
+            { id: 2, contractor: 'Plumber Pro', job: 'Tap replacement', amount: '£145', status: 'Unpaid', propertyId: 0, maintId: 6 },
+            { id: 3, contractor: 'Electric Fix', job: 'Light fitting replacement', amount: '£95', status: 'Paid', propertyId: 3, maintId: 5 },
+            { id: 4, contractor: 'Heating Co.', job: 'Radiator valve repair', amount: '£130', status: 'Unpaid', propertyId: 3, maintId: 4 },
+            { id: 5, contractor: 'Plumber Pro', job: 'Bathroom basin replacement', amount: '£260', status: 'Unpaid', propertyId: 0, maintId: 8 },
         ];
         this.propertyMeta = {
             0: {
@@ -265,7 +443,7 @@ const AppStore = {
                     insuranceExpiry: '2026-11-30',
                     councilTax: 'Band D',
                     postcode: 'SW1A 1AA',
-                    notes: 'Prime central residential block with 4 units, lift, secure video entry, and underground parking.',
+                    notes: 'Prime central residential block with 4 units, passenger lift, secure video entry, bike storage, and underground parking.',
                 },
                 building: { flatCount: 4, floors: 3, flatsPerFloor: 2, useFloors: true, yearBuilt: '2019' },
                 units: [
@@ -274,6 +452,35 @@ const AppStore = {
                     { id: 2, name: 'Flat 2B', floor: 2, flatIndex: 2, status: 'occupied', rent: '£2,200', beds: 2, baths: 2, sqft: '920', furnished: 'Furnished' },
                     { id: 3, name: 'Flat 3', floor: 3, flatIndex: 1, status: 'occupied', rent: '£1,650', beds: 2, baths: 1, sqft: '780', furnished: 'Unfurnished' },
                 ],
+                photos: [IMG.props[0], IMG.interior[0], IMG.interior[1], IMG.interior[2]],
+                floorPlans: [IMG.interior[0], IMG.interior[1]],
+                alarms: {
+                    smoke: { expiry: '2026-01-15', location: 'Hallway (Mains interlinked)', reminderTiming: '30', reminderDate: '2025-12-16' },
+                    heat: { expiry: '2026-01-15', location: 'Kitchen', reminderTiming: '30', reminderDate: '2025-12-16' },
+                    co: { expiry: '2026-01-15', location: 'Boiler Cupboard', reminderTiming: '30', reminderDate: '2025-12-16' },
+                },
+                appliances: [
+                    { name: 'Boiler', brand: 'Worcester Bosch Greenstar 30i', warranty: 'Until Mar 2027', description: 'Combi boiler in kitchen cupboard' },
+                    { name: 'Oven & Hob', brand: 'Bosch Serie 6', warranty: 'Manufacturer 2-year', description: 'Integrated electric fan oven and induction hob' },
+                    { name: 'Fridge Freezer', brand: 'Samsung SpaceMax', warranty: '5-year compressor', description: 'Frost-free freestanding 70/30 fridge freezer' },
+                    { name: 'Dishwasher', brand: 'Bosch Serie 4', warranty: 'Valid until 2026', description: 'Full-size integrated quiet dishwasher' },
+                    { name: 'Washing Machine', brand: 'LG AI DirectDrive 9kg', warranty: '10-year motor', description: 'Quiet inverter washer with steam cycle' },
+                ],
+                unitKeys: {
+                    'Flat 2A': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat entrance', holder: 'Sarah Johnson' },
+                        { label: 'Building electronic fob', qty: '2', location: 'Lobby & underground gate', holder: 'Sarah Johnson' },
+                        { label: 'Mailbox key', qty: '1', location: 'Ground floor post room', holder: 'Sarah Johnson' },
+                        { label: 'Master landlord key', qty: '1', location: 'Key safe at office', holder: 'John Smith' },
+                    ],
+                    'Flat 2B': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat entrance', holder: 'Priya Sharma' },
+                        { label: 'Building electronic fob', qty: '2', location: 'Lobby & gate', holder: 'Priya Sharma' },
+                        { label: 'Mailbox key', qty: '1', location: 'Ground floor', holder: 'Priya Sharma' },
+                    ],
+                },
+                utilities: { gas: 'British Gas (Smart Meter: 489201)', electric: 'Octopus Energy (MPAN: 120002948192)', water: 'Thames Water (Account: 902184)', broadband: 'BT Full Fibre 500', council: { name: 'Westminster City Council', notes: 'Council Tax Band D' } },
+                parking: { spaces: 4, type: 'Secure underground', permit: 'PL-BAY-01 to 04', notes: 'Allocated numbered bays with automated fob gate and EV charge points.' },
             },
             1: {
                 info: {
@@ -288,13 +495,33 @@ const AppStore = {
                     insuranceExpiry: '2026-10-15',
                     councilTax: 'Band C',
                     postcode: 'SW2 3TR',
-                    notes: 'Victorian period conversion with 2 spacious duplex apartments and private rear garden.',
+                    notes: 'Victorian period conversion with 2 spacious duplex apartments, high ceilings, private rear garden, and on-street permit parking.',
                 },
                 building: { flatCount: 2, floors: 2, flatsPerFloor: 1, useFloors: true, yearBuilt: '1905' },
                 units: [
                     { id: 0, name: 'Flat 1A', floor: 1, flatIndex: 1, status: 'occupied', rent: '£1,850', beds: 2, baths: 1, sqft: '850', furnished: 'Furnished' },
                     { id: 1, name: 'Flat 1B', floor: 2, flatIndex: 1, status: 'occupied', rent: '£1,750', beds: 2, baths: 1, sqft: '800', furnished: 'Part-furnished' },
                 ],
+                photos: [IMG.props[1], IMG.interior[0], IMG.interior[2]],
+                floorPlans: [IMG.interior[1]],
+                alarms: {
+                    smoke: { expiry: '2026-06-01', location: 'Hallway & Landing', reminderTiming: '30', reminderDate: '2026-05-02' },
+                    heat: { expiry: '2026-06-01', location: 'Kitchen', reminderTiming: '30', reminderDate: '2026-05-02' },
+                    co: { expiry: '2026-06-01', location: 'Boiler cupboard', reminderTiming: '30', reminderDate: '2026-05-02' },
+                },
+                appliances: [
+                    { name: 'Boiler', brand: 'Worcester Bosch 28i', warranty: 'Until Nov 2026', description: 'Combi gas boiler in kitchen' },
+                    { name: 'Oven & Hob', brand: 'Zanussi Double Oven', warranty: 'Standard warranty', description: 'Built-in double oven and 4-burner gas hob' },
+                    { name: 'Washing Machine', brand: 'Bosch Serie 4', warranty: 'Valid until 2026', description: '7kg freestanding washer in utility cupboard' },
+                ],
+                unitKeys: {
+                    'Flat 1A': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat 1A entrance', holder: 'David Wilson' },
+                        { label: 'Garden gate padlock key', qty: '1', location: 'Side passage', holder: 'David Wilson' },
+                    ],
+                },
+                utilities: { gas: 'E.ON Next', electric: 'EDF Energy', water: 'Thames Water', broadband: 'Virgin Media Gig1', council: { name: 'Lambeth Council', notes: 'Band C' } },
+                parking: { spaces: 2, type: 'On-street resident permit', permit: 'LAM-SW2-881', notes: 'Zone S resident parking permit required Mon-Fri 8:30am-6:30pm.' },
             },
             2: {
                 info: {
@@ -309,13 +536,32 @@ const AppStore = {
                     insuranceExpiry: '2027-01-20',
                     councilTax: 'Band E',
                     postcode: 'EC2V 8BB',
-                    notes: 'New build residential development with high thermal efficiency, smart meters, and EV chargers.',
+                    notes: 'New build luxury city residential development with high thermal efficiency, triple glazing, smart meters, concierge, and EV chargers.',
                 },
                 building: { flatCount: 2, floors: 2, flatsPerFloor: 1, useFloors: true, yearBuilt: '2021' },
                 units: [
                     { id: 0, name: 'Unit 1', floor: 1, flatIndex: 1, status: 'vacant', rent: '£2,100', beds: 2, baths: 2, sqft: '900', furnished: 'Furnished' },
                     { id: 1, name: 'Unit 2', floor: 2, flatIndex: 1, status: 'vacant', rent: '£2,300', beds: 3, baths: 2, sqft: '1100', furnished: 'Unfurnished' },
                 ],
+                photos: [IMG.props[2], IMG.interior[1], IMG.interior[2]],
+                floorPlans: [IMG.interior[0]],
+                alarms: {
+                    smoke: { expiry: '2031-01-15', location: 'Hallway & Living Room', reminderTiming: '30', reminderDate: '2030-12-16' },
+                    heat: { expiry: '2031-01-15', location: 'Kitchen', reminderTiming: '30', reminderDate: '2030-12-16' },
+                    co: { expiry: '2031-01-15', location: 'Utility room', reminderTiming: '30', reminderDate: '2030-12-16' },
+                },
+                appliances: [
+                    { name: 'Boiler & Heat Pump', brand: 'Daikin Altherma Hybrid', warranty: 'Until 2031', description: 'Smart eco hybrid heat pump system' },
+                    { name: 'Kitchen Suite', brand: 'Miele Induction & Pyrolytic Oven', warranty: 'Miele 5-year gold', description: 'Touch screen smart kitchen suite' },
+                    { name: 'Wine Cooler', brand: 'Caple Dual Zone', warranty: 'Active', description: 'Integrated 46-bottle dual temp wine cooler' },
+                ],
+                unitKeys: {
+                    'Unit 1': [
+                        { label: 'Smart Key Card & Physical Over-ride', qty: '2', location: 'Concierge desk', holder: 'Concierge' },
+                    ],
+                },
+                utilities: { gas: 'N/A (All Electric Eco)', electric: 'Good Energy 100% Renewable', water: 'Thames Water', broadband: 'Hyperoptic 1Gbps Symmetric', council: { name: 'City of London', notes: 'Band E' } },
+                parking: { spaces: 2, type: 'Underground with 22kW EV Charger', permit: 'EC2-VIP-01', notes: 'Dedicated space with Pod Point 22kW smart EV charger.' },
             },
             3: {
                 info: {
@@ -330,7 +576,7 @@ const AppStore = {
                     insuranceExpiry: '2026-12-05',
                     councilTax: 'Band D',
                     postcode: 'N1 5EH',
-                    notes: 'Period conversion near Highbury & Islington station with high ceilings and shared patio.',
+                    notes: 'Period conversion 3 minutes from Highbury & Islington tube station. High decorative ceilings, original fireplaces, and shared sunny courtyard.',
                 },
                 building: { flatCount: 3, floors: 2, flatsPerFloor: 2, useFloors: true, yearBuilt: '1935' },
                 units: [
@@ -338,20 +584,59 @@ const AppStore = {
                     { id: 1, name: 'Flat 2A', floor: 2, flatIndex: 1, status: 'occupied', rent: '£1,950', beds: 2, baths: 1, sqft: '780', furnished: 'Furnished' },
                     { id: 2, name: 'Flat 2B', floor: 2, flatIndex: 2, status: 'occupied', rent: '£1,850', beds: 2, baths: 1, sqft: '720', furnished: 'Part-furnished' },
                 ],
+                photos: [IMG.props[3], IMG.interior[0], IMG.interior[1]],
+                floorPlans: [IMG.interior[2]],
+                alarms: {
+                    smoke: { expiry: '2026-03-10', location: 'Hallway', reminderTiming: '30', reminderDate: '2026-02-08' },
+                    heat: { expiry: '2026-03-10', location: 'Kitchen', reminderTiming: '30', reminderDate: '2026-02-08' },
+                    co: { expiry: '2026-03-10', location: 'Boiler cupboard', reminderTiming: '30', reminderDate: '2026-02-08' },
+                },
+                appliances: [
+                    { name: 'Boiler', brand: 'Vaillant ecoTEC plus 832', warranty: 'Until May 2028', description: 'High efficiency condensing boiler' },
+                    { name: 'Oven & Hob', brand: 'Hotpoint CleanGlass', warranty: 'Manufacturer 2-year', description: 'Electric fan oven & ceramic hob' },
+                    { name: 'Washing Machine', brand: 'Indesit Innex 8kg', warranty: 'Active', description: 'Front loading washing machine' },
+                ],
+                unitKeys: {
+                    'Flat 2A': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat 2A entrance', holder: 'Michael Lee' },
+                        { label: 'Street door key', qty: '2', location: 'Main building porch', holder: 'Michael Lee' },
+                        { label: 'Courtyard gate key', qty: '1', location: 'Rear courtyard', holder: 'Michael Lee' },
+                    ],
+                },
+                utilities: { gas: 'British Gas', electric: 'OVO Energy', water: 'Thames Water', broadband: 'Community Fibre 1Gbps', council: { name: 'Islington Council', notes: 'Band D' } },
+                parking: { spaces: 1, type: 'Off-street driveway + resident permit', permit: 'ISL-N1-404', notes: '1 dedicated driveway space plus Islington Zone B permit eligibility.' },
             },
         };
         this.tenantNotes = {
             0: [
                 { id: 0, text: 'Tenant prefers email for non-urgent matters. Very responsive on WhatsApp.', meta: 'Mar 5, 2025 · You', bg: '#FFFBEB', color: '#D97706' },
                 { id: 1, text: 'Requested early inspection before lease renewal discussion.', meta: 'Feb 12, 2025 · You', bg: '#EFF6FF', color: '#2563EB' },
+                { id: 2, text: 'Reported minor kitchen sink leak — Plumber Pro dispatched same day.', meta: 'Mar 10, 2025 · You', bg: '#ECFDF5', color: '#059669' },
             ],
-            1: [{ id: 0, text: 'Always pays rent on time. Prefers phone calls.', meta: 'Jan 20, 2025 · You', bg: '#ECFDF5', color: '#059669' }],
-            2: [],
-            3: [],
+            1: [
+                { id: 0, text: 'Always pays rent on time via direct transfer. Prefers phone calls for maintenance visits.', meta: 'Jan 20, 2025 · You', bg: '#ECFDF5', color: '#059669' },
+                { id: 1, text: 'Requested annual boiler service slot in the afternoon.', meta: 'Feb 28, 2025 · You', bg: '#EFF6FF', color: '#2563EB' },
+            ],
+            2: [
+                { id: 0, text: 'Professional tenant working in tech. Requested parking permit renewal confirmation.', meta: 'Mar 2, 2025 · You', bg: '#EFF6FF', color: '#2563EB' },
+                { id: 1, text: 'Light fitting replaced by Electric Fix — tenant confirmed satisfaction.', meta: 'Feb 19, 2025 · You', bg: '#ECFDF5', color: '#059669' },
+            ],
+            3: [
+                { id: 0, text: 'Tenancy ended Dec 2024. Full deposit of £2,100 returned via TDS. Flat left in pristine condition.', meta: 'Dec 15, 2024 · You', bg: '#ECFDF5', color: '#059669' },
+                { id: 1, text: 'Move-out inspection passed with 5.0 score. Keys returned on schedule.', meta: 'Dec 2, 2024 · You', bg: '#EFF6FF', color: '#2563EB' },
+            ],
+            4: [
+                { id: 0, text: 'Lead tenant on group lease for Flat 2B. Coordinates joint rent and access for housemates.', meta: 'Jun 1, 2024 · You', bg: '#EFF6FF', color: '#2563EB' },
+                { id: 1, text: 'Right to rent and references verified for all 3 occupants.', meta: 'May 25, 2024 · You', bg: '#ECFDF5', color: '#059669' },
+            ],
+            5: [
+                { id: 0, text: 'Joint tenant on Flat 2B group tenancy. Completed identity verification and onboarding.', meta: 'Jun 2, 2024 · You', bg: '#EFF6FF', color: '#2563EB' },
+            ],
         };
         this.paymentMethods = [
             { id: 0, type: 'Visa', last4: '4242', exp: '08/27', name: 'John Smith', default: true },
-            { id: 1, type: 'Barclays', last4: '8901', exp: '—', name: 'Rent Collection', default: false },
+            { id: 1, type: 'Barclays', last4: '8901', exp: '—', name: 'Rent Collection Account', default: false },
+            { id: 2, type: 'Stripe', last4: '1184', exp: '—', name: 'Stripe Payouts Balance', default: false },
         ];
         this.tenantReferencing = {
             0: {
@@ -359,8 +644,53 @@ const AppStore = {
                 rightToRent: { status: 'verified', shareCode: 'WXY9 8K2L', expiry: 'Jan 2027' },
                 proofOfAddress: { status: 'verified', file: 'Utility_Bill_Jan2024.pdf', date: 'Jan 9, 2024' },
                 proofOfIncome: { status: 'verified', file: 'Payslip_Dec2023.pdf', date: 'Jan 8, 2024' },
-                employment: { status: 'complete', employer: 'Tech Solutions Ltd', role: 'Product Designer', salary: '£52,000', startDate: '2021-03-01', contact: 'hr@techsolutions.co.uk' },
+                employment: { status: 'complete', employer: 'Tech Solutions Ltd', role: 'Lead Product Designer', salary: '£62,000', startDate: '2021-03-01', contact: 'hr@techsolutions.co.uk' },
                 previousLandlord: { status: 'complete', name: 'Mrs Helen Price', phone: '+44 7700 900111', email: 'h.price@email.com', address: '8 Elm Court, London', tenancyDates: '2019–2023' },
+                guarantor: { status: 'not_required', name: '', phone: '', email: '', relationship: '' },
+            },
+            1: {
+                passport: { status: 'verified', file: 'Passport_David_W.pdf', date: 'May 20, 2023' },
+                rightToRent: { status: 'verified', shareCode: 'RT77 4M1P', expiry: 'May 2027' },
+                proofOfAddress: { status: 'verified', file: 'Bank_Statement_Barclays.pdf', date: 'May 22, 2023' },
+                proofOfIncome: { status: 'verified', file: 'P60_Tax_Return.pdf', date: 'May 20, 2023' },
+                employment: { status: 'complete', employer: 'Wilson & Co Financial', role: 'Senior Analyst', salary: '£55,000', startDate: '2020-09-01', contact: 'careers@wilsonfinancial.co.uk' },
+                previousLandlord: { status: 'complete', name: 'Mr Peter Davies', phone: '+44 7700 900112', email: 'p.davies@property.co.uk', address: '12 Clapham High St, London', tenancyDates: '2020–2023' },
+                guarantor: { status: 'not_required', name: '', phone: '', email: '', relationship: '' },
+            },
+            2: {
+                passport: { status: 'verified', file: 'Passport_Michael_L.pdf', date: 'Feb 28, 2024' },
+                rightToRent: { status: 'verified', shareCode: 'UK99 1L0Q', expiry: 'Mar 2027' },
+                proofOfAddress: { status: 'verified', file: 'Council_Tax_Bill_2024.pdf', date: 'Mar 1, 2024' },
+                proofOfIncome: { status: 'verified', file: 'Payslip_Feb2024.pdf', date: 'Feb 28, 2024' },
+                employment: { status: 'complete', employer: 'FinTech UK Innovations', role: 'Staff Software Engineer', salary: '£78,000', startDate: '2022-01-15', contact: 'people@fintechuk.io' },
+                previousLandlord: { status: 'complete', name: 'James Thorne Ltd', phone: '+44 7700 900113', email: 'lettings@thorneestates.co.uk', address: '44 Upper Street, London N1', tenancyDates: '2021–2024' },
+                guarantor: { status: 'not_required', name: '', phone: '', email: '', relationship: '' },
+            },
+            3: {
+                passport: { status: 'verified', file: 'Passport_Emma_R.pdf', date: 'Dec 18, 2021' },
+                rightToRent: { status: 'verified', shareCode: 'EM22 8X7K', expiry: 'Jan 2025' },
+                proofOfAddress: { status: 'verified', file: 'Utility_Bill_Emma.pdf', date: 'Dec 20, 2021' },
+                proofOfIncome: { status: 'verified', file: 'Contract_Emma_R.pdf', date: 'Dec 18, 2021' },
+                employment: { status: 'complete', employer: 'Ogilvy UK', role: 'Marketing Manager', salary: '£48,000', startDate: '2019-06-01', contact: 'hr@ogilvy.co.uk' },
+                previousLandlord: { status: 'complete', name: 'City Living Properties', phone: '+44 7700 900114', email: 'info@cityliving.co.uk', address: '22 Old Broad St, London', tenancyDates: '2019–2022' },
+                guarantor: { status: 'not_required', name: '', phone: '', email: '', relationship: '' },
+            },
+            4: {
+                passport: { status: 'verified', file: 'Passport_Priya_S.pdf', date: 'May 15, 2024' },
+                rightToRent: { status: 'verified', shareCode: 'PS88 2K4M', expiry: 'May 2027' },
+                proofOfAddress: { status: 'verified', file: 'Bank_Statement_Priya.pdf', date: 'May 16, 2024' },
+                proofOfIncome: { status: 'verified', file: 'Payslip_Apr2024.pdf', date: 'May 15, 2024' },
+                employment: { status: 'complete', employer: 'MediaCorp Digital', role: 'Senior Product Manager', salary: '£68,000', startDate: '2021-11-01', contact: 'hr@mediacorp.co.uk' },
+                previousLandlord: { status: 'complete', name: 'Kensington Residential', phone: '+44 7700 900115', email: 'admin@kensingtonres.co.uk', address: '15 High St Kensington, London', tenancyDates: '2022–2024' },
+                guarantor: { status: 'not_required', name: '', phone: '', email: '', relationship: '' },
+            },
+            5: {
+                passport: { status: 'verified', file: 'Passport_James_Chen.pdf', date: 'May 18, 2024' },
+                rightToRent: { status: 'verified', shareCode: 'JC91 5T2X', expiry: 'May 2027' },
+                proofOfAddress: { status: 'verified', file: 'Utility_Bill_James.pdf', date: 'May 19, 2024' },
+                proofOfIncome: { status: 'verified', file: 'Payslip_James_2024.pdf', date: 'May 18, 2024' },
+                employment: { status: 'complete', employer: 'Alpha Analytics Ltd', role: 'Data Scientist', salary: '£60,000', startDate: '2022-04-01', contact: 'careers@alphaanalytics.co.uk' },
+                previousLandlord: { status: 'complete', name: 'Canary Wharf Lettings', phone: '+44 7700 900116', email: 'leases@cwlettings.co.uk', address: '1 Canada Square, London', tenancyDates: '2022–2024' },
                 guarantor: { status: 'not_required', name: '', phone: '', email: '', relationship: '' },
             },
         };
@@ -368,11 +698,15 @@ const AppStore = {
             0: {
                 checklist: { kitchen: false, bathroom: false, bedroom: false, living: false },
                 meters: {
-                    electricity: { reading: '', photo: '' },
-                    gas: { reading: '', photo: '' },
-                    water: { reading: '', photo: '' },
+                    electricity: { reading: '48920', photo: IMG.interior[0] },
+                    gas: { reading: '19430', photo: IMG.interior[1] },
+                    water: { reading: '0824', photo: '' },
                 },
-                keys: [],
+                keys: [
+                    { label: 'Front entrance key', returned: true },
+                    { label: 'Building fob', returned: true },
+                    { label: 'Mailbox key', returned: true },
+                ],
                 photos: [],
                 vacateNotice: null,
                 submitted: false,
@@ -380,70 +714,75 @@ const AppStore = {
                 depositScheme: 'MyDeposits',
                 depositAmount: '£2,450',
             },
+            3: {
+                checklist: { kitchen: true, bathroom: true, bedroom: true, living: true },
+                meters: {
+                    electricity: { reading: '39104', photo: IMG.interior[0] },
+                    gas: { reading: '14290', photo: IMG.interior[1] },
+                    water: { reading: '0612', photo: '' },
+                },
+                keys: [
+                    { label: 'Main flat key', returned: true },
+                    { label: 'Street door key', returned: true },
+                ],
+                photos: [IMG.interior[0], IMG.interior[1]],
+                vacateNotice: 'Oct 31, 2024',
+                submitted: true,
+                depositStatus: 'released',
+                depositScheme: 'Tenancy Deposit Scheme (TDS)',
+                depositAmount: '£2,100',
+            },
         };
         this.tenantDocuments = {
             0: [
-                ['file-text', 'Lease Agreement.pdf', 'Jan 15, 2024', '#2563EB'],
-                ['file-image', 'NID Proof.jpg', 'Jan 10, 2024', '#2563EB'],
-                ['file-text', 'Gas Safety 2025.pdf', 'Mar 2025', '#DC2626'],
-                ['file-text', 'EICR Report.pdf', 'Apr 2024', '#D97706'],
-                ['file-text', 'Deposit Protection.pdf', 'Jan 2024', '#059669'],
+                ['file-text', 'Lease Agreement Flat 2A.pdf', 'Jan 15, 2024', '#2563EB'],
+                ['file-image', 'NID Proof Sarah Johnson.jpg', 'Jan 10, 2024', '#2563EB'],
+                ['file-text', 'Gas Safety CP12 2026.pdf', 'Mar 2026', '#DC2626'],
+                ['file-text', 'EICR Electrical Report.pdf', 'Aug 2025', '#D97706'],
+                ['file-text', 'Deposit Protection Certificate.pdf', 'Jan 2024', '#059669'],
+                ['file-text', 'Move-in Inventory Schedule.pdf', 'Jan 15, 2024', '#2563EB'],
             ],
             1: [
-                ['file-text', 'Lease Agreement.pdf', 'Jun 1, 2023', '#2563EB'],
-                ['file-image', 'NID Proof.jpg', 'May 28, 2023', '#2563EB'],
+                ['file-text', 'Lease Agreement Flat 1A.pdf', 'Jun 1, 2023', '#2563EB'],
+                ['file-image', 'NID Proof David Wilson.jpg', 'May 28, 2023', '#2563EB'],
+                ['file-text', 'Gas Safety CP12 2025.pdf', 'Nov 2024', '#DC2626'],
+                ['file-text', 'EPC Energy Rating C.pdf', 'Sep 2023', '#059669'],
+                ['file-text', 'Deposit Protection TDS.pdf', 'Jun 2023', '#059669'],
+                ['file-text', 'How to Rent Guide UK.pdf', 'Jun 1, 2023', '#2563EB'],
             ],
-            2: [], 3: [],
+            2: [
+                ['file-text', 'Lease Agreement Flat 2A.pdf', 'Mar 10, 2024', '#2563EB'],
+                ['file-image', 'NID Proof Michael Lee.jpg', 'Mar 5, 2024', '#2563EB'],
+                ['file-text', 'EICR Condition Report.pdf', 'May 2024', '#D97706'],
+                ['file-text', 'Gas Safety Certificate 2025.pdf', 'Jan 2025', '#DC2626'],
+                ['file-text', 'Deposit Certificate MyDeposits.pdf', 'Mar 2024', '#059669'],
+            ],
+            3: [
+                ['file-text', 'Past Tenancy Agreement 2022-2024.pdf', 'Jan 1, 2022', '#2563EB'],
+                ['file-image', 'NID Proof Emma Roberts.jpg', 'Dec 20, 2021', '#2563EB'],
+                ['file-text', 'Final Checkout Report.pdf', 'Dec 2, 2024', '#059669'],
+                ['file-text', 'Deposit Release Confirmation.pdf', 'Dec 15, 2024', '#059669'],
+            ],
+            4: [
+                ['file-text', 'Group Tenancy Agreement Flat 2B.pdf', 'Jun 1, 2024', '#2563EB'],
+                ['file-image', 'NID Proof Priya Sharma.jpg', 'May 25, 2024', '#2563EB'],
+                ['file-text', 'Deposit Protection Group Certificate.pdf', 'Jun 1, 2024', '#059669'],
+                ['file-text', 'Right to Rent Confirmation.pdf', 'May 26, 2024', '#2563EB'],
+            ],
+            5: [
+                ['file-text', 'Joint Tenancy Addendum.pdf', 'Jun 1, 2024', '#2563EB'],
+                ['file-image', 'Passport James Chen.pdf', 'May 28, 2024', '#2563EB'],
+                ['file-text', 'Deposit Certificate Co-tenant.pdf', 'Jun 1, 2024', '#059669'],
+            ],
         };
         this.broadcasts = [
-            { id: 0, propertyId: 0, title: 'Boiler service next week', body: 'Heating Co. will access units on Mon 28 Jul, 9–11am. Please ensure someone is home or leave a key with reception.', date: 'Jul 22, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [], image: IMG.maint[2] },
-            { id: 1, propertyId: 0, title: 'Rubbish collection change', body: 'Bins go out on Thursday instead of Wednesday for the rest of July.', date: 'Jul 18, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
-            { id: 2, propertyId: 1, title: 'Garden maintenance', body: 'Shared garden will be serviced Fri 25 Jul. Please keep the gate unlocked.', date: 'Jul 15, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [], image: IMG.interior[1] },
+            { id: 0, propertyId: 0, title: 'Annual Boiler Service Next Week', body: 'Heating Co. will access units on Mon 28 Jul, 9–11am. Please ensure someone is home or leave a key with reception.', date: 'Jul 22, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [], image: IMG.maint[2] },
+            { id: 1, propertyId: 0, title: 'Rubbish & Recycling Schedule Change', body: 'Council collection has moved to Thursday mornings. Please place recycling in blue bins by 7:30 AM.', date: 'Jul 18, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
+            { id: 2, propertyId: 1, title: 'Shared Garden Maintenance & Mowing', body: 'Shared garden will be serviced Fri 25 Jul. Please keep the side gate unlocked and clear garden furniture.', date: 'Jul 15, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [], image: IMG.interior[1] },
+            { id: 3, propertyId: 2, title: 'Concierge & EV Charger Software Update', body: 'EV charge point firmware will be updated overnight on Tuesday. Underground gate remains fully operational.', date: 'Jul 10, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [], image: IMG.interior[2] },
+            { id: 4, propertyId: 3, title: 'Fire Alarm & Emergency Sounder Test', body: 'Routine 10-second sounder test will be conducted this Wednesday at 11:00 AM. No evacuation required.', date: 'Jul 5, 2026', from: 'John Smith', scope: 'all', units: [], readBy: [] },
         ];
         this.tenantNotifications = {};
-        PROPERTIES.forEach(p => {
-            if (!this.propertyMeta[p.id]) {
-                const isSingle = p.id === 2;
-                const flatRent = p.rent || '£950';
-                const built = isSingle
-                    ? buildPropertyFlats({ flatCount: 1, defaultRent: flatRent })
-                    : buildPropertyFlats({ flatCount: 4, floors: 2, flatsPerFloor: 2, defaultRent: flatRent });
-                this.propertyMeta[p.id] = {
-                    building: built.building,
-                    units: built.units,
-                    photos: [IMG.props[p.id], ...IMG.interior.slice(0, 2)],
-                    alarms: {
-                        smoke: { expiry: '2026-01-15', location: 'Hallway', reminderTiming: '30', reminderDate: '2025-12-16' },
-                        heat: { expiry: '2026-01-15', location: 'Kitchen', reminderTiming: '30', reminderDate: '2025-12-16' },
-                        co: { expiry: '2026-01-15', location: 'Bedroom', reminderTiming: '30', reminderDate: '2025-12-16' },
-                    },
-                    appliances: [
-                        { name: 'Boiler', brand: 'Worcester Bosch', warranty: 'Until Mar 2027', description: 'Combi boiler in kitchen cupboard' },
-                        { name: 'Oven', brand: 'Bosch', warranty: 'Manufacturer warranty', description: 'Built-in electric oven' },
-                        { name: 'Fridge', brand: 'Samsung', warranty: '—', description: 'Freestanding fridge-freezer' },
-                    ],
-                    unitKeys: {
-                        'Flat 2A': [
-                            { label: 'Front door', qty: '1', location: 'Flat entrance', holder: 'Sarah Johnson' },
-                            { label: 'Building fob', qty: '1', location: 'Lobby', holder: 'Sarah Johnson' },
-                            { label: 'Mailbox key', qty: '1', location: 'Ground floor', holder: 'Landlord' },
-                        ],
-                    },
-                    floorPlans: [IMG.interior[0], IMG.interior[1]],
-                    utilities: { gas: 'British Gas', electric: 'Octopus Energy', water: 'Thames Water', broadband: 'BT Fibre', council: { name: '', notes: '' } },
-                    parking: { spaces: 1, type: 'Off-street', permit: 'LB-4421', notes: 'Allocated bay #12' },
-                    info: {
-                        type: 'Semi-detached', built: '1985', epc: 'Rating B', epcExpiry: '2027-06-15',
-                        insuranceExpiry: '2025-06-30', mortgageRenewal: '2025-12-01',
-                        councilTax: 'Band D', notes: '',
-                        purchaseDate: '2019-04-12',
-                        valuationAmount: '485000',
-                        valuationDate: '2025-11-01',
-                        totalSqft: p.id === 2 ? '980' : '2400',
-                    },
-                };
-            }
-        });
         if (this.propertyMeta[0] && !this.propertyMeta[0].inventoryLayout) {
             this.propertyMeta[0].inventoryLayout = { bedrooms: 2, bathrooms: 1, kitchens: 1, reception: 1 };
         }
