@@ -738,7 +738,7 @@ const PREF_OPTIONS = {
     dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
     timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
 };
-const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','property-cross-sell','contractor-org','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','select-unit-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-inventory','tenant-inventory-room','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
+const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','property-cross-sell','contractor-org','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','select-unit-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-inventory','tenant-inventory-room','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout','property-compliance','property-doc-vault','property-inspections','property-inventory','property-flat-documents','property-doc-folder','property-photos','property-floor-plans','property-alarms','property-appliances','property-utilities','property-parking','property-info'];
 
 const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-sign-up','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
@@ -848,6 +848,8 @@ function navigateBackFromEditDeposit() {
 }
 
 const PROPERTY_HUB_BACK_OPTS = {
+    'property-compliance': { tab: 'records' },
+    'property-doc-vault': { tab: 'records' },
     'property-inspections': { tab: 'records', recordsView: 'inspections' },
     'property-inventory': { tab: 'records', recordsView: 'inventory' },
     'property-flat-documents': { tab: 'records', recordsView: 'documents' },
@@ -2032,6 +2034,10 @@ function go(screen, opts = {}) {
         }
         if (opts.propertyId !== undefined && opts.propertyId !== STATE.propertyId) STATE.unitFilter = 'all';
     }
+    if (screen === 'utility-detail') {
+        if (opts.propertyId !== undefined) STATE.propertyId = opts.propertyId;
+        if (opts.utilityId) STATE.utilityId = opts.utilityId;
+    }
     if (screen === 'flat-detail') {
         STATE.propertyId = opts.propertyId ?? STATE.propertyId;
         const prevUnit = STATE.selectedUnit;
@@ -2134,8 +2140,8 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
-    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys') {
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
     if (screen === 'certificate-assign') {
@@ -2275,6 +2281,7 @@ function navigateBackFallback() {
         'property-appliance-records': 'property-detail',
         'property-utilities': 'property-detail', 'property-parking': 'property-detail',
         'property-info': 'property-detail', 'unit-utilities': 'property-detail',
+        'property-compliance': 'property-detail', 'property-doc-vault': 'property-detail',
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
         'edit-tenancy-deposit': 'tenancy-detail',
         'maintenance-history': 'maintenance', 'select-property-invite': 'tenants',
@@ -2678,12 +2685,19 @@ function logout() {
 function toast(msg, opts = {}) {
     const isError = opts?.error === true || opts?.type === 'error';
     let t = document.getElementById('toast');
-    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.getElementById('app').appendChild(t); }
-    t.classList.toggle('toast--error', isError);
-    t.innerHTML = `<i data-lucide="${isError ? 'alert-circle' : 'check-circle'}" class="w-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}"></i>${msg}`;
-    t.classList.add('show');
-    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-    setTimeout(() => t.classList.remove('show'), 2200);
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.getElementById('app')?.appendChild(t);
+    }
+    if (t && t.classList) {
+        t.classList.toggle('toast--error', isError);
+        t.innerHTML = `<i data-lucide="${isError ? 'alert-circle' : 'check-circle'}" class="w-4 h-4 ${isError ? 'text-red-400' : 'text-emerald-400'}"></i>${msg}`;
+        t.classList.add('show');
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        setTimeout(() => t?.classList?.remove('show'), 2200);
+    }
 }
 
 function toastError(msg) {
@@ -2982,24 +2996,45 @@ const TENANT_DRAWER_NAV = [
 ];
 
 const INVOICES = [
+    // 12 Park Lane - Flat 1
+    { id: 101, num: 'INV-2026-1061', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 0, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jul 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-JUL' },
+    { id: 102, num: 'INV-2026-1060', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 0, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-JUN' },
+    { id: 103, num: 'INV-2026-1059', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 0, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-MAY' },
+    { id: 104, num: 'INV-2026-1058', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 0, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-APR' },
+    { id: 105, num: 'INV-2026-1057', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 0, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-MAR' },
+    { id: 106, num: 'INV-2026-1056', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 0, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Feb 1, 2026', month: 'Feb 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Feb 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-FEB' },
+
+    // 12 Park Lane - Flat 2A
     { id: 0, num: 'INV-2026-1048', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
-    { id: 1, num: 'INV-2026-1047', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Overdue', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
-    { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
-    { id: 15, num: 'INV-2026-1051', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent — group lease' },
     { id: 3, num: 'INV-2026-1044', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1044' },
-    { id: 4, num: 'INV-2026-1043', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1043' },
-    { id: 12, num: 'INV-2026-1038', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 4, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1038' },
-    { id: 16, num: 'INV-2026-1052', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent — group lease', paidOn: 'Jun 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1052' },
     { id: 6, num: 'INV-2026-1040', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1040' },
-    { id: 9, num: 'INV-2026-1037', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1037' },
-    { id: 13, num: 'INV-2026-1034', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 5, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1034' },
-    { id: 17, num: 'INV-2026-1053', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent — group lease', paidOn: 'May 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1053' },
     { id: 7, num: 'INV-2026-1036', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1036' },
-    { id: 10, num: 'INV-2026-1033', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1033' },
-    { id: 14, num: 'INV-2026-1030', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 4, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1030' },
     { id: 8, num: 'INV-2026-1032', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1032' },
-    { id: 11, num: 'INV-2026-1029', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1029' },
     { id: 5, num: 'INV-2026-1050', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£85', status: 'Pending', due: 'Jul 20, 2026', month: 'Jul 2026', type: 'maintenance', desc: 'Kitchen sink repair share' },
+
+    // 12 Park Lane - Flat 2B
+    { id: 15, num: 'INV-2026-1051', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent — group lease' },
+    { id: 16, num: 'INV-2026-1052', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent — group lease', paidOn: 'Jun 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1052' },
+    { id: 17, num: 'INV-2026-1053', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent — group lease', paidOn: 'May 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1053' },
+    { id: 18, num: 'INV-2026-1054', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2B', tenant: 'Priya Sharma', tenantId: 4, propertyId: 0, amount: '£2,200', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent — group lease', paidOn: 'Apr 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1054' },
+
+    // 12 Park Lane - Flat 3
+    { id: 111, num: 'INV-2026-1071', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 3', tenant: 'James Harrison', tenantId: 0, propertyId: 0, amount: '£1,650', status: 'Paid', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jul 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-PL03-JUL' },
+    { id: 112, num: 'INV-2026-1070', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 3', tenant: 'James Harrison', tenantId: 0, propertyId: 0, amount: '£1,650', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-PL03-JUN' },
+    { id: 113, num: 'INV-2026-1069', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 3', tenant: 'James Harrison', tenantId: 0, propertyId: 0, amount: '£1,650', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-PL03-MAY' },
+
+    // 45 Queens Road - Flat 1A & Flat 1B
+    { id: 1, num: 'INV-2026-1047', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Overdue', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
+    { id: 4, num: 'INV-2026-1043', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1043' },
+    { id: 9, num: 'INV-2026-1037', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1037' },
+    { id: 10, num: 'INV-2026-1033', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1033' },
+    { id: 11, num: 'INV-2026-1029', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1029' },
+
+    // 15 Victoria Ave - Flat 2A & Flat 1
+    { id: 2, num: 'INV-2026-1045', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Pending', due: 'Jul 28, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent' },
+    { id: 12, num: 'INV-2026-1038', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 4, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1038' },
+    { id: 13, num: 'INV-2026-1034', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 5, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1034' },
+    { id: 14, num: 'INV-2026-1030', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 4, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1030' },
 ];
 
 const invoiceStatusStyle = (status) => ({
@@ -6065,7 +6100,8 @@ function bindEvents() {
     });
     app.querySelectorAll('[data-records-tab]').forEach(el => {
         el.onclick = () => {
-            STATE.recordsSubTab = el.dataset.recordsTab;
+            const tab = el.dataset.recordsTab;
+            STATE.recordsSubTab = (STATE.recordsSubTab === tab ? null : tab);
             render();
         };
     });
@@ -6086,6 +6122,42 @@ function bindEvents() {
     app.querySelectorAll('[data-action="select-inventory-unit"]').forEach(el => {
         el.onclick = () => {
             STATE.selectedUnit = el.dataset.unit;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-insp-unit"]').forEach(el => {
+        el.onclick = () => {
+            STATE.selectedUnit = el.dataset.unit || '';
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-insp-type"]').forEach(el => {
+        el.onclick = () => {
+            STATE.inspectionPrefill = { ...(STATE.inspectionPrefill || {}), type: el.dataset.type };
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="set-room-check"]').forEach(el => {
+        el.onclick = () => {
+            const room = el.dataset.room;
+            const status = el.dataset.status;
+            if (room && status) {
+                if (!STATE.inspectionRoomChecks) STATE.inspectionRoomChecks = {};
+                STATE.inspectionRoomChecks[room] = status;
+                render();
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="mark-all-rooms-good"]').forEach(el => {
+        el.onclick = () => {
+            const catalog = typeof getInventoryRoomCatalog === 'function' ? getInventoryRoomCatalog(STATE.propertyId) : [];
+            const list = catalog.length ? catalog : [
+                { name: 'Living Room' }, { name: 'Kitchen' }, { name: 'Bedroom' }, { name: 'Bathroom' }, { name: 'Hallway & Alarms' }
+            ];
+            STATE.inspectionRoomChecks = {};
+            list.forEach(r => {
+                STATE.inspectionRoomChecks[r.name || 'Room'] = 'good';
+            });
             render();
         };
     });
