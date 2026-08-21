@@ -3149,6 +3149,68 @@ function screenContractorProfile() {
     </div>`;
 }
 
+function screenContractorOrg() {
+    const members = [
+        { name: 'Mike Thompson', role: 'Owner / Lead Gas Safe Engineer', status: 'Master Account', email: 'mike@plumberpro.co.uk', initials: 'MT', bg: 'bg-blue-600' },
+        { name: 'Jack Davis', role: 'Plumbing Apprentice', status: 'Field Tech', email: 'jack.d@plumberpro.co.uk', initials: 'JD', bg: 'bg-emerald-600' },
+        { name: 'Dave Miller', role: 'Subcontractor Electrician', status: 'Sub-account', email: 'dave.m@electricians.co.uk', initials: 'DM', bg: 'bg-indigo-600' },
+    ];
+    return `${topBar('Organisation & Teams', { back: true })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-8">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-bold text-[#2563EB] uppercase tracking-wider">Master Account</span>
+                    <h3 class="text-[16px] font-bold text-[#0F172A]">${escapeHtml(CONTRACTOR_USER.company || 'Plumber Pro Ltd')}</h3>
+                    <p class="text-[12px] text-[#64748B]">3 active team members · Dispatch enabled</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center font-bold">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Team Members (${members.length})</span>
+            </div>
+            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-slate-100 overflow-hidden">
+                ${members.map(m => `
+                <div class="p-3.5 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl ${m.bg} text-white font-bold text-[12px] flex items-center justify-center shrink-0 shadow-xs">
+                            ${m.initials}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[13px] font-bold text-[#0F172A] truncate">${escapeHtml(m.name)}</p>
+                            <p class="text-[11px] text-[#64748B] truncate">${escapeHtml(m.role)}</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-bold shrink-0">${m.status}</span>
+                </div>`).join('')}
+            </div>
+        </div>
+
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <p class="text-[13px] font-bold text-[#0F172A]">Dispatch & Field Permissions</p>
+            <label class="flex items-start gap-2.5 cursor-pointer">
+                <input type="checkbox" class="accent-[#2563EB] mt-0.5" checked>
+                <span class="text-[12px] text-slate-700 font-medium">Allow field technicians to accept jobs and update job progress</span>
+            </label>
+            <label class="flex items-start gap-2.5 cursor-pointer">
+                <input type="checkbox" class="accent-[#2563EB] mt-0.5" checked>
+                <span class="text-[12px] text-slate-700 font-medium">Allow upload of completion photos and safety certificates</span>
+            </label>
+            <label class="flex items-start gap-2.5 cursor-pointer">
+                <input type="checkbox" class="accent-[#2563EB] mt-0.5">
+                <span class="text-[12px] text-slate-700 font-medium">Allow technicians to view full landlord pricing and margins</span>
+            </label>
+        </div>
+
+        <button type="button" data-action="save" data-msg="Organisation settings saved!" class="btn-primary w-full py-3.5 text-[14px]">Save Team Settings</button>
+    </div>`;
+}
+
 function saveContractorCompany() {
     const company = (typeof fieldVal === 'function' ? fieldVal('companyName') : document.querySelector('[data-field="companyName"]')?.value)?.trim();
     if (!company) { toast('Enter company name'); return true; }
@@ -3381,6 +3443,7 @@ Object.assign(SCREEN_MAP, {
     'contractor-documents': screenContractorDocuments,
     'contractor-notifications': screenContractorNotifications,
     'contractor-profile': screenContractorProfile,
+    'contractor-org': screenContractorOrg,
     'contractor-company': screenContractorCompany,
     'contractor-certifications': screenContractorCertifications,
     'contractor-public-profile': screenContractorPublicProfile,

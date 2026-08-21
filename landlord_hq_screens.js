@@ -738,7 +738,7 @@ const PREF_OPTIONS = {
     dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
     timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
 };
-const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','select-unit-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-inventory','tenant-inventory-room','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
+const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','property-cross-sell','contractor-org','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','select-unit-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-inventory','tenant-inventory-room','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout'];
 
 const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-sign-up','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
@@ -4105,7 +4105,7 @@ function screenFinancial() {
 }
 
 function screenMessages() {
-    const q = STATE.search.messages.toLowerCase();
+    const q = (STATE.search?.messages || '').toLowerCase();
     const convos = conversationsForRole().filter(c =>
         !q || (c.name || '').toLowerCase().includes(q) || (c.sub || '').toLowerCase().includes(q) || (c.preview || '').toLowerCase().includes(q)
     );
@@ -4244,6 +4244,69 @@ function screenProfile() {
         <button data-action="logout" class="profile-logout">Log out</button>
         <button type="button" data-go="delete-account" class="profile-delete-link">Delete account</button>
         <p class="profile-version">Landlord HQ · Demo build</p>
+    </div>`;
+}
+
+function screenPropertyCrossSell() {
+    const properties = Object.values(PROPERTIES || {});
+    const selProp = PROPERTIES[STATE.propertyId] || properties[0] || { id: 0, name: 'Sample Property', address: 'London, UK' };
+    const cover = typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(selProp.id) : ((IMG.props && IMG.props[selProp.id]) || IMG.fallback);
+    return `${topBar('Cross-sell Property', { back: true })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-8">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5">
+            <img src="${cover}" class="w-14 h-14 rounded-xl object-cover shrink-0" alt="">
+            <div class="min-w-0 flex-1">
+                <span class="text-[10px] font-bold text-[#2563EB] uppercase tracking-wider">Flat Fee Syndication</span>
+                <h3 class="text-[15px] font-bold text-[#0F172A] truncate mt-0.5">${escapeHtml(selProp.name)}</h3>
+                <p class="text-[12px] text-[#64748B] truncate">${escapeHtml(selProp.address)}</p>
+            </div>
+        </div>
+
+        <div>
+            <label class="form-label">Select Property to Market</label>
+            <select class="form-input form-select" onchange="STATE.propertyId = +this.value; render();">
+                ${properties.map(p => `<option value="${p.id}" ${p.id === selProp.id ? 'selected' : ''}>${escapeHtml(p.name)} — ${escapeHtml(p.address)}</option>`).join('')}
+            </select>
+        </div>
+
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <p class="text-[13px] font-bold text-[#0F172A]">Listing Objective</p>
+            <div class="grid grid-cols-2 gap-2">
+                <label class="p-3 rounded-xl border border-[#2563EB] bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="crossSellType" value="sale" class="accent-[#2563EB]" checked>
+                    <span>For Sale (£99)</span>
+                </label>
+                <label class="p-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-[12px] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="crossSellType" value="rent" class="accent-[#2563EB]">
+                    <span>To Let (£49)</span>
+                </label>
+            </div>
+            <div>
+                <label class="form-label">Target Asking Price / Rent (£)</label>
+                <input type="number" class="form-input" placeholder="e.g. 475000" value="475000">
+            </div>
+        </div>
+
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5">
+            <p class="text-[13px] font-bold text-[#0F172A]">Automated Portal Syndication</p>
+            <p class="text-[12px] text-[#64748B]">Your property will be live across major UK property portals within 24 hours.</p>
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[12px] font-semibold text-slate-800">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0"></i> Rightmove
+                </div>
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[12px] font-semibold text-slate-800">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0"></i> Zoopla
+                </div>
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[12px] font-semibold text-slate-800">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0"></i> OnTheMarket
+                </div>
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[12px] font-semibold text-slate-800">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0"></i> PrimeLocation
+                </div>
+            </div>
+        </div>
+
+        <button type="button" data-action="save" data-msg="Property listing submitted for syndication!" class="btn-primary w-full py-3.5 text-[14px]">Publish & Market Property</button>
     </div>`;
 }
 
@@ -5480,6 +5543,7 @@ const SCREEN_MAP = {
     privacy: screenPrivacy,
     terms: screenTerms,
     about: screenAbout,
+    'property-cross-sell': screenPropertyCrossSell,
     'inventory-room': screenInventoryRoom,
     'document-preview': screenDocumentPreview,
     'notifications-list': screenNotificationsList,

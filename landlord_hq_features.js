@@ -8661,7 +8661,7 @@ function renderRecordsHubSmartRemindersSection(propertyId) {
                 const prop = PROPERTIES[r.propertyId]?.name || 'All properties';
                 const cat = getReminderCategoryMeta(title);
                 return `
-                <button type="button" data-action="open-reminder-detail" data-rid="${r.id}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] flex items-center justify-between gap-3.5 w-full text-left transition-all cursor-pointer group">
+                <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] flex items-center justify-between gap-3.5 w-full text-left transition-all cursor-pointer group">
                     <div class="flex items-center gap-3.5 min-w-0">
                         <div class="w-10 h-10 rounded-xl ${cat.bg} ${cat.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                             <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
