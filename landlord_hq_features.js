@@ -17130,8 +17130,8 @@ function screenPropertyUtilitiesView() {
             title: 'Gas',
             icon: 'flame',
             photo: utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
-            sub: `${utils.gasSupplier || 'British Gas'} · MPRN ${utils.gasNo || '84920173'}`,
-            loc: utils.gasLoc || 'Front exterior meter box',
+            sub: `${getUtilityEntry(meta, 'gas')?.provider || utils.gasSupplier || (typeof utils.gas === 'object' ? utils.gas?.provider : utils.gas) || 'British Gas'} · MPRN ${getUtilityEntry(meta, 'gas')?.meterNumber || utils.gasNo || '84920173'}`,
+            loc: getUtilityEntry(meta, 'gas')?.meterLocation || utils.gasLoc || 'Front exterior meter box',
             badge: 'CP12 On File',
         },
         {
@@ -17139,8 +17139,8 @@ function screenPropertyUtilitiesView() {
             title: 'Electricity',
             icon: 'zap',
             photo: utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
-            sub: `${utils.electricitySupplier || 'Octopus Energy'} · MPAN ${utils.electricityNo || '12093841'}`,
-            loc: utils.electricityLoc || 'Basement intake cupboard',
+            sub: `${getUtilityEntry(meta, 'electricity')?.provider || utils.electricitySupplier || (typeof utils.electricity === 'object' ? utils.electricity?.provider : utils.electricity) || (typeof utils.electric === 'object' ? utils.electric?.provider : utils.electric) || 'Octopus Energy'} · MPAN ${getUtilityEntry(meta, 'electricity')?.meterNumber || utils.electricityNo || '12093841'}`,
+            loc: getUtilityEntry(meta, 'electricity')?.meterLocation || utils.electricityLoc || 'Basement intake cupboard',
             badge: 'EICR Verified',
         },
         {
@@ -17148,8 +17148,8 @@ function screenPropertyUtilitiesView() {
             title: 'Water',
             icon: 'droplets',
             photo: utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
-            sub: `${utils.waterSupplier || 'Thames Water'} · Meter ${utils.waterNo || 'WTR-99402'}`,
-            loc: utils.waterLoc || 'Kitchen sink undercupboard',
+            sub: `${getUtilityEntry(meta, 'water')?.provider || utils.waterSupplier || (typeof utils.water === 'object' ? utils.water?.provider : utils.water) || 'Thames Water'} · Meter ${getUtilityEntry(meta, 'water')?.meterNumber || utils.waterNo || 'WTR-99402'}`,
+            loc: getUtilityEntry(meta, 'water')?.meterLocation || utils.waterLoc || 'Kitchen sink undercupboard',
             badge: 'Stopcock Active',
         },
         {
@@ -17157,8 +17157,8 @@ function screenPropertyUtilitiesView() {
             title: 'Wi-Fi',
             icon: 'wifi',
             photo: utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
-            sub: `${utils.broadbandSupplier || 'BT Fibre Hub 2'} · 900 Mbps`,
-            loc: utils.routerLoc || 'Main hallway intake',
+            sub: `${getUtilityEntry(meta, 'wifi')?.provider || utils.broadbandSupplier || (typeof utils.wifi === 'object' ? utils.wifi?.provider : utils.wifi) || (typeof utils.broadband === 'object' ? utils.broadband?.provider : utils.broadband) || 'BT Fibre Hub 2'} · 900 Mbps`,
+            loc: getUtilityEntry(meta, 'wifi')?.meterLocation || utils.routerLoc || 'Main hallway intake',
             badge: 'Broadband Live',
         },
         {
@@ -17166,18 +17166,18 @@ function screenPropertyUtilitiesView() {
             title: 'Council',
             icon: 'building-2',
             photo: DEMO_UTILITY_PHOTOS.council,
-            sub: `${info.councilTax ? `Band ${info.councilTax}` : 'Band D'} · Camden Council`,
+            sub: `${info.councilTax ? `Band ${info.councilTax}` : 'Band D'} · ${utils.council?.name || (typeof utils.council === 'string' ? utils.council : '') || 'Camden Council'}`,
             loc: 'Local Authority',
-            badge: 'Tax Band D',
+            badge: info.councilTax ? `Tax Band ${info.councilTax}` : 'Tax Band D',
         },
         {
             id: 'parking',
             title: 'Parking',
             icon: 'car',
             photo: DEMO_UTILITY_PHOTOS.parking,
-            sub: `${parking.type || 'Off-street'} · Bay #${parking.bay || '12'}`,
+            sub: `${parking.type || 'Off-street'} · ${parking.details || (parking.bay ? `Bay #${parking.bay}` : (parking.spaces ? `${parking.spaces} Allocated Bay(s)` : 'Allocated Bay #12'))}`,
             loc: 'Parking Bay',
-            badge: parking.permit ? `Permit ${parking.permit}` : 'Permit LB-4421',
+            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'Permit LB-4421',
         },
     ];
 
@@ -17228,12 +17228,12 @@ function screenUtilityDetail() {
             badge: 'Gas CP12 Registered',
             badgeBg: 'bg-[#22C55E]',
             rows: [
-                ['Supplier / Provider', utils.gasSupplier || 'British Gas'],
-                ['Meter Number (MPRN)', utils.gasNo || '84920173'],
-                ['Meter Location', utils.gasLoc || 'Front exterior meter box (Wall-mounted)'],
+                ['Supplier / Provider', getUtilityEntry(meta, 'gas')?.provider || utils.gasSupplier || (typeof utils.gas === 'object' ? utils.gas?.provider : utils.gas) || 'British Gas'],
+                ['Meter Number (MPRN)', getUtilityEntry(meta, 'gas')?.meterNumber || utils.gasNo || '84920173'],
+                ['Meter Location', getUtilityEntry(meta, 'gas')?.meterLocation || utils.gasLoc || 'Front exterior meter box (Wall-mounted)'],
                 ['Emergency Shutoff', 'Brass lever valve beside meter (Turn 90° clockwise)'],
                 ['Safety Status', 'Gas Safe CP12 Certified (Valid until 15 Nov 2026)'],
-                ['Customer Helpline', '0333 202 9802 · National Gas Emergency: 0800 111 999'],
+                ['Customer Helpline', getUtilityEntry(meta, 'gas')?.phone || '0333 202 9802 · National Gas Emergency: 0800 111 999'],
             ],
         },
         electricity: {
@@ -17243,12 +17243,12 @@ function screenUtilityDetail() {
             badge: 'EICR Electrical Certified',
             badgeBg: 'bg-[#22C55E]',
             rows: [
-                ['Supplier / Provider', utils.electricitySupplier || 'Octopus Energy'],
-                ['Meter Number (MPAN)', utils.electricityNo || '12093841'],
-                ['Meter Location', utils.electricityLoc || 'Basement intake cupboard & hallway intake'],
+                ['Supplier / Provider', getUtilityEntry(meta, 'electricity')?.provider || utils.electricitySupplier || (typeof utils.electricity === 'object' ? utils.electricity?.provider : utils.electricity) || (typeof utils.electric === 'object' ? utils.electric?.provider : utils.electric) || 'Octopus Energy'],
+                ['Meter Number (MPAN)', getUtilityEntry(meta, 'electricity')?.meterNumber || utils.electricityNo || '12093841'],
+                ['Meter Location', getUtilityEntry(meta, 'electricity')?.meterLocation || utils.electricityLoc || 'Basement intake cupboard & hallway intake'],
                 ['Consumer Unit / Fusebox', 'High level hallway cupboard with main RCD isolation switch'],
                 ['Safety Status', 'EICR 5-Year Inspection Satisfactory (Valid to Oct 2027)'],
-                ['Helpline / Power Cut', 'Octopus: 0808 164 1088 · UK Power Networks: 105'],
+                ['Helpline / Power Cut', getUtilityEntry(meta, 'electricity')?.phone || 'Octopus: 0808 164 1088 · UK Power Networks: 105'],
             ],
         },
         water: {
@@ -17258,12 +17258,12 @@ function screenUtilityDetail() {
             badge: 'Direct Debit Active',
             badgeBg: 'bg-[#0284C7]',
             rows: [
-                ['Supplier / Provider', utils.waterSupplier || 'Thames Water'],
-                ['Meter Number', utils.waterNo || 'WTR-99402'],
-                ['Internal Stopcock', utils.waterLoc || 'Under kitchen sink (Turn clockwise to isolate supply)'],
+                ['Supplier / Provider', getUtilityEntry(meta, 'water')?.provider || utils.waterSupplier || (typeof utils.water === 'object' ? utils.water?.provider : utils.water) || 'Thames Water'],
+                ['Meter Number', getUtilityEntry(meta, 'water')?.meterNumber || utils.waterNo || 'WTR-99402'],
+                ['Internal Stopcock', getUtilityEntry(meta, 'water')?.meterLocation || utils.waterLoc || 'Under kitchen sink (Turn clockwise to isolate supply)'],
                 ['External Street Valve', 'Pavement outside front boundary (Blue meter cover)'],
                 ['Account Status', 'Metered active account · Direct Debit'],
-                ['Helpline / Emergencies', 'Thames Water 24/7 Helpline: 0800 316 9800'],
+                ['Helpline / Emergencies', getUtilityEntry(meta, 'water')?.phone || 'Thames Water 24/7 Helpline: 0800 316 9800'],
             ],
         },
         wifi: {
@@ -17273,42 +17273,42 @@ function screenUtilityDetail() {
             badge: 'Fibre 900 Mbps Active',
             badgeBg: 'bg-[#8B5CF6]',
             rows: [
-                ['Broadband Provider', utils.broadbandSupplier || 'BT Fibre Broadband'],
+                ['Broadband Provider', getUtilityEntry(meta, 'wifi')?.provider || utils.broadbandSupplier || (typeof utils.wifi === 'object' ? utils.wifi?.provider : utils.wifi) || (typeof utils.broadband === 'object' ? utils.broadband?.provider : utils.broadband) || 'BT Fibre Broadband'],
                 ['Network Name (SSID)', utils.wifiSsid || 'BT-Hub-2-ParkLane'],
                 ['Wi-Fi Password', utils.wifiPassword || 'London2026!Fast'],
                 ['Package & Speed', 'BT Smart Hub 2 · Ultrafast Full Fibre (900 Mbps)'],
-                ['Router Location', utils.routerLoc || 'Main hallway entrance console table'],
-                ['Support Helpline', '+44 800 800 150 · Account #992812'],
+                ['Router Location', getUtilityEntry(meta, 'wifi')?.meterLocation || utils.routerLoc || 'Main hallway entrance console table'],
+                ['Support Helpline', getUtilityEntry(meta, 'wifi')?.phone || '+44 800 800 150 · Account #992812'],
             ],
         },
         council: {
             title: 'Council Tax & Local Authority',
             icon: 'building-2',
             photo: DEMO_UTILITY_PHOTOS.council,
-            badge: 'Tax Band D',
+            badge: info.councilTax ? `Tax Band ${info.councilTax}` : 'Tax Band D',
             badgeBg: 'bg-[#3B82F6]',
             rows: [
-                ['Local Authority', 'London Borough of Camden'],
+                ['Local Authority', utils.council?.name || (typeof utils.council === 'string' ? utils.council : '') || 'London Borough of Westminster'],
                 ['Council Tax Band', info.councilTax ? `Band ${info.councilTax}` : 'Band D (£1,988 / year)'],
-                ['Council Reference / Account', 'CAM-894012-TX'],
+                ['Council Reference / Account', utils.council?.notes || 'WES-894012-TX'],
                 ['Bin Collection Schedule', 'General Waste: Tuesdays · Recycling: Fridays'],
                 ['Responsible Party', 'Tenant (Single occupancy & student exemptions applicable)'],
-                ['Council Contact', '020 7974 4444 · camden.gov.uk/council-tax'],
+                ['Council Contact', '020 7641 6000 · westminster.gov.uk/council-tax'],
             ],
         },
         parking: {
             title: 'Parking Allocation & Permits',
             icon: 'car',
             photo: DEMO_UTILITY_PHOTOS.parking,
-            badge: 'Allocated Space',
+            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'Allocated Space',
             badgeBg: 'bg-[#10B981]',
             rows: [
                 ['Parking Type', parking.type || 'Off-Street Allocated Bay'],
-                ['Allocated Space', `Bay #${parking.bay || '12'} (Clearly marked)`],
-                ['Permit Number', parking.permit || 'LB-4421 (Camden Resident Parking Permit)'],
-                ['Access & Security', 'Electronic barrier fob #04 / Keypad gate code #4492'],
+                ['Allocated Space', parking.details ? parking.details : (parking.spaces ? `${parking.spaces} Allocated Bay(s)` : 'Bay #12 (Clearly marked)')],
+                ['Permit Number', parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'LB-4421 (Resident Permit)'],
+                ['Access & Security', 'Electronic barrier fob / Keypad gate code #4492'],
                 ['Visitor Parking', 'Visitor scratchcards available from managing agent'],
-                ['EV Charging', '7.4kW Type 2 Pod Point Charger installed at Bay #12'],
+                ['EV Charging', '7.4kW Type 2 Pod Point Charger installed'],
             ],
         },
     };
@@ -17512,7 +17512,7 @@ function savePropertyMeta(section) {
         if (!meta.utilities) meta.utilities = {};
         migrateUtilityKeys(meta);
         UTILITY_CATALOG.forEach(u => {
-            if (meta.utilities[u.key] == null) return;
+            if (meta.utilities[u.key] == null && !fieldVal(`util_${u.key}_provider`) && !fieldVal(`util_${u.key}_meter`)) return;
             meta.utilities[u.key] = {
                 provider: fieldVal(`util_${u.key}_provider`),
                 meterNumber: fieldVal(`util_${u.key}_meter`),
@@ -17525,12 +17525,19 @@ function savePropertyMeta(section) {
             name: fieldVal('util_council_name'),
             notes: fieldVal('util_council_notes'),
         };
+        if (fieldVal('parking_type') || fieldVal('parking_details')) {
+            if (!meta.parking) meta.parking = {};
+            meta.parking.type = fieldVal('parking_type') || meta.parking.type || 'Off-street';
+            meta.parking.details = fieldVal('parking_details') || meta.parking.details || '';
+            meta.parking.permit = fieldVal('parking_details') || meta.parking.permit || '';
+        }
         if (meta.info?.councilTax) meta.utilities.councilTax = meta.info.councilTax;
     } else if (section === 'parking') {
         meta.parking = {
             spaces: +fieldVal('park_spaces') || 0,
             type: fieldVal('park_type') || document.querySelector('[data-field="park_type"]')?.value,
             permit: fieldVal('park_permit'),
+            details: fieldVal('park_permit') || fieldVal('park_notes') || '',
             notes: fieldVal('park_notes'),
         };
     }
