@@ -2950,6 +2950,7 @@ const BOTTOM_NAV = [
 ];
 
 const LANDLORD_DRAWER_NAV = [
+    ['bell', 'Smart Reminders', 'reminders'],
     ['users', 'Tenants', 'tenants'],
     ['hard-hat', 'Contractors', 'contractors'],
     ['life-buoy', 'Help & FAQ', 'help-support'],

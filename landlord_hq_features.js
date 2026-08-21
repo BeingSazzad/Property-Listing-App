@@ -9445,20 +9445,47 @@ function renderRecordsHubSmartRemindersSection(propertyId) {
 function renderPropertyRecordsHub(propertyId) {
     const certIssues = propertyCertTileIssues(propertyId);
     const pastInspections = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
+    const propReminders = (AppStore.reminders || []).filter(r => r.propertyId === propertyId || r.propId === propertyId);
+    const meta = AppStore.meta(propertyId);
+    const alarmCount = meta?.alarms ? (Array.isArray(meta.alarms) ? meta.alarms.length : Object.keys(meta.alarms).length) : 3;
 
     const items = [
         {
             route: 'property-compliance',
             title: 'Certificates & Documents',
-            sub: 'Gas, EICR, EPC, Insurance & Building Files',
+            sub: 'Gas CP12, EICR, EPC, Insurance & Building Files',
             icon: 'shield-check',
             badge: certIssues.length ? `${certIssues.length} attention` : 'Verified',
             badgeClass: certIssues.length ? 'bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]' : 'bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]',
         },
         {
+            route: 'property-alarms',
+            title: 'Safety & Smoke Alarms',
+            sub: 'Smoke, Heat & CO Detectors, Expiry Dates & Tests',
+            icon: 'bell-ring',
+            badge: `${alarmCount} Active Detectors`,
+            badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
+        },
+        {
+            route: 'reminders',
+            title: 'Smart Reminders & Alerts',
+            sub: 'Upcoming expiries, reviews & automated renewal alerts',
+            icon: 'bell',
+            badge: `${propReminders.length} Active Reminders`,
+            badgeClass: 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]',
+        },
+        {
+            route: 'property-inventory',
+            title: 'Inventories & Condition',
+            sub: 'Room fixtures, appliances, condition & checklists',
+            icon: 'boxes',
+            badge: 'Room Records',
+            badgeClass: 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0]',
+        },
+        {
             route: 'property-inspections',
-            title: 'Inspections & Condition',
-            sub: 'Room walkthroughs & inspection reports',
+            title: 'Inspections & Reports',
+            sub: 'Room walkthroughs, signed audits & inspection history',
             icon: 'clipboard-list',
             badge: `${pastInspections.length} Reports`,
             badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
@@ -9467,23 +9494,23 @@ function renderPropertyRecordsHub(propertyId) {
 
     return `
     <div class="screen-content screen-content-sm prop-records-page prop-records-unified space-y-2.5 text-left pb-6">
-        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Property Records</p>
+        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Property Records & Compliance</p>
         
         <div class="space-y-2">
             ${items.map(t => `
             <button type="button" data-go="${t.route}" data-pid="${propertyId}" class="card p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all cursor-pointer flex items-center justify-between gap-3 w-full text-left group">
                 <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-9 h-9 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <div class="w-9 h-9 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                         <i data-lucide="${t.icon}" class="w-4 h-4"></i>
                     </div>
                     <div class="min-w-0">
-                        <h4 class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${t.title}</h4>
+                        <h4 class="text-[13px] font-bold text-[#0F172A] m-0 truncate group-hover:text-[#2563EB] transition-colors">${t.title}</h4>
                         <p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${t.sub}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${t.badgeClass}">${t.badge}</span>
-                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#94A3B8] transition-all"></i>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                 </div>
             </button>`).join('')}
         </div>
