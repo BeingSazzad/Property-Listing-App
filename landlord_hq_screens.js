@@ -5175,14 +5175,9 @@ function screenEditProperty() {
             <button type="button" data-go="property-photos" data-pid="${STATE.propertyId}" class="absolute bottom-2 right-2 bg-white/90 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-[#2563EB]">Manage Photos</button>
         </div>
         <div><label class="form-label">Property Name</label><input data-field="name" type="text" class="form-input" value="${p.name.replace(/"/g, '&quot;')}"></div>
-        <div><label class="form-label">Address</label><input data-field="address" type="text" class="form-input" value="${p.address.replace(/"/g, '&quot;')}"></div>
-        <p class="form-helper">For property type, EPC, council tax and more, use <button type="button" data-go="property-info" data-pid="${STATE.propertyId}" class="header-text-link">full property details</button>.</p>
-        <p class="form-helper">This screen is for the building only. Units, rent, and tenants are managed separately.</p>
+        <div><label class="form-label">Address</label><input data-field="address" type="text" class="form-input" value="${p.address.replace(/"/g, '&quot;')}" placeholder="Full address incl. postcode"></div>
         <div class="card p-4 flex items-center justify-between gap-3">
-            <div class="min-w-0">
-                <p class="text-[14px] font-bold text-[#0F172A]">Units</p>
-                <p class="text-[12px] text-[#64748B] mt-0.5">Add or edit flats from the property page</p>
-            </div>
+            <p class="text-[14px] font-bold text-[#0F172A]">Units</p>
             <button type="button" data-go="property-detail" data-pid="${STATE.propertyId}" data-tab="units" class="header-text-link shrink-0">Manage units</button>
         </div>
         ${formTextarea('Notes', notes, 'Building notes, floor remarks, access codes…', 'notes')}

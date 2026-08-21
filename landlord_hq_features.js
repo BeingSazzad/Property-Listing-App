@@ -5555,7 +5555,7 @@ function screenEditTenancyDeposit() {
             </div>
             ${schemeLine !== '—' ? `<p class="deposit-edit-meta">Current scheme · ${escapeHtml(schemeLine)}</p>` : ''}
         </div>
-        <p class="form-helper">Choose the protection scheme. Add a reference once the deposit is registered — status updates to Protected automatically.</p>
+        <p class="form-helper">Add a reference once registered — status updates to Protected automatically.</p>
         ${formSelectField('Deposit scheme', 'depositScheme', DEPOSIT_SCHEME_OPTIONS, tenancy.depositScheme || 'MyDeposits', { blankLabel: 'Select scheme' })}
         ${formField('Protection reference', tenancy.protectionRef || '', 'text', 'e.g. MD-20481', 'protectionRef')}
         <button type="button" data-action="save-tenancy-deposit" class="btn-primary w-full py-3.5 text-[14px]">Save deposit details</button>
@@ -14536,17 +14536,14 @@ function screenCreateTenancyEnhanced() {
         ${formField('Security deposit (£)', prefill.deposit || rentDefault, 'number', '', 'deposit')}
         ${formField('Advance rent (£)', prefill.advancePaid || rentDefault, 'number', '', 'advancePaid')}
         <div><label class="form-label">Deposit protection scheme</label>
-        <select data-field="depositScheme" class="form-input form-select"><option>MyDeposits</option><option>DPS</option><option>TDS</option><option>Not yet registered</option></select></div>
+        <select data-field="depositScheme" class="form-input form-select"><option>MyDeposits</option><option>DPS</option><option>TDS</option><option>Not yet protected</option></select></div>
         ${formField('Protection reference', '', 'text', 'Optional scheme reference', 'protectionRef')}
         <p class="screen-section-title">Documents to send</p>
         <p class="form-helper mb-2">Select documents to share via the tenant portal. Items on file are sent when the tenant accepts their invite.</p>
         <div class="stack-sm mb-3" id="tenancy-doc-checklist">
             ${renderTenancyDocumentSendRows(STATE.propertyId, selectedUnit)}
         </div>
-        <div class="ux-tip mb-3">
-            <p class="ux-tip-title">Electronic signature</p>
-            <p class="ux-tip-text">E-sign for tenancy agreements is coming soon. Documents selected above are shared through the tenant portal for now.</p>
-        </div>
+
         <button data-action="save-tenancy" class="btn-primary w-full py-3.5 text-[14px]">Save lease</button>
     </div>`;
 }
@@ -15394,7 +15391,7 @@ function screenShareDocument() {
                     </div>
                 </label>`).join('')}
             </div>
-            <p class="form-helper mt-2">For buildings with multiple flats, pick everyone who should see this — or use Notify all.</p>
+
         </div>` : `
         <p class="text-[13px] text-[#64748B] mb-3">No active tenants yet — invite someone first to share this document.</p>`}
         <button data-action="confirm-share-doc" class="btn-primary w-full py-3.5 text-[14px]">Share Document</button>
@@ -15507,8 +15504,7 @@ function screenAddFlat() {
             </div>
             ${flatUnitExtraFieldsHtml(draft, STATE.propertyId)}
         </div>
-        <p class="form-helper flat-edit-helper">New units start as vacant. Occupancy updates when a tenant moves in.</p>
-        <button data-action="save" class="btn-primary w-full">${isDup ? 'Save duplicated unit' : 'Save unit'}</button>
+        <button data-action="save" class="btn-primary w-full">${isDup ? 'Save unit' : 'Save unit'}</button>
     </div>`;
 }
 
@@ -15583,7 +15579,7 @@ function screenEditFlat() {
         <div class="flat-edit-status card">
             <div class="flat-edit-status-body">
                 <p class="flat-edit-status-title">Status</p>
-                <p class="flat-edit-status-desc">Updates when a tenant moves in or out${occ ? ' · rent changes update the active lease' : ''}</p>
+                <p class="flat-edit-status-desc">${occ ? 'Occupied' : 'Vacant'}</p>
             </div>
             <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
         </div>
@@ -15593,7 +15589,7 @@ function screenEditFlat() {
             <div class="grid grid-cols-3 gap-3">
                 <div class="form-field"><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${u.beds != null ? u.beds : ''}" min="0" placeholder="2"></div>
                 <div class="form-field"><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${u.baths != null ? u.baths : ''}" min="0" placeholder="1"></div>
-                <div class="form-field"><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
+                <div class="form-field"><label class="form-label">Unit size (sq ft)</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${u.floor != null && u.floor !== '' ? u.floor : ''}" placeholder="0 = ground" min="0"></div>
@@ -15601,7 +15597,6 @@ function screenEditFlat() {
             </div>
             ${flatUnitExtraFieldsHtml(u, STATE.propertyId)}
         </div>
-        <p class="form-helper flat-edit-helper">For building-wide details, use Edit Property instead.</p>
         <div class="flat-edit-actions stack-sm">
             <button data-action="save" class="btn-primary w-full">Save unit</button>
             ${canDeleteFlat(STATE.propertyId, unit) ? `
@@ -16152,7 +16147,7 @@ function screenPropertyDetailsEdit(section) {
             <div><label class="form-label">Valuation (£)</label><input data-field="info_valuationAmount" type="number" class="form-input" value="${escapeHtml(info.valuationAmount != null && info.valuationAmount !== '' ? info.valuationAmount : '')}" placeholder="e.g. 450000" min="0"></div>
             <div><label class="form-label">Valuation Date</label><input data-field="info_valuationDate" type="date" class="form-input" value="${toDateInputValue(info.valuationDate)}"></div>
         </div>
-        <div><label class="form-label">Total property size (sq ft)</label><input data-field="info_totalSqft" type="text" class="form-input" value="${escapeHtml(info.totalSqft || '')}" placeholder="e.g. 2400"></div>
+        <div><label class="form-label">Total building size (sq ft)</label><input data-field="info_totalSqft" type="text" class="form-input" value="${escapeHtml(info.totalSqft || '')}" placeholder="e.g. 2400"></div>
         ${getPropertyUnits(STATE.propertyId).length <= 1
             ? formSelectField('Furnished', 'info_furnished', FURNISHED_OPTIONS, info.furnished, { blankLabel: 'Not set' })
             : `<div class="form-field"><label class="form-label">Furnished</label><p class="form-helper mb-0">Set furnished status on each unit — this building has multiple flats.</p></div>`}
@@ -16497,7 +16492,7 @@ function screenAddPropertyEnhanced() {
             ${labeledInput('Valuation (£)', 'valuationAmount', '', 'number', 'e.g. 450000')}
             ${labeledInput('Valuation date', 'valuationDate', '', 'date', '')}
         </div>
-        <p class="form-helper" style="margin-top:-4px">Optional — shows on Property → Info after save.</p>
+
         <p class="screen-section-title">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></p>
         <div class="form-group">
             <label class="form-label">Building notes</label>
