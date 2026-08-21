@@ -1545,28 +1545,35 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
         ? pay.nextDue.split('·').pop()?.trim() || '1st of every month'
         : '1st of every month';
     return `
-    <div class="tnt-rent-strip card">
-        <div class="tnt-rent-strip-col">
-            <div class="tnt-rent-strip-head">
-                <p class="tnt-rent-strip-label">Next rent due</p>
-                <span class="tnt-rent-badge ${rentDue ? 'tnt-rent-badge--due' : 'tnt-rent-badge--ok'}">${rentDue ? 'Pending' : 'Paid'}</span>
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5 text-left">
+        <div class="flex items-start justify-between">
+            <div>
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Next Rent Due</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span class="text-[26px] font-black ${rentDue ? 'text-[#D97706]' : 'text-[#0F172A]'} tracking-tight">${esc(rentAmt)}</span>
+                    <span class="text-[12px] font-semibold text-[#64748B]">· Due ${esc(dueMeta)}</span>
+                </div>
             </div>
-            <p class="tnt-rent-strip-amt${rentDue ? ' tnt-rent-strip-amt--due' : ''}">${esc(rentAmt)}</p>
-            <p class="tnt-rent-strip-sub"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(dueMeta)}</p>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${rentDue ? 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]' : 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]'} shrink-0 shadow-2xs">
+                <span class="w-1.5 h-1.5 rounded-full ${rentDue ? 'bg-[#D97706]' : 'bg-[#059669]'}"></span>
+                ${rentDue ? 'Payment Due' : 'Paid in Full'}
+            </span>
         </div>
-        <div class="tnt-rent-strip-div" aria-hidden="true"></div>
-        <div class="tnt-rent-strip-col">
-            <p class="tnt-rent-strip-label">Last payment</p>
-            <p class="tnt-rent-strip-amt tnt-rent-strip-amt--sm">${esc(lastAmt)}</p>
-            <p class="tnt-rent-strip-sub"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(lastDate)}</p>
+
+        <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-[12px] text-[#64748B] min-w-0">
+                <div class="w-6 h-6 rounded-full bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="truncate">Last paid: <strong class="text-[#0F172A]">${esc(lastAmt)}</strong> on ${esc(lastDate)}</span>
+            </div>
+            <button type="button" ${rentDue
+                ? `data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}"`
+                : `data-go="transaction-history"`} class="${rentDue ? 'btn-primary' : 'btn-secondary'} py-2 px-4 rounded-xl text-[12px] font-bold shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer">
+                <i data-lucide="${rentDue ? 'credit-card' : 'receipt'}" class="w-4 h-4"></i>
+                <span>${rentDue ? 'Pay Rent' : 'View Ledger'}</span>
+            </button>
         </div>
-        <div class="tnt-rent-strip-div" aria-hidden="true"></div>
-        <button type="button" ${rentDue
-            ? `data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}"`
-            : `data-go="transaction-history"`} class="tnt-rent-strip-action">
-            <span class="tnt-rent-strip-action-icon"><i data-lucide="${rentDue ? 'credit-card' : 'receipt'}" class="w-5 h-5"></i></span>
-            <span class="tnt-rent-strip-action-label">${rentDue ? 'Pay rent' : 'Payments'}</span>
-        </button>
     </div>`;
 }
 
@@ -1574,16 +1581,25 @@ function renderTenantHomeChargeCard(pay) {
     if (!pay?.chargeBalance || pay.chargeBalance === '£0.00') return '';
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `
-    <div class="tnt-charge-card card">
-        <div class="tnt-rent-card-head">
-            <p class="tnt-rent-label">Extra charge due</p>
-            <span class="tnt-rent-badge tnt-rent-badge--due">Due</span>
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+        <div class="flex items-start justify-between">
+            <div>
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Extra Charge Due</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span class="text-[22px] font-extrabold text-[#0F172A] tracking-tight">${esc(pay.chargeBalance)}</span>
+                    <span class="text-[12px] font-medium text-[#64748B]">· ${esc(pay.nextChargeDue || 'Service charge')}</span>
+                </div>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] shrink-0">
+                Payment Due
+            </span>
         </div>
-        <p class="tnt-rent-amount tnt-rent-amount--sm">${esc(pay.chargeBalance)}</p>
-        <p class="tnt-rent-meta">${esc(pay.nextChargeDue || 'Charge from your landlord')}</p>
-        <div class="tnt-charge-actions">
-            <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay?.chargeInvoiceId ?? ''}" class="btn-primary flex-1 py-2.5 text-[12px]">Pay charge</button>
-            <button type="button" data-go="transaction-history" data-tenant-pay-preset="charges" class="btn-secondary flex-1 py-2.5 text-[12px]">View all</button>
+        <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-end gap-2">
+            <button type="button" data-go="transaction-history" data-tenant-pay-preset="charges" class="btn-secondary py-2 px-3.5 rounded-xl text-[12px] font-bold shadow-xs cursor-pointer">View Details</button>
+            <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay?.chargeInvoiceId ?? ''}" class="btn-primary py-2 px-4 rounded-xl text-[12px] font-bold shadow-xs flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                <span>Pay Charge</span>
+            </button>
         </div>
     </div>`;
 }
@@ -1592,14 +1608,25 @@ function renderTenantHomeMaintBill(pay) {
     if (!pay?.maintBalance || pay.maintBalance === '£0.00') return '';
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `
-    <div class="tnt-maint-bill card">
-        <div class="tnt-rent-card-head">
-            <p class="tnt-rent-label">Maintenance bill</p>
-            <span class="tnt-rent-badge tnt-rent-badge--due">Due</span>
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+        <div class="flex items-start justify-between">
+            <div>
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Maintenance Bill</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span class="text-[22px] font-extrabold text-[#0F172A] tracking-tight">${esc(pay.maintBalance)}</span>
+                    <span class="text-[12px] font-medium text-[#64748B]">· ${esc(pay.nextMaintDue || 'Repair share')}</span>
+                </div>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] shrink-0">
+                Pending
+            </span>
         </div>
-        <p class="tnt-rent-amount tnt-rent-amount--sm">${esc(pay.maintBalance)}</p>
-        <p class="tnt-rent-meta">${esc(pay.nextMaintDue || 'Repair or utility overage')}</p>
-        <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-secondary w-full py-2.5 text-[12px] mt-2">Pay with Stripe</button>
+        <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-end gap-2">
+            <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-primary py-2 px-4 rounded-xl text-[12px] font-bold shadow-xs flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                <span>Pay Bill</span>
+            </button>
+        </div>
     </div>`;
 }
 
@@ -1681,20 +1708,132 @@ function screenTenantDashboard() {
                 <p class="dash-section-sub">Report issues, documents &amp; payments</p>
             </div>
         </div>
-        <div class="dash-quick dash-quick--grid">
-            ${[
-                ['wrench', 'Report issue', 'log-maintenance', 'warning'],
-                ['scroll-text', 'My Tenancy', 'tenant-active-tenancy', 'indigo'],
-                ['images', 'Photos & inventory', 'tenant-building-info', 'primary'],
-                ['receipt', 'Payment history', 'transaction-history', 'success'],
-            ].map(([ic, label, go, tone]) => `
-            <button type="button" data-go="${go}" class="dash-quick-btn">
-                <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
-                <span>${label}</span>
-            </button>`).join('')}
+        <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-around">
+            <button type="button" data-go="log-maintenance" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
+                <div class="w-10 h-10 rounded-xl bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
+                    <i data-lucide="wrench" class="w-4 h-4"></i>
+                </div>
+                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#EA580C] transition-colors truncate max-w-full">Report issue</span>
+            </button>
+            <div class="w-px h-7 bg-[#F1F5F9] shrink-0" aria-hidden="true"></div>
+            <button type="button" data-go="tenant-active-tenancy" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
+                    <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                </div>
+                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#2563EB] transition-colors truncate max-w-full">My Tenancy</span>
+            </button>
+            <div class="w-px h-7 bg-[#F1F5F9] shrink-0" aria-hidden="true"></div>
+            <button type="button" data-go="tenant-building-info" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
+                <div class="w-10 h-10 rounded-xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
+                    <i data-lucide="images" class="w-4 h-4"></i>
+                </div>
+                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#7C3AED] transition-colors truncate max-w-full">Inventory</span>
+            </button>
+            <div class="w-px h-7 bg-[#F1F5F9] shrink-0" aria-hidden="true"></div>
+            <button type="button" data-go="transaction-history" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
+                <div class="w-10 h-10 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
+                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                </div>
+                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#059669] transition-colors truncate max-w-full">Payments</span>
+            </button>
         </div>
         ${renderTenantHomeMaintSection(t, tid)}
         ${renderTenantHomeAnnouncement(t)}
+    </div>`;
+}
+
+function renderTenantBuildingUtilities(meta, pid) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const utils = meta?.utilities || {};
+    const info = meta?.info || {};
+
+    const gasEntry = typeof getUtilityEntry === 'function' ? getUtilityEntry(meta, 'gas') : null;
+    const elecEntry = typeof getUtilityEntry === 'function' ? getUtilityEntry(meta, 'electricity') : null;
+    const waterEntry = typeof getUtilityEntry === 'function' ? getUtilityEntry(meta, 'water') : null;
+    const wifiEntry = typeof getUtilityEntry === 'function' ? getUtilityEntry(meta, 'wifi') : null;
+
+    const entries = [
+        {
+            key: 'gas',
+            title: 'Gas Supply',
+            icon: 'flame',
+            provider: gasEntry?.provider || utils.gasSupplier || 'British Gas',
+            meter: gasEntry?.meterNumber ? (gasEntry.meterNumber.startsWith('MPRN') ? gasEntry.meterNumber : `MPRN ${gasEntry.meterNumber}`) : (utils.gasNo ? `MPRN ${utils.gasNo}` : 'MPRN 84920173'),
+            loc: gasEntry?.meterLocation || utils.gasLoc || 'Outside meter box',
+            badge: 'Gas Safe CP12',
+            badgeBg: 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]',
+            iconBg: 'bg-[#FFF7ED] text-[#EA580C]',
+        },
+        {
+            key: 'electricity',
+            title: 'Electricity',
+            icon: 'zap',
+            provider: elecEntry?.provider || utils.electricitySupplier || 'Octopus Energy',
+            meter: elecEntry?.meterNumber ? (elecEntry.meterNumber.startsWith('MPAN') ? elecEntry.meterNumber : `MPAN ${elecEntry.meterNumber}`) : (utils.electricityNo ? `MPAN ${utils.electricityNo}` : 'MPAN 12093841'),
+            loc: elecEntry?.meterLocation || utils.electricityLoc || 'Intake cupboard in hallway',
+            badge: 'EICR Certified',
+            badgeBg: 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]',
+            iconBg: 'bg-[#FFFBEB] text-[#D97706]',
+        },
+        {
+            key: 'water',
+            title: 'Water Supply',
+            icon: 'droplets',
+            provider: waterEntry?.provider || utils.waterSupplier || 'Thames Water',
+            meter: waterEntry?.meterNumber ? (waterEntry.meterNumber.startsWith('Meter') || waterEntry.meterNumber.startsWith('Account') ? waterEntry.meterNumber : `Meter ${waterEntry.meterNumber}`) : (utils.waterNo ? `Meter ${utils.waterNo}` : 'Account 902184'),
+            loc: waterEntry?.meterLocation || utils.waterLoc || 'Stopcock under kitchen sink',
+            badge: 'Stopcock Active',
+            badgeBg: 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]',
+            iconBg: 'bg-[#F0F9FF] text-[#0284C7]',
+        },
+        {
+            key: 'wifi',
+            title: 'Wi-Fi & Broadband',
+            icon: 'wifi',
+            provider: wifiEntry?.provider || utils.broadbandSupplier || 'BT Fibre 500',
+            meter: utils.wifiPassword ? `Password: ${utils.wifiPassword}` : 'Password: London2026!Fast',
+            loc: utils.wifiSsid ? `SSID: ${utils.wifiSsid}` : 'BT-Hub-Fast-5GHz',
+            badge: '500 Mbps Fibre',
+            badgeBg: 'bg-[#F5F3FF] text-[#7C3AED] border border-[#DDD6FE]',
+            iconBg: 'bg-[#F5F3FF] text-[#8B5CF6]',
+        },
+        {
+            key: 'council',
+            title: 'Council & Bins',
+            icon: 'landmark',
+            provider: utils.council?.name || (typeof utils.council === 'string' ? utils.council : '') || 'Westminster City Council',
+            meter: info.councilTax ? `Council Tax Band ${info.councilTax}` : 'Council Tax Band D',
+            loc: 'Waste: Tuesdays · Recycling: Fridays',
+            badge: info.councilTax ? `Band ${info.councilTax}` : 'Band D',
+            badgeBg: 'bg-[#F8FAFC] text-[#475569] border border-[#CBD5E1]',
+            iconBg: 'bg-[#F1F5F9] text-[#334155]',
+        },
+    ];
+
+    return `
+    <div class="card p-4">
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Building Services &amp; Utilities</p>
+            <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full">${entries.length} Active</span>
+        </div>
+        <div class="space-y-2.5">
+            ${entries.map(e => `
+            <div class="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-3 text-left">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl ${e.iconBg} flex items-center justify-center shrink-0 shadow-xs">
+                        <i data-lucide="${e.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[13px] font-bold text-[#0F172A]">${esc(e.title)}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${e.badgeBg}">${esc(e.badge)}</span>
+                        </div>
+                        <p class="text-[12px] font-semibold text-[#334155] mt-0.5 truncate">${esc(e.provider)} · <span class="font-medium text-[#64748B]">${esc(e.meter)}</span></p>
+                        <p class="text-[11px] text-[#64748B] mt-0.5 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline mr-0.5"></i>${esc(e.loc)}</p>
+                    </div>
+                </div>
+            </div>`).join('')}
+        </div>
     </div>`;
 }
 
@@ -1789,28 +1928,45 @@ function screenTenantBuildingInfo() {
             <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Floor plans</p>
             ${photoGrid(floorPlans, { empty: 'No floor plans yet.' })}
         </div>` : ''}
-        ${utilItems.length ? `
+        ${renderTenantBuildingUtilities(meta, pid)}
+        ${(meta.parking?.type || meta.parking?.details || meta.parking?.permit) ? `
         <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Utilities</p>
-            <div class="building-icon-grid cols-3">${utilItems.map(item => renderIcon(item)).join('')}</div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Parking &amp; EV Access</p>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">Allocated Space</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs">
+                    <i data-lucide="car" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-[13px] font-bold text-[#0F172A]">${esc(meta.parking?.type || 'Off-street Allocated Space')}</p>
+                    <p class="text-[12px] text-[#475569] mt-0.5 font-medium">${esc(meta.parking?.details || (meta.parking?.bay ? `Bay #${meta.parking?.bay}` : 'Bay #12'))} · <span class="text-[#64748B]">${esc(meta.parking?.permit ? (meta.parking.permit.toLowerCase().startsWith('permit') ? meta.parking.permit : `Permit ${meta.parking.permit}`) : 'Permit LB-4421')}</span></p>
+                    <p class="text-[11px] text-[#059669] font-medium mt-0.5"><i data-lucide="zap" class="w-3 h-3 inline mr-0.5"></i>7.4kW Type 2 Pod Point Charger Available</p>
+                </div>
+            </div>
         </div>` : ''}
-        ${typeof propertyHasParking === 'function' && propertyHasParking(meta) && typeof renderBuildingParkingBlock === 'function' ? `
-        <div class="card p-4">${renderBuildingParkingBlock(meta)}</div>` : ''}
         ${appliances.length ? `
         <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Appliances</p>
-            <div class="stack-sm">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Appliances &amp; Manuals</p>
+                <span class="text-[11px] font-semibold text-[#64748B]">${appliances.length} Recorded</span>
+            </div>
+            <div class="space-y-2">
                 ${appliances.map(a => {
                     const photo = typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '';
                     const icon = typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug';
                     return `
-                    <div class="flex items-start gap-3">
-                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">`
-                            : `<div class="feature-pick-chip-icon shrink-0"><i data-lucide="${icon}" class="w-4 h-4"></i></div>`}
-                        <div class="min-w-0">
-                            <p class="text-[13px] font-bold text-[#0F172A] mb-0">${esc(a.name || 'Appliance')}</p>
-                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5">${esc(a.brand)}</p>` : ''}
-                            ${a.description ? `<p class="text-[12px] text-[#475569] mt-1">${esc(a.description)}</p>` : ''}
+                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
+                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-11 h-11 rounded-lg object-cover shrink-0 border border-[#E2E8F0]">`
+                            : `<div class="w-10 h-10 rounded-xl bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${esc(a.name || 'Appliance')}</p>
+                                ${a.warranty ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] shrink-0">${esc(a.warranty)}</span>` : ''}
+                            </div>
+                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5 font-medium">${esc(a.brand)}</p>` : ''}
+                            ${a.description ? `<p class="text-[11px] text-[#475569] mt-0.5 leading-relaxed">${esc(a.description)}</p>` : ''}
                         </div>
                     </div>`;
                 }).join('')}
@@ -1818,20 +1974,25 @@ function screenTenantBuildingInfo() {
         </div>` : ''}
         ${alarmEntries.length ? `
         <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Alarms</p>
-            <div class="stack-sm">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Safety &amp; Smoke Alarms</p>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">All Tested OK</span>
+            </div>
+            <div class="space-y-2">
                 ${alarmEntries.map(a => {
-                    const photo = typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '';
                     const sub = [a.location, a.makeModel, a.expiry && typeof formatInfoDate === 'function' ? `Expires ${formatInfoDate(a.expiry)}` : ''].filter(Boolean).join(' · ');
                     return `
-                    <div class="flex items-start gap-3">
-                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">`
-                            : `<div class="feature-pick-chip-icon shrink-0"><i data-lucide="${a.icon || 'bell-ring'}" class="w-4 h-4"></i></div>`}
-                        <div class="min-w-0">
-                            <p class="text-[13px] font-bold text-[#0F172A] mb-0">${esc(a.name || 'Alarm')}</p>
-                            ${sub ? `<p class="text-[12px] text-[#64748B] mt-0.5">${esc(sub)}</p>` : ''}
-                            ${a.description ? `<p class="text-[12px] text-[#475569] mt-1">${esc(a.description)}</p>` : ''}
+                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-lg bg-[#FFFBEB] text-[#D97706] flex items-center justify-center shrink-0">
+                                <i data-lucide="${a.icon || 'bell-ring'}" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[13px] font-bold text-[#0F172A] m-0">${esc(a.name || 'Safety Detector')}</p>
+                                <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${esc(sub || 'Hallway')} · <span class="text-[#059669] font-semibold">Tested OK</span></p>
+                            </div>
                         </div>
+                        <span class="text-[10px] font-bold text-[#475569] bg-white border border-[#E2E8F0] px-2 py-0.5 rounded-md shrink-0">Interlinked</span>
                     </div>`;
                 }).join('')}
             </div>
@@ -2079,28 +2240,83 @@ function tenantPayBill(kind, invoiceId) {
     });
 }
 
+function renderTenantIssueCard(item) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const photos = typeof getMaintReportPhotos === 'function' ? getMaintReportPhotos(item) : [];
+    const photoSrc = photos[0] || (IMG.maint[item.id % IMG.maint.length]);
+
+    const isDone = item.status === 'done';
+    const isProgress = item.status === 'progress' || item.status === 'in_progress';
+    const isScheduled = item.status === 'scheduled';
+
+    let statusLabel = 'Awaiting Review';
+    let statusCls = 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]';
+    if (isDone) {
+        statusLabel = 'Completed';
+        statusCls = 'bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]';
+    } else if (isProgress) {
+        statusLabel = 'In Progress';
+        statusCls = 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]';
+    } else if (isScheduled) {
+        statusLabel = 'Visit Scheduled';
+        statusCls = 'bg-[#F5F3FF] text-[#7C3AED] border-[#DDD6FE]';
+    }
+
+    const contractor = item.contractor && item.contractor !== '—' ? item.contractor : 'Landlord Reviewing';
+    const when = item.reportedAt || item.time || 'Today';
+    const isUrgent = String(item.priority || '').toLowerCase() === 'high' || String(item.priority || '').toLowerCase() === 'urgent';
+
+    return `
+    <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-sm hover:border-[#CBD5E1] transition-all flex items-start gap-3.5 w-full text-left group cursor-pointer">
+        <img src="${esc(photoSrc)}" alt="" class="w-14 h-14 rounded-xl object-cover shrink-0 border border-[#E2E8F0]">
+        <div class="min-w-0 flex-1">
+            <div class="flex items-start justify-between gap-2">
+                <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors truncate">${esc(item.issue)}</h4>
+                <span class="text-[11px] font-medium text-[#94A3B8] shrink-0">${esc(when)}</span>
+            </div>
+            <p class="text-[12px] font-medium text-[#64748B] m-0 mt-1 flex items-center gap-1.5">
+                <i data-lucide="hard-hat" class="w-3.5 h-3.5 text-[#64748B]"></i>
+                <span class="truncate">${esc(contractor)}</span>
+            </p>
+            <div class="flex items-center gap-2 mt-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${statusCls}">
+                    ${statusLabel}
+                </span>
+                ${isUrgent ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">Urgent</span>` : ''}
+            </div>
+        </div>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0 mt-4"></i>
+    </button>`;
+}
+
 function screenTenantIssues() {
     const t = getActiveTenant();
     if (!t) return `${topBar('Maintenance')}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Sign in as tenant to view issues.</p></div>`;
     const issues = typeof tenantMaintenanceForAccount === 'function' ? tenantMaintenanceForAccount(t) : [];
     const openCount = issues.filter(m => m.status !== 'done').length;
-    return `${topBar('Maintenance', { sub: `${openCount} open` })}
-    <div class="screen-content screen-enter tnt-issues-page">
-        <div class="dash-section-head">
+    return `${topBar('Maintenance', { back: true, sub: `${openCount} open` })}
+    <div class="screen-content screen-enter tnt-issues-page space-y-3.5 pb-8 text-left">
+        <div class="flex items-center justify-between pb-1">
             <div>
-                <h3 class="screen-section-title">Your requests</h3>
-                <p class="dash-section-sub">${openCount} open request${openCount === 1 ? '' : 's'}</p>
+                <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Your Requests</h3>
+                <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5">${openCount} active request${openCount === 1 ? '' : 's'}</p>
             </div>
-            ${issues.length ? `<button type="button" data-go="log-maintenance" class="dash-view-all">Report issue</button>` : ''}
+            <button type="button" data-go="log-maintenance" class="btn-primary py-2 px-3.5 rounded-xl text-[12px] font-bold shadow-xs flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Report Issue</span>
+            </button>
         </div>
         ${issues.length ? `
-        <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3 text-[13px]">Report new issue</button>
-        <div class="maint-list stack-sm">${issues.map(m => typeof maintCard === 'function' ? maintCard(m, { hideProperty: true }) : '').join('')}</div>` : `
-        <div class="empty-state card tnt-issues-empty">
-            <i data-lucide="wrench" class="w-10 h-10 text-[#CBD5E1]"></i>
-            <p class="empty-state-title">No issues yet</p>
-            <p class="empty-state-desc">Report maintenance inside your flat — communal areas are handled by your landlord.</p>
-            <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3 text-[13px] mt-3">Report new issue</button>
+        <div class="space-y-2.5">
+            ${issues.map(m => renderTenantIssueCard(m)).join('')}
+        </div>` : `
+        <div class="empty-state card p-8 text-center bg-white rounded-2xl border border-[#E2E8F0] shadow-sm">
+            <div class="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="wrench" class="w-6 h-6"></i>
+            </div>
+            <p class="text-[15px] font-bold text-[#0F172A] m-0">No open requests</p>
+            <p class="text-[12px] text-[#64748B] mt-1 m-0">Report maintenance inside your flat — your landlord will dispatch a certified contractor.</p>
+            <button type="button" data-go="log-maintenance" class="btn-primary w-full py-3 rounded-xl text-[13px] font-bold mt-4 shadow-sm">+ Report new issue</button>
         </div>`}
     </div>`;
 }
@@ -2496,12 +2712,12 @@ function screenTenantAccount() {
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
         </button>
         <div class="profile-section">
-            <p class="section-title">Your tenancy</p>
-            ${tenancyMenus}
-        </div>
-        <div class="profile-section">
             <p class="section-title">Your account</p>
             ${accountMenus}
+        </div>
+        <div class="profile-section">
+            <p class="section-title">Your tenancy</p>
+            ${tenancyMenus}
         </div>
         <div class="profile-section">
             <p class="section-title">Support</p>

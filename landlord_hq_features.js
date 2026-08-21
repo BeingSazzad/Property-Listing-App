@@ -3702,20 +3702,24 @@ function renderPropertyInventoryTab(propertyId) {
             </div>
         </div>` : ''}
         ${renderInventoryLayoutSection(propertyId)}
-        <div class="flex items-center justify-between mt-3 mb-1.5">
+        <div class="flex items-center justify-between mt-4 mb-2">
             <p class="screen-section-title m-0">${units.length > 1 ? `${selectedUnit} Room Checklists` : 'Room Checklists'}</p>
-            <span class="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2 py-0.5 rounded-full">${rooms.length} Rooms Tracked</span>
+            <span class="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2.5 py-0.5 rounded-full">${rooms.length} Rooms Tracked</span>
         </div>
         <div class="stack-sm">
         ${rooms.map(([r, n, icon, idx]) => `
-        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" data-unit="${selectedUnit}" class="card w-full p-4 flex items-center justify-between card-hover text-left">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-[18px] h-[18px]"></i></div>
-                <div class="min-w-0"><p class="text-[14px] font-bold text-[#0F172A]">${r}</p><p class="text-[11px] text-[#64748B] truncate mt-0.5">${n}</p></div>
+        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" data-unit="${selectedUnit}" class="card w-full p-4 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
+                <div class="min-w-0"><p class="text-[15px] font-bold text-[#0F172A] m-0">${escapeHtml(r)}</p><p class="text-[12px] text-[#64748B] truncate mt-0.5 m-0">${escapeHtml(n)}</p></div>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>`).join('')}
         </div>
+        <button type="button" data-action="add-inventory-room" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold mt-3 shadow-xs flex items-center justify-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4 text-[#2563EB]"></i>
+            <span>+ Add Room / Area</span>
+        </button>
     </div>`;
 }
 
@@ -3763,7 +3767,8 @@ function renderTenantKeysCard(propertyId, unitName, tenantName) {
 function getUnitKeys(propertyId, unitName) {
     const meta = AppStore.meta(propertyId);
     if (!meta.unitKeys) meta.unitKeys = {};
-    return meta.unitKeys[unitName] || [];
+    if (!meta.unitKeys[unitName]) meta.unitKeys[unitName] = [];
+    return meta.unitKeys[unitName];
 }
 
 function setUnitKeys(propertyId, unitName, keys) {
@@ -3798,15 +3803,17 @@ function collectInventoryEditItemsFromDom() {
     return items.length ? items : (STATE.inventoryEditItems || []);
 }
 
-function getInventoryFixtureIcon(name = '') {
-    const n = String(name).toLowerCase();
-    if (n.includes('oven') || n.includes('hob') || n.includes('cooker') || n.includes('microwave')) return 'flame';
-    if (n.includes('fridge') || n.includes('freezer')) return 'refrigerator';
-    if (n.includes('sofa') || n.includes('couch') || n.includes('chair') || n.includes('table')) return 'armchair';
-    if (n.includes('bed') || n.includes('mattress')) return 'bed-double';
-    if (n.includes('wardrobe') || n.includes('closet') || n.includes('drawer')) return 'door-closed';
-    if (n.includes('bath') || n.includes('shower') || n.includes('toilet') || n.includes('basin') || n.includes('sink') || n.includes('tap')) return 'bath';
-    if (n.includes('alarm') || n.includes('smoke') || n.includes('co')) return 'bell-ring';
+function getInventoryFixtureIcon(name) {
+    const n = String(name || '').toLowerCase();
+    if (n.includes('oven') || n.includes('cooker') || n.includes('hob') || n.includes('stove')) return 'flame';
+    if (n.includes('fridge') || n.includes('freezer')) return 'snowflake';
+    if (n.includes('wash') || n.includes('dryer') || n.includes('laundry')) return 'washing-machine';
+    if (n.includes('dish')) return 'utensils-crossed';
+    if (n.includes('microwave') || n.includes('kettle') || n.includes('toaster')) return 'coffee';
+    if (n.includes('bed') || n.includes('mattress') || n.includes('wardrobe') || n.includes('drawer')) return 'bed';
+    if (n.includes('sofa') || n.includes('couch') || n.includes('chair') || n.includes('table') || n.includes('desk')) return 'armchair';
+    if (n.includes('tv') || n.includes('television') || n.includes('media') || n.includes('screen')) return 'tv';
+    if (n.includes('bath') || n.includes('shower') || n.includes('sink') || n.includes('toilet') || n.includes('basin') || n.includes('tap')) return 'bath';
     if (n.includes('light') || n.includes('lamp')) return 'lightbulb';
     if (n.includes('window') || n.includes('curtain') || n.includes('blind')) return 'blinds';
     if (n.includes('radiator') || n.includes('heater') || n.includes('boiler')) return 'thermometer-sun';
@@ -3839,17 +3846,17 @@ function screenInventoryRoomEnhanced() {
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div>
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Schedule</span>
-                    <h3 class="text-[16px] font-bold text-[#0F172A] m-0 mt-0.5">${escapeHtml(roomName)}</h3>
+                    <h3 class="text-[17px] font-bold text-[#0F172A] m-0 mt-0.5">${escapeHtml(roomName)}</h3>
                 </div>
-                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1">
+                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                    <span>Edit Room</span>
+                    <span>Edit Schedule</span>
                 </button>
             </div>
             <div class="flex flex-wrap items-center gap-2 pt-3">
                 ${roomSize ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-bold text-[#475569]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i> ${escapeHtml(roomSize)} sq ft</span>` : ''}
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-bold text-[#475569]"><i data-lucide="package" class="w-3.5 h-3.5 text-[#64748B]"></i> ${items.length} Fixtures</span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#ECFDF5] border border-[#D1FAE5] text-[11px] font-bold text-[#059669]"><i data-lucide="check" class="w-3.5 h-3.5 text-[#059669]"></i> Inspected</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#ECFDF5] border border-[#D1FAE5] text-[11px] font-bold text-[#059669]"><i data-lucide="check" class="w-3.5 h-3.5 text-[#059669]"></i> Condition OK</span>
             </div>
         </div>
 
@@ -3869,12 +3876,12 @@ function screenInventoryRoomEnhanced() {
         <!-- Fixtures & Items List -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
             <div class="flex items-center justify-between mb-3">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Items & Fixtures (${items.length})</span>
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Items &amp; Fixtures (${items.length})</span>
                 <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="text-[12px] font-bold text-[#2563EB] hover:underline cursor-pointer">+ Add item</button>
             </div>
             ${items.length ? `
             <div class="divide-y divide-[#F1F5F9]">
-                ${items.map(item => {
+                ${items.map((item, idx) => {
                     const itemName = inventoryItemName(item);
                     const icon = getInventoryFixtureIcon(itemName);
                     return `
@@ -3885,12 +3892,17 @@ function screenInventoryRoomEnhanced() {
                             </div>
                             <div class="min-w-0">
                                 <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${escapeHtml(itemName)}</p>
-                                <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Standard fitting · Verified</p>
+                                <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Item #${idx + 1} · Verified</p>
                             </div>
                         </div>
-                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] shrink-0">
-                            <i data-lucide="check" class="w-3 h-3"></i> Good
-                        </span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">
+                                <i data-lucide="check" class="w-3 h-3"></i> Good
+                            </span>
+                            <button type="button" data-action="inline-remove-inventory-item" data-item-idx="${idx}" class="w-7 h-7 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer" aria-label="Delete item">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
                     </div>`;
                 }).join('')}
             </div>` : `
@@ -3898,11 +3910,20 @@ function screenInventoryRoomEnhanced() {
                 <p class="text-[13px] text-[#94A3B8] m-0">No items recorded for this room.</p>
                 <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="mt-2 text-[12px] font-bold text-[#2563EB]">Add fixtures now</button>
             </div>`}
+
+            <!-- Inline Quick Add Bar -->
+            <div class="mt-3 pt-3 border-t border-[#F1F5F9] flex items-center gap-2">
+                <input type="text" id="inlineInvItemInput" class="form-input text-[13px] flex-1 py-2" placeholder="Quick add item (e.g. Microwave, Mirror…)">
+                <button type="button" data-action="inline-add-inventory-item" class="btn-primary py-2 px-4 text-[12px] font-bold rounded-xl shrink-0">Add</button>
+            </div>
         </div>
 
         <!-- Room Condition Notes -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Condition Notes & Observations</span>
+            <div class="flex items-center justify-between mb-2">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Condition Notes &amp; Observations</span>
+                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="text-[11px] font-bold text-[#2563EB]">Edit notes</button>
+            </div>
             ${notes ? `
             <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
                 <p class="text-[13px] text-[#334155] leading-relaxed m-0">${escapeHtml(notes)}</p>
@@ -3920,22 +3941,57 @@ function screenEditInventoryRoomEnhanced() {
     const room = rooms[rid] || rooms[0];
     if (!STATE.inventoryEditItems) initInventoryEditItems();
     const items = STATE.inventoryEditItems;
+
+    const fixturePresets = [
+        'Oven & Induction Hob', 'Integrated Fridge Freezer', 'Dishwasher', 'Washing Machine',
+        'Microwave', 'Extractor Hood', 'King Size Bed & Mattress', 'Double Wardrobe',
+        '3-Seater Sofa', 'Coffee Table', 'Dining Table & Chairs', 'Smart TV Stand',
+        'Rainfall Shower Mixer', 'Vanity Mirror Cabinet', 'Mains Smoke & CO Alarm'
+    ];
+
     return `${topBar('Edit ' + roomName, { back: true })}
-    <div class="screen-content screen-enter">
-        <div class="form-field"><label class="form-label">Room size (sq ft)</label><input data-field="roomSizeSqft" type="text" class="form-input" value="${escapeHtml(getInventoryRoomSize(STATE.propertyId, rid))}" placeholder="e.g. 120"></div>
-        ${formTextarea('Room notes', getInventoryNotes(STATE.propertyId, rid), 'Scratches, stains, missing keys…', 'roomNotes')}
-        <p class="screen-section-title">Items</p>
-        <div class="stack-sm">
-        ${items.map((item, i) => `
-        <div class="card p-3 inventory-item-row" data-inventory-item-row>
-            <div class="flex items-center gap-2">
-                <input type="text" data-inventory-item-name class="form-input flex-1 text-[13px]" value="${escapeHtml(item)}" placeholder="Item name">
-                <button type="button" data-action="remove-inventory-item" data-item-idx="${i}" class="inventory-item-remove" aria-label="Remove item"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div class="screen-content screen-enter space-y-4 text-left pb-10">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="form-field">
+                <label class="form-label text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room size (sq ft)</label>
+                <input data-field="roomSizeSqft" type="text" class="form-input" value="${escapeHtml(getInventoryRoomSize(STATE.propertyId, rid))}" placeholder="e.g. 120">
             </div>
-        </div>`).join('')}
+            ${formTextarea('Room condition notes', getInventoryNotes(STATE.propertyId, rid), 'Scratches, stains, missing keys, clean status…', 'roomNotes')}
         </div>
-        <button type="button" data-action="add-inventory-item" class="btn-secondary w-full py-2.5 text-[13px] mt-2">+ Add custom item</button>
-        <button data-action="save" class="btn-primary w-full py-3.5 text-[14px] mt-4">Save room</button>
+
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Fixtures &amp; Inventory Items (${items.length})</p>
+                <button type="button" data-action="add-inventory-item" class="text-[12px] font-bold text-[#2563EB] cursor-pointer">+ New line</button>
+            </div>
+
+            <!-- Preset Quick Add Chips -->
+            <div>
+                <p class="text-[11px] text-[#64748B] mb-2 font-medium">Quick Add Common Items:</p>
+                <div class="flex flex-wrap gap-1.5 max-h-[110px] overflow-y-auto pr-1">
+                    ${fixturePresets.map(preset => `
+                    <button type="button" data-action="add-preset-inventory-item" data-preset="${escapeHtml(preset)}" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] transition-colors cursor-pointer flex items-center gap-1">
+                        <i data-lucide="plus" class="w-3 h-3 text-[#2563EB]"></i>
+                        <span>${escapeHtml(preset)}</span>
+                    </button>`).join('')}
+                </div>
+            </div>
+
+            <div class="stack-sm pt-2 border-t border-[#F1F5F9]">
+            ${items.map((item, i) => `
+            <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-2 inventory-item-row" data-inventory-item-row>
+                <span class="text-[12px] font-bold text-[#94A3B8] w-5 text-center">${i + 1}</span>
+                <input type="text" data-inventory-item-name class="form-input flex-1 text-[13px] py-2 bg-white" value="${escapeHtml(item)}" placeholder="Item or fixture name">
+                <button type="button" data-action="remove-inventory-item" data-item-idx="${i}" class="w-8 h-8 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer" aria-label="Remove item">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>`).join('')}
+            </div>
+
+            <button type="button" data-action="add-inventory-item" class="btn-secondary w-full py-2.5 text-[13px] font-bold rounded-xl mt-2">+ Add custom item</button>
+        </div>
+
+        <button data-action="save" class="btn-primary w-full py-3.5 text-[14px] font-bold rounded-2xl shadow-sm">Save room inventory</button>
     </div>`;
 }
 
@@ -6792,16 +6848,127 @@ const TENANT_HOUSE_RULES = {
     1: [
         'Monthly rent is due on the 1st of each month.',
         'Contact the landlord before making any alterations to the flat.',
-        'Pets require prior written consent.',
+        'Pets require prior written consent from the landlord.',
+        'Keep communal stairs and hallways clear of personal items.',
+        'Recycling and general waste to be sorted into designated council bins.',
+    ],
+    2: [
+        'Quiet hours after 11 PM on weekdays, 12 AM on weekends.',
+        'Concierge key drop required for scheduled maintenance visits.',
+        'Underground parking permits must be displayed clearly in vehicle windscreen.',
+        'EV charging spaces are strictly for actively charging electric vehicles.',
+        'Balconies must be kept tidy — no laundry hung over railings.',
+    ],
+    3: [
+        'Report any water leaks or boiler faults immediately via the app.',
+        'No smoking or vaping anywhere inside the building or communal areas.',
+        'Communal courtyard shared with fellow residents — keep clean and tidy.',
+        'Bin collections on Tuesdays and Fridays — bins must be returned by evening.',
     ],
 };
 
+function getPropertyHouseRules(propertyId) {
+    const meta = typeof AppStore !== 'undefined' ? AppStore.meta(propertyId) : null;
+    if (meta && Array.isArray(meta.houseRules) && meta.houseRules.length) {
+        return meta.houseRules;
+    }
+    if (TENANT_HOUSE_RULES[propertyId]?.length) {
+        return TENANT_HOUSE_RULES[propertyId];
+    }
+    return [
+        'Quiet hours after 10 PM — keep noise down for neighbours.',
+        'Report maintenance issues through the app so your landlord can respond quickly.',
+        'No smoking inside the building or communal areas.',
+        'Guests may not stay more than 14 consecutive nights without written approval.',
+        'Recycling bins are in the rear garden shed — please sort waste correctly.',
+        'Bicycle storage is in the basement — do not leave bikes in the hallway.',
+    ];
+}
+
 function houseRulesForTenant(tenant) {
     if (!tenant || tenant.propertyId == null) return [];
-    return TENANT_HOUSE_RULES[tenant.propertyId] || [
-        'Follow your tenancy agreement and report issues via the app.',
-        'Keep communal areas clear and respect neighbours.',
+    return getPropertyHouseRules(tenant.propertyId);
+}
+
+function screenPropertyHouseRules() {
+    const propertyId = STATE.propertyId ?? 0;
+    const p = PROPERTIES[propertyId] || PROPERTIES[0];
+    const rules = getPropertyHouseRules(propertyId);
+
+    const presets = [
+        'Quiet hours after 11 PM — please respect residential neighbours.',
+        'No smoking or vaping permitted inside the flat or communal areas.',
+        'Pets require prior written permission from the landlord.',
+        'Household waste and recycling must be separated and placed in designated bins.',
+        'No subletting, short-lets, or Airbnb permitted under any circumstances.',
+        'Fire doors must remain closed at all times and exits kept clear.',
+        'Overnight guests limited to a maximum of 14 consecutive nights.',
+        'Bicycles must be stored in the designated bike racks, not in communal hallways.',
+        'Notify landlord at least 48 hours in advance for prolonged absences over 14 days.'
     ];
+
+    return `${topBar('House Rules & Policies', { back: true, sub: p.name || '' })}
+    <div class="screen-content screen-content-sm space-y-4 text-left pb-10">
+        <!-- Overview Banner -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Building Guidelines</span>
+                    <h3 class="text-[16px] font-bold text-[#0F172A] m-0 mt-0.5">${escapeHtml(p.name)}</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">
+                    ${rules.length} Active Rules
+                </span>
+            </div>
+            <p class="text-[12px] text-[#64748B] mt-3 m-0 leading-relaxed">
+                These rules are automatically published to all tenants residing in this property under their <strong>Your building &rarr; House rules</strong> guide.
+            </p>
+        </div>
+
+        <!-- Preset Suggestions -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5">
+            <div class="flex items-center justify-between">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Quick Presets</span>
+                <span class="text-[11px] text-[#94A3B8]">Tap to add</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                ${presets.map(rule => `
+                <button type="button" data-action="add-preset-house-rule" data-rule="${escapeHtml(rule)}" class="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0] hover:bg-[#EFF6FF] hover:text-[#2563EB] hover:border-[#BFDBFE] transition-all text-left flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="plus" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${escapeHtml(rule)}</span>
+                </button>`).join('')}
+            </div>
+        </div>
+
+        <!-- Rules List & Management -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Active Building Rules (${rules.length})</span>
+            </div>
+            
+            <div class="space-y-2.5" id="houseRulesListContainer">
+                ${rules.map((rule, idx) => `
+                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-2.5 group house-rule-row">
+                    <span class="w-6 h-6 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+                    <input type="text" data-house-rule-input class="form-input flex-1 text-[13px] py-1.5 bg-white border-[#CBD5E1]" value="${escapeHtml(rule)}" placeholder="Rule description">
+                    <button type="button" data-action="remove-house-rule" data-rule-idx="${idx}" class="w-7 h-7 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer shrink-0 mt-0.5" aria-label="Delete rule">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>`).join('')}
+            </div>
+
+            <!-- Inline Add Rule Input -->
+            <div class="mt-3 pt-3 border-t border-[#F1F5F9] flex items-center gap-2">
+                <input type="text" id="newHouseRuleInput" class="form-input text-[13px] flex-1 py-2" placeholder="Type a custom house rule…">
+                <button type="button" data-action="add-custom-house-rule" class="btn-secondary py-2 px-4 text-[12px] font-bold rounded-xl shrink-0">+ Add</button>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <button type="button" data-action="save-house-rules" class="btn-primary w-full py-3.5 text-[14px] font-bold rounded-2xl shadow-sm">
+            Save &amp; Broadcast House Rules
+        </button>
+    </div>`;
 }
 
 function activeTenantListId() {
@@ -7739,41 +7906,81 @@ function renderVacateNoticeSection(co, tenantId, opts = {}) {
     const notice = co.vacateNotice;
     const draftDate = STATE.vacateDraftDate || notice?.vacateDate || '';
     const draftBody = STATE.vacateDraftBody || notice?.message || buildVacateNoticeDraft(tenantId, draftDate);
-    if (!editable && !notice?.sent) {
+    const isSent = notice?.sent;
+
+    if (!editable && !isSent) {
         return `
-        <div class="card p-4">
-            <p class="text-[13px] font-bold text-[#0F172A]">Request to Vacate Property Notice</p>
-            <p class="text-[12px] text-[#64748B] mt-1">No vacate notice sent yet.</p>
-        </div>`;
-    }
-    if (!editable && notice?.sent) {
-        return `
-        <div class="card p-4 vacate-notice-card vacate-notice-card--sent">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-[11px] font-bold text-[#059669] uppercase tracking-wide">Vacate notice sent</p>
-                    <p class="text-[14px] font-bold text-[#0F172A] mt-1">Vacating ${escapeHtml(formatVacateDateLabel(notice.vacateDate) || notice.vacateDate)}</p>
-                    <p class="text-[12px] text-[#64748B] mt-1">Sent ${escapeHtml(notice.sentAt || '')}</p>
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-[#F8FAFC] text-[#64748B] flex items-center justify-center shrink-0">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
                 </div>
-                <span class="badge bg-[#ECFDF5] text-[#059669]">Shared</span>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[13px] font-bold text-[#0F172A] m-0">Notice to Vacate</p>
+                    <p class="text-[11px] text-[#64748B] m-0">No formal notice received yet</p>
+                </div>
             </div>
-            <pre class="vacate-notice-body mt-3">${escapeHtml(notice.message || '')}</pre>
         </div>`;
     }
+
+    if (isSent) {
+        return `
+        <div class="card p-3.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-[#DCFCE7] text-[#15803D] flex items-center justify-center shrink-0">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-bold text-[#15803D] uppercase tracking-wider">Vacate Notice Shared</span>
+                        <p class="text-[13px] font-bold text-[#0F172A] m-0">Vacating on ${escapeHtml(formatVacateDateLabel(notice.vacateDate) || notice.vacateDate)}</p>
+                    </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white text-[#15803D] border border-[#BBF7D0]">
+                    ${notice.sentAt ? escapeHtml(notice.sentAt.split(',')[0]) : 'On file'}
+                </span>
+            </div>
+            <details class="text-[11px] text-[#475569] bg-white p-2.5 rounded-xl border border-[#DCFCE7] cursor-pointer">
+                <summary class="font-semibold text-[#15803D] select-none">View formal notice letter</summary>
+                <p class="mt-2 whitespace-pre-wrap leading-relaxed m-0 text-[#334155] font-mono text-[11px]">${escapeHtml(notice.message || '')}</p>
+            </details>
+        </div>`;
+    }
+
     return `
-    <div class="card p-4 vacate-notice-card">
-        <p class="text-[13px] font-bold text-[#0F172A]">Request to Vacate Property Notice</p>
-        <p class="text-[12px] text-[#64748B] mt-1 mb-3">Send formal notice to your landlord with your vacating date. A template is pre-filled — edit if needed.</p>
-        ${notice?.sent ? `<div class="vacate-notice-sent-banner mb-3"><i data-lucide="check-circle-2" class="w-4 h-4"></i><span>Notice already sent for ${escapeHtml(formatVacateDateLabel(notice.vacateDate) || notice.vacateDate)}. You can resend an update.</span></div>` : ''}
-        <div class="form-field">
-            <label class="form-label">Vacating date</label>
-            <input type="date" data-field="vacate_date" data-action="vacate-date-change" class="form-input" value="${escapeHtml(draftDate)}">
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="mail-open" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h4 class="text-[13px] font-bold text-[#0F172A] m-0">Notice to Vacate Property</h4>
+                    <p class="text-[11px] text-[#64748B] m-0">Send formal vacating notice to your landlord</p>
+                </div>
+            </div>
         </div>
-        <div class="form-field">
-            <label class="form-label">Notice template</label>
-            <textarea data-field="vacate_body" class="form-input vacate-notice-textarea" rows="8">${escapeHtml(draftBody)}</textarea>
+
+        <div class="space-y-2.5">
+            <div>
+                <label class="block text-[11px] font-bold text-[#475569] uppercase tracking-wider mb-1">Vacating Date</label>
+                <input type="date" data-field="vacate_date" data-action="vacate-date-change" class="form-input w-full text-[13px] py-2 px-3 bg-[#F8FAFC] border-[#CBD5E1] rounded-xl font-semibold text-[#0F172A]" value="${escapeHtml(draftDate)}">
+            </div>
+            
+            <details class="text-[11px] bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0]">
+                <summary class="font-semibold text-[#2563EB] cursor-pointer select-none flex items-center justify-between">
+                    <span>Preview &amp; edit formal notice template</span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </summary>
+                <div class="mt-2 pt-2 border-t border-[#E2E8F0]">
+                    <textarea data-field="vacate_body" class="form-input w-full text-[11px] p-2 bg-white border-[#CBD5E1] rounded-lg" rows="4">${escapeHtml(draftBody)}</textarea>
+                </div>
+            </details>
         </div>
-        <button type="button" data-action="send-vacate-notice" class="btn-primary w-full py-3 text-[13px]">Send notice to landlord</button>
+
+        <button type="button" data-action="send-vacate-notice" class="btn-primary w-full py-2.5 text-[13px] font-bold rounded-xl shadow-xs">
+            Send Notice to Landlord
+        </button>
     </div>`;
 }
 
@@ -7783,37 +7990,77 @@ function renderSharedCheckoutPack(tenantId, opts = {}) {
     const landlordManage = opts.landlordManage === true;
     const showVacate = opts.showVacate !== false;
     const sharedBadge = co.submitted
-        ? `<span class="badge bg-[#ECFDF5] text-[#059669]">Shared with both parties</span>`
-        : `<span class="badge bg-[#F1F5F9] text-[#64748B]">Draft · not submitted</span>`;
+        ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">Submitted · Both Parties</span>`
+        : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]">In Progress</span>`;
     return `
-    <div class="checkout-shared-pack stack-sm">
-        ${showVacate ? renderVacateNoticeSection(co, tenantId, { editable }) : ''}
-        <div class="card p-4 tnt-deposit-card">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-[11px] font-bold text-[#64748B] uppercase">Deposit status</p>
-                    <p class="text-[18px] font-bold text-[#0F172A] mt-1">${escapeHtml(co.depositAmount || '—')}</p>
-                    <p class="text-[12px] text-[#64748B] mt-1">${escapeHtml(co.depositScheme || 'Deposit scheme')} · ${co.depositStatus === 'protected' ? 'Protected' : 'Pending'}</p>
+    <div class="checkout-shared-pack space-y-3 text-left pb-10">
+        <!-- Deposit & Tenancy Header Strip -->
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
                 </div>
-                ${sharedBadge}
+                <div>
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Deposit Protection</span>
+                    <h4 class="text-[16px] font-extrabold text-[#0F172A] m-0">${escapeHtml(co.depositAmount || '£2,450')} <span class="text-[11px] font-medium text-[#059669]">· ${escapeHtml(co.depositScheme || 'MyDeposits')}</span></h4>
+                </div>
             </div>
-            <p class="text-[11px] text-[#64748B] mt-3">Check-out details are shared with landlord and tenant so both parties see the same information.</p>
+            ${sharedBadge}
         </div>
-        ${renderCheckoutCleaningSection(co, tenantId, { editable, landlordManage })}
-        <p class="section-title">Final meter readings</p>
-        <p class="form-helper mb-2">Landlord-registered meter location info is shown below. Each meter reading needs a picture uploaded.</p>
-        ${renderCheckoutMeterFields(co, { editable })}
-        ${editable ? `<button type="button" data-action="save-checkout-meters" class="btn-secondary w-full py-3 text-[13px]">Save meter readings</button>` : ''}
-        <p class="section-title">Keys to return</p>
-        ${renderCheckoutKeysSection(co, { editable })}
-        <p class="section-title">Final photos</p>
-        ${renderPhotoPreviewStrip(co.photos || [], { removable: editable, removeAction: 'remove-checkout-photo' }) || `<p class="text-[12px] text-[#64748B] mb-2">No final photos yet.</p>`}
-        ${editable ? `
-        <div class="grid grid-cols-2 gap-3">
-            <button type="button" data-action="upload-photo" class="btn-secondary py-3 text-[12px]">Upload photos</button>
-            <button type="button" data-action="upload-video" class="btn-secondary py-3 text-[12px]">Upload videos</button>
-        </div>` : ''}
-        ${co.submitted ? `<p class="form-helper text-center">Submitted ${escapeHtml(co.submittedAt || '')}</p>` : ''}
+
+        ${showVacate ? renderVacateNoticeSection(co, tenantId, { editable }) : ''}
+
+        <!-- Cleaning Section -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-[#2563EB]"></i>
+                    <h4 class="text-[13px] font-bold text-[#0F172A] m-0">End of Tenancy Cleaning</h4>
+                </div>
+            </div>
+            ${renderCheckoutCleaningSection(co, tenantId, { editable, landlordManage })}
+        </div>
+
+        <!-- Meter Readings -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="gauge" class="w-4 h-4 text-[#2563EB]"></i>
+                    <h4 class="text-[13px] font-bold text-[#0F172A] m-0">Final Meter Readings</h4>
+                </div>
+            </div>
+            ${renderCheckoutMeterFields(co, { editable })}
+            ${editable ? `<button type="button" data-action="save-checkout-meters" class="btn-secondary w-full py-2.5 text-[12px] font-bold rounded-xl mt-1">Save Meter Readings</button>` : ''}
+        </div>
+
+        <!-- Keys Return -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="key-round" class="w-4 h-4 text-[#2563EB]"></i>
+                    <h4 class="text-[13px] font-bold text-[#0F172A] m-0">Key Sets &amp; Fobs Return</h4>
+                </div>
+            </div>
+            ${renderCheckoutKeysSection(co, { editable })}
+        </div>
+
+        <!-- Final Inspection Photos -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="camera" class="w-4 h-4 text-[#2563EB]"></i>
+                    <h4 class="text-[13px] font-bold text-[#0F172A] m-0">Final Condition Photos</h4>
+                </div>
+            </div>
+            ${renderPhotoPreviewStrip(co.photos || [], { removable: editable, removeAction: 'remove-checkout-photo' }) || `<p class="text-[11px] text-[#94A3B8] m-0">Upload final room handover photos or video walkthroughs.</p>`}
+            ${editable ? `
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button type="button" data-action="upload-photo" class="btn-secondary py-2 px-3 text-[12px] font-bold rounded-xl flex items-center justify-center gap-1.5"><i data-lucide="image" class="w-3.5 h-3.5"></i>Add Photos</button>
+                <button type="button" data-action="upload-video" class="btn-secondary py-2 px-3 text-[12px] font-bold rounded-xl flex items-center justify-center gap-1.5"><i data-lucide="video" class="w-3.5 h-3.5"></i>Add Video</button>
+            </div>` : ''}
+        </div>
+
+        ${co.submitted ? `<p class="text-[11px] text-[#64748B] text-center font-medium mt-2">Submitted on ${escapeHtml(co.submittedAt || '')}</p>` : ''}
     </div>`;
 }
 
@@ -9523,6 +9770,14 @@ function renderPropertyRecordsHub(propertyId) {
             icon: 'clipboard-list',
             badge: `${pastInspections.length} Reports`,
             badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
+        },
+        {
+            route: 'property-house-rules',
+            title: 'House Rules & Policies',
+            sub: 'Noise, pets, guests, recycling & communal guidelines',
+            icon: 'book-open',
+            badge: `${(getPropertyHouseRules(propertyId) || []).length} Rules Set`,
+            badgeClass: 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]',
         },
     ];
 
@@ -19552,6 +19807,7 @@ Object.assign(SCREEN_MAP, {
     'property-flat-documents': screenPropertyFlatDocuments,
     'property-inspections': screenPropertyInspections,
     'property-inventory': screenPropertyInventory,
+    'property-house-rules': screenPropertyHouseRules,
     'edit-tenancy-deposit': screenEditTenancyDeposit,
     'unit-utilities': screenUnitUtilities,
     'edit-flat': screenEditFlat,
@@ -20131,8 +20387,137 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="add-inventory-item"]').forEach(el => {
         el.onclick = () => addInventoryEditItem('');
     });
+    app.querySelectorAll('[data-action="add-preset-inventory-item"]').forEach(el => {
+        el.onclick = () => {
+            const preset = el.dataset.preset;
+            if (preset) addInventoryEditItem(preset);
+        };
+    });
     app.querySelectorAll('[data-action="remove-inventory-item"]').forEach(el => {
         el.onclick = () => removeInventoryEditItem(+el.dataset.itemIdx);
+    });
+    app.querySelectorAll('[data-action="inline-add-inventory-item"]').forEach(el => {
+        el.onclick = () => {
+            const input = document.getElementById('inlineInvItemInput');
+            const val = input ? input.value.trim() : '';
+            if (!val) {
+                toast('Please enter item name');
+                if (input) input.focus();
+                return;
+            }
+            const pid = STATE.propertyId ?? 0;
+            const rid = STATE.roomId ?? 0;
+            const key = inventoryKey(pid, rid);
+            if (!AppStore.inventory[key]) AppStore.inventory[key] = { items: [], notes: '', photos: [], sizeSqft: '' };
+            if (!Array.isArray(AppStore.inventory[key].items)) AppStore.inventory[key].items = [];
+            AppStore.inventory[key].items.push(val);
+            AppStore.save();
+            toast(`Added "${val}" to room`);
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="inline-remove-inventory-item"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.itemIdx;
+            const pid = STATE.propertyId ?? 0;
+            const rid = STATE.roomId ?? 0;
+            const key = inventoryKey(pid, rid);
+            if (AppStore.inventory[key]?.items && AppStore.inventory[key].items[idx] !== undefined) {
+                const removed = inventoryItemName(AppStore.inventory[key].items[idx]);
+                AppStore.inventory[key].items.splice(idx, 1);
+                AppStore.save();
+                toast(`Removed "${removed}"`);
+                render();
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="add-inventory-room"]').forEach(el => {
+        el.onclick = () => {
+            const name = prompt('Enter new room or area name (e.g. Balcony, Garden, Dining Room, Ensuite 2):');
+            if (!name || !name.trim()) return;
+            const pid = STATE.propertyId ?? 0;
+            const layout = getPropertyInventoryLayout(pid);
+            const norm = name.trim().toLowerCase();
+            if (norm.includes('bed')) layout.bedrooms = (layout.bedrooms || 1) + 1;
+            else if (norm.includes('bath') || norm.includes('ensuite') || norm.includes('toilet')) layout.bathrooms = (layout.bathrooms || 1) + 1;
+            else if (norm.includes('kitchen')) layout.kitchens = (layout.kitchens || 1) + 1;
+            else layout.reception = (layout.reception || 1) + 1;
+            AppStore.meta(pid).inventoryLayout = layout;
+            AppStore.save();
+            toast(`Room "${name.trim()}" added to inventory`);
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="add-preset-house-rule"]').forEach(el => {
+        el.onclick = () => {
+            const rule = el.dataset.rule;
+            if (!rule) return;
+            const pid = STATE.propertyId ?? 0;
+            const meta = AppStore.meta(pid);
+            if (!meta.houseRules) meta.houseRules = [...getPropertyHouseRules(pid)];
+            if (!meta.houseRules.includes(rule)) {
+                meta.houseRules.push(rule);
+                TENANT_HOUSE_RULES[pid] = meta.houseRules;
+                AppStore.save();
+                toast('Rule added to list');
+                render();
+            } else {
+                toast('Rule is already in your list');
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="add-custom-house-rule"]').forEach(el => {
+        el.onclick = () => {
+            const input = document.getElementById('newHouseRuleInput');
+            const val = input ? input.value.trim() : '';
+            if (!val) {
+                toast('Please enter a house rule description');
+                if (input) input.focus();
+                return;
+            }
+            const pid = STATE.propertyId ?? 0;
+            const meta = AppStore.meta(pid);
+            if (!meta.houseRules) meta.houseRules = [...getPropertyHouseRules(pid)];
+            meta.houseRules.push(val);
+            TENANT_HOUSE_RULES[pid] = meta.houseRules;
+            AppStore.save();
+            toast('Custom rule added');
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="remove-house-rule"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.ruleIdx;
+            const pid = STATE.propertyId ?? 0;
+            const meta = AppStore.meta(pid);
+            if (!meta.houseRules) meta.houseRules = [...getPropertyHouseRules(pid)];
+            if (meta.houseRules[idx] !== undefined) {
+                meta.houseRules.splice(idx, 1);
+                TENANT_HOUSE_RULES[pid] = meta.houseRules;
+                AppStore.save();
+                toast('Rule removed');
+                render();
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="save-house-rules"]').forEach(el => {
+        el.onclick = () => {
+            const pid = STATE.propertyId ?? 0;
+            const meta = AppStore.meta(pid);
+            const inputs = app.querySelectorAll('[data-house-rule-input]');
+            const updated = [];
+            inputs.forEach(inp => {
+                const val = inp.value.trim();
+                if (val) updated.push(val);
+            });
+            meta.houseRules = updated;
+            TENANT_HOUSE_RULES[pid] = updated;
+            withLoading(() => {
+                AppStore.save();
+                toast('House rules saved and broadcasted to all tenants');
+                go('property-detail', { propertyId: pid, tab: 'records' });
+            });
+        };
     });
     app.querySelectorAll('[data-action="delete-property"]').forEach(el => { el.onclick = deleteProperty; });
     app.querySelectorAll('[data-action="delete-broadcast"]').forEach(el => { el.onclick = deleteBroadcast; });
