@@ -463,7 +463,8 @@ function docTypeForFolder(folderId) {
 }
 
 function getRecordsDocumentUploadOptions() {
-    const folderOpts = DOC_FOLDER_DEFS.map(f => ({
+    const propertyFolders = DOC_FOLDER_DEFS.filter(f => f.id !== 'deposit');
+    const folderOpts = propertyFolders.map(f => ({
         type: docTypeForFolder(f.id),
         label: f.label,
         icon: f.icon,
@@ -471,13 +472,8 @@ function getRecordsDocumentUploadOptions() {
         bg: f.bg,
         folderId: f.id,
     }));
-    const extras = [
-        { type: 'Property Licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', folderId: 'licence' },
-        { type: 'Deposit Photo', label: 'Deposit photo', icon: 'camera', color: '#059669', bg: '#DCFCE7' },
-        { type: 'Deposit Certificate', label: 'Deposit protection', icon: 'shield', color: '#059669', bg: '#DCFCE7' },
-    ];
     const seen = new Set();
-    return [...folderOpts, ...extras].filter(o => {
+    return folderOpts.filter(o => {
         const key = `${o.type}|${o.folderId || ''}`;
         if (seen.has(key)) return false;
         seen.add(key);

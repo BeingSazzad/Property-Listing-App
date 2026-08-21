@@ -9917,22 +9917,6 @@ function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, c
     <div class="flat-dt-tab-panel flat-dt-tab-panel--overview space-y-4">
         ${renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
         ${renderFlatOverviewTenantsList(propertyId, unit, peopleCtx)}
-        
-        <!-- Live Monthly Rent Ledger -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="font-bold text-[14px] text-[#0F172A] m-0">Monthly Rent Ledger</h3>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Chronological payment history</p>
-                </div>
-                <button type="button" data-go="mark-rent-received" data-pid="${propertyId}" data-unit="${unit}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1">
-                    <i data-lucide="circle-plus" class="w-3.5 h-3.5"></i>
-                    <span>Record Rent</span>
-                </button>
-            </div>
-            ${typeof renderUnitRentHistory === 'function' ? renderUnitRentHistory(propertyId, unit) : ''}
-        </div>
-
         ${typeof renderFlatRoomSizesSection === 'function' ? renderFlatRoomSizesSection(propertyId, unit) : ''}
     </div>`;
 }
