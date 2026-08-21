@@ -2089,7 +2089,7 @@ function screenTenantIssues() {
         <div class="dash-section-head">
             <div>
                 <h3 class="screen-section-title">Your requests</h3>
-                <p class="dash-section-sub">${openCount} open · track status with your landlord</p>
+                <p class="dash-section-sub">${openCount} open request${openCount === 1 ? '' : 's'}</p>
             </div>
             ${issues.length ? `<button type="button" data-go="log-maintenance" class="dash-view-all">Report issue</button>` : ''}
         </div>
