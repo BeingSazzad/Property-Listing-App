@@ -643,15 +643,35 @@ function renderPropertyDocumentsTabProduct(propertyId) {
 }
 
 function renderTenantDocFolderBrowser(tenantId) {
-    const docs = typeof getTenantDocuments === 'function' ? getTenantDocuments(tenantId) : [];
+    const rawDocs = typeof getTenantDocuments === 'function' ? getTenantDocuments(tenantId) : [];
+    const tenant = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST[tenantId] : null) || (typeof getActiveTenant === 'function' ? getActiveTenant() : null);
+    const pid = tenant?.propertyId ?? 0;
+    
+    // Also include shared building/property certificates for this tenant's property
+    const propDocs = (typeof AppStore !== 'undefined' && AppStore.documents ? AppStore.documents : [])
+        .filter(d => d.propertyId === pid && (d.shared !== false || d.uploadedByRole === 'contractor'));
+
+    const propDocTuples = propDocs.map(d => ['file-text', d.name, d.date || 'On file', '#2563EB']);
+    const allDocs = [...rawDocs, ...propDocTuples];
+    
+    // Deduplicate by filename
+    const seenNames = new Set();
+    const uniqueDocs = allDocs.filter(d => {
+        const name = d[1] || '';
+        if (seenNames.has(name)) return false;
+        seenNames.add(name);
+        return true;
+    });
+
     const contextKey = `tenant-${tenantId}`;
     const q = (STATE.docSearch?.[contextKey] || '').toLowerCase();
     if (!STATE.docFolderOpen) STATE.docFolderOpen = {};
-    const mapped = docs.map((d, i) => ({
+    const mapped = uniqueDocs.map((d, i) => ({
         id: `t-${tenantId}-${i}`, name: d[1], date: d[2], type: 'tenant', folderId: tenantDocFolderFromName(d[1]),
     })).filter(d => !q || d.name.toLowerCase().includes(q));
+
     const folders = DOC_FOLDER_DEFS.map(folder => {
-        const files = mapped.filter(d => d.folderId === folder.id || (folder.id === 'other' && !DOC_FOLDER_DEFS.slice(0, -1).some(f => f.id === d.folderId)));
+        const files = mapped.filter(d => d.folderId === folder.id || (folder.id === 'custom' && !DOC_FOLDER_DEFS.slice(0, -1).some(f => f.id === d.folderId)));
         if (!files.length) return null;
         const open = STATE.docFolderOpen[`${contextKey}-${folder.id}`] !== false;
         return `
@@ -665,12 +685,13 @@ function renderTenantDocFolderBrowser(tenantId) {
                 <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5 text-[#94A3B8]"></i>
             </button>
             ${open ? `<div class="doc-folder-body doc-list">${files.map(f => `
-            <button type="button" data-action="toast" data-msg="Opening ${f.name}" class="doc-row w-full text-left">
+            <button type="button" data-action="toast" data-msg="Opening ${escapeHtml(f.name)}" class="doc-row w-full text-left">
                 <span class="doc-row-icon" style="color:${folder.color};background:${folder.bg}"><i data-lucide="file-text" class="w-4 h-4"></i></span>
-                <span class="doc-row-text min-w-0"><p class="doc-row-name">${f.name}</p><p class="doc-row-sub">${f.date}</p></span>
+                <span class="doc-row-text min-w-0"><p class="doc-row-name">${escapeHtml(f.name)}</p><p class="doc-row-sub">${escapeHtml(f.date)}</p></span>
             </button>`).join('')}</div>` : ''}
         </div>`;
     }).filter(Boolean);
+
     return `
     ${renderDocFolderToolbar(contextKey)}
     <div class="doc-folder-list stack-sm">${folders.length ? folders.join('') : `<div class="card p-8 text-center text-[13px] text-[#64748B]">No documents shared yet.</div>`}</div>`;

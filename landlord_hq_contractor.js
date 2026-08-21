@@ -741,8 +741,122 @@ function saveContractorCertUpload() {
     }
     saveContractorCertificates();
     STATE.contractorCertUpload = null;
-    toast(upload.replaceId != null ? 'Certificate replaced' : 'Certificate uploaded');
+    toast(upload.replaceId != null ? 'Certificate replaced & synced' : 'Certificate uploaded & synced to Landlord & Tenants');
     render();
+}
+
+function autoFileContractorCertToLandlord(job, cert) {
+    if (!job || !cert) return;
+    const pid = (job.propertyId != null && job.propertyId >= 0)
+        ? job.propertyId
+        : (typeof PROPERTIES !== 'undefined' && job.property ? PROPERTIES.findIndex(p => p.name === job.property || job.property.includes(p.name)) : 0);
+    const validPid = pid >= 0 ? pid : 0;
+    
+    // Map contractor cert type to landlord document folder & compliance cert index
+    let folderId = 'custom';
+    let docType = 'Custom Document';
+    let complianceIdx = null;
+
+    const lower = `${cert.type || ''} ${cert.name || ''}`.toLowerCase();
+    if (lower.includes('gas')) {
+        folderId = 'gas';
+        docType = 'Gas Certificate';
+        complianceIdx = 0;
+    } else if (lower.includes('electric') || lower.includes('eicr')) {
+        folderId = 'eicr';
+        docType = 'Electrical Certificate';
+        complianceIdx = 1;
+    } else if (lower.includes('epc') || lower.includes('energy')) {
+        folderId = 'epc';
+        docType = 'EPC Certificate';
+        complianceIdx = 5;
+    } else if (lower.includes('fire') || lower.includes('smoke')) {
+        folderId = 'fire';
+        docType = 'Custom Document';
+        complianceIdx = 2;
+    } else if (lower.includes('insurance') || lower.includes('liability')) {
+        folderId = 'insurance';
+        docType = 'Custom Document';
+        complianceIdx = 3;
+    } else if (lower.includes('licence') || lower.includes('license') || lower.includes('hmo')) {
+        folderId = 'licence';
+        docType = 'Property Licence';
+        complianceIdx = 4;
+    }
+
+    if (typeof AppStore !== 'undefined') {
+        if (!AppStore.documents) AppStore.documents = [];
+        const docId = AppStore.nextId(AppStore.documents);
+        const newDoc = {
+            id: docId,
+            propertyId: validPid,
+            type: docType,
+            folderId,
+            name: cert.name || cert.fileName || `${docType}.pdf`,
+            date: typeof formatDocUploadDate === 'function' ? formatDocUploadDate() : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+            uploadedAt: Date.now(),
+            shared: true,
+            userUpload: true,
+            fileUrl: cert.fileUrl || 'assets/sample_cert.pdf',
+            mime: cert.mime || 'application/pdf',
+            uploadedByRole: 'contractor',
+            contractorName: (typeof CONTRACTOR_USER !== 'undefined' && CONTRACTOR_USER.company) ? CONTRACTOR_USER.company : 'Contractor',
+            expiryDate: cert.validUntil || '2027-10-15',
+        };
+        AppStore.documents.push(newDoc);
+
+        // Update compliance status so Property Compliance immediately shows Valid
+        if (complianceIdx != null) {
+            if (!AppStore.complianceCerts) AppStore.complianceCerts = {};
+            const certKey = `${validPid}-${complianceIdx}`;
+            AppStore.complianceCerts[certKey] = {
+                expiryDate: cert.validUntil || '2027-10-15',
+                issuedBy: (typeof CONTRACTOR_USER !== 'undefined' && CONTRACTOR_USER.company) ? CONTRACTOR_USER.company : 'Contractor',
+                certNumber: `CERT-${Date.now().toString().slice(-6)}`,
+                file: cert.fileName || cert.name,
+                status: 'Valid',
+            };
+        }
+
+        // Auto-sync to all active tenants in this property
+        const propTenants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t => t.propertyId === validPid);
+        propTenants.forEach(t => {
+            if (!AppStore.tenantDocuments) AppStore.tenantDocuments = {};
+            if (!AppStore.tenantDocuments[t.id]) AppStore.tenantDocuments[t.id] = [];
+            if (!AppStore.tenantDocuments[t.id].some(d => d[1] === newDoc.name)) {
+                AppStore.tenantDocuments[t.id].push(['file-text', newDoc.name, 'Just now', '#2563EB']);
+            }
+            
+            if (typeof pushNotification === 'function') {
+                pushNotification({
+                    icon: 'file-text',
+                    color: ['#EFF6FF', '#2563EB'],
+                    title: 'New compliance certificate uploaded',
+                    desc: `${newDoc.name} · ${typeof PROPERTIES !== 'undefined' && PROPERTIES[validPid]?.name ? PROPERTIES[validPid].name : 'Property'}`,
+                    time: 'Just now',
+                    unread: true,
+                    screen: 'tenant-documents',
+                    opts: { tid: t.id },
+                });
+            }
+        });
+
+        // Push notification to Landlord
+        if (typeof pushNotification === 'function') {
+            pushNotification({
+                icon: 'check-circle-2',
+                color: ['#ECFDF5', '#059669'],
+                title: 'Certificate auto-synced by contractor',
+                desc: `${newDoc.name} filed to ${typeof PROPERTIES !== 'undefined' && PROPERTIES[validPid]?.name ? PROPERTIES[validPid].name : 'Property'}`,
+                time: 'Just now',
+                unread: true,
+                screen: 'property-compliance',
+                opts: { propertyId: validPid },
+            });
+        }
+
+        if (typeof AppStore.save === 'function') AppStore.save();
+    }
 }
 
 function deleteContractorCert(certId) {
