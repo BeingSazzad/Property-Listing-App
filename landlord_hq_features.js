@@ -8993,27 +8993,32 @@ function screenPropertyInventory() {
 function screenPropertyFlatDocuments() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId];
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
     const units = getPropertyUnits(propertyId);
     const allDocs = AppStore.docsForProperty(propertyId);
+    const unitWordSingle = isHmo ? 'room' : 'flat';
+    const unitWordCapSingle = isHmo ? 'Room' : 'Flat';
+    const unitWordCapPlural = isHmo ? 'Rooms' : 'Units';
 
     const rows = units.map(u => {
         const name = unitName(u);
         const count = allDocs.filter(d => d.unit === name).length;
         const roster = typeof getFlatMemberRoster === 'function' ? getFlatMemberRoster(propertyId, name) : { members: [], tenancy: null };
-        const leadTenant = roster.members?.[0]?.name || (roster.tenancy?.leadTenant) || 'Occupied';
-        const rent = roster.tenancy?.rent ? `£${roster.tenancy.rent}/mo` : '';
+        const leadTenant = roster.members?.[0]?.name || (roster.tenancy?.leadName) || (u.status === 'occupied' ? 'Occupied' : 'Vacant');
+        const rent = roster.tenancy?.rent ? `£${roster.tenancy.rent}/mo` : (u.rent ? `${u.rent}/mo` : '');
         const docCount = count || 2;
+        const activeLease = u.status === 'occupied';
         
         return `
         <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${escapeHtml(name)}" data-flat-tab="records" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all w-full text-left flex items-center justify-between gap-3.5 group cursor-pointer">
             <div class="flex items-center gap-3.5 min-w-0">
                 <div class="w-11 h-11 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <i data-lucide="${isHmo ? 'door-closed' : 'home'}" class="w-5 h-5"></i>
                 </div>
                 <div class="min-w-0">
                     <div class="flex items-center gap-2 mb-0.5">
                         <h4 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${escapeHtml(name)}</h4>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] shrink-0">Active Lease</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${activeLease ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#F1F5F9] text-[#64748B]'} shrink-0">${activeLease ? 'Active Lease' : 'Vacant'}</span>
                     </div>
                     <p class="text-[12px] font-medium text-[#64748B] m-0 truncate">${escapeHtml(leadTenant)}${rent ? ` · ${rent}` : ''}</p>
                 </div>
@@ -9030,12 +9035,12 @@ function screenPropertyFlatDocuments() {
 
     const totalDocs = units.length * 2 + allDocs.length;
 
-    return `${topBar('Flat Documents', { back: true, sub: p?.name || '' })}
+    return `${topBar(`${unitWordCapSingle} Documents`, { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm space-y-4 text-left pb-6">
         <!-- Quick KPI Banner -->
         <div class="grid grid-cols-2 gap-2.5">
             <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-center">
-                <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Total Units</span>
+                <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Total ${unitWordCapPlural}</span>
                 <span class="block text-[17px] font-bold text-[#0F172A] mt-0.5">${units.length}</span>
             </div>
             <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-center">
@@ -9046,15 +9051,15 @@ function screenPropertyFlatDocuments() {
 
         <div class="space-y-2.5">
             <div class="flex items-center justify-between px-1">
-                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Unit Document Folders (${units.length})</span>
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${unitWordCapSingle} Document Folders (${units.length})</span>
                 <span class="text-[11px] text-[#64748B]">Tap to view files & tenancy</span>
             </div>
             ${rows ? `<div class="space-y-2.5">${rows}</div>` : `
             <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
-                <i data-lucide="home" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
-                <p class="text-[14px] font-bold text-[#0F172A] m-0">No units added yet</p>
-                <p class="text-[12px] text-[#64748B] mt-1 m-0">Add a unit first, then manage tenancy files per flat.</p>
-                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="w-full py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] shadow-sm hover:bg-[#1D4ED8] transition-all mt-4 cursor-pointer">+ Add Unit</button>
+                <i data-lucide="${isHmo ? 'door-closed' : 'home'}" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
+                <p class="text-[14px] font-bold text-[#0F172A] m-0">No ${isHmo ? 'rooms' : 'units'} added yet</p>
+                <p class="text-[12px] text-[#64748B] mt-1 m-0">Add a ${unitWordSingle} first, then manage tenancy files per ${unitWordSingle}.</p>
+                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="w-full py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] shadow-sm hover:bg-[#1D4ED8] transition-all mt-4 cursor-pointer">+ Add ${unitWordCapSingle}</button>
             </div>`}
         </div>
     </div>`;
