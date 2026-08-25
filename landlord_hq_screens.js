@@ -2309,7 +2309,7 @@ function navigateBackFallback() {
         'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
         'property-appliance-records': 'property-detail',
         'property-utilities': 'property-detail', 'property-parking': 'property-detail',
-        'property-info': 'property-detail', 'unit-utilities': 'property-detail',
+        'property-info': 'property-detail', 'unit-utilities': 'flat-detail',
         'property-compliance': 'property-detail', 'property-doc-vault': 'property-detail',
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
         'edit-tenancy-deposit': 'tenancy-detail',
@@ -2346,7 +2346,7 @@ function navigateBackFallback() {
     const tabMap = {
         'inventory-room': 'inventory',
         'edit-property': 'info', 'add-flat': 'units', 'invite-tenant': 'tenant',
-        'flat-detail': 'units', 'flat-members': 'units', 'flat-rent-history': 'units', 'tenancy-detail': 'units',
+        'flat-detail': 'units',
         'reschedule-inspection': 'inspection', 'renew-compliance': 'compliance',
         'contractor-work': 'work', 'contractor-documents': 'invoice',
         'create-tenancy': 'tenant', 'tenant-invite-sent': 'tenant',
@@ -2354,7 +2354,7 @@ function navigateBackFallback() {
         'inspection-detail': 'inspection',
         'property-photos': 'info', 'property-floor-plans': 'info', 'property-alarms': 'info', 'property-appliances': 'info',
         'property-utilities': 'info', 'property-parking': 'info', 'property-info': 'info',
-        'unit-utilities': 'units', 'edit-flat': 'units', 'flat-keys': 'units',
+        'edit-flat': 'units',
     };
     if (STATE.screen === 'edit-reminder') {
         navigateBackFromEditReminder();
@@ -2392,8 +2392,9 @@ function navigateBackFallback() {
     if (STATE.screen === 'edit-preference') opts.prefKey = STATE.prefKey;
     if (['edit-payment-method'].includes(STATE.screen)) opts.paymentId = STATE.paymentId;
     if (STATE.screen === 'assign-contractor') opts.maintId = STATE.maintId;
-    if (STATE.screen === 'flat-detail' || STATE.screen === 'flat-members' || STATE.screen === 'tenancy-detail' || STATE.screen === 'edit-flat' || STATE.screen === 'flat-rent-history' || STATE.screen === 'flat-keys') {
+    if (['flat-detail', 'flat-members', 'tenancy-detail', 'edit-flat', 'flat-rent-history', 'flat-keys', 'unit-utilities'].includes(STATE.screen)) {
         opts.unit = STATE.selectedUnit;
+        opts.propertyId = STATE.propertyId;
     }
     if (STATE.screen === 'invite-tenant' || STATE.screen === 'tenant-invite-sent') {
         const ret = STATE.inviteReturn;
@@ -2432,6 +2433,12 @@ function navigateBackFallback() {
 }
 
 function back() {
+    if (STATE.screen === 'invite-tenant') {
+        if (typeof retreatInviteWizard === 'function' && (STATE.inviteStep || 1) > 1) {
+            retreatInviteWizard();
+            return;
+        }
+    }
     if (STATE.screen === 'property-detail') {
         if (typeof isPropertyRecordsSection === 'function' && isPropertyRecordsSection(STATE.tab)) {
             setTab('records');

@@ -19981,7 +19981,7 @@ const FEATURE_BACK_MAP = {
     'property-inspections': 'property-detail',
     'property-inventory': 'property-detail',
     'edit-tenancy-deposit': 'tenancy-detail',
-    'unit-utilities': 'property-detail',
+    'unit-utilities': 'flat-detail',
     'edit-flat': 'flat-detail',
     'add-flat': 'property-detail',
     'flat-detail': 'property-detail',
