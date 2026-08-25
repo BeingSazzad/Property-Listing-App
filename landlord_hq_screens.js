@@ -727,6 +727,8 @@ const TENANT_LIST = [
     { id: 4, propertyId: 0, chatId: 6, name: 'Priya Sharma', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.priya, status: 'active', rent: '£2,200/mo' },
     { id: 5, propertyId: 0, chatId: 7, name: 'James Chen', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.james, status: 'pending', rent: '£2,200/mo' },
     { id: 6, propertyId: 2, chatId: 5, name: 'Mark Davis', prop: '88 King Street', unit: 'Room 3', lease: 'Feb 2025 – Jan 2027', leaseEnd: 'Jan 2027', img: IMG.avatar.david, status: 'active', rent: '£680/mo' },
+    { id: 7, propertyId: 1, chatId: 2, name: 'David Chen', prop: '45 Queens Road', unit: 'Flat 1B', lease: 'Nov 2023 – Oct 2026', leaseEnd: 'Oct 2026', img: IMG.avatar.james, status: 'active', rent: '£1,750/mo' },
+    { id: 8, propertyId: 3, chatId: 4, name: 'Michael Lee', prop: '15 Victoria Ave', unit: 'Flat 2B', lease: 'May 2024 – Apr 2027', leaseEnd: 'Apr 2027', img: IMG.avatar.michael, status: 'active', rent: '£1,850/mo' },
 ];
 
 const TENANT_MENU = [
@@ -751,6 +753,8 @@ const TENANTS = [
     { id:4, propertyId:0, firstName:'Priya', lastName:'Sharma', email:'priya.sh@email.com', phone:'+44 7700 900501', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'3849201756', nidProof:'NID Proof.jpg', dob:'1993-08-14', rent:'2200', deposit:'£2,200', advancePaid:'£2,200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Raj Sharma', emergencyPhone:'+44 7700 900502' },
     { id:5, propertyId:0, firstName:'James', lastName:'Chen', email:'james.chen@email.com', phone:'+44 7700 900503', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'5928173046', nidProof:'Passport_James_Chen.pdf', dob:'1994-02-03', rent:'2200', deposit:'£2,200', advancePaid:'£2,200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Mei Chen', emergencyPhone:'+44 7700 900793' },
     { id:6, propertyId:2, firstName:'Mark', lastName:'Davis', email:'mark.d@email.com', phone:'+44 7700 900508', prop:'88 King Street', unit:'Room 3', idNumber:'8492017354', nidProof:'Passport_Mark_Davis.pdf', dob:'1991-09-12', rent:'680', deposit:'£680', advancePaid:'£680', moveIn:'2025-02-01', leaseEnd:'2027-01-31', emergency:'Sarah Davis', emergencyPhone:'+44 7700 900794' },
+    { id:7, propertyId:1, firstName:'David', lastName:'Chen', email:'david.c@email.com', phone:'+44 7700 900512', prop:'45 Queens Road', unit:'Flat 1B', idNumber:'4920183756', nidProof:'Passport_David_Chen.pdf', dob:'1989-05-20', rent:'1750', deposit:'£1,750', advancePaid:'£1,750', moveIn:'2023-11-01', leaseEnd:'2026-10-31', emergency:'Grace Chen', emergencyPhone:'+44 7700 900795' },
+    { id:8, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2B', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1850', deposit:'£1,850', advancePaid:'£1,850', moveIn:'2024-05-01', leaseEnd:'2027-04-30', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
 ];
 
 const COMPLIANCE_ITEMS = [
