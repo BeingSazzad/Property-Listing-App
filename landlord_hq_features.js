@@ -172,8 +172,13 @@ const AppStore = {
                     const tempStore = {};
                     this.seed.call(tempStore);
                     if (tempStore.propertyMeta?.[pid]) {
+                        if ((pid === 2 || tempStore.propertyMeta[pid].isHmo) && (!this.propertyMeta[pid].units || this.propertyMeta[pid].units.length < 4 || this.propertyMeta[pid].units.some(u => (u.name || u) === 'Main Flat'))) {
+                            this.propertyMeta[pid].units = tempStore.propertyMeta[pid].units;
+                            this.propertyMeta[pid].building = tempStore.propertyMeta[pid].building;
+                            this.propertyMeta[pid].isHmo = true;
+                        }
                         this.propertyMeta[pid] = Object.assign({}, tempStore.propertyMeta[pid], this.propertyMeta[pid]);
-                        ['alarms', 'appliances', 'unitKeys', 'utilities', 'parking', 'floorPlans', 'photos'].forEach(key => {
+                        ['alarms', 'appliances', 'unitKeys', 'utilities', 'parking', 'floorPlans', 'photos', 'units', 'building'].forEach(key => {
                             if (!this.propertyMeta[pid][key] && tempStore.propertyMeta[pid][key]) {
                                 this.propertyMeta[pid][key] = tempStore.propertyMeta[pid][key];
                             }
@@ -12175,6 +12180,24 @@ function generatePropertyUnits(floors, flatsPerFloor) {
 
 function normalizePropertyUnits(propertyId) {
     const meta = AppStore.meta(propertyId);
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : (meta?.isHmo || propertyId === 2);
+    if (propertyId === 2 || isHmo) {
+        meta.isHmo = true;
+        if (!meta.units?.length || meta.units.length < 4 || meta.units.some(u => (u.name || u) === 'Main Flat')) {
+            meta.units = [
+                { id: 0, name: 'Room 1', floor: 1, flatIndex: 1, status: 'occupied', rent: '£650', beds: 1, baths: 1, sqft: '220', furnished: 'Furnished' },
+                { id: 1, name: 'Room 2', floor: 1, flatIndex: 2, status: 'vacant', rent: '£550', beds: 1, baths: 1, sqft: '180', furnished: 'Furnished' },
+                { id: 2, name: 'Room 3', floor: 2, flatIndex: 1, status: 'occupied', rent: '£680', beds: 1, baths: 1, sqft: '240', furnished: 'Furnished' },
+                { id: 3, name: 'Room 4', floor: 2, flatIndex: 2, status: 'vacant', rent: '£580', beds: 1, baths: 1, sqft: '190', furnished: 'Furnished' },
+            ];
+            if (meta.building) {
+                meta.building.flatCount = 4;
+                meta.building.floors = 2;
+                meta.building.flatsPerFloor = 2;
+                meta.building.useFloors = true;
+            }
+        }
+    }
     const building = getPropertyBuilding(propertyId);
     if (!meta.units?.length) {
         const rent = PROPERTIES[propertyId]?.rent?.replace(/[^\d]/g, '') || '';
@@ -12194,8 +12217,8 @@ function normalizePropertyUnits(propertyId) {
         meta.units.forEach(u => {
             if (u.floor == null) u.floor = inferFloorFromFlatName(unitName(u));
             if (u.flatIndex == null) {
-                const m = unitName(u).match(/^Flat\s+\d+([A-Z])$/i);
-                u.flatIndex = m ? m[1].toUpperCase().charCodeAt(0) - 64 : 1;
+                const m = unitName(u).match(/^(?:Flat|Room)\s+\d+([A-Z])?$/i);
+                u.flatIndex = m && m[1] ? m[1].toUpperCase().charCodeAt(0) - 64 : 1;
             }
         });
     }
