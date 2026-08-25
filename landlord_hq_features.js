@@ -277,21 +277,21 @@ const AppStore = {
             { id: 36, propertyId: 3, type: 'Custom Document', name: 'Landlord Comprehensive Insurance.pdf', date: 'Dec 2024', shared: false, signed: false },
         ];
         this.tenancies = [
-            { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active' },
-            { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', start: '2023-06-01', end: '2027-05-31', status: 'active' },
-            { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active' },
+            { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active', leadName: 'Sarah Johnson' },
+            { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', start: '2023-06-01', end: '2027-05-31', status: 'active', leadName: 'David Wilson' },
+            { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active', leadName: 'Michael Lee' },
             { id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
                 { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
                 { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
                 { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
             ]},
-            { id: 4, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 1', rent: '£1,400', start: '2023-09-01', end: '2026-08-31', status: 'active' },
-            { id: 5, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 3', rent: '£1,650', start: '2024-02-01', end: '2027-01-31', status: 'active' },
-            { id: 6, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1B', rent: '£1,750', start: '2023-11-01', end: '2026-10-31', status: 'active' },
-            { id: 7, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 1', rent: '£1,700', start: '2024-04-01', end: '2027-03-31', status: 'active' },
-            { id: 8, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2B', rent: '£1,850', start: '2024-05-01', end: '2027-04-30', status: 'active' },
-            { id: 9, propertyId: 2, tenantId: 3, type: 'solo', unit: 'Room 1', rent: '£650', start: '2025-01-01', end: '2026-12-31', status: 'active' },
-            { id: 10, propertyId: 2, tenantId: 0, type: 'solo', unit: 'Room 3', rent: '£680', start: '2025-02-01', end: '2027-01-31', status: 'active' },
+            { id: 4, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 1', rent: '£1,400', start: '2023-09-01', end: '2026-08-31', status: 'active', leadName: 'Sarah Johnson' },
+            { id: 5, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 3', rent: '£1,650', start: '2024-02-01', end: '2027-01-31', status: 'active', leadName: 'Sarah Johnson' },
+            { id: 6, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1B', rent: '£1,750', start: '2023-11-01', end: '2026-10-31', status: 'active', leadName: 'David Chen' },
+            { id: 7, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 1', rent: '£1,700', start: '2024-04-01', end: '2027-03-31', status: 'active', leadName: 'Michael Lee' },
+            { id: 8, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2B', rent: '£1,850', start: '2024-05-01', end: '2027-04-30', status: 'active', leadName: 'Michael Lee' },
+            { id: 9, propertyId: 2, tenantId: 3, type: 'solo', unit: 'Room 1', rent: '£650', start: '2025-01-01', end: '2026-12-31', status: 'active', leadName: 'Emma Roberts' },
+            { id: 10, propertyId: 2, tenantId: 0, type: 'solo', unit: 'Room 3', rent: '£680', start: '2025-02-01', end: '2027-01-31', status: 'active', leadName: 'Mark Davis' },
         ];
         this.inspections = [
             { id: 0, propertyId: 0, type: 'Check-in', date: '2024-01-15', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(0, 3), notes: 'Property in excellent condition at move-in. Minor scuff on hallway skirting noted.', report: 'Check-in report.pdf' },
@@ -5187,11 +5187,19 @@ function toggleFloorGroup(propertyId, floor) {
     render();
 }
 
-function flatRowTenantLine(tenancy, members, occ) {
+function flatRowTenantLine(tenancy, members, occ, propertyId = STATE.propertyId, unitName = '') {
     if (!occ) return '';
     const lead = members?.find(m => m.isLead) || members?.[0];
     if (lead?.name) return lead.name;
-    return tenancy ? 'Occupied' : '';
+    if (tenancy?.leadName) return tenancy.leadName;
+    const tId = tenancy?.tenantId;
+    if (tId != null && typeof TENANTS !== 'undefined' && TENANTS[tId]) {
+        const t = TENANTS[tId];
+        if (t.firstName || t.lastName) return `${t.firstName || ''} ${t.lastName || ''}`.trim();
+    }
+    const listItem = typeof TENANT_LIST !== 'undefined' ? TENANT_LIST.find(x => x.propertyId === propertyId && x.unit === unitName && x.status === 'active') : null;
+    if (listItem?.name) return listItem.name;
+    return '';
 }
 
 function renderPropertyHubSummaryCard(propertyId) {
@@ -5626,7 +5634,7 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
     const tenancyClass = tenancy ? `unit-card-v2--${tenancy.type}` : (!occ ? 'unit-card-v2--vacant' : '');
     if (opts.hubList) {
         const spec = flatRowSpecLine(u);
-        const tenant = flatRowTenantLine(tenancy, members, occ);
+        const tenant = flatRowTenantLine(tenancy, members, occ, propertyId, name);
         const statusBadge = u.status === 'occupied'
             ? '<span class="unit-hub-badge unit-hub-badge--occupied">Occupied</span>'
             : u.status === 'reserved'
