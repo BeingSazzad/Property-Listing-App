@@ -2427,15 +2427,8 @@ function screenTenantActiveTenancy() {
     return `${topBar('Active tenancy', { back: true })}
     <div class="screen-content screen-enter stack-sm">
         ${typeof renderTenantLivingCard === 'function' && listItem ? renderTenantLivingCard(listItem) : ''}
-        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
-        ${typeof tenantFieldsCard === 'function' ? tenantFieldsCard([
-            ['Tenancy type', tenancy?.type === 'group' ? 'Group' : 'Solo'],
-            ['Monthly rent', fin?.rent || t?.rent || '—'],
-            ['Move-in', moveInLabel],
-            ['Lease ends', leaseEndLabel],
-            ['Property', p?.name || '—'],
-            ['Unit', t?.unit || '—'],
-        ]) : ''}
+        
+        <!-- Quick links (Moved to top) -->
         <div class="dash-section-head">
             <div>
                 <h3 class="screen-section-title">Quick links</h3>
@@ -2451,6 +2444,26 @@ function screenTenantActiveTenancy() {
             <button type="button" data-go="tenant-documents" class="btn-secondary py-3 text-[13px]">Documents</button>
             <button type="button" data-go="tenant-announcements" class="btn-secondary py-3 text-[13px]">Announcements</button>
         </div>
+
+        <!-- Deposit & Move-in Section -->
+        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
+
+        <!-- Lease Details -->
+        <div class="dash-section-head mt-1">
+            <div>
+                <h3 class="screen-section-title">Lease details</h3>
+                <p class="dash-section-sub">Unit &amp; tenancy terms</p>
+            </div>
+        </div>
+        ${typeof tenantFieldsCard === 'function' ? tenantFieldsCard([
+            ['Tenancy type', tenancy?.type === 'group' ? 'Group' : 'Solo'],
+            ['Monthly rent', fin?.rent || t?.rent || '—'],
+            ['Move-in', moveInLabel],
+            ['Lease ends', leaseEndLabel],
+            ['Property', p?.name || '—'],
+            ['Unit', t?.unit || '—'],
+        ]) : ''}
+
         ${typeof renderTenantAccountMembers === 'function' ? renderTenantAccountMembers(tid) : ''}
         ${typeof renderTenantAccountContractors === 'function' ? renderTenantAccountContractors(t) : ''}
     </div>`;

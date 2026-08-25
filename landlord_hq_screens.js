@@ -56,11 +56,38 @@ const IMG = {
 };
 
 const PROPERTIES = [
-    { id: 0, name: '12 Park Lane', address: 'London, SW1A 1AA', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£2,450', compliance: true },
-    { id: 1, name: '45 Queens Road', address: 'London, SW2 3TR', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,850', compliance: true },
-    { id: 2, name: '88 King Street', address: 'London, EC2V 8BB', status: 'Vacant', statusColor: ['#FEF3C7','#D97706'], rent: '£2,100', compliance: false },
-    { id: 3, name: '15 Victoria Ave', address: 'London, N1 5EH', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,950', compliance: true },
+    { id: 0, name: '12 Park Lane', address: 'London, SW1A 1AA', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£2,450', compliance: true, isHmo: false },
+    { id: 1, name: '45 Queens Road', address: 'London, SW2 3TR', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,850', compliance: true, isHmo: false },
+    { id: 2, name: '88 King Street', address: 'London, EC2V 8BB', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£2,460', compliance: true, isHmo: true },
+    { id: 3, name: '15 Victoria Ave', address: 'London, N1 5EH', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,950', compliance: true, isHmo: false },
 ];
+
+function isPropertyHmo(propertyId) {
+    if (propertyId == null) return false;
+    const p = typeof PROPERTIES !== 'undefined' ? PROPERTIES[propertyId] : null;
+    if (p && (p.isHmo || p.type === 'HMO')) return true;
+    if (typeof AppStore !== 'undefined' && AppStore.meta) {
+        const meta = AppStore.meta(propertyId);
+        if (meta && (meta.isHmo || meta.info?.isHmo || meta.info?.type === 'HMO')) return true;
+    }
+    return false;
+}
+
+function getUnitLabel(propertyId, plural = false) {
+    const isHmo = isPropertyHmo(propertyId);
+    if (isHmo) return plural ? 'Rooms' : 'Room';
+    return plural ? 'Units' : 'Unit';
+}
+
+function formatUnitDisplayName(name, propertyId) {
+    if (!name) return '';
+    const isHmo = isPropertyHmo(propertyId);
+    if (isHmo) {
+        if (/^Flat\s+/i.test(name)) return name.replace(/^Flat\s+/i, 'Room ');
+        if (/^Unit\s+/i.test(name)) return name.replace(/^Unit\s+/i, 'Room ');
+    }
+    return name;
+}
 
 const STATE = {
     screen: 'splash', tab: 'overview', tenantTab: 'overview', flatTab: 'overview',
@@ -696,9 +723,10 @@ const TENANT_LIST = [
     { id: 0, propertyId: 0, chatId: 0, name: 'Sarah Johnson', prop: '12 Park Lane', unit: 'Flat 2A', lease: 'Jan 2024 – Jan 2027', leaseEnd: 'Jan 2027', img: IMG.avatar.sarah, status: 'active', rent: '£2,450/mo' },
     { id: 1, propertyId: 1, chatId: 2, name: 'David Wilson', prop: '45 Queens Road', unit: 'Flat 1A', lease: 'Jun 2023 – Jun 2027', leaseEnd: 'Jun 2027', img: IMG.avatar.david, status: 'active', rent: '£1,850/mo' },
     { id: 2, propertyId: 3, chatId: 4, name: 'Michael Lee', prop: '15 Victoria Ave', unit: 'Flat 2A', lease: 'Mar 2024 – Mar 2027', leaseEnd: 'Mar 2027', img: IMG.avatar.michael, status: 'active', rent: '£1,950/mo' },
-    { id: 3, propertyId: 2, chatId: null, name: 'Emma Roberts', prop: '88 King Street', unit: 'Main Flat', lease: 'Ended Dec 2024', leaseEnd: 'Dec 2024', img: IMG.avatar.emma, status: 'inactive', rent: '—' },
+    { id: 3, propertyId: 2, chatId: 3, name: 'Emma Roberts', prop: '88 King Street', unit: 'Room 1', lease: 'Jan 2025 – Dec 2026', leaseEnd: 'Dec 2026', img: IMG.avatar.emma, status: 'active', rent: '£650/mo' },
     { id: 4, propertyId: 0, chatId: 6, name: 'Priya Sharma', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.priya, status: 'active', rent: '£2,200/mo' },
     { id: 5, propertyId: 0, chatId: 7, name: 'James Chen', prop: '12 Park Lane', unit: 'Flat 2B', lease: 'Jun 2024 – May 2027', leaseEnd: 'May 2027', img: IMG.avatar.james, status: 'pending', rent: '£2,200/mo' },
+    { id: 6, propertyId: 2, chatId: 5, name: 'Mark Davis', prop: '88 King Street', unit: 'Room 3', lease: 'Feb 2025 – Jan 2027', leaseEnd: 'Jan 2027', img: IMG.avatar.david, status: 'active', rent: '£680/mo' },
 ];
 
 const TENANT_MENU = [
@@ -719,9 +747,10 @@ const TENANTS = [
     { id:0, propertyId:0, firstName:'Sarah', lastName:'Johnson', email:'sarah.j@email.com', phone:'+44 7700 900456', prop:'12 Park Lane', unit:'Flat 2A', idNumber:'4859217360', nidProof:'NID Proof.jpg', dob:'1992-04-18', rent:'2450', deposit:'£2,450', advancePaid:'£2,450', moveIn:'2024-01-15', leaseEnd:'2027-01-14', emergency:'James Johnson', emergencyPhone:'+44 7700 900789' },
     { id:1, propertyId:1, firstName:'David', lastName:'Wilson', email:'david.w@email.com', phone:'+44 7700 900457', prop:'45 Queens Road', unit:'Flat 1A', idNumber:'7391045826', nidProof:'NID Proof.jpg', dob:'1988-11-02', rent:'1850', deposit:'£1,850', advancePaid:'£1,850', moveIn:'2023-06-01', leaseEnd:'2027-05-31', emergency:'Lisa Wilson', emergencyPhone:'+44 7700 900790' },
     { id:2, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2A', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1950', deposit:'£1,950', advancePaid:'£1,950', moveIn:'2024-03-10', leaseEnd:'2027-03-09', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
-    { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', unit:'Main Flat', idNumber:'9183746502', nidProof:'NID Proof.jpg', dob:'1995-01-22', rent:'2100', deposit:'£2,100', advancePaid:'£2,100', moveIn:'2022-01-01', leaseEnd:'2024-12-01', emergency:'Robert Roberts', emergencyPhone:'+44 7700 900792' },
+    { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', unit:'Room 1', idNumber:'9183746502', nidProof:'NID Proof.jpg', dob:'1995-01-22', rent:'650', deposit:'£650', advancePaid:'£650', moveIn:'2025-01-01', leaseEnd:'2026-12-31', emergency:'Robert Roberts', emergencyPhone:'+44 7700 900792' },
     { id:4, propertyId:0, firstName:'Priya', lastName:'Sharma', email:'priya.sh@email.com', phone:'+44 7700 900501', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'3849201756', nidProof:'NID Proof.jpg', dob:'1993-08-14', rent:'2200', deposit:'£2,200', advancePaid:'£2,200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Raj Sharma', emergencyPhone:'+44 7700 900502' },
     { id:5, propertyId:0, firstName:'James', lastName:'Chen', email:'james.chen@email.com', phone:'+44 7700 900503', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'5928173046', nidProof:'Passport_James_Chen.pdf', dob:'1994-02-03', rent:'2200', deposit:'£2,200', advancePaid:'£2,200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Mei Chen', emergencyPhone:'+44 7700 900793' },
+    { id:6, propertyId:2, firstName:'Mark', lastName:'Davis', email:'mark.d@email.com', phone:'+44 7700 900508', prop:'88 King Street', unit:'Room 3', idNumber:'8492017354', nidProof:'Passport_Mark_Davis.pdf', dob:'1991-09-12', rent:'680', deposit:'£680', advancePaid:'£680', moveIn:'2025-02-01', leaseEnd:'2027-01-31', emergency:'Sarah Davis', emergencyPhone:'+44 7700 900794' },
 ];
 
 const COMPLIANCE_ITEMS = [
@@ -3036,6 +3065,12 @@ const INVOICES = [
     { id: 12, num: 'INV-2026-1038', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 4, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1038' },
     { id: 13, num: 'INV-2026-1034', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 5, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1034' },
     { id: 14, num: 'INV-2026-1030', prop: '15 Victoria Ave, London N1 5EH', unit: 'Flat 2A', tenant: 'Michael Lee', tenantId: 2, propertyId: 3, amount: '£1,950', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 4, 2026', paymentMethod: 'Bank transfer', paymentReference: 'LH-INV-2026-1030' },
+
+    // 88 King Street - Room 1 & Room 3 (HMO)
+    { id: 120, num: 'INV-2026-1080', prop: '88 King Street, London EC2V 8BB', unit: 'Room 1', tenant: 'Emma Roberts', tenantId: 3, propertyId: 2, amount: '£650', status: 'Paid', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jul 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R1-JUL' },
+    { id: 121, num: 'INV-2026-1079', prop: '88 King Street, London EC2V 8BB', unit: 'Room 1', tenant: 'Emma Roberts', tenantId: 3, propertyId: 2, amount: '£650', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jun 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R1-JUN' },
+    { id: 122, num: 'INV-2026-1082', prop: '88 King Street, London EC2V 8BB', unit: 'Room 3', tenant: 'Mark Davis', tenantId: 6, propertyId: 2, amount: '£680', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly room rent' },
+    { id: 123, num: 'INV-2026-1081', prop: '88 King Street, London EC2V 8BB', unit: 'Room 3', tenant: 'Mark Davis', tenantId: 6, propertyId: 2, amount: '£680', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R3-JUN' },
 ];
 
 const invoiceStatusStyle = (status) => ({
@@ -3599,10 +3634,13 @@ function screenProperties() {
     const activeAdv = adv.rent !== 'all' || adv.beds !== 'any';
     const coverFor = (p) => typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(p.id) : IMG.props[p.id];
     const propCard = (p) => {
+        const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(p.id) : false;
         const badge = typeof propertyOccupancyBadge === 'function' ? propertyOccupancyBadge(p.id) : { label: p.status, bg: p.statusColor[0], color: p.statusColor[1] };
         const cardStats = typeof propertyCardStats === 'function' ? propertyCardStats(p.id) : { total: 0, monthlyRent: 0, occupancy: 0 };
         const monthlyRentLabel = cardStats.monthlyRent > 0 ? formatRentAmount(cardStats.monthlyRent) : '—';
-        const unitLabel = `${cardStats.total} unit${cardStats.total === 1 ? '' : 's'}`;
+        const unitWord = isHmo ? (cardStats.total === 1 ? 'room' : 'rooms') : (cardStats.total === 1 ? 'unit' : 'units');
+        const unitLabel = `${cardStats.total} ${unitWord}`;
+        const totalUnitsLabel = isHmo ? 'Total Rooms' : 'Total Units';
         const propertyMenuKey = `property:${p.id}`;
         const propertyMenuOpen = STATE.actionMenuKey === propertyMenuKey;
         return `
@@ -3628,7 +3666,7 @@ function screenProperties() {
                         </span>
                     </div>
                     <div class="prop-card-v2-stat">
-                        <span class="prop-card-v2-stat-label">Total Units</span>
+                        <span class="prop-card-v2-stat-label">${totalUnitsLabel}</span>
                         <span class="prop-card-v2-stat-value"><i data-lucide="building-2" class="w-3.5 h-3.5 text-[#94A3B8]"></i>${cardStats.total}</span>
                     </div>
                     <div class="prop-card-v2-stat">
@@ -4210,7 +4248,6 @@ function screenChat() {
             <button data-action="back" class="back-btn shrink-0"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
             ${headerInfo}
             <div class="chat-header-actions">
-                ${headerCallAction ? `<button type="button" data-action="${headerCallAction}" class="chat-header-action" aria-label="Call"><i data-lucide="phone" class="w-[18px] h-[18px]"></i></button>` : ''}
                 <button type="button" data-action="chat-options" class="chat-header-action" aria-label="Chat options"><i data-lucide="more-vertical" class="w-[18px] h-[18px]"></i></button>
             </div>
         </div>
@@ -5512,7 +5549,7 @@ function screenLogMaintenance() {
         <div class="form-group">
             <label class="form-label">Location</label>
             <div class="flex gap-2">
-                <button type="button" data-log-maint-scope="unit" class="tab-pill flex-1 ${scope === 'unit' ? 'active' : ''}">Unit</button>
+                <button type="button" data-log-maint-scope="unit" class="tab-pill flex-1 ${scope === 'unit' ? 'active' : ''}">${isPropertyHmo(pid ?? 0) ? 'Room' : 'Unit'}</button>
                 <button type="button" data-log-maint-scope="communal" class="tab-pill flex-1 ${scope === 'communal' ? 'active' : ''}">Communal</button>
             </div>
         </div>
@@ -5520,7 +5557,7 @@ function screenLogMaintenance() {
         <div class="form-group"><label class="form-label">Communal area <span class="form-required">*</span></label>
         <select data-field="communalArea" class="form-input form-select">${COMMUNAL_AREAS.map(area => `<option value="${area}" ${communalArea === area ? 'selected' : ''}>${area}</option>`).join('')}</select>
         ${STATE.formErrors?.communalArea ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${STATE.formErrors.communalArea}</p>` : ''}</div>`
-        : (typeof unitSelectHtml === 'function' ? `<div class="form-group"><label class="form-label">Unit <span class="form-required">*</span></label>${unitSelectHtml(pid ?? 0, 'unit', false, selectedUnit)}${STATE.formErrors?.unit ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${STATE.formErrors.unit}</p>` : ''}</div>` : '')}`;
+        : (typeof unitSelectHtml === 'function' ? `<div class="form-group"><label class="form-label">${isPropertyHmo(pid ?? 0) ? 'Room' : 'Unit'} <span class="form-required">*</span></label>${unitSelectHtml(pid ?? 0, 'unit', false, selectedUnit)}${STATE.formErrors?.unit ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${STATE.formErrors.unit}</p>` : ''}</div>` : '')}`;
     return `${topBar(isTenant ? 'Report Issue' : 'Log Issue', { back: !shouldShowBottomNav('log-maintenance') })}
     <div class="screen-content screen-content-sm screen-enter log-maint-page">
         ${propertyField}

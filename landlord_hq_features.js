@@ -290,6 +290,8 @@ const AppStore = {
             { id: 6, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1B', rent: '£1,750', start: '2023-11-01', end: '2026-10-31', status: 'active' },
             { id: 7, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 1', rent: '£1,700', start: '2024-04-01', end: '2027-03-31', status: 'active' },
             { id: 8, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2B', rent: '£1,850', start: '2024-05-01', end: '2027-04-30', status: 'active' },
+            { id: 9, propertyId: 2, tenantId: 3, type: 'solo', unit: 'Room 1', rent: '£650', start: '2025-01-01', end: '2026-12-31', status: 'active' },
+            { id: 10, propertyId: 2, tenantId: 0, type: 'solo', unit: 'Room 3', rent: '£680', start: '2025-02-01', end: '2027-01-31', status: 'active' },
         ];
         this.inspections = [
             { id: 0, propertyId: 0, type: 'Check-in', date: '2024-01-15', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(0, 3), notes: 'Property in excellent condition at move-in. Minor scuff on hallway skirting noted.', report: 'Check-in report.pdf' },
@@ -544,8 +546,10 @@ const AppStore = {
                 parking: { spaces: 2, type: 'On-street resident permit', permit: 'LAM-SW2-881', notes: 'Zone S resident parking permit required Mon-Fri 8:30am-6:30pm.' },
             },
             2: {
+                isHmo: true,
                 info: {
-                    type: 'Modern Luxury Apartments',
+                    type: 'Detached HMO House',
+                    isHmo: true,
                     built: '2021',
                     purchaseDate: '2021-04-10',
                     valuationAmount: '1950000',
@@ -556,32 +560,34 @@ const AppStore = {
                     insuranceExpiry: '2027-01-20',
                     councilTax: 'Band E',
                     postcode: 'EC2V 8BB',
-                    notes: 'New build luxury city residential development with high thermal efficiency, triple glazing, smart meters, concierge, and EV chargers.',
+                    notes: 'Licensed 4-bedroom professional HMO property with communal modern kitchen, dining lounge, high-speed Wi-Fi, and garden patio.',
                 },
-                building: { flatCount: 2, floors: 2, flatsPerFloor: 1, useFloors: true, yearBuilt: '2021' },
+                building: { flatCount: 4, floors: 2, flatsPerFloor: 2, useFloors: true, yearBuilt: '2021' },
                 units: [
-                    { id: 0, name: 'Unit 1', floor: 1, flatIndex: 1, status: 'vacant', rent: '£2,100', beds: 2, baths: 2, sqft: '900', furnished: 'Furnished' },
-                    { id: 1, name: 'Unit 2', floor: 2, flatIndex: 1, status: 'vacant', rent: '£2,300', beds: 3, baths: 2, sqft: '1100', furnished: 'Unfurnished' },
+                    { id: 0, name: 'Room 1', floor: 1, flatIndex: 1, status: 'occupied', rent: '£650', beds: 1, baths: 1, sqft: '220', furnished: 'Furnished' },
+                    { id: 1, name: 'Room 2', floor: 1, flatIndex: 2, status: 'vacant', rent: '£550', beds: 1, baths: 1, sqft: '180', furnished: 'Furnished' },
+                    { id: 2, name: 'Room 3', floor: 2, flatIndex: 1, status: 'occupied', rent: '£680', beds: 1, baths: 1, sqft: '240', furnished: 'Furnished' },
+                    { id: 3, name: 'Room 4', floor: 2, flatIndex: 2, status: 'vacant', rent: '£580', beds: 1, baths: 1, sqft: '190', furnished: 'Furnished' },
                 ],
                 photos: [IMG.props[2], IMG.interior[1], IMG.interior[2]],
                 floorPlans: [IMG.interior[0]],
                 alarms: {
-                    smoke: { expiry: '2031-01-15', location: 'Hallway & Living Room', reminderTiming: '30', reminderDate: '2030-12-16' },
-                    heat: { expiry: '2031-01-15', location: 'Kitchen', reminderTiming: '30', reminderDate: '2030-12-16' },
-                    co: { expiry: '2031-01-15', location: 'Utility room', reminderTiming: '30', reminderDate: '2030-12-16' },
+                    smoke: { expiry: '2031-01-15', location: 'Hallway & Communal Lounge (Interlinked)', reminderTiming: '30', reminderDate: '2030-12-16' },
+                    heat: { expiry: '2031-01-15', location: 'Shared Kitchen', reminderTiming: '30', reminderDate: '2030-12-16' },
+                    co: { expiry: '2031-01-15', location: 'Utility & Plant room', reminderTiming: '30', reminderDate: '2030-12-16' },
                 },
                 appliances: [
                     { name: 'Boiler & Heat Pump', brand: 'Daikin Altherma Hybrid', warranty: 'Until 2031', description: 'Smart eco hybrid heat pump system' },
-                    { name: 'Kitchen Suite', brand: 'Miele Induction & Pyrolytic Oven', warranty: 'Miele 5-year gold', description: 'Touch screen smart kitchen suite' },
-                    { name: 'Wine Cooler', brand: 'Caple Dual Zone', warranty: 'Active', description: 'Integrated 46-bottle dual temp wine cooler' },
+                    { name: 'Kitchen Suite', brand: 'Miele Induction & Double Oven', warranty: 'Miele 5-year gold', description: 'Commercial-grade communal kitchen suite' },
+                    { name: 'Washing Machine', brand: 'Samsung QuickDrive Dual Washer', warranty: 'Active', description: 'Large capacity laundry in shared utility room' },
                 ],
                 unitKeys: {
-                    'Unit 1': [
-                        { label: 'Smart Key Card & Physical Over-ride', qty: '2', location: 'Concierge desk', holder: 'Concierge' },
+                    'Room 1': [
+                        { label: 'Room 1 Key & Front Door Key', qty: '2', location: 'Key safe box', holder: 'Tenant' },
                     ],
                 },
                 utilities: { gas: 'N/A (All Electric Eco)', electric: 'Good Energy 100% Renewable', water: 'Thames Water', broadband: 'Hyperoptic 1Gbps Symmetric', council: { name: 'City of London', notes: 'Band E' } },
-                parking: { spaces: 2, type: 'Underground with 22kW EV Charger', permit: 'EC2-VIP-01', notes: 'Dedicated space with Pod Point 22kW smart EV charger.' },
+                parking: { spaces: 2, type: 'Driveway parking', permit: 'EC2-VIP-01', notes: 'Shared driveway parking with Pod Point EV charger.' },
             },
             3: {
                 info: {
@@ -2310,7 +2316,7 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
 }
 
 /* ─── Form option lists (structured fields → dropdowns) ─── */
-const PROPERTY_TYPE_OPTIONS = ['Detached', 'Semi-detached', 'Terraced', 'Flat / Apartment', 'Bungalow', 'HMO', 'Maisonette', 'Studio', 'Other'];
+const PROPERTY_TYPE_OPTIONS = ['Detached', 'Semi-detached', 'Terraced', 'Flat / Apartment', 'Bungalow', 'Maisonette', 'Studio', 'Other'];
 const FURNISHED_OPTIONS = ['Furnished', 'Unfurnished', 'Part-furnished'];
 const EPC_RATING_OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'Not rated', 'Exempt'];
 const COUNCIL_TAX_BAND_OPTIONS = ['Band A', 'Band B', 'Band C', 'Band D', 'Band E', 'Band F', 'Band G', 'Band H', 'Not applicable'];
@@ -3749,18 +3755,29 @@ function renderTenantKeysCard(propertyId, unitName, tenantName) {
     if (!allKeys.length && !keys.length) return '';
     return `
     <div class="card p-4 tenant-keys-card">
-        <div class="flat-dt-section-head">
-            <h3 class="flat-dt-section-title">Keys</h3>
-            ${propertyId != null && unitName ? `<button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${unitName}" class="flat-dt-section-link">Manage</button>` : ''}
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0">
+                    <i data-lucide="key-round" class="w-4 h-4 text-[#2563EB]"></i>
+                </div>
+                <div>
+                    <h3 class="text-[14px] font-bold text-[#0F172A] m-0">Keys</h3>
+                    <p class="text-[11px] text-[#64748B] m-0">${keys.length ? `${keys.length} key set${keys.length === 1 ? '' : 's'} assigned` : 'No keys assigned'}</p>
+                </div>
+            </div>
+            ${propertyId != null && unitName ? `<button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${unitName}" class="header-text-link">Manage</button>` : ''}
         </div>
         ${keys.length ? `
-        <div class="stack-sm">
+        <div class="space-y-2">
             ${keys.map(k => `
-            <div class="tenant-key-row">
-                <p class="tenant-key-label">${escapeHtml(k.label || 'Key')}${k.qty && k.qty !== '1' ? ` × ${escapeHtml(String(k.qty))}` : ''}</p>
-                <p class="tenant-key-meta text-[12px] text-[#64748B]">${[k.location, k.holder ? `Held by ${k.holder}` : ''].filter(Boolean).join(' · ') || 'On issue'}</p>
+            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9] flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[13px] font-semibold text-[#0F172A] mb-0.5">${escapeHtml(k.label || 'Key')}</p>
+                    <p class="text-[11px] text-[#64748B] mb-0">${[k.location, k.holder ? `Held by ${k.holder}` : ''].filter(Boolean).join(' · ') || 'On issue'}</p>
+                </div>
+                ${k.qty ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] shrink-0">×${escapeHtml(String(k.qty))}</span>` : ''}
             </div>`).join('')}
-        </div>` : `<p class="text-[13px] text-[#64748B]">No keys currently assigned to this tenant.${allKeys.length ? ' Other key sets are registered for this unit.' : ''}</p>`}
+        </div>` : `<p class="text-[13px] text-[#64748B] m-0">No keys currently assigned to this tenant.${allKeys.length ? ' Other key sets are registered for this unit.' : ''}</p>`}
     </div>`;
 }
 
@@ -4888,9 +4905,11 @@ function propertyActionMenuItems(propertyId) {
 
 function unitActionMenuItems(propertyId, unitName, opts = {}) {
     const u = getUnitByName(propertyId, unitName);
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
     const occ = u?.status === 'occupied';
     const items = [
-        { label: 'Edit unit', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-flat" data-pid="${propertyId}" data-unit="${unitName}"` },
+        { label: `Edit ${unitWord}`, icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-flat" data-pid="${propertyId}" data-unit="${unitName}"` },
         { label: 'Utilities', icon: 'zap', action: 'action-menu-go', attrs: `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unitName}"` },
     ];
     if (opts.fromDetail) {
@@ -4899,12 +4918,14 @@ function unitActionMenuItems(propertyId, unitName, opts = {}) {
         );
     }
     if (!occ) {
-        items.push({ label: 'Delete unit', icon: 'trash-2', action: 'action-menu-delete-flat', danger: true, attrs: `data-pid="${propertyId}" data-unit="${unitName}"` });
+        items.push({ label: `Delete ${unitWord}`, icon: 'trash-2', action: 'action-menu-delete-flat', danger: true, attrs: `data-pid="${propertyId}" data-unit="${unitName}"` });
     }
     return items;
 }
 
 function tenantActionMenuItems(t, opts = {}) {
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(t.propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
     const items = [];
     if (opts.includeView) {
         items.push({ label: 'View profile', icon: 'user', action: 'action-menu-go', attrs: `data-go="tenant-detail" data-tid="${t.id}"` });
@@ -4917,7 +4938,7 @@ function tenantActionMenuItems(t, opts = {}) {
         items.push({ label: 'Message', icon: 'message-square', action: 'start-tenant-chat', attrs: `data-tid="${t.id}"` });
     }
     if (t.propertyId != null && t.unit) {
-        items.push({ label: 'View unit', icon: 'home', action: 'action-menu-go', attrs: `data-go="flat-detail" data-pid="${t.propertyId}" data-unit="${t.unit}"` });
+        items.push({ label: `View ${unitWord}`, icon: 'home', action: 'action-menu-go', attrs: `data-go="flat-detail" data-pid="${t.propertyId}" data-unit="${t.unit}"` });
     }
     if (t.status === 'active') {
         items.push({ label: 'Check-out tenant', icon: 'log-out', action: 'action-menu-go', attrs: `data-go="checkout-tenancy" data-tid="${t.id}"` });
@@ -5176,11 +5197,12 @@ function flatRowTenantLine(tenancy, members, occ) {
 function renderPropertyHubSummaryCard(propertyId) {
     const p = PROPERTIES[propertyId];
     if (!p) return '';
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : (p?.isHmo || false);
     const { units, occupiedFlats, floors } = propertyHubStats(propertyId);
     const vacantFlats = units.length - occupiedFlats;
     const cover = getPropertyCoverPhoto(propertyId);
     const status = propertyHubStatusBadge(propertyId);
-    const unitWord = units.length === 1 ? 'Unit' : 'Units';
+    const unitWord = isHmo ? (units.length === 1 ? 'Room' : 'Rooms') : (units.length === 1 ? 'Unit' : 'Units');
     const floorWord = floors === 1 ? 'Floor' : 'Floors';
     const { monthlyRent } = typeof propertyCardStats === 'function'
         ? propertyCardStats(propertyId)
@@ -5222,10 +5244,12 @@ function renderPropertyHubSummaryCard(propertyId) {
 function renderPropertyBuildingSummaryCard(propertyId, options = {}) {
     const { showDetailsBtn = false, compact = false } = options;
     const p = PROPERTIES[propertyId];
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : (p?.isHmo || false);
     const { units, occupiedFlats } = propertyHubStats(propertyId);
     const vacantFlats = units.length - occupiedFlats;
     const cover = getPropertyCoverPhoto(propertyId);
-    const unitWord = units.length === 1 ? 'unit' : 'units';
+    const unitWord = isHmo ? (units.length === 1 ? 'room' : 'rooms') : (units.length === 1 ? 'unit' : 'units');
+    const totalUnitsLabel = isHmo ? 'Total Rooms' : 'Total Units';
     const occPct = units.length ? Math.round((occupiedFlats / units.length) * 100) : 0;
     const occLabel = `${occupiedFlats}/${units.length} Occupied`;
     return `
@@ -5255,7 +5279,7 @@ function renderPropertyBuildingSummaryCard(propertyId, options = {}) {
         <div class="prop-building-header-stats">
             <div class="prop-building-stat">
                 <p class="prop-building-stat-val">${units.length}</p>
-                <p class="prop-building-stat-lbl">Total Units</p>
+                <p class="prop-building-stat-lbl">${totalUnitsLabel}</p>
             </div>
             <div class="prop-building-stat">
                 <p class="prop-building-stat-val">${occupiedFlats}</p>
@@ -5335,11 +5359,13 @@ function renderPropertyOverviewDetails(propertyId) {
         return `${addr}, ${pc}`;
     })();
     const yearBuilt = (info.built && info.built !== '—') ? info.built : (meta.building?.yearBuilt || '—');
+    const isHmo = !!(info.isHmo || p?.isHmo || meta.isHmo);
     const propType = (info.type && info.type !== '—') ? info.type : '—';
+    const propTypeDisplay = propType !== '—' ? (isHmo ? `${propType} · HMO` : propType) : (isHmo ? 'HMO' : '—');
     const coreInfoRows = [
         ['map-pin', 'Address', addressDisplay],
         ['map', 'Postcode', (info.postcode || '').trim() || '—'],
-        ['home', 'Type', propType],
+        ['home', 'Type', propTypeDisplay],
         ['calendar', 'Year built', yearBuilt || '—'],
         ['calendar-check', 'Date purchased', info.purchaseDate ? formatInfoDate(info.purchaseDate) : '—'],
         ['trending-up', 'Valuation', valuationAmountLabel],
@@ -5376,7 +5402,7 @@ function renderPropertyOverviewDetails(propertyId) {
             <div class="prop-overview-divider"></div>
             <div class="prop-overview-stat"><strong>${vacant}</strong><span>Vacant</span></div>
             <div class="prop-overview-divider"></div>
-            <div class="prop-overview-stat"><strong>${units.length}</strong><span>Units</span></div>
+            <div class="prop-overview-stat"><strong>${units.length}</strong><span>${isHmo ? 'Rooms' : 'Units'}</span></div>
             <div class="prop-overview-divider"></div>
             <div class="prop-overview-stat"><strong>${floors}</strong><span>Floors</span></div>
         </div>
@@ -5585,6 +5611,7 @@ function renderTenancyDemoTip(propertyId) {
 
 function renderPropertyFlatRow(propertyId, u, opts = {}) {
     const name = unitName(u);
+    const displayName = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(name, propertyId) : name;
     const occ = u.status === 'occupied';
     const thumb = getFlatCoverPhoto(propertyId, name);
     const { tenancy, count, members } = getFlatMemberRoster(propertyId, name);
@@ -5610,7 +5637,7 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
             <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="unit-hub-row">
                 <div class="unit-hub-thumb"><img src="${thumb}" alt=""></div>
                 <div class="unit-hub-body">
-                    <p class="unit-hub-name">${name}</p>
+                    <p class="unit-hub-name">${displayName}</p>
                     ${tenant ? `<p class="unit-hub-tenant">${escapeHtml(tenant)}</p>` : ''}
                     ${spec ? `<p class="unit-hub-spec">${spec}</p>` : ''}
                 </div>
@@ -5629,7 +5656,7 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
         <div class="unit-card-v2-thumb"><img src="${thumb}" alt=""></div>
         <div class="unit-card-v2-body">
             <div class="unit-card-v2-title-row">
-                <p class="unit-card-v2-name">${name}</p>
+                <p class="unit-card-v2-name">${displayName}</p>
                 ${typePill}
             </div>
             <p class="unit-card-v2-meta">${subline}</p>
@@ -5640,7 +5667,7 @@ function renderPropertyFlatRow(propertyId, u, opts = {}) {
         </div>
     </button>
     <div class="unit-card-v2-menu">
-        ${renderActionMenuButton(unitMenuKey, 'Unit options')}
+        ${renderActionMenuButton(unitMenuKey, typeof isPropertyHmo === 'function' && isPropertyHmo(propertyId) ? 'Room options' : 'Unit options')}
         ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, name))}
     </div>
     </div>
@@ -6103,39 +6130,46 @@ function renderTenancyMembersSection(propertyId, unit, tenancy, members) {
 
 function screenTenancyDetail() {
     const propertyId = STATE.propertyId;
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
+    const unitWordCap = isHmo ? 'Room' : 'Unit';
     const unit = STATE.selectedUnit || '';
+    const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, propertyId) : unit;
     const p = PROPERTIES[propertyId];
     const { tenancy, members } = getFlatMemberRoster(propertyId, unit);
     if (!tenancy) {
         return `${topBar('Tenancy', { back: true })}
-        <div class="screen-content"><p class="ux-intro">No active tenancy for this unit.</p>
-        <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full mt-3">Back to unit</button></div>`;
+        <div class="screen-content"><p class="ux-intro">No active tenancy for this ${unitWord}.</p>
+        <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full mt-3">Back to ${unitWord}</button></div>`;
     }
     const leaseStart = typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.start) : tenancy.start;
     const leaseEnd = typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.end) : tenancy.end;
     const lead = members.find(m => m.isLead) || members[0];
-    return `${topBar('Tenancy', { back: true, sub: `${p?.name || ''} · ${unit}` })}
+    return `${topBar('Tenancy', { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
     <div class="screen-content screen-enter tenancy-detail-page">
         ${renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead)}
         ${renderTenancyDocumentsChecklist(propertyId, unit, tenancy)}
         <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mb-3">Edit deposit scheme</button>
         ${renderTenancyMembersSection(propertyId, unit, tenancy, members)}
         ${typeof renderTenantKeysCard === 'function' && lead ? renderTenantKeysCard(propertyId, unit, lead.name) : ''}
-        <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full">Back to unit</button>
+        <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full">Back to ${unitWord}</button>
     </div>`;
 }
 
 function screenEditTenancyDeposit() {
     const propertyId = STATE.propertyId;
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
     const unit = STATE.selectedUnit || '';
+    const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, propertyId) : unit;
     const { tenancy } = getFlatMemberRoster(propertyId, unit);
     if (!tenancy) {
         return `${topBar('Deposit scheme', { back: true })}
-        <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenancy for this unit.</p></div>`;
+        <div class="screen-content"><p class="text-[13px] text-[#64748B]">No active tenancy for this ${unitWord}.</p></div>`;
     }
     const schemeLine = depositSchemeSummaryLine(tenancy.depositScheme, tenancy.protectionRef);
     const depStatus = resolveDepositStatus(tenancy.depositScheme, tenancy.protectionRef);
-    return `${topBar('Deposit scheme', { back: true, sub: unit })}
+    return `${topBar('Deposit scheme', { back: true, sub: displayUnit })}
     <div class="screen-content screen-content-sm screen-enter stack-sm">
         <div class="card deposit-edit-summary p-4">
             <div class="deposit-edit-summary-top">
@@ -6177,7 +6211,10 @@ function saveTenancyDeposit() {
 
 function screenFlatMembers() {
     const propertyId = STATE.propertyId;
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
     const unit = STATE.selectedUnit || '';
+    const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, propertyId) : unit;
     const p = PROPERTIES[propertyId];
     const { tenancy, members, count } = getFlatMemberRoster(propertyId, unit);
     const isGroup = tenancy?.type === 'group';
@@ -6186,12 +6223,12 @@ function screenFlatMembers() {
         ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.start) : tenancy.start} – ${typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.end) : tenancy.end}`
         : '—';
     const pendingInvite = pendingInvitesForProperty(propertyId).find(i => i.unit === unit);
-    return `${topBar(membersLabel, { back: true, sub: `${p?.name || ''} · ${unit}` })}
+    return `${topBar(membersLabel, { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
     <div class="screen-content screen-enter flat-members-page">
         <div class="screen-list-header">
             <div>
                 <h2>${membersLabel}</h2>
-                <p>${count} on this unit · ${leaseLine}</p>
+                <p>${count} on this ${unitWord} · ${leaseLine}</p>
             </div>
             <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${unit}" class="header-text-link">+ Invite tenant</button>
         </div>
@@ -8117,8 +8154,13 @@ function normalizeDemoPortfolio() {
         { id: 8, num: 'INV-2026-1032', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1032' },
         { id: 11, num: 'INV-2026-1029', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1029' },
         { id: 5, num: 'INV-2026-1050', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£85', status: 'Pending', due: 'Jul 20, 2026', month: 'Jul 2026', type: 'maintenance', desc: 'Kitchen sink repair share' },
+        // 88 King Street (HMO) Room Invoices
+        { id: 120, num: 'INV-2026-1080', prop: '88 King Street, London EC2V 8BB', unit: 'Room 1', tenant: 'Emma Roberts', tenantId: 3, propertyId: 2, amount: '£650', status: 'Paid', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jul 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R1-JUL' },
+        { id: 121, num: 'INV-2026-1079', prop: '88 King Street, London EC2V 8BB', unit: 'Room 1', tenant: 'Emma Roberts', tenantId: 3, propertyId: 2, amount: '£650', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jun 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R1-JUN' },
+        { id: 122, num: 'INV-2026-1082', prop: '88 King Street, London EC2V 8BB', unit: 'Room 3', tenant: 'Mark Davis', tenantId: 6, propertyId: 2, amount: '£680', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly room rent' },
+        { id: 123, num: 'INV-2026-1081', prop: '88 King Street, London EC2V 8BB', unit: 'Room 3', tenant: 'Mark Davis', tenantId: 6, propertyId: 2, amount: '£680', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R3-JUN' },
     ];
-    const invoiceSeedVersion = '2026-rent-history-v2';
+    const invoiceSeedVersion = '2026-rent-history-v3';
     if (AppStore.invoiceSeedVersion !== invoiceSeedVersion
         || INVOICES.length !== canonicalInvoices.length
         || INVOICES.some((inv, idx) => inv.num !== canonicalInvoices[idx]?.num)) {
@@ -8136,16 +8178,19 @@ function normalizeDemoPortfolio() {
             { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
             { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
         ]},
+        { id: 4, propertyId: 2, tenantId: 3, type: 'solo', unit: 'Room 1', rent: '£650', deposit: '£650', advancePaid: '£650', depositScheme: 'DPS', depositStatus: 'protected', protectionRef: 'DPS-90812', start: '2025-01-01', end: '2026-12-31', status: 'active' },
+        { id: 5, propertyId: 2, tenantId: 6, type: 'solo', unit: 'Room 3', rent: '£680', deposit: '£680', advancePaid: '£680', depositScheme: 'TDS', depositStatus: 'protected', protectionRef: 'TDS-77401', start: '2025-02-01', end: '2027-01-31', status: 'active' },
     ];
     const staleGroupMichael = AppStore.tenancies?.some(t => t.propertyId === 3 && t.type === 'group');
     const missingGroupDemo = !AppStore.tenancies?.some(t => t.propertyId === 0 && t.unit === 'Flat 2B' && t.type === 'group');
-    if (staleGroupMichael || missingGroupDemo) {
+    const missingHmoDemo = !AppStore.tenancies?.some(t => t.propertyId === 2 && t.unit === 'Room 1');
+    if (staleGroupMichael || missingGroupDemo || missingHmoDemo) {
         AppStore.tenancies = JSON.parse(JSON.stringify(canonicalTenancies));
         AppStore.save();
     }
-    const canonicalNids = ['4859217360', '7391045826', '6028471935', '9183746502', '3849201756', '5928173046'];
-    const canonicalDeposits = ['£2,450', '£1,850', '£1,950', '£2,100', '£2,200', '£2,200'];
-    const canonicalAdvances = ['£2,450', '£1,850', '£1,950', '£2,100', '£2,200', '—'];
+    const canonicalNids = ['4859217360', '7391045826', '6028471935', '9183746502', '3849201756', '5928173046', '8492017354'];
+    const canonicalDeposits = ['£2,450', '£1,850', '£1,950', '£650', '£2,200', '£2,200', '£680'];
+    const canonicalAdvances = ['£2,450', '£1,850', '£1,950', '£650', '£2,200', '—', '£680'];
     TENANTS.forEach((t, i) => {
         if (!t.idNumber || String(t.idNumber).startsWith('TN-')) t.idNumber = canonicalNids[i] || t.idNumber;
         if (!t.nidProof && t.id !== 5) t.nidProof = 'NID Proof.jpg';
@@ -9945,25 +9990,31 @@ function renderPropertyDocumentsTab(propertyId) {
 function renderPropertyUnitsTab(propertyId) {
     syncPropertyStatus(propertyId);
     ensureFlatPhotos(propertyId);
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
     const allUnits = getPropertyUnits(propertyId);
     const units = filterPropertyUnits(allUnits);
     const unitFilter = STATE.unitFilter || 'all';
     const groupFloors = shouldGroupFlatsByFloor(propertyId);
     const renderFlatRow = (u, inPanel = false) => renderPropertyFlatRow(propertyId, u, { inPanel, hubList: true });
+    const unitWordSingle = isHmo ? 'room' : 'unit';
+    const unitWordPlural = isHmo ? 'rooms' : 'units';
     const flatList = !units.length ? `
         <div class="card p-8 text-center unit-list-empty">
             <i data-lucide="home" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
-            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No ${unitFilter === 'all' ? '' : unitFilter} units</p>
-            <p class="text-[12px] text-[#64748B] mt-1">${unitFilter === 'all' ? 'Add your first unit to get started' : 'Try another filter'}</p>
+            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No ${unitFilter === 'all' ? '' : unitFilter} ${unitWordPlural}</p>
+            <p class="text-[12px] text-[#64748B] mt-1">${unitFilter === 'all' ? `Add your first ${unitWordSingle} to get started` : 'Try another filter'}</p>
             ${unitFilter === 'all'
-                ? `<button type="button" data-go="add-flat" data-pid="${propertyId}" class="btn-primary py-2.5 px-5 text-[13px] mt-3">+ Add unit</button>`
-                : `<button type="button" data-unit-filter="all" class="btn-secondary py-2.5 px-5 text-[13px] mt-3">Show all units</button>`}
+                ? `<button type="button" data-go="add-flat" data-pid="${propertyId}" class="btn-primary py-2.5 px-5 text-[13px] mt-3">+ Add ${unitWordSingle}</button>`
+                : `<button type="button" data-unit-filter="all" class="btn-secondary py-2.5 px-5 text-[13px] mt-3">Show all ${unitWordPlural}</button>`}
         </div>`
         : groupFloors
         ? [...new Set(units.map(u => u.floor || 1))].sort((a, b) => a - b).map(floor => {
             const floorUnits = units.filter(u => (u.floor || 1) === floor);
             const note = floorUnits[0]?.floorNote;
             const collapsed = isFloorGroupCollapsed(propertyId, floor);
+            const countLabel = isHmo
+                ? `${floorUnits.length} ${floorUnits.length === 1 ? 'Room' : 'Rooms'}`
+                : `${floorUnits.length} ${floorUnits.length === 1 ? 'Unit' : 'Units'}`;
             return `
             <div class="unit-floor-block card${collapsed ? ' unit-floor-block--collapsed' : ''}">
                 <button type="button" data-action="toggle-floor-group" data-pid="${propertyId}" data-floor="${floor}" class="unit-floor-toggle" aria-expanded="${!collapsed}">
@@ -9972,7 +10023,7 @@ function renderPropertyUnitsTab(propertyId) {
                         <h3 class="unit-floor-title">${formatFloorLabel(floor)}${note ? ` · ${note}` : ''}</h3>
                     </div>
                     <div class="unit-floor-head-right">
-                        <span class="unit-floor-count">${floorUnits.length} Unit${floorUnits.length === 1 ? '' : 's'}</span>
+                        <span class="unit-floor-count">${countLabel}</span>
                         <i data-lucide="chevron-down" class="unit-floor-chevron w-4 h-4"></i>
                     </div>
                 </button>
@@ -10873,10 +10924,13 @@ function renderFlatDetailTabContent(tab, propertyId, unit, u, p, tenancy, member
 
 function screenFlatDetail() {
     const propertyId = STATE.propertyId;
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
+    const unitWordCap = isHmo ? 'Room' : 'Unit';
     const unit = STATE.selectedUnit || '';
     const p = PROPERTIES[propertyId];
     const u = getUnitByName(propertyId, unit);
-    if (!u) return `${topBar('Unit', { back: true })}<div class="screen-content"><p class="ux-intro">Unit not found.</p></div>`;
+    if (!u) return `${topBar(unitWordCap, { back: true })}<div class="screen-content"><p class="ux-intro">${unitWordCap} not found.</p></div>`;
     const photos = flatDetailPhotoList(propertyId, unit);
     const coverPhoto = getFlatCoverPhoto(propertyId, unit);
     const photoCount = photos.length;
@@ -10888,7 +10942,7 @@ function screenFlatDetail() {
     const statusColor = occ ? '#16A34A' : '#D97706';
     const unitMenuKey = actionMenuKeyFor('unit', propertyId, unit);
     const unitMenuOpen = isActionMenuOpen(unitMenuKey);
-    const name = unitName(u);
+    const name = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unitName(u), propertyId) : unitName(u);
     const flatTab = (STATE.flatTab === 'activity' ? 'overview' : STATE.flatTab) || 'overview';
     const tabBadges = flatDetailTabBadges(propertyId, unit, pendingInvite);
     const peopleCtx = { occ, tenancy, members, count, pendingInvite };
@@ -10897,7 +10951,7 @@ function screenFlatDetail() {
     const footer = unpaidRent.length && flatTab === 'overview' ? `
         <footer class="flat-dt-footer flat-dt-footer--actions">
             <button type="button" data-go="edit-flat" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-action-btn flat-dt-action-btn--outline">
-                <i data-lucide="pencil"></i><span>Edit unit</span>
+                <i data-lucide="pencil"></i><span>Edit ${unitWord}</span>
             </button>
             <button type="button" data-go="mark-rent-received"${unpaidRent.length === 1 ? ` data-iid="${unpaidRent[0].id}"` : ''} class="flat-dt-action-btn flat-dt-action-btn--primary">
                 <i data-lucide="circle-check"></i><span>Record rent</span>
@@ -10905,7 +10959,7 @@ function screenFlatDetail() {
         </footer>` : `
         <footer class="flat-dt-footer">
             <button type="button" data-go="edit-flat" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-edit-btn">
-                <i data-lucide="pencil" class="w-4 h-4"></i>Edit Unit Details
+                <i data-lucide="pencil" class="w-4 h-4"></i>Edit ${unitWordCap} Details
             </button>
         </footer>`;
     return `
@@ -10921,7 +10975,7 @@ function screenFlatDetail() {
                 </div>
             </div>
             <div class="flat-dt-header-menu${unitMenuOpen ? ' flat-dt-header-menu--open' : ''}">
-                ${renderActionMenuButton(unitMenuKey, 'Unit options')}
+                ${renderActionMenuButton(unitMenuKey, `${unitWordCap} options`)}
                 ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, unit, { fromDetail: true }))}
             </div>
         </header>
@@ -11736,28 +11790,32 @@ function screenSelectPropertyInvite() {
 
 function screenSelectUnitInvite() {
     const propertyId = STATE.propertyId;
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'flat';
+    const unitWordCap = isHmo ? 'Room' : 'Flat';
     const p = PROPERTIES[propertyId];
     const units = getPropertyUnits(propertyId);
     if (!p) {
-        return `${topBar('Select flat', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Property not found.</p></div>`;
+        return `${topBar(`Select ${unitWord}`, { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Property not found.</p></div>`;
     }
     if (!units.length) {
-        return `${topBar('Select flat', { back: true, sub: p.name })}
+        return `${topBar(`Select ${unitWord}`, { back: true, sub: p.name })}
         <div class="screen-content screen-enter">
             <div class="empty-state card">
                 <i data-lucide="building-2" class="w-10 h-10 text-[#CBD5E1]"></i>
-                <p class="empty-state-title">No flats yet</p>
-                <p class="empty-state-desc">Add a flat first, then invite a tenant to that unit.</p>
-                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="btn-primary w-full py-3 text-[13px] mt-3">Add flat</button>
+                <p class="empty-state-title">No ${unitWord}s yet</p>
+                <p class="empty-state-desc">Add a ${unitWord} first, then invite a tenant to that ${isHmo ? 'room' : 'unit'}.</p>
+                <button type="button" data-go="add-flat" data-pid="${propertyId}" class="btn-primary w-full py-3 text-[13px] mt-3">Add ${unitWord}</button>
             </div>
         </div>`;
     }
-    return `${topBar('Select flat', { back: true, sub: p.name })}
+    return `${topBar(`Select ${unitWord}`, { back: true, sub: p.name })}
     <div class="screen-content screen-enter">
-        <p class="text-[13px] text-[#64748B] mb-3">Which flat is this invite for?</p>
+        <p class="text-[13px] text-[#64748B] mb-3">Which ${unitWord} is this invite for?</p>
         <div class="stack-sm">
             ${units.map(u => {
-                const name = unitName(u);
+                const rawName = unitName(u);
+                const displayName = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(rawName, propertyId) : rawName;
                 const occ = u.status === 'occupied';
                 const rent = u.rent && u.rent !== '—' ? u.rent : '—';
                 const sub = [
@@ -11766,12 +11824,12 @@ function screenSelectUnitInvite() {
                     rent !== '—' ? `${rent}/mo` : '',
                 ].filter(Boolean).join(' · ');
                 return `
-            <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${escapeHtml(name)}" class="card p-4 flex items-center gap-3 w-full text-left">
+            <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${escapeHtml(rawName)}" class="card p-4 flex items-center gap-3 w-full text-left">
                 <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0">
                     <i data-lucide="home" class="w-5 h-5 text-[#2563EB]"></i>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <p class="text-[14px] font-bold text-[#0F172A] mb-0">${escapeHtml(name)}</p>
+                    <p class="text-[14px] font-bold text-[#0F172A] mb-0">${escapeHtml(displayName)}</p>
                     <p class="text-[12px] text-[#64748B] mt-0.5 mb-0">${escapeHtml(sub)}</p>
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
@@ -12009,12 +12067,16 @@ function unitName(u) {
 }
 
 function renderEditPropertyUnitsSection(propertyId) {
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWordSingle = isHmo ? 'room' : 'unit';
+    const unitWordPlural = isHmo ? 'Rooms' : 'Units';
     const units = getPropertyUnits(propertyId);
     const unitRow = (u) => {
         const occ = u.status === 'occupied';
         const badgeBg = occ ? '#DCFCE7' : '#FEF3C7';
         const badgeColor = occ ? '#16A34A' : '#D97706';
         const name = unitName(u);
+        const displayName = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(name, propertyId) : name;
         const spec = [hasUnitSpecCount(u.beds) ? `${u.beds} bed` : '', hasUnitSpecCount(u.baths) ? `${u.baths} bath` : ''].filter(Boolean).join(' · ');
         const floor = flatFloorLine(u);
         const unitMenuKey = actionMenuKeyFor('unit', propertyId, name);
@@ -12022,12 +12084,12 @@ function renderEditPropertyUnitsSection(propertyId) {
         return `
         <div class="card edit-prop-unit-row ${menuOpen ? 'edit-prop-unit-row--menu-open' : ''}">
             <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${name}" class="edit-prop-unit-main text-left">
-                <p class="edit-prop-unit-name">${name}</p>
+                <p class="edit-prop-unit-name">${displayName}</p>
                 <p class="edit-prop-unit-meta">${u.rent || '—'}${spec ? ` · ${spec}` : ''}${floor ? ` · ${floor}` : ''}</p>
             </button>
             <span class="badge shrink-0" style="background:${badgeBg};color:${badgeColor}">${occ ? 'Occupied' : 'Vacant'}</span>
             <div class="unit-card-v2-menu">
-                ${renderActionMenuButton(unitMenuKey, 'Unit options')}
+                ${renderActionMenuButton(unitMenuKey, isHmo ? 'Room options' : 'Unit options')}
                 ${renderActionMenuPopover(unitMenuKey, unitActionMenuItems(propertyId, name))}
             </div>
         </div>`;
@@ -12036,10 +12098,10 @@ function renderEditPropertyUnitsSection(propertyId) {
     <div class="form-section edit-prop-units">
         <div class="edit-prop-units-head">
             <div>
-                <p class="form-section-title">Units</p>
-                <p class="form-helper edit-prop-units-hint">Add or edit each unit here</p>
+                <p class="form-section-title">${unitWordPlural}</p>
+                <p class="form-helper edit-prop-units-hint">Add or edit each ${unitWordSingle} here</p>
             </div>
-            <button type="button" data-go="add-flat" data-pid="${propertyId}" class="header-text-link">+ Add unit</button>
+            <button type="button" data-go="add-flat" data-pid="${propertyId}" class="header-text-link">+ Add ${unitWordSingle}</button>
         </div>
         ${units.length ? `<div class="edit-prop-units-list">${units.map(unitRow).join('')}</div>` : `
         <div class="card edit-prop-units-empty">
@@ -12407,9 +12469,10 @@ function unitSelectHtml(propertyId, fieldKey = 'unit', invite = false, selected 
     const attr = invite ? 'data-invite' : 'data-field';
     const groupFloors = shouldGroupFlatsByFloor(propertyId);
     return `<select ${attr}="${fieldKey}" class="form-input form-select">${options.map(u => {
-        const name = unitName(u);
-        const occ = !avail.find(a => unitName(a) === name);
-        return `<option value="${name}" ${selected === name ? 'selected' : ''}>${name}${!isSingleFlatProperty(propertyId) && groupFloors && u.floor != null ? ` · ${formatFloorLabel(u.floor)}` : ''}${avail.length || !occ ? '' : ' (occupied)'}</option>`;
+        const rawName = unitName(u);
+        const displayName = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(rawName, propertyId) : rawName;
+        const occ = !avail.find(a => unitName(a) === rawName);
+        return `<option value="${rawName}" ${selected === rawName ? 'selected' : ''}>${displayName}${!isSingleFlatProperty(propertyId) && groupFloors && u.floor != null ? ` · ${formatFloorLabel(u.floor)}` : ''}${avail.length || !occ ? '' : ' (occupied)'}</option>`;
     }).join('')}</select>`;
 }
 
@@ -13749,10 +13812,15 @@ function reminderGoAttrs(action) {
     return parts.join(' ');
 }
 
-function filteredReminders(filter) {
+function filteredReminders(filter, propFilter) {
     const f = filter || STATE.reminderFilter || 'all';
-    const list = AppStore.reminders.map(r => recalcReminderMeta({ ...r }));
+    const pf = propFilter !== undefined ? propFilter : (STATE.reminderPropertyFilter || 'all');
+    let list = (AppStore.reminders || []).map(r => recalcReminderMeta({ ...r }));
     list.sort((a, b) => (a.daysLeft ?? 999) - (b.daysLeft ?? 999));
+    if (pf !== 'all' && pf !== '' && pf != null) {
+        const targetPid = Number(pf);
+        list = list.filter(r => r.propertyId === targetPid);
+    }
     if (f === 'soon') return list.filter(r => (r.daysLeft ?? 99) <= 30 && (r.daysLeft ?? -99) >= 0);
     if (f === 'overdue') return list.filter(r => (r.daysLeft ?? 0) < 0);
     if (f === 'custom') return list.filter(r => !r.auto);
@@ -14668,11 +14736,6 @@ function inspReportRow(report) {
             </div>
         </div>
         <div class="flex items-center gap-2.5 shrink-0">
-            ${rating ? `
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
-                <i data-lucide="star" class="w-3 h-3 fill-amber-500 text-amber-500"></i>
-                <span>${rating}</span>
-            </span>` : ''}
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
         </div>
     </button>`;
@@ -14702,7 +14765,6 @@ function screenInspectionDetail() {
                     <h3 class="text-[16px] font-bold text-[#0F172A] m-0 mt-0.5">${p?.address || p?.name || 'Property'}</h3>
                     ${isTenantUploadInspection(report) ? `<p class="text-[12px] text-[#2563EB] font-semibold mt-1">Tenant photo request${report.scheduled ? ' · open' : ''}</p>` : ''}
                 </div>
-                ${rating ? `<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]"><i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500 text-amber-500"></i> ${rating} Condition</span>` : ''}
             </div>
             ${report.notes?.trim() ? `
             <div class="pt-3">
@@ -14754,14 +14816,10 @@ function renderPropertyInspectionTab(propertyId) {
     return `
     <div class="screen-content screen-content-sm prop-hub-page space-y-4 text-left">
         <!-- Quick KPIs -->
-        <div class="grid grid-cols-3 gap-2.5">
+        <div class="grid grid-cols-2 gap-2.5">
             <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-center">
                 <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Reports</span>
                 <span class="block text-[17px] font-bold text-[#0F172A] mt-0.5">${past.length}</span>
-            </div>
-            <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-center">
-                <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Avg Condition</span>
-                <span class="block text-[17px] font-bold text-[#D97706] mt-0.5 flex items-center justify-center gap-1">★ ${avgRating}</span>
             </div>
             <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-center">
                 <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Status</span>
@@ -15469,6 +15527,9 @@ function onInviteUnitChange() {
 
 function screenInviteTenantEnhanced() {
     const p = PROPERTIES[STATE.propertyId];
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(STATE.propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
+    const unitWordCap = isHmo ? 'Room' : 'Flat';
     const step = STATE.inviteStep || 1;
     if (step === 3) captureInviteDraft();
     const draft = STATE.inviteDraft || {};
@@ -15478,7 +15539,7 @@ function screenInviteTenantEnhanced() {
     const unitRentDefaultDigits = unitRentDigits(STATE.propertyId, selectedUnit);
     const { tenancy, members } = selectedUnit ? getFlatMemberRoster(STATE.propertyId, selectedUnit) : { tenancy: null, members: [] };
     const pendingMembers = members.filter(m => !m.tenantId && m.accountStatus !== 'pending');
-    const stepLabels = ['Email', 'Unit & lease', 'Review & send'];
+    const stepLabels = ['Email', `${unitWordCap} & lease`, 'Review & send'];
     const wizardProgress = `
         <div class="wizard-progress">
             <div class="wizard-steps">
@@ -15492,7 +15553,7 @@ function screenInviteTenantEnhanced() {
             <div><p class="text-[14px] font-bold">${p.name}</p><p class="text-[12px] text-[#64748B]">${p.address}</p></div>
         </div>`;
     const groupTip = tenancy?.type === 'group' && pendingMembers.length
-        ? `<p class="text-[12px] text-[#64748B] mb-3">${pendingMembers.length} member${pendingMembers.length === 1 ? '' : 's'} still need an invite on this unit.</p>`
+        ? `<p class="text-[12px] text-[#64748B] mb-3">${pendingMembers.length} member${pendingMembers.length === 1 ? '' : 's'} still need an invite on this ${unitWord}.</p>`
         : '';
     let stepBody = '';
     if (step === 1) {
@@ -15501,12 +15562,12 @@ function screenInviteTenantEnhanced() {
         <div class="card p-3 flex items-center gap-3 mb-3">
             <div class="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0"><i data-lucide="home" class="w-4 h-4 text-[#2563EB]"></i></div>
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Flat</p>
-                <p class="text-[14px] font-bold text-[#0F172A] mb-0">${escapeHtml(selectedUnit)}</p>
+                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">${unitWordCap}</p>
+                <p class="text-[14px] font-bold text-[#0F172A] mb-0">${escapeHtml(typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(selectedUnit, STATE.propertyId) : selectedUnit)}</p>
             </div>
             <button type="button" data-go="select-unit-invite" data-pid="${STATE.propertyId}" class="header-text-link shrink-0">Change</button>
         </div>` : `
-        <button type="button" data-go="select-unit-invite" data-pid="${STATE.propertyId}" class="btn-secondary w-full py-3 text-[13px] mb-3">Select flat</button>`}
+        <button type="button" data-go="select-unit-invite" data-pid="${STATE.propertyId}" class="btn-secondary w-full py-3 text-[13px] mb-3">Select ${unitWord}</button>`}
         ${inviteFormFieldReq('Email Address', 'email', prefill.email || '', 'email')}
         <div class="form-group">
             <label class="form-label">Personal Message</label>
@@ -15515,12 +15576,12 @@ function screenInviteTenantEnhanced() {
     } else if (step === 2) {
         stepBody = `
         <div class="form-group ${STATE.formErrors.unit ? 'form-group-error' : ''}">
-            <label class="form-label">${requiredLabel('Unit')}</label>
+            <label class="form-label">${requiredLabel(unitWordCap)}</label>
             ${unitSelectHtml(STATE.propertyId, 'unit', true, selectedUnit).replace('class="form-input form-select"', `class="form-input form-select${STATE.formErrors.unit ? ' form-input-error' : ''}"`)}
             ${STATE.formErrors.unit ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${STATE.formErrors.unit}</p>` : ''}
         </div>
         <div class="form-group">
-            <label class="form-label">Unit rent</label>
+            <label class="form-label">${unitWordCap} rent</label>
             <input data-invite="rent" type="text" class="form-input" placeholder="${unitRent}" value="${prefill.rent || unitRent}">
         </div>
         ${inviteFormFieldReq('Lease Start', 'leaseStart', prefill.leaseStart || '', 'date')}
@@ -15539,7 +15600,7 @@ function screenInviteTenantEnhanced() {
         stepBody = `
         <div class="invite-review-card">
             <div class="invite-review-row"><span class="invite-review-label">Invite email</span><span class="invite-review-value">${prefill.email || '—'}</span></div>
-            <div class="invite-review-row"><span class="invite-review-label">Unit</span><span class="invite-review-value">${selectedUnit || '—'}</span></div>
+            <div class="invite-review-row"><span class="invite-review-label">${unitWordCap}</span><span class="invite-review-value">${typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(selectedUnit, STATE.propertyId) : (selectedUnit || '—')}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">Rent</span><span class="invite-review-value">${typeof formatMoneyField === 'function' ? formatMoneyField(prefill.rent || unitRent) : (prefill.rent || unitRent)}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">Lease</span><span class="invite-review-value">${prefill.leaseStart && prefill.leaseEnd ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(prefill.leaseStart) : prefill.leaseStart} → ${typeof formatDisplayDate === 'function' ? formatDisplayDate(prefill.leaseEnd) : prefill.leaseEnd}` : '—'}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">Security deposit</span><span class="invite-review-value">${prefill.deposit ? (typeof formatMoneyField === 'function' ? formatMoneyField(prefill.deposit) : `£${String(prefill.deposit).replace(/[^\d]/g, '')}`) : '—'}</span></div>
@@ -15958,27 +16019,35 @@ function screenComplianceDashboard() {
 
 function screenReminders() {
     const filter = STATE.reminderFilter || 'all';
-    const allReminders = AppStore.reminders || [];
-    const soonCount = allReminders.filter(r => r.urgency === 'soon' || r.urgency === 'warn').length;
-    const overdueCount = allReminders.filter(r => r.urgency === 'overdue').length;
-    const customCount = allReminders.filter(r => !r.auto).length;
+    const propFilter = STATE.reminderPropertyFilter || 'all';
+    const allReminders = (AppStore.reminders || []).map(r => recalcReminderMeta({ ...r }));
+    
+    const propFilteredList = (propFilter !== 'all' && propFilter !== '' && propFilter != null)
+        ? allReminders.filter(r => r.propertyId === Number(propFilter))
+        : allReminders;
+
+    const totalCount = propFilteredList.length;
+    const soonCount = propFilteredList.filter(r => r.urgency === 'soon' || r.urgency === 'warn' || ((r.daysLeft ?? 99) <= 30 && (r.daysLeft ?? -99) >= 0)).length;
+    const overdueCount = propFilteredList.filter(r => r.urgency === 'overdue' || (r.daysLeft ?? 0) < 0).length;
+    const customCount = propFilteredList.filter(r => !r.auto).length;
 
     const tabs = [
-        ['all', `All (${allReminders.length})`],
+        ['all', `All (${totalCount})`],
         ['soon', `Due Soon (${soonCount})`],
         ['overdue', `Overdue (${overdueCount})`],
         ['custom', `Custom (${customCount})`],
     ];
-    const list = filteredReminders(filter);
+    const list = filteredReminders(filter, propFilter);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const activePropName = propFilter !== 'all' ? (PROPERTIES[Number(propFilter)]?.name || '') : '';
 
-    return `${topBar('Smart Reminders', { back: true, sub: `${list.length} active alerts` })}
+    return `${topBar('Smart Reminders', { back: true, sub: activePropName ? `${activePropName} · ${list.length} alert${list.length === 1 ? '' : 's'}` : `${list.length} active alert${list.length === 1 ? '' : 's'}` })}
     <div class="screen-content screen-enter space-y-3 text-left pb-6">
         <!-- Compact KPI Header -->
         <div class="grid grid-cols-3 gap-2">
             <div class="card p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-center shadow-xs">
                 <span class="block text-[9px] font-bold text-[#64748B] uppercase tracking-wider">Total</span>
-                <span class="block text-[16px] font-bold text-[#0F172A] mt-0.5">${allReminders.length}</span>
+                <span class="block text-[16px] font-bold text-[#0F172A] mt-0.5">${totalCount}</span>
             </div>
             <div class="card p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-center shadow-xs">
                 <span class="block text-[9px] font-bold text-[#64748B] uppercase tracking-wider">Due Soon</span>
@@ -15988,6 +16057,29 @@ function screenReminders() {
                 <span class="block text-[9px] font-bold text-[#64748B] uppercase tracking-wider">Overdue</span>
                 <span class="block text-[16px] font-bold ${overdueCount ? 'text-[#DC2626]' : 'text-[#16A34A]'} mt-0.5">${overdueCount}</span>
             </div>
+        </div>
+
+        <!-- Top Primary Action Button -->
+        <button type="button" data-go="add-reminder" class="w-full py-3 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99] text-white font-bold text-[13px] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer group">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-white/90 group-hover:rotate-90 transition-transform"></i>
+            <span>Add Custom Reminder</span>
+        </button>
+
+        <!-- Property Filter Selector -->
+        <div class="flex items-center gap-2.5 bg-white p-2.5 px-3 rounded-xl border border-[#E2E8F0] shadow-xs">
+            <div class="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                <i data-lucide="building-2" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <select data-action="filter-reminder-property" class="w-full bg-transparent text-[12px] font-bold text-[#0F172A] border-0 focus:ring-0 p-0 pr-4 truncate cursor-pointer outline-none">
+                    <option value="all" ${propFilter === 'all' ? 'selected' : ''}>All Properties (${allReminders.length})</option>
+                    ${PROPERTIES.map(p => {
+                        const count = allReminders.filter(r => r.propertyId === p.id).length;
+                        return `<option value="${p.id}" ${propFilter === String(p.id) ? 'selected' : ''}>${esc(p.name)} (${count})</option>`;
+                    }).join('')}
+                </select>
+            </div>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#94A3B8] pointer-events-none shrink-0"></i>
         </div>
 
         <!-- Compact Segmented Filter Pills -->
@@ -16034,17 +16126,11 @@ function screenReminders() {
             <p class="text-[11px] text-[#64748B] mt-1 m-0">All items are compliant and up to date.</p>
         </div>`}
 
-        <!-- Compact Bottom Action -->
-        <div class="pt-1">
-            <button type="button" data-go="add-reminder" class="w-full py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] shadow-sm hover:bg-[#1D4ED8] transition-all flex items-center justify-center gap-2 cursor-pointer">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add Custom Reminder</span>
-            </button>
-            <p class="text-[10px] text-[#94A3B8] text-center mt-2 flex items-center justify-center gap-1">
-                <i data-lucide="refresh-cw" class="w-3 h-3 text-[#94A3B8]"></i>
-                <span>Certificates, alarms, lease and inspection dates sync automatically</span>
-            </p>
-        </div>
+        <!-- Footer Hint -->
+        <p class="text-[10px] text-[#94A3B8] text-center pt-2 flex items-center justify-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3 text-[#94A3B8]"></i>
+            <span>Certificates, alarms, lease and inspection dates sync automatically</span>
+        </p>
     </div>`;
 }
 
@@ -16366,10 +16452,7 @@ function screenConductInspection() {
             </div>
         </div>
 
-        <!-- Overall Rating Picker -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            ${renderInspectionRatingPicker(STATE.inspectionRating || 4)}
-        </div>
+
 
         <!-- Room & Area Checklist (Live Walkthrough with Progress Tracking) -->
         ${(() => {
@@ -16953,12 +17036,15 @@ function screenRescheduleInspectionEnhanced() {
 
 function screenAddFlat() {
     const p = PROPERTIES[STATE.propertyId];
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(STATE.propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
+    const unitWordCap = isHmo ? 'Room' : 'Unit';
     const sourceName = STATE.flatDuplicateFrom || '';
     const isDup = !!sourceName;
     const draft = flatDraftFromSource(STATE.propertyId, sourceName || null);
     const pendingPhotos = STATE.pendingFlatPhotos || [];
     const pendingCover = STATE.pendingFlatCover ?? 0;
-    return `${topBar(isDup ? 'Duplicate unit' : 'Add unit', { back: true, sub: p?.name || '' })}
+    return `${topBar(isDup ? `Duplicate ${unitWord}` : `Add ${unitWord}`, { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter flat-edit-page">
         ${isDup ? `<p class="text-[12px] text-[#64748B] mb-2">Copied from ${escapeHtml(sourceName)}</p>` : ''}
         ${renderFlatUnitPhotoPicker(pendingPhotos, pendingCover, {
@@ -16968,7 +17054,7 @@ function screenAddFlat() {
                 : 'Add multiple photos and tap ★ to choose which shows on the home screen.',
         })}
         <div class="flat-edit-fields stack-sm">
-            <div class="form-field"><label class="form-label">Unit name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${draft.name.replace(/"/g, '&quot;')}" placeholder="e.g. Flat 2A"></div>
+            <div class="form-field"><label class="form-label">${unitWordCap} name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${draft.name.replace(/"/g, '&quot;')}" placeholder="e.g. ${isHmo ? 'Room 2A' : 'Flat 2A'}"></div>
             <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${draft.rent}" min="1" step="1"></div>
             <div class="grid grid-cols-3 gap-3">
                 <div class="form-field"><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${draft.beds}" min="0"></div>
@@ -16981,7 +17067,7 @@ function screenAddFlat() {
             </div>
             ${flatUnitExtraFieldsHtml(draft, STATE.propertyId)}
         </div>
-        <button data-action="save" class="btn-primary w-full">${isDup ? 'Save unit' : 'Save unit'}</button>
+        <button data-action="save" class="btn-primary w-full">Save ${unitWord}</button>
     </div>`;
 }
 
@@ -17032,10 +17118,13 @@ function saveAddFlat() {
 }
 
 function screenEditFlat() {
-    const unit = STATE.selectedUnit || '';
     const p = PROPERTIES[STATE.propertyId];
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(STATE.propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
+    const unitWordCap = isHmo ? 'Room' : 'Unit';
+    const unit = STATE.selectedUnit || '';
     const u = getUnitByName(STATE.propertyId, unit);
-    if (!u) return `${topBar('Edit unit', { back: true })}<div class="screen-content"><p class="ux-intro">Unit not found.</p></div>`;
+    if (!u) return `${topBar(`Edit ${unitWord}`, { back: true })}<div class="screen-content"><p class="ux-intro">Unit not found.</p></div>`;
     ensureFlatPhotos(STATE.propertyId);
     const gal = getFlatPhotoGallery(STATE.propertyId, unit);
     const photos = gal?.photos?.length ? gal.photos : [getFlatCoverPhoto(STATE.propertyId, unit)];
@@ -17044,13 +17133,13 @@ function screenEditFlat() {
     const rentAmt = flatEffectiveRentAmount(u, tenancy) || parseRentAmount(u.rent);
     const rent = rentAmt || '';
     const occ = u.status === 'occupied';
-    return `${topBar('Edit unit', { back: true, sub: `${p?.name || ''} · ${unitName(u)}` })}
+    return `${topBar(`Edit ${unitWord}`, { back: true, sub: `${p?.name || ''} · ${unitName(u)}` })}
     <div class="screen-content screen-content-sm screen-enter flat-edit-page">
         ${renderFlatUnitPhotoPicker(photos, cover, {
             coverAction: 'set-flat-cover',
             removeAction: 'remove-flat-photo',
             uploadAction: 'upload-flat-photo',
-            uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
+            uploadLabel: photos.length ? 'Add more photos' : `Add ${unitWord} photos`,
             hint: 'Tap ★ on any photo to set it as the cover. This shows in Overview and unit lists.',
         })}
         <div class="flat-edit-status card">
@@ -17061,12 +17150,12 @@ function screenEditFlat() {
             <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
         </div>
         <div class="flat-edit-fields stack-sm">
-            <div class="form-field"><label class="form-label">Unit name</label><input data-field="flatName" type="text" class="form-input" value="${unitName(u).replace(/"/g, '&quot;')}"></div>
+            <div class="form-field"><label class="form-label">${unitWordCap} name</label><input data-field="flatName" type="text" class="form-input" value="${unitName(u).replace(/"/g, '&quot;')}"></div>
             <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${rent}" min="1" step="1"></div>
             <div class="grid grid-cols-3 gap-3">
                 <div class="form-field"><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${u.beds != null ? u.beds : ''}" min="0" placeholder="2"></div>
                 <div class="form-field"><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${u.baths != null ? u.baths : ''}" min="0" placeholder="1"></div>
-                <div class="form-field"><label class="form-label">Unit size (sq ft)</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
+                <div class="form-field"><label class="form-label">${unitWordCap} size (sq ft)</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${u.floor != null && u.floor !== '' ? u.floor : ''}" placeholder="0 = ground" min="0"></div>
@@ -17122,10 +17211,14 @@ function saveFlatDetails() {
 function screenUnitUtilities() {
     const unit = STATE.selectedUnit || '';
     const p = PROPERTIES[STATE.propertyId];
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(STATE.propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
+    const unitWordCap = isHmo ? 'Room' : 'Unit';
+    const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
     const util = getUnitUtilityMeta(STATE.propertyId, unit);
     const billOptions = ['Electricity', 'Gas', 'Water', 'Internet', 'Council Tax', 'TV Licence', 'Oil / LPG', 'Communal heating'];
     const customList = util.customUtilities || [];
-    return `${topBar('Unit Utilities', { back: true, sub: `${p?.name || ''} · ${unit}` })}
+    return `${topBar(`${unitWordCap} Utilities`, { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
     <div class="screen-content screen-content-sm screen-enter unit-util-page">
         <div class="unit-util-row">
             <label class="form-label unit-util-row-label">Who pays utilities?</label>
@@ -17307,7 +17400,8 @@ function screenFlatKeys() {
     const keys = STATE.flatKeysEdit;
     const { members } = getFlatMemberRoster(STATE.propertyId, unit);
     const holderOptions = members.map(m => m.name).filter(Boolean);
-    return `${topBar('Keys', { back: true, sub: `${p?.name || ''} · ${unit}` })}
+    const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
+    return `${topBar('Keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
     <div class="screen-content screen-content-sm screen-enter">
         <div class="stack-sm">
         ${keys.map((k, i) => `
@@ -17682,6 +17776,13 @@ function screenPropertyDetailsEdit(section) {
         <div><label class="form-label">Address</label><input data-field="info_address" type="text" class="form-input" value="${escapeHtml(p?.address || '')}" placeholder="e.g. London, SW1A 1AA"></div>
         <div><label class="form-label">Postcode</label><input data-field="info_postcode" type="text" class="form-input" value="${escapeHtml(info.postcode || '')}" placeholder="e.g. SW1A 1AA"></div>
         ${formSelectField('Property Type', 'info_type', PROPERTY_TYPE_OPTIONS, info.type, { blankLabel: 'Select type' })}
+        <div class="form-group mb-3">
+            <label class="flex items-center gap-2.5 cursor-pointer py-1 select-none">
+                <input type="checkbox" data-field="info_isHmo" class="w-4 h-4 rounded border-[#CBD5E1] text-[#0F766E] focus:ring-0"${(info.isHmo || p?.isHmo || meta.isHmo) ? ' checked' : ''}>
+                <span class="text-[13px] font-semibold text-[#0F172A]">HMO (House in Multiple Occupation)</span>
+            </label>
+            <p class="text-[11px] text-[#64748B] mt-0.5 ml-6.5">Select if this property is let as separate rooms or to multiple households.</p>
+        </div>
         <div><label class="form-label">Year Built</label><input data-field="info_built" type="number" class="form-input" value="${escapeHtml(info.built || '')}" placeholder="e.g. 1985" min="1700" max="2030"></div>
         <div><label class="form-label">Date Purchased</label><input data-field="info_purchaseDate" type="date" class="form-input" value="${toDateInputValue(info.purchaseDate)}"></div>
         <div class="grid grid-cols-2 gap-3">
@@ -17764,9 +17865,13 @@ function savePropertyMeta(section) {
         const valuationAmount = valuationAmountRaw === ''
             ? ''
             : String(parseRentAmount(valuationAmountRaw) || valuationAmountRaw);
+        const isHmo = !!document.querySelector('[data-field="info_isHmo"]')?.checked;
+        if (p) p.isHmo = isHmo;
+        meta.isHmo = isHmo;
         meta.info = {
             ...(meta.info || {}),
             type: fieldVal('info_type'),
+            isHmo,
             built: fieldVal('info_built'),
             totalSqft: fieldVal('info_totalSqft'),
             postcode,
@@ -18032,6 +18137,13 @@ function screenAddPropertyEnhanced() {
         ${labeledInput('Street address', 'address', '', 'text', 'Street and town', true)}
         ${labeledInput('Postcode', 'postcode', '', 'text', 'e.g. SW1A 1AA')}
         ${formSelectField('Property type', 'propertyType', PROPERTY_TYPE_OPTIONS, '', { blankLabel: 'Select type (optional)' })}
+        <div class="form-group mb-3">
+            <label class="flex items-center gap-2.5 cursor-pointer py-1 select-none">
+                <input type="checkbox" data-field="isHmo" class="w-4 h-4 rounded border-[#CBD5E1] text-[#0F766E] focus:ring-0">
+                <span class="text-[13px] font-semibold text-[#0F172A]">HMO (House in Multiple Occupation)</span>
+            </label>
+            <p class="text-[11px] text-[#64748B] mt-0.5 ml-6.5">Select if this property is let as separate rooms or to multiple households.</p>
+        </div>
         <div class="grid grid-cols-2 gap-3">
             ${labeledInput('Year built', 'yearBuilt', '', 'number', 'e.g. 1985')}
             ${labeledInput('Date purchased', 'purchaseDate', '', 'date', '')}
@@ -18058,10 +18170,12 @@ function saveAddProperty() {
     const id = AppStore.nextId(PROPERTIES);
     const postcode = (fieldVal('postcode') || '').trim();
     const address = (fieldVal('address') || '').trim();
+    const isHmo = !!document.querySelector('[data-field="isHmo"]')?.checked;
     PROPERTIES.push({
         id,
         name: fieldVal('name').trim(),
         address,
+        isHmo,
         status: 'Vacant',
         statusColor: ['#FEF3C7', '#D97706'],
         tenant: null,
@@ -18069,6 +18183,7 @@ function saveAddProperty() {
         compliance: false,
     });
     const meta = AppStore.meta(id);
+    meta.isHmo = isHmo;
     meta.units = [];
     meta.building = { flatCount: 0, floors: 0, flatsPerFloor: 0, useFloors: false };
     const photos = [...(STATE.pendingPropertyPhotos || [])];
@@ -18088,6 +18203,7 @@ function saveAddProperty() {
     meta.info = {
         ...(meta.info || {}),
         type: fieldVal('propertyType') || '',
+        isHmo,
         postcode,
         built: yearBuilt,
         purchaseDate,
@@ -18510,17 +18626,11 @@ function removeTenantInspPhoto(idx) {
 }
 
 function saveInspection() {
-    if (!validateFields([['inspDate', 'Date', v => v], ['rating', 'Rating', v => v]])) return;
-    const rating = Math.min(5, Math.max(1, Math.round(parseFloat(fieldVal('rating')) || STATE.inspectionRating || 0)));
-    if (!rating) {
-        toast('Select an overall rating');
-        return;
-    }
+    if (!validateFields([['inspDate', 'Date', v => v]])) return;
     const photoCount = STATE.inspectionPhotos?.length || 0;
     const payload = {
         type: fieldVal('inspType'),
         date: fieldVal('inspDate'),
-        rating: String(rating),
         notes: fieldVal('inspNotes') || '',
         photos: photoCount,
         photoUrls: [...(STATE.inspectionPhotos || [])],
@@ -20535,6 +20645,9 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-reminder-filter]').forEach(el => {
         el.onclick = () => { STATE.reminderFilter = el.dataset.reminderFilter; render(); };
+    });
+    app.querySelectorAll('[data-action="filter-reminder-property"]').forEach(el => {
+        el.onchange = (e) => { STATE.reminderPropertyFilter = e.target.value; render(); };
     });
     app.querySelectorAll('[data-action="edit-reminder"]').forEach(el => {
         el.onclick = (e) => { e.stopPropagation(); go('edit-reminder', { reminderId: +el.dataset.rid }); };
