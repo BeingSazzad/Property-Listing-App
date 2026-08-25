@@ -9887,20 +9887,25 @@ function renderPropertySectionNav(activeTab) {
     </div>`;
 }
 
-function unitFilterLabel(filter) {
-    return { all: 'All units', occupied: 'Occupied', vacant: 'Vacant' }[filter] || 'All units';
+function unitFilterLabel(filter, propertyId = STATE.propertyId) {
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWordPlural = isHmo ? 'rooms' : 'units';
+    return { all: `All ${unitWordPlural}`, occupied: 'Occupied', vacant: 'Vacant' }[filter] || `All ${unitWordPlural}`;
 }
 
 function unitFilterSheet() {
     if (!STATE.showUnitFilters || STATE.screen !== 'property-detail' || STATE.tab !== 'units') return '';
     const propertyId = STATE.propertyId;
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWordSingle = isHmo ? 'room' : 'unit';
+    const unitWordPlural = isHmo ? 'rooms' : 'units';
     const allUnits = getPropertyUnits(propertyId);
     const vacantCount = allUnits.filter(u => u.status !== 'occupied').length;
     const occupiedCount = allUnits.length - vacantCount;
     const unitFilter = STATE.unitFilter || 'all';
     const filteredCount = filterPropertyUnits(allUnits).length;
     const options = [
-        ['all', 'All units', allUnits.length],
+        ['all', `All ${unitWordPlural}`, allUnits.length],
         ['occupied', 'Occupied', occupiedCount],
         ['vacant', 'Vacant', vacantCount],
     ];
@@ -9909,7 +9914,7 @@ function unitFilterSheet() {
     <div class="filter-sheet open">
         <div class="filter-sheet-handle"></div>
         <div class="filter-sheet-header">
-            <p class="filter-sheet-title">Filter units</p>
+            <p class="filter-sheet-title">Filter ${unitWordPlural}</p>
             <button type="button" data-action="reset-unit-filters" class="filter-sheet-reset">Reset</button>
         </div>
         <div class="filter-sheet-body">
@@ -9922,7 +9927,7 @@ function unitFilterSheet() {
             </div>
         </div>
         <div class="filter-sheet-footer">
-            <button type="button" data-action="close-unit-filters" class="btn-primary w-full py-3.5 text-[14px]">Show ${filteredCount} unit${filteredCount === 1 ? '' : 's'}</button>
+            <button type="button" data-action="close-unit-filters" class="btn-primary w-full py-3.5 text-[14px]">Show ${filteredCount} ${filteredCount === 1 ? unitWordSingle : unitWordPlural}</button>
         </div>
     </div>`;
 }
