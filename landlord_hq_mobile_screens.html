@@ -10236,11 +10236,12 @@
             border-color: #2563EB; background: #EFF6FF; color: #2563EB;
         }
         .pay-remind-bar {
-            position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-            padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom));
-            background: rgba(255,255,255,0.96); backdrop-filter: blur(8px);
-            border-top: 1px solid #E2E8F0;
-            opacity: 0.5; pointer-events: none;
+            position: fixed; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: var(--canvas); bottom: 0; z-index: 40;
+            padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom, 0px));
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(8px);
+            border-top: 1px solid #E2E8F0; box-shadow: 0 -4px 14px rgba(15,23,42,0.08);
+            opacity: 0.5; pointer-events: none; box-sizing: border-box;
         }
         .pay-remind-bar--active { opacity: 1; pointer-events: auto; }
         .pay-remind-bar-btn {
