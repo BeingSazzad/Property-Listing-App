@@ -80,6 +80,10 @@ const AppStore = {
             if (!raw) return this.seed();
             const d = JSON.parse(raw);
             if (d.properties) PROPERTIES.splice(0, PROPERTIES.length, ...d.properties);
+            if (PROPERTIES[2]) {
+                PROPERTIES[2].isHmo = true;
+                PROPERTIES[2].rent = '£2,460';
+            }
             if (d.invoices) INVOICES.splice(0, INVOICES.length, ...d.invoices);
             if (d.maintenance) MAINTENANCE_ITEMS.splice(0, MAINTENANCE_ITEMS.length, ...d.maintenance);
             if (d.reminders) this.reminders = d.reminders;
@@ -108,6 +112,7 @@ const AppStore = {
             if (d.landlordProfile) Object.assign(LANDLORD_USER, d.landlordProfile);
             if (d.preferences) Object.entries(d.preferences).forEach(([k, v]) => { if (PREF_OPTIONS[k]) PREF_OPTIONS[k].current = v; });
             if (typeof syncConversationsFromStore === 'function') syncConversationsFromStore();
+            [0, 1, 2, 3].forEach(pid => { if (typeof syncPropertyStatus === 'function') syncPropertyStatus(pid); });
             if (typeof initMaintenanceHistory === 'function') initMaintenanceHistory();
             if (typeof syncSmartReminders === 'function') syncSmartReminders(false);
             if (typeof syncSharedDocToTenants === 'function' && this.documents) {
