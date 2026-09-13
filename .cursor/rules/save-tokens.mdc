@@ -1,0 +1,13 @@
+---
+description: Keep Cursor token use low on every turn
+alwaysApply: true
+---
+
+# Save tokens
+
+- Grep/glob first; read only the needed line range.
+- No explore/generalPurpose/parallel agents unless asked.
+- No extra skills, Figma, canvas, or browser unless this task needs them.
+- Short replies. No app recap. No full-file dumps.
+- Stop when the ask is done. No commit/PR unless asked.
+- Browser verify (if required): one pass on the changed flow only.

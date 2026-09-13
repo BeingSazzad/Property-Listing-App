@@ -1,0 +1,37 @@
+---
+description: Landlord HQ product IA, design, and session conventions
+alwaysApply: true
+---
+
+# Landlord HQ
+
+Frontend-only UK property-management prototype.
+
+**Entry:** `landlord_hq_mobile_screens.html`  
+**JS:** `landlord_hq_screens.js`, `landlord_hq_features.js`, `landlord_hq_contractor.js`, `landlord_hq_product.js`  
+**Serve:** `http://127.0.0.1:4173/` — after JS/CSS change bump `?v=` on all four script tags, then Ctrl+F5.
+
+**Demo:** landlord `john@landlordhq.co.uk` / tenant `sarah.j@email.com` / contractor `mike@plumberpro.co.uk` — all `Password1`. Role-select taps also enter demo.
+
+## IA (do not mix)
+
+- **Property** = building (one record): address, EPC, certs, house rules, building photos, communal appliances/alarms, building inventory/inspections, council tax *band*, building alarm code.
+- **Flat/unit** = this unit: rent, tenancy, members, keys register, who-pays utilities, unit photos, beds/sqft/furnished.
+- **Person** = tenant: NID/ID, personal, issued keys only.
+
+No fake unit chips on building lists. Flat Unit records: utilities/keys/photos, then a **Building** group for appliances/alarms/certs/inspections/inventory/files. Tenant ID stays on tenant profile, not the flat.
+
+## Design
+
+Tokens already live in the HTML (`--radius-card`, `--color-primary`, `.card`, `.btn-primary`, `.flat-records-nav-row`). Reuse them. No new random components, no lecture helper copy. Mock data is for visuals — do not “fix” demo dates/gaps as bugs.
+
+## Product calls already made
+
+- Keys: tenant/tenancy = issued to that person; Flat → Keys = unit register (type, qty, location, Held by).
+- Tenant Active tenancy: home → lease → deposit → More list. No 7-button grid. Tenant does not edit deposit scheme. Photos & info → `tenant-building-info`.
+- Contractor Payout click → job payout/invoice (`data-jtab="invoice"`), not property documents.
+- Profile has no Growth / Cross-sell row.
+
+## How to talk / ship
+
+User writes Bangla + English. Reply short. Use **apni**, never tui. No commit/PR/push unless asked.

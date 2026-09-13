@@ -1294,13 +1294,17 @@ function renderTenantLivingCard(listItem) {
         (typeof hasUnitSpecCount === 'function' ? hasUnitSpecCount(unit.baths) : unit.baths != null && unit.baths !== '')
             ? `${unit.baths} bath${unit.baths === 1 ? '' : 's'}` : null,
     ].filter(Boolean) : [];
+    const tenantApp = typeof STATE !== 'undefined' && STATE.userRole === 'tenant';
+    const infoAttrs = tenantApp
+        ? 'data-go="tenant-building-info"'
+        : `data-go="property-detail" data-pid="${pid}" data-tab="info" data-unit="${escapeHtml(listItem.unit)}"`;
     return `
     <div class="tenant-living-card card">
         <div class="tenant-living-head">
             <p class="tenant-living-label">Currently living in</p>
-            <button type="button" data-go="property-detail" data-pid="${pid}" data-tab="info" data-unit="${escapeHtml(listItem.unit)}" class="tenant-living-link">Photos & info</button>
+            <button type="button" ${infoAttrs} class="tenant-living-link">Photos & info</button>
         </div>
-        <button type="button" data-go="property-detail" data-pid="${pid}" data-tab="info" data-unit="${escapeHtml(listItem.unit)}" class="tenant-living-main w-full text-left">
+        <button type="button" ${infoAttrs} class="tenant-living-main w-full text-left">
             <img src="${escapeHtml(cover)}" alt="" class="tenant-living-thumb">
             <div class="tenant-living-body min-w-0">
                 <p class="tenant-living-name">${escapeHtml(p.name)}</p>
@@ -1527,24 +1531,28 @@ function renderTenantDepositSection(tenantId) {
         depositReturn ? { label: 'Deposit return', value: depositReturn } : null,
     ].filter(Boolean);
     const listItem = TENANT_LIST[tenantId];
-    const canEditScheme = listItem?.status === 'active' && listItem?.unit;
-    if (!amounts.length && !metaItems.length) return '';
+    const tenantApp = typeof STATE !== 'undefined' && STATE.userRole === 'tenant';
+    const canEditScheme = !tenantApp && listItem?.status === 'active' && listItem?.unit;
+    const tenantMeta = tenantApp
+        ? metaItems.filter(item => item.label === 'Scheme' || item.label === 'Deposit return')
+        : metaItems;
+    if (!amounts.length && !tenantMeta.length) return '';
     return `
     <div class="tenant-v2-section">
         <div class="tenant-v2-section-head">
-            <h3>Deposit & move-in</h3>
+            <h3>${tenantApp ? 'Deposit' : 'Deposit & move-in'}</h3>
             ${canEditScheme
                 ? `<button type="button" data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit scheme</button>`
-                : `<button type="button" data-ttab="property" class="tenant-v2-link">Tenancy</button>`}
+                : ''}
         </div>
         <div class="card tenant-deposit-card">
             <div class="tenant-deposit-card-head">
                 ${amounts.length ? `<p class="tenant-deposit-line">${escapeHtml(amounts.join(' · '))}</p>` : '<p class="tenant-deposit-line">Deposit on file</p>'}
                 ${renderDepositStatusBadge(dep.status, dep.scheme)}
             </div>
-            ${metaItems.length ? `
+            ${tenantMeta.length ? `
             <div class="tenant-deposit-facts">
-                ${metaItems.map(item => `
+                ${tenantMeta.map(item => `
                 <div class="tenant-deposit-fact">
                     <span class="tenant-deposit-fact-label">${escapeHtml(item.label)}</span>
                     <span class="tenant-deposit-fact-value">${escapeHtml(item.value)}</span>
@@ -4006,30 +4014,17 @@ function renderInventoryLayoutSection(propertyId) {
 }
 
 function renderPropertyInventoryTab(propertyId) {
-    const units = getPropertyUnits(propertyId);
-    const selectedUnit = STATE.selectedUnit || (units[0] ? unitName(units[0]) : '');
     const rooms = getInventoryRooms(propertyId);
     return `
     <div class="screen-content screen-content-sm">
-        ${units.length > 1 ? `
-        <div class="mb-3">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Select Unit Inventory</p>
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
-                ${units.map(u => {
-                    const name = unitName(u);
-                    const active = selectedUnit === name;
-                    return `<button type="button" data-action="select-inventory-unit" data-unit="${escapeHtml(name)}" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer ${active ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-white text-[#475569] border border-[#E2E8F0] hover:border-[#CBD5E1]'}">${escapeHtml(name)}</button>`;
-                }).join('')}
-            </div>
-        </div>` : ''}
         ${renderInventoryLayoutSection(propertyId)}
         <div class="flex items-center justify-between mt-4 mb-2">
-            <p class="screen-section-title m-0">${units.length > 1 ? `${selectedUnit} Room Checklists` : 'Room Checklists'}</p>
+            <p class="screen-section-title m-0">Room Checklists</p>
             <span class="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2.5 py-0.5 rounded-full">${rooms.length} Rooms Tracked</span>
         </div>
         <div class="stack-sm">
         ${rooms.map(([r, n, icon, idx]) => `
-        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" data-unit="${selectedUnit}" class="card w-full p-4 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-4 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
             <div class="flex items-center gap-3.5 min-w-0">
                 <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
                 <div class="min-w-0"><p class="text-[15px] font-bold text-[#0F172A] m-0">${escapeHtml(r)}</p><p class="text-[12px] text-[#64748B] truncate mt-0.5 m-0">${escapeHtml(n)}</p></div>
@@ -10153,8 +10148,6 @@ function openAlarmItemModal(alarmId) {
 function screenPropertyAppliances() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId];
-    const units = getPropertyUnits(propertyId);
-    const selectedUnit = STATE.selectedUnit || (units[0] ? unitName(units[0]) : '');
     const meta = AppStore.meta(propertyId);
     const appliances = meta.appliances || [];
 
@@ -10174,22 +10167,11 @@ function screenPropertyAppliances() {
         <span>Edit</span>
     </button>`;
 
-    return `${topBar('Appliances', { back: true, sub: `${p?.name || ''}${selectedUnit ? ` · ${selectedUnit}` : ''}`, rightBtn: editBtn })}
+    return `${topBar('Appliances', { back: true, sub: p?.name || '', rightBtn: editBtn })}
     <div class="screen-content screen-enter space-y-4 text-left pb-6">
-        ${units.length > 1 ? `
-        <div class="mb-2">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Select Unit</p>
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
-                ${units.map(u => {
-                    const name = unitName(u);
-                    const active = selectedUnit === name;
-                    return `<button type="button" data-action="select-inventory-unit" data-unit="${escapeHtml(name)}" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer ${active ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-white text-[#475569] border border-[#E2E8F0] hover:border-[#CBD5E1]'}">${escapeHtml(name)}</button>`;
-                }).join('')}
-            </div>
-        </div>` : ''}
         <div class="space-y-2.5">
             <div class="flex items-center justify-between px-1">
-                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${units.length > 1 ? `${selectedUnit} Appliances` : 'Appliances'} (${displayAppliances.length})</span>
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Appliances (${displayAppliances.length})</span>
             </div>
             <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAppliances.map(a => {
@@ -10224,8 +10206,6 @@ function screenPropertyAppliances() {
 function screenPropertyAlarms() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId];
-    const units = getPropertyUnits(propertyId);
-    const selectedUnit = STATE.selectedUnit || (units[0] ? unitName(units[0]) : '');
     const meta = AppStore.meta(propertyId);
     const alarms = meta.alarms || [];
 
@@ -10242,22 +10222,11 @@ function screenPropertyAlarms() {
         <span>Edit</span>
     </button>`;
 
-    return `${topBar('Safety Alarms', { back: true, sub: `${p?.name || ''}${selectedUnit ? ` · ${selectedUnit}` : ''}`, rightBtn: editBtn })}
+    return `${topBar('Alarms', { back: true, sub: p?.name || '', rightBtn: editBtn })}
     <div class="screen-content screen-enter space-y-4 text-left pb-6">
-        ${units.length > 1 ? `
-        <div class="mb-2">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Select Unit</p>
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
-                ${units.map(u => {
-                    const name = unitName(u);
-                    const active = selectedUnit === name;
-                    return `<button type="button" data-action="select-inventory-unit" data-unit="${escapeHtml(name)}" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer ${active ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-white text-[#475569] border border-[#E2E8F0] hover:border-[#CBD5E1]'}">${escapeHtml(name)}</button>`;
-                }).join('')}
-            </div>
-        </div>` : ''}
         <div class="space-y-2.5">
             <div class="flex items-center justify-between px-1">
-                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${units.length > 1 ? `${selectedUnit} Safety Alarms` : 'Safety Alarms'} (${displayAlarms.length})</span>
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Alarms (${displayAlarms.length})</span>
             </div>
             <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAlarms.map(al => {
@@ -10903,9 +10872,7 @@ function flatDetailBuildingMeta(propertyId, u) {
     const info = AppStore.meta(propertyId).info || {};
     const parts = [];
     if (u.unitType) parts.push(u.unitType);
-    else if (info.type && info.type !== '—') parts.push(`${info.type} · building`);
     if (u.yearBuilt) parts.push(`Built ${u.yearBuilt}`);
-    else if (info.built) parts.push(`Built ${info.built} · building`);
     if (u.furnished) parts.push(u.furnished);
     else if (info.furnished && getPropertyUnits(propertyId).length === 1) parts.push(info.furnished);
     if (!parts.length) return '';
@@ -11041,12 +11008,11 @@ function memberRentOverview(propertyId, unit, member, tenancy) {
 
 function flatDetailQuickLinks(propertyId, unit) {
     const meta = flatQuickActionMeta(propertyId, unit);
-    const pMeta = AppStore.meta(propertyId);
-    const applianceCount = (pMeta.appliances || []).length || 4;
+    const keyCount = typeof getUnitKeys === 'function' ? getUnitKeys(propertyId, unit).length : 0;
     const links = [
         { icon: 'banknote', tone: 'pay', title: 'Payments', sub: meta.pay, ftab: 'payments' },
         { icon: 'zap', tone: 'util', title: 'Utilities', sub: meta.utilities, go: 'unit-utilities', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
-        { icon: 'plug', tone: 'docs', title: 'Appliances', sub: `${applianceCount} items`, go: 'property-appliances', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
+        { icon: 'key-round', tone: 'docs', title: 'Keys', sub: keyCount ? `${keyCount} set${keyCount === 1 ? '' : 's'}` : 'Register', go: 'flat-keys', attrs: `data-pid="${propertyId}" data-unit="${unit}"` },
         { icon: 'folder-open', tone: 'docs', title: 'Records', sub: meta.records, ftab: 'records' },
     ];
     return `
@@ -11189,11 +11155,30 @@ function renderFlatDetailOverviewRecent(propertyId, unit) {
 function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
     const roster = getFlatMemberRoster(propertyId, unit);
     const peopleCtx = { occ: u.status === 'occupied', tenancy, members: roster.members, count: roster.count, pendingInvite: pendingInvitesForProperty(propertyId).find(i => i.unit === unit) };
+    const keyCount = typeof getUnitKeys === 'function' ? getUnitKeys(propertyId, unit).length : 0;
+    const keyMeta = keyCount ? `${keyCount} set${keyCount === 1 ? '' : 's'} · who holds them` : 'Register key sets';
     return `
     <div class="flat-dt-tab-panel flat-dt-tab-panel--overview space-y-4">
         ${renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
         ${renderFlatOverviewTenantsList(propertyId, unit, peopleCtx)}
-        ${typeof renderFlatRoomSizesSection === 'function' ? renderFlatRoomSizesSection(propertyId, unit) : ''}
+        <section class="card flat-records-nav-list">
+            <button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(unit)}" class="flat-records-nav-row w-full text-left">
+                <span class="flat-records-nav-icon"><i data-lucide="key-round" class="w-4 h-4"></i></span>
+                <span class="flat-records-nav-body">
+                    <span class="flat-records-nav-label">Keys & Fobs</span>
+                    <span class="flat-records-nav-meta">${keyMeta}</span>
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>
+            <button type="button" data-ftab="records" class="flat-records-nav-row w-full text-left">
+                <span class="flat-records-nav-icon"><i data-lucide="folder-open" class="w-4 h-4"></i></span>
+                <span class="flat-records-nav-body">
+                    <span class="flat-records-nav-label">Unit records</span>
+                    <span class="flat-records-nav-meta">Meters & files</span>
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>
+        </section>
     </div>`;
 }
 
@@ -11211,7 +11196,7 @@ function renderFlatDetailActivityTab(propertyId, unit) {
         <div class="card flat-dt-empty p-8 text-center">
             <i data-lucide="activity" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
             <p class="text-[13px] font-semibold mt-3 text-[#0F172A]">No activity yet</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Rent, maintenance and inspections for this unit appear here.</p>
+            <p class="text-[12px] text-[#64748B] mt-1">Rent and maintenance for this unit appear here.</p>
         </div>`}
     </div>`;
 }
@@ -11251,33 +11236,6 @@ function renderFlatUnitDocumentsSection(propertyId, unit, opts = {}) {
     </section>`;
 }
 
-function renderFlatTenantIdentitySection(propertyId, unit) {
-    const { members } = getFlatMemberRoster(propertyId, unit);
-    const lead = members.find(m => m.isLead) || members.find(m => m.listId != null) || members[0];
-    const tid = lead?.listId ?? lead?.tenantId;
-    const t = tid != null ? TENANTS[tid] : null;
-    if (!t) return '';
-    const hasNid = !!(t.idNumber || t.nidProof || (typeof getTenantNidProof === 'function' && getTenantNidProof(tid)));
-    if (!hasNid) return '';
-    const nidDoc = typeof getTenantNidProof === 'function' ? getTenantNidProof(tid) : t.nidProof;
-    return `
-    <section class="card flat-records-tenant">
-        <div class="flat-dt-section-head">
-            <h3 class="flat-dt-section-title">Tenant ID</h3>
-            <button type="button" data-go="tenant-detail" data-tid="${tid}" data-tenant-tab="personal" class="flat-dt-section-link">View</button>
-        </div>
-        <div class="flat-records-tenant-rows">
-            ${t.idNumber ? `<div class="flat-records-kv"><span class="flat-records-k">NID</span><span class="flat-records-v">${escapeHtml(t.idNumber)}</span></div>` : ''}
-            ${nidDoc ? `
-            <button type="button" data-go="document-preview" data-preview-source="tenant-nid" data-tid="${tid}" class="flat-dt-docs-row w-full text-left">
-                <span class="flat-dt-docs-icon"><i data-lucide="id-card" class="w-4 h-4"></i></span>
-                <span class="flat-dt-docs-name">${escapeHtml(typeof nidDoc === 'string' ? nidDoc : 'NID proof')}</span>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-            </button>` : ''}
-        </div>
-    </section>`;
-}
-
 function renderFlatDetailRecordsTab(propertyId, unit, p) {
     const issues = propertyComplianceCertRows(propertyId).filter(r => r.st.tone !== 'ok').length;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(propertyId).length : 0;
@@ -11312,22 +11270,20 @@ function renderFlatDetailRecordsTab(propertyId, unit, p) {
     return `
     <div class="flat-dt-tab-panel flat-dt-tab-panel--records">
         ${renderFlatUnitDocumentsSection(propertyId, unit, { full: true })}
-        ${renderFlatTenantIdentitySection(propertyId, unit)}
         <section class="card flat-records-nav-list">
-            ${navRow('zap', 'Utilities & Wi-Fi', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters, Wi-Fi & Council Tax')}
-            ${navRow('plug', 'Appliances', `data-go="property-appliances" data-pid="${propertyId}" data-unit="${unit}"`, 'Boiler, Oven, Fridge & White Goods')}
-            ${navRow('shield-alert', 'Safety Alarms', `data-go="property-alarms" data-pid="${propertyId}" data-unit="${unit}"`, 'Smoke, Heat & CO Detectors')}
-            ${navRow('key-round', 'Keys & Fobs', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register key sets')}
-            ${navRow('images', 'Unit photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
+            ${navRow('zap', 'Utilities', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters & bills')}
+            ${navRow('key-round', 'Keys', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register sets')}
+            ${navRow('images', 'Photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
         </section>
         <section class="flat-records-building-block">
-            <p class="flat-section-eyebrow">Building & Asset Records</p>
-            <p class="flat-records-building-hint">Shared across all units in this property</p>
+            <p class="flat-section-eyebrow">Building</p>
             <div class="card flat-records-nav-list">
-                ${navRow('shield-check', 'Building Certificates', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance"`, issues ? `${issues} need attention` : 'Gas, EICR, EPC & safety')}
-                ${navRow('clipboard-list', 'Inspections', `data-go="property-inspections" data-pid="${propertyId}" data-unit="${unit}"`, inspMeta)}
-                ${navRow('package', 'Inventory', `data-go="property-inventory" data-pid="${propertyId}" data-unit="${unit}"`, invMeta)}
-                ${navRow('folder-open', 'Building files', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="documents"`, 'Building documents & folders')}
+                ${navRow('plug', 'Appliances', `data-go="property-appliances" data-pid="${propertyId}"`, 'Boiler, oven, white goods')}
+                ${navRow('shield-alert', 'Alarms', `data-go="property-alarms" data-pid="${propertyId}"`, 'Smoke, heat & CO')}
+                ${navRow('shield-check', 'Certificates', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance"`, issues ? `${issues} need attention` : 'Gas, EICR, EPC')}
+                ${navRow('clipboard-list', 'Inspections', `data-go="property-inspections" data-pid="${propertyId}"`, inspMeta)}
+                ${navRow('package', 'Inventory', `data-go="property-inventory" data-pid="${propertyId}"`, invMeta)}
+                ${navRow('folder-open', 'Files', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="documents"`, 'Documents & folders')}
             </div>
         </section>
     </div>`;
@@ -11439,7 +11395,6 @@ function renderFlatBuildingPhotosSection(propertyId, opts = {}) {
                 <h3 class="flat-dt-building-title">Building photos</h3>
                 <span class="flat-dt-building-count">${photos.length}</span>
             </div>
-            <p class="flat-dt-building-desc">Shared photos for the whole property — not just this unit.</p>
             <div class="flat-dt-building-grid">
                 ${photos.slice(0, 3).map(src => `<div class="flat-dt-building-thumb"><img src="${src}" alt=""></div>`).join('')}
             </div>
@@ -16980,52 +16935,47 @@ function screenReminderDetail() {
     const badge = reminderStatusBadge(r);
     const action = reminderPrimaryAction(r);
     const dueLabel = formatReminderDue(r.due);
-    const statusLabel = formatReminderDaysLeft(r.daysLeft);
     const source = reminderSourceLabel(r);
     const recordsView = ['gas', 'electrical', 'epc', 'smoke', 'heat', 'co2', 'insurance', 'mortgage'].includes(r.type) ? 'compliance' : r.type === 'inspection' ? 'inspections' : 'compliance';
-    return `${topBar('Smart Reminder', { back: true })}
+    const row = (icon, label, attrs, danger = false) => `
+            <button type="button" ${attrs} class="flat-records-nav-row w-full text-left">
+                <span class="flat-records-nav-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
+                <span class="flat-records-nav-body"><span class="flat-records-nav-label${danger ? ' text-[#DC2626]' : ''}">${label}</span></span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>`;
+    return `${topBar('Smart Reminder', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-enter stack-sm">
-        <div class="reminder-detail-hero card p-4 urgency-${r.urgency}">
-            <div class="flex items-start gap-3">
-                <div class="dash-reminder-icon" style="background:${rt[3]};color:${rt[4]}"><i data-lucide="${rt[2]}" class="w-[22px] h-[22px]"></i></div>
-                <div class="flex-1 min-w-0">
+        <div class="card reminder-detail-hero urgency-${r.urgency}">
+            <div class="reminder-detail-head">
+                <div class="dash-reminder-icon" style="background:${rt[3]};color:${rt[4]}"><i data-lucide="${rt[2]}" class="w-5 h-5"></i></div>
+                <div class="reminder-detail-copy">
                     <p class="reminder-detail-type">${esc(rt[1])}</p>
                     <h2 class="reminder-detail-title">${esc(r.title)}</h2>
-                    <p class="reminder-detail-prop">${esc(p?.name || '—')}</p>
                 </div>
-                <span class="badge shrink-0" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>
+                <span class="badge shrink-0" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>
             </div>
             <div class="reminder-detail-meta">
                 <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Smart Reminder due</span>
+                    <span class="reminder-detail-meta-label">Due</span>
                     <span class="reminder-detail-meta-value">${esc(dueLabel)}</span>
                 </div>
                 ${r.expiryDate ? `
                 <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Expiry date</span>
+                    <span class="reminder-detail-meta-label">Expiry</span>
                     <span class="reminder-detail-meta-value">${esc(formatReminderDue(r.expiryDate))}</span>
                 </div>` : ''}
-                <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Status</span>
-                    <span class="reminder-detail-meta-value">${esc(statusLabel)}</span>
-                </div>
                 <div class="reminder-detail-meta-item">
                     <span class="reminder-detail-meta-label">Source</span>
                     <span class="reminder-detail-meta-value">${esc(source)}</span>
                 </div>
             </div>
         </div>
-        ${r.auto ? `
-        <div class="card p-3 bg-[#FFFBEB] border border-[#FDE68A]">
-            <p class="text-[12px] text-[#92400E] leading-relaxed">${r.expiryDate
-                ? 'This Smart Reminder is synced from your property records. The due date is when you should act — the expiry date is when the certificate or alarm actually expires.'
-                : 'This Smart Reminder is synced from your property records. Use the action below to update the certificate, alarm, lease or inspection — or change the due date manually.'}</p>
-        </div>` : ''}
-        <p class="screen-section-title">Actions</p>
-        <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full py-3 text-[13px]">${esc(action.label)}</button>
-        <button type="button" data-go="edit-reminder" data-rid="${r.id}" class="btn-secondary w-full py-3 text-[13px]">Change due date</button>
-        <button type="button" data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="${recordsView}" class="btn-secondary w-full py-3 text-[13px]">View property records</button>
-        <button type="button" data-action="delete-reminder" data-rid="${r.id}" class="btn-secondary w-full py-3 text-[13px]${r.auto ? '' : ' text-[#DC2626]'}">${r.auto ? 'Remove from list' : 'Delete Smart Reminder'}</button>
+        <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full">${esc(action.label)}</button>
+        <div class="card flat-records-nav-list">
+            ${row('calendar', 'Change due date', `data-go="edit-reminder" data-rid="${r.id}"`)}
+            ${row('folder', 'Property records', `data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="${recordsView}"`)}
+            ${row('trash-2', r.auto ? 'Remove from list' : 'Delete', `data-action="delete-reminder" data-rid="${r.id}"`, true)}
+        </div>
     </div>`;
 }
 
@@ -18597,7 +18547,7 @@ function openUtilityDetailModal(utilityId) {
 function screenPropertyDetailsEdit(section) {
     const meta = AppStore.meta(STATE.propertyId);
     const p = PROPERTIES[STATE.propertyId];
-    const titles = { alarms: 'Alarm Information', appliances: 'Appliances', utilities: 'Utilities', parking: 'Parking', info: 'Property Information' };
+    const titles = { alarms: 'Alarms', appliances: 'Appliances', utilities: 'Utilities', parking: 'Parking', info: 'Property Information' };
     let body = '';
     if (section === 'info') {
         const info = meta.info || {};
@@ -18629,7 +18579,7 @@ function screenPropertyDetailsEdit(section) {
             ? formSelectField('Furnished', 'info_furnished', FURNISHED_OPTIONS, info.furnished, { blankLabel: 'Not set' })
             : `<div class="form-field"><label class="form-label">Furnished</label><p class="form-helper mb-0">Set furnished status on each unit — this building has multiple flats.</p></div>`}
         <div><label class="form-label">Property Description</label><textarea data-field="info_description" class="form-input min-h-[96px] resize-none" placeholder="Listing or advertisement details…">${escapeHtml(info.description || '')}</textarea></div>
-        <div><label class="form-label">Alarm Code</label><input data-field="info_alarmCode" type="text" class="form-input" value="${escapeHtml(info.alarmCode || '')}" placeholder="Property security / alarm code" autocomplete="off"></div>
+        <div><label class="form-label">Alarm code</label><input data-field="info_alarmCode" type="text" class="form-input" value="${escapeHtml(info.alarmCode || '')}" placeholder="${getPropertyUnits(STATE.propertyId).length > 1 ? 'Communal / front door' : 'Security code'}" autocomplete="off"></div>
         ${formSelectField('EPC Rating', 'info_epc', EPC_RATING_OPTIONS, info.epc, { blankLabel: 'Select rating' })}
         <div><label class="form-label">EPC Expiry Date</label><input data-field="info_epcExpiry" type="date" class="form-input" value="${toDateInputValue(info.epcExpiry)}"></div>
         <div><label class="form-label">Insurance Renewal</label><input data-field="info_insuranceExpiry" type="date" class="form-input" value="${toDateInputValue(info.insuranceExpiry)}"></div>
@@ -18639,7 +18589,7 @@ function screenPropertyDetailsEdit(section) {
     } else if (section === 'alarms') {
         const customAlarms = meta.customAlarms || [];
         body = `
-        <p class="form-helper mb-2">Standard UK alarms are listed below. Add more if this property has extra detectors.</p>
+        <p class="form-helper mb-2">Standard UK alarms. Add more if this property has extra detectors.</p>
         ${ALARM_CATALOG.map(({ key, label, icon }) => {
             const a = meta.alarms[key] || {};
             return `<div class="card p-4 mb-3">

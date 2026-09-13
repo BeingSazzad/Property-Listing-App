@@ -2429,48 +2429,40 @@ function screenTenantActiveTenancy() {
     const leaseEndLabel = fin?.leaseEnd && typeof formatDisplayDate === 'function'
         ? formatDisplayDate(fin.leaseEnd) || fin.leaseEnd
         : (fin?.leaseEnd || t?.leaseEnd || '—');
-    return `${topBar('Active tenancy', { back: true })}
+    const more = [
+        ['file-text', 'Documents', 'tenant-documents'],
+        ['scroll-text', 'House rules', 'tenant-house-rules'],
+        ['package', 'Inventory', 'tenant-inventory'],
+        ['building-2', 'Building info', 'tenant-building-info'],
+        ['shield-check', 'Compliance', 'tenant-compliance'],
+        ['bell', 'Reminders', 'tenant-reminders'],
+        ['megaphone', 'Announcements', 'tenant-announcements'],
+    ];
+    const { members } = typeof getFlatMemberRoster === 'function'
+        ? getFlatMemberRoster(t?.propertyId, t?.unit)
+        : { members: [] };
+    const showHousehold = tenancy?.type === 'group' && members.length > 1;
+    return `${topBar('Active tenancy', { back: true, sub: [t?.unit, p?.name].filter(Boolean).join(' · ') })}
     <div class="screen-content screen-enter stack-sm">
         ${typeof renderTenantLivingCard === 'function' && listItem ? renderTenantLivingCard(listItem) : ''}
-        
-        <!-- Quick links (Moved to top) -->
-        <div class="dash-section-head">
-            <div>
-                <h3 class="screen-section-title">Quick links</h3>
-                <p class="dash-section-sub">Building, documents &amp; more</p>
-            </div>
-        </div>
-        <div class="tnt-quick-links-grid">
-            <button type="button" data-go="tenant-building-info" class="btn-secondary py-3 text-[13px]">Building info</button>
-            <button type="button" data-go="tenant-inventory" class="btn-secondary py-3 text-[13px]">Inventory photos</button>
-            <button type="button" data-go="tenant-house-rules" class="btn-secondary py-3 text-[13px]">House rules</button>
-            <button type="button" data-go="tenant-compliance" class="btn-secondary py-3 text-[13px]">Compliance</button>
-            <button type="button" data-go="tenant-reminders" class="btn-secondary py-3 text-[13px]">Smart Reminders</button>
-            <button type="button" data-go="tenant-documents" class="btn-secondary py-3 text-[13px]">Documents</button>
-            <button type="button" data-go="tenant-announcements" class="btn-secondary py-3 text-[13px]">Announcements</button>
-        </div>
-
-        <!-- Deposit & Move-in Section -->
-        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
-
-        <!-- Lease Details -->
-        <div class="dash-section-head mt-1">
-            <div>
-                <h3 class="screen-section-title">Lease details</h3>
-                <p class="dash-section-sub">Unit &amp; tenancy terms</p>
-            </div>
-        </div>
+        <p class="screen-section-title">Lease</p>
         ${typeof tenantFieldsCard === 'function' ? tenantFieldsCard([
-            ['Tenancy type', tenancy?.type === 'group' ? 'Group' : 'Solo'],
+            ['Type', tenancy?.type === 'group' ? 'Group' : 'Solo'],
             ['Monthly rent', fin?.rent || t?.rent || '—'],
             ['Move-in', moveInLabel],
             ['Lease ends', leaseEndLabel],
-            ['Property', p?.name || '—'],
-            ['Unit', t?.unit || '—'],
         ]) : ''}
-
-        ${typeof renderTenantAccountMembers === 'function' ? renderTenantAccountMembers(tid) : ''}
-        ${typeof renderTenantAccountContractors === 'function' ? renderTenantAccountContractors(t) : ''}
+        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
+        ${showHousehold && typeof renderTenantAccountMembers === 'function' ? renderTenantAccountMembers(tid) : ''}
+        <p class="screen-section-title">More</p>
+        <div class="card flat-records-nav-list">
+            ${more.map(([icon, label, go]) => `
+            <button type="button" data-go="${go}" class="flat-records-nav-row w-full text-left">
+                <span class="flat-records-nav-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
+                <span class="flat-records-nav-body"><span class="flat-records-nav-label">${label}</span></span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            </button>`).join('')}
+        </div>
     </div>`;
 }
 
@@ -3153,16 +3145,16 @@ function screenContractorJobDetail() {
             </div>
         </div>` : ''}
         ${renderCtrProgressChecklist(job)}
-        <div class="card ctr-compact-block">
+        <button type="button" data-jtab="invoice" class="card ctr-compact-block w-full text-left">
             <div class="ctr-compact-payout-top">
                 <div>
                     <p class="ctr-compact-label">Payout</p>
                     <p class="ctr-compact-payout-amt">${price}</p>
                 </div>
-                <button type="button" data-go="contractor-documents" class="ctr-compact-link">View breakdown</button>
+                <span class="ctr-compact-link">Breakdown</span>
             </div>
             <p class="ctr-compact-muted">${paymentStatus}</p>
-        </div>
+        </button>
         <div class="card ctr-compact-block ctr-compact-owner">
             <div class="ctr-compact-owner-avatar">${contactInitials}</div>
             <div class="ctr-compact-owner-body">
@@ -3302,36 +3294,13 @@ function screenContractorEarnings() {
 
 function screenContractorJobInvoice() {
     const job = contractorJob(STATE.contractorJobId);
-    return `${topBar('Invoice & certificates', { back: true, sub: job.issue })}
+    const certs = job.certificates || [];
+    return `${topBar('Payout', { back: true, sub: job.issue })}
     <div class="screen-content screen-enter ctr-compact-page">
         <div class="card p-4">
-            <p class="ctr-section-label">Certificates</p>
-            ${job.certificates.length ? job.certificates.map(c => `
-            <div class="ctr-cert-list-item card p-3 mb-2">
-                <div class="ctr-cert-list-icon" style="background:#ECFDF5;color:#059669"><i data-lucide="file-check" class="w-5 h-5"></i></div>
-                <div class="ctr-cert-list-body min-w-0">
-                    <p class="ctr-cert-list-name">${escapeHtml(c.name)}</p>
-                    <p class="ctr-cert-list-file"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i>${escapeHtml(c.fileName || 'Document on file')}</p>
-                    <p class="ctr-cert-list-meta">${escapeHtml(c.uploadedAt || '')}</p>
-                </div>
-            </div>`).join('') : `<p class="ctr-photo-empty">No certificates uploaded</p>`}
-            <button type="button" data-contractor-upload="certificate" class="ctr-upload-btn mt-3"><i data-lucide="upload" class="w-4 h-4"></i> Upload certificate</button>
-            <p class="text-[11px] text-[#64748B] mt-2">Uploaded certificates are auto-filed to the landlord property Records folder.</p>
-        </div>
-        <div class="card p-4">
-            <p class="ctr-section-label">Approved extra work</p>
-            ${job.extraWork?.length ? job.extraWork.map((w, i) => `
-            <div class="flex justify-between text-[13px] py-2 border-b border-[#F1F5F9]">
-                <span>${escapeHtml(w.desc)}</span>
-                <span class="font-semibold">${escapeHtml(w.amount)}</span>
-            </div>`).join('') : `<p class="ctr-photo-empty">No extra work logged</p>`}
-            <button type="button" data-action="add-extra-work" class="btn-secondary w-full py-2.5 text-[12px] mt-3">+ Request approved extra work</button>
-        </div>
-        <div class="card p-4">
-            <p class="ctr-section-label">System invoice</p>
-            <p class="text-[12px] text-[#64748B] mb-3">Enter details — the app generates a professional PDF invoice.</p>
+            <p class="ctr-section-label">Invoice</p>
             ${job.invoice ? `
-            <div class="card p-3 mb-3" style="background:#F8FAFC">
+            <div class="card p-3 mb-0" style="background:#F8FAFC">
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-[14px] font-bold">${job.invoice.amount}</p>
@@ -3347,6 +3316,28 @@ function screenContractorJobInvoice() {
             <div class="form-group"><label class="form-label">Notes (optional)</label>
             <textarea data-field="invoiceNotes" class="form-input" rows="2" placeholder="Parts, labour breakdown…"></textarea></div>
             <button type="button" data-action="generate-contractor-invoice" class="btn-primary w-full py-3 text-[13px] mt-2">Generate invoice</button>`}
+        </div>
+        <div class="card p-4">
+            <p class="ctr-section-label">Extra work</p>
+            ${job.extraWork?.length ? job.extraWork.map((w, i) => `
+            <div class="flex justify-between text-[13px] py-2 border-b border-[#F1F5F9]">
+                <span>${escapeHtml(w.desc)}</span>
+                <span class="font-semibold">${escapeHtml(w.amount)}</span>
+            </div>`).join('') : `<p class="ctr-photo-empty">None</p>`}
+            <button type="button" data-action="add-extra-work" class="btn-secondary w-full py-2.5 text-[12px] mt-3">+ Request extra work</button>
+        </div>
+        <div class="card p-4">
+            <p class="ctr-section-label">Job certificates</p>
+            ${certs.length ? certs.map(c => `
+            <div class="ctr-cert-list-item card p-3 mb-2">
+                <div class="ctr-cert-list-icon" style="background:#ECFDF5;color:#059669"><i data-lucide="file-check" class="w-5 h-5"></i></div>
+                <div class="ctr-cert-list-body min-w-0">
+                    <p class="ctr-cert-list-name">${escapeHtml(c.name)}</p>
+                    <p class="ctr-cert-list-file"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i>${escapeHtml(c.fileName || 'Document on file')}</p>
+                    <p class="ctr-cert-list-meta">${escapeHtml(c.uploadedAt || '')}</p>
+                </div>
+            </div>`).join('') : `<p class="ctr-photo-empty">No certificates uploaded</p>`}
+            <button type="button" data-contractor-upload="certificate" class="ctr-upload-btn mt-3"><i data-lucide="upload" class="w-4 h-4"></i> Upload certificate</button>
         </div>
         ${['in_progress', 'scheduled', 'accepted'].includes(job.status) ? `
         <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-4 text-[13px] font-semibold">Submit for approval</button>
@@ -3652,7 +3643,7 @@ function screenContractorCompany() {
     </div>`;
 }
 
-function screenContractorDocuments() {
+function screenContractorPropertyDocs() {
     const docs = AppStore.documents || [];
     return `${topBar('Property Documents', { back: true })}
     <div class="screen-content screen-enter space-y-4">

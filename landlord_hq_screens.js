@@ -4722,12 +4722,6 @@ function screenProfile() {
             ])}
         </div>
         <div class="profile-section">
-            <p class="section-title">Growth</p>
-            ${menuList([
-                ['store', 'Cross-sell a property', 'property-cross-sell', 'Flat fee listing'],
-            ])}
-        </div>
-        <div class="profile-section">
             <p class="section-title">Support</p>
             ${menuList([
                 ['help-circle', 'Help & support', 'help-support'],
