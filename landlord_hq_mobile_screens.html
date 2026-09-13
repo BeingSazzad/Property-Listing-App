@@ -1291,7 +1291,8 @@
         .prop-card-v2--menu-open,
         .tenant-row-wrap--menu-open,
         .flat-detail-menu-slot--menu-open,
-        .tenant-profile-menu-slot--open {
+        .tenant-profile-menu-slot--open,
+        .tenant-note-card--menu-open {
             position: relative;
             z-index: 50;
         }
@@ -4051,6 +4052,55 @@
         }
         .form-input:focus, .auth-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
         .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+        /* Custom selects stay open for Figma capture (native <select> closes on blur) */
+        .hold-select { position: relative; width: 100%; z-index: 1; }
+        .hold-select.is-open { z-index: 80; }
+        .hold-select-native {
+            position: absolute !important; width: 1px !important; height: 1px !important;
+            padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+            clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important;
+            opacity: 0 !important; pointer-events: none !important;
+        }
+        .hold-select-trigger {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            width: 100%; text-align: left; cursor: pointer;
+            appearance: none; background-image: none !important;
+            padding-right: 36px; position: relative;
+        }
+        .hold-select-trigger::after {
+            content: ''; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            width: 16px; height: 16px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 16px no-repeat;
+            transition: transform .15s ease;
+        }
+        .hold-select.is-open .hold-select-trigger {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+        }
+        .hold-select.is-open .hold-select-trigger::after { transform: translateY(-50%) rotate(180deg); }
+        .hold-select-menu {
+            display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+            max-height: 220px; overflow-y: auto; overscroll-behavior: contain;
+            background: #fff; border: 1px solid #E2E8F0; border-radius: 10px;
+            box-shadow: 0 10px 28px rgba(15,23,42,.14), 0 2px 6px rgba(15,23,42,.06);
+            padding: 4px; z-index: 90;
+        }
+        .hold-select.is-open .hold-select-menu { display: block; }
+        .hold-select-option {
+            display: block; width: 100%; text-align: left; border: none; background: transparent;
+            padding: 10px 12px; border-radius: 8px; font-size: 14px; font-weight: 500;
+            color: #0F172A; cursor: pointer; font-family: inherit; line-height: 1.35;
+        }
+        .hold-select-option:hover { background: #F1F5F9; }
+        .hold-select-option.is-selected { background: #2563EB; color: #fff; }
+        .hold-select-option.is-selected:hover { background: #1D4ED8; }
+        .hold-select-option:disabled { opacity: .45; cursor: not-allowed; }
+        .hold-select-hint {
+            display: none; margin: 6px 2px 0; font-size: 11px; color: #94A3B8; line-height: 1.35;
+        }
+        .hold-select.is-open .hold-select-hint { display: block; }
+        .form-group:has(.hold-select.is-open),
+        .stack:has(.hold-select.is-open) { position: relative; z-index: 70; overflow: visible; }
         .toggle { width: 44px; height: 24px; background: #2563EB; border-radius: 12px; position: relative; flex-shrink: 0; pointer-events: none; }
         .toggle.off { background: #CBD5E1; }
         .toggle::after { content: ''; position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; top: 2px; right: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
@@ -5006,18 +5056,88 @@
             position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
             overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
         }
-        .rent-history-list { display: flex; flex-direction: column; gap: 8px; }
+        .rent-history-list { display: flex; flex-direction: column; gap: 0; }
+        .rent-history-list--clean {
+            padding: 4px 0; overflow: hidden;
+        }
+        .rent-history-line {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 40px;
+            align-items: center;
+            min-height: 58px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .rent-history-line:last-child { border-bottom: none; }
+        .rent-history-line-main {
+            min-width: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            column-gap: 12px;
+            min-height: 58px;
+            padding: 12px 10px 12px 14px;
+            border: none; background: transparent;
+            text-align: left; cursor: pointer;
+        }
+        .rent-history-line-main:active { background: #F8FAFC; }
+        .rent-history-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .rent-history-title {
+            font-size: 13px; font-weight: 600; color: #0F172A; line-height: 1.35;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rent-history-meta {
+            font-size: 11px; color: #94A3B8; line-height: 1.35;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rent-history-end {
+            display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
+            flex-shrink: 0; gap: 2px;
+        }
+        .rent-history-kind {
+            font-size: 10px; font-weight: 700; color: #64748B;
+            letter-spacing: 0.02em; line-height: 1.2;
+        }
+        .rent-history-kind.is-charge { color: #D97706; }
+        .tenant-still-due { padding: 14px 16px; margin-bottom: 12px; }
+        .tenant-still-due-kicker {
+            font-size: 11px; font-weight: 700; color: #64748B;
+            text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 10px;
+        }
+        .tenant-still-due-row {
+            display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+        }
+        .tenant-still-due-row span { font-size: 13px; color: #475569; }
+        .tenant-still-due-row strong { font-size: 16px; font-weight: 800; color: #D97706; }
+        .tenant-still-due-hint { font-size: 12px; color: #94A3B8; margin: 4px 0 10px; }
+        .tenant-still-due-item {
+            display: flex; justify-content: space-between; gap: 12px; width: 100%;
+            margin-top: 8px; padding: 8px 0 0; border: 0; border-top: 1px solid #F1F5F9;
+            background: none; font-size: 13px; color: #0F172A; cursor: pointer; text-align: left;
+        }
+        .tenant-still-due-item span:last-child { font-weight: 700; color: #D97706; }
+        .tenant-still-due--clear { padding: 12px 16px; }
+        .tenant-still-due-clear-text { font-size: 13px; font-weight: 600; color: #16A34A; margin: 0; }
+        .rent-history-amount {
+            font-size: 13px; font-weight: 650; color: #0F172A;
+            white-space: nowrap; line-height: 1.35;
+        }
+        .rent-history-amount.is-due { color: #D97706; }
+        .rent-history-amount.is-overdue { color: #DC2626; }
+        .rent-history-download {
+            width: 40px; height: 40px; margin: 0; flex-shrink: 0;
+            border: none; background: transparent; color: #94A3B8;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .rent-history-download--hint,
+        .rent-history-download--spacer {
+            color: #E2E8F0; pointer-events: none; cursor: default;
+        }
+        .rent-history-download:active { color: #2563EB; }
         .rent-history-row-wrap {
             display: flex; align-items: stretch; overflow: hidden;
         }
         .rent-history-row--main { flex: 1; min-width: 0; border: none; background: transparent; }
         .rent-history-chevron { color: #CBD5E1; flex-shrink: 0; }
-        .rent-history-download {
-            width: 48px; flex-shrink: 0; border: none; border-left: 1px solid #F1F5F9;
-            background: #F8FAFC; color: #2563EB; display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-        }
-        .rent-history-download:active { background: #EFF6FF; }
         .rent-history-row {
             display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; cursor: pointer;
         }
@@ -5027,10 +5147,7 @@
         .rent-history-icon--paid { background: #ECFDF5; color: #16A34A; }
         .rent-history-icon--due { background: #FFFBEB; color: #D97706; }
         .rent-history-body { flex: 1; min-width: 0; }
-        .rent-history-title { font-size: 13px; font-weight: 600; color: #0F172A; margin: 0; }
-        .rent-history-meta { font-size: 11px; color: #64748B; margin: 3px 0 0; }
         .rent-history-right { text-align: right; flex-shrink: 0; }
-        .rent-history-amount { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0; }
         .tenant-balance-card--due { border-color: #FECACA; background: linear-gradient(180deg, #FEF2F2 0%, #fff 100%); }
         .txn-icon-pending { background: #FFFBEB; color: #D97706; }
         .txn-icon-progress { background: #DBEAFE; color: #2563EB; }
@@ -5348,6 +5465,117 @@
         .invoice-row-due { font-size: 11px; color: #94A3B8; margin: 2px 0 0; }
         .invoice-row-meta { text-align: right; flex-shrink: 0; }
         .invoice-row-amount { font-size: 14px; font-weight: 700; color: #0F172A; margin: 0 0 4px; }
+
+        /* Invoice / bill-due detail */
+        .invoice-detail-heading {
+            letter-spacing: 0.01em;
+            word-spacing: 0.12em;
+        }
+        .invoice-detail-page {
+            gap: 16px;
+            padding-bottom: 10px;
+            font-synthesis: none;
+        }
+        .invoice-detail-hero {
+            padding: 24px 20px 22px;
+            text-align: center;
+        }
+        .invoice-detail-hero:active,
+        .invoice-detail-card:active { transform: none; }
+        .invoice-detail-kicker {
+            font-size: var(--text-label);
+            font-weight: var(--font-medium);
+            color: var(--color-text-secondary);
+            letter-spacing: 0.02em;
+            word-spacing: 0.12em;
+            line-height: 1.4;
+            margin: 0;
+        }
+        .invoice-detail-amount {
+            font-size: 32px;
+            font-weight: var(--font-extrabold);
+            color: var(--color-text);
+            letter-spacing: 0.01em;
+            line-height: 1.15;
+            margin: 10px 0 0;
+        }
+        .invoice-detail-amount.is-due { color: var(--color-primary); }
+        .invoice-detail-amount.is-overdue { color: var(--color-danger); }
+        .invoice-detail-amount.is-paid { color: var(--color-success-ui); }
+        .invoice-detail-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 14px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 11px;
+            border-radius: var(--radius-full);
+            letter-spacing: 0.02em;
+            word-spacing: 0.08em;
+            line-height: 1.2;
+        }
+        .invoice-detail-desc {
+            font-size: var(--text-body);
+            font-weight: var(--font-medium);
+            color: var(--color-text-subtle);
+            margin: 14px 0 0;
+            line-height: 1.5;
+            letter-spacing: 0.01em;
+            word-spacing: 0.12em;
+        }
+        .invoice-detail-card { padding: 6px 18px; }
+        .invoice-detail-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-border-light);
+        }
+        .invoice-detail-row:last-child { border-bottom: none; }
+        .invoice-detail-label {
+            flex: 0 0 auto;
+            max-width: 42%;
+            font-size: var(--text-body);
+            font-weight: var(--font-medium);
+            color: var(--color-text-secondary);
+            letter-spacing: 0.015em;
+            word-spacing: 0.12em;
+            line-height: 1.5;
+        }
+        .invoice-detail-value {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-size: var(--text-body);
+            font-weight: var(--font-semibold);
+            color: var(--color-text);
+            text-align: right;
+            letter-spacing: 0.01em;
+            word-spacing: 0.12em;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+        .invoice-detail-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 2px;
+        }
+        .invoice-detail-actions .btn-primary,
+        .invoice-detail-actions .btn-secondary,
+        .invoice-detail-actions .btn-danger-outline {
+            width: 100%;
+            letter-spacing: 0.01em;
+            word-spacing: 0.12em;
+        }
+        .invoice-detail-actions-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .invoice-detail-actions-row:empty { display: none; }
+        .invoice-detail-actions-row > :only-child { grid-column: 1 / -1; }
 
         /* Tenant — modern list & profile */
         .tenant-list-page { padding-bottom: 0; }
@@ -5846,6 +6074,7 @@
             padding-top: 12px; border-top: 1px solid #F1F5F9;
             width: 100%;
         }
+        .tenant-v2-quick-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
         .tenant-v2-quick-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
             border: 1px solid #E2E8F0; border-radius: 12px; background: #fff;
@@ -5869,6 +6098,120 @@
             flex: 1;
             padding: 0 var(--gutter) 12px;
             display: flex; flex-direction: column; gap: 18px;
+        }
+        .tenant-detail-v2--compact .tenant-v2-topbar { padding: 6px var(--gutter) 4px; }
+        .tenant-detail-v2--compact .tenant-v2-title { font-size: 14px; }
+        .tenant-detail-v2--compact .tenant-v2-hero { margin-bottom: 8px; padding: 10px 12px; }
+        .tenant-detail-v2--compact .tenant-v2-hero-main { gap: 10px; margin-bottom: 10px; }
+        .tenant-detail-v2--compact .tenant-v2-avatar { width: 48px; height: 48px; }
+        .tenant-detail-v2--compact .tenant-v2-name { font-size: 16px; margin-bottom: 4px; }
+        .tenant-detail-v2--compact .tenant-v2-tags { margin-bottom: 4px; }
+        .tenant-detail-v2--compact .tenant-v2-quick-grid { padding-top: 8px; gap: 6px; }
+        .tenant-detail-v2--compact .tenant-v2-quick-btn { min-height: 62px; padding: 8px 4px; gap: 4px; border-radius: 10px; }
+        .tenant-detail-v2--compact .tenant-v2-quick-icon { width: 30px; height: 30px; border-radius: 8px; }
+        .tenant-detail-v2--compact .tenant-v2-quick-label { font-size: 10px; }
+        .tenant-detail-v2--compact .tenant-v2-body--compact { gap: 10px; padding-bottom: 8px; }
+        .tenant-detail-v2--compact .tenant-v2-finance { padding: 10px 12px; }
+        .tenant-detail-v2--compact .tenant-v2-finance-amount { font-size: 17px; }
+        .tenant-detail-v2--compact .tenant-v2-finance-hint { margin-top: 4px; }
+        .tenant-detail-v2--compact .tenant-v2-finance--charges { padding: 10px 12px !important; }
+        .tenant-detail-v2--compact .tenant-v2-section-head { margin-bottom: 6px; }
+        .tenant-detail-v2--compact .tenant-v2-section-head h3 { font-size: 13px; }
+        .tenant-detail-v2--compact .tenant-deposit-card { padding: 10px 12px; }
+        .tenant-detail-v2--compact .tenant-deposit-line { font-size: 13px; }
+        .tenant-detail-v2--compact .tenant-deposit-facts { margin-top: 8px; padding-top: 8px; gap: 6px; }
+        .tenant-detail-v2--compact .tenant-deposit-fact { padding: 6px 8px; }
+        .tenant-detail-v2--compact .tenant-keys-card { padding: 10px 12px !important; }
+        .tenant-detail-v2--compact .tenant-keys-card .mb-3 { margin-bottom: 8px !important; }
+        .tenant-detail-v2--compact .tenant-keys-card .p-3 { padding: 8px 10px !important; }
+        .tenant-detail-v2--compact .tenant-info-compact { padding: 4px; }
+        .tenant-detail-v2--compact .tenant-info-cell { padding: 8px 10px; gap: 8px; border-radius: 10px; }
+        .tenant-detail-v2--compact .tenant-info-icon { width: 28px; height: 28px; border-radius: 8px; }
+        .tenant-detail-v2--compact .tenant-info-value { margin-top: 2px; font-size: 12px; }
+        .tenant-detail-v2--compact .tenant-info-hint { font-size: 10px; }
+        .tenant-detail-v2--compact .tenant-v2-doc-icon,
+        .tenant-detail-v2--compact .tenant-v2-doc-chip--add .tenant-v2-doc-add { max-height: 72px; }
+        .tenant-detail-v2--compact .tenant-v2-note-row { padding: 10px 12px 10px 14px; }
+        .tenant-detail-v2--compact .tenant-v2-notes-empty { padding: 12px; }
+        .tenant-detail-v2--compact .tenant-v2-footer-sticky { padding: 8px var(--gutter) calc(8px + env(safe-area-inset-bottom, 0px)); }
+        .tenant-detail-v2--compact .tenant-v2-footer-btn { min-height: 42px; font-size: 13px; }
+        .tenant-v2-quick-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .tenant-hub-finance { padding: 0; overflow: hidden; }
+        .tenant-hub-finance-btn {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 12px 14px; border: none; background: #fff; cursor: pointer; text-align: left;
+        }
+        .tenant-hub-finance-btn:active { background: #F8FAFC; }
+        .tenant-hub-finance-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .tenant-hub-finance-col--right { text-align: right; align-items: flex-end; }
+        .tenant-hub-finance-label {
+            font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: .03em;
+        }
+        .tenant-hub-finance-value { font-size: 15px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; }
+        .tenant-hub-finance-value.is-ok { color: #16A34A; }
+        .tenant-hub-finance-value.is-due { color: #DC2626; }
+        .tenant-hub-group { padding: 0; overflow: hidden; }
+        .tenant-hub-row {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 11px 12px; border: none; background: #fff; cursor: pointer; text-align: left;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .tenant-hub-row:last-child { border-bottom: none; }
+        .tenant-hub-row:active { background: #F8FAFC; }
+        .tenant-hub-icon {
+            width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tenant-hub-icon--blue { background: #EFF6FF; color: #2563EB; }
+        .tenant-hub-icon--green { background: #ECFDF5; color: #16A34A; }
+        .tenant-hub-icon--amber { background: #FFFBEB; color: #D97706; }
+        .tenant-hub-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .tenant-hub-title { font-size: 13px; font-weight: 700; color: #0F172A; }
+        .tenant-hub-meta {
+            font-size: 11px; color: #64748B; line-height: 1.35;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .tenant-hub-chevron { color: #CBD5E1; flex-shrink: 0; }
+        .tenant-facts-card { padding: 4px 12px; }
+        .tenant-facts-row {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+            width: 100%; padding: 9px 0; border: none; background: transparent;
+            border-bottom: 1px solid #F1F5F9; text-align: left;
+        }
+        .tenant-facts-row:last-child { border-bottom: none; }
+        .tenant-facts-row--link { cursor: pointer; }
+        .tenant-facts-row--link:active { opacity: .85; }
+        .tenant-facts-label { font-size: 12px; color: #64748B; flex-shrink: 0; padding-top: 1px; }
+        .tenant-facts-value {
+            font-size: 13px; font-weight: 600; color: #0F172A; text-align: right;
+            line-height: 1.35; word-break: break-word;
+        }
+        .tenant-money-block { display: flex; flex-direction: column; gap: 6px; }
+        .tenant-money-card { padding: 12px 14px 8px; }
+        .tenant-money-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+        }
+        .tenant-money-stat--wide { grid-column: 1 / -1; }
+        .tenant-money-label {
+            font-size: 11px; font-weight: 600; color: #94A3B8; margin: 0 0 2px;
+        }
+        .tenant-money-value {
+            font-size: 16px; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -0.02em;
+        }
+        .tenant-money-value.is-due { color: #DC2626; }
+        .tenant-money-charges {
+            margin-top: 10px; padding-top: 8px; border-top: 1px solid #F1F5F9;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .tenant-money-charge {
+            display: flex; justify-content: space-between; gap: 8px; width: 100%;
+            border: none; background: transparent; padding: 6px 0; cursor: pointer;
+            font-size: 12px; color: #475569; text-align: left;
+        }
+        .tenant-money-charge-amt { font-weight: 700; color: #0F172A; }
+        .tenant-money-more {
+            width: 100%; margin-top: 6px; padding: 8px 0 4px; border: none;
+            background: transparent; color: #2563EB; font-size: 12px; font-weight: 700; cursor: pointer;
         }
         .tenant-v2-finance {
             display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; padding: 14px;
@@ -6356,6 +6699,114 @@
         .tenant-balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
         .tenant-balance-mini-label { font-size: 10px; color: var(--color-text-muted); margin: 0; }
         .tenant-balance-mini-value { font-size: var(--text-caption); font-weight: var(--font-semibold); color: var(--color-text); margin: 2px 0 0; }
+        .tenant-pay-page { display: flex; flex-direction: column; gap: 12px; }
+        .tenant-pay-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .tenant-pay-stat {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 10px 10px; background: #fff; border: 1px solid #F1F5F9;
+            border-radius: 14px; min-width: 0;
+        }
+        .tenant-pay-stat-icon {
+            width: 28px; height: 28px; border-radius: 999px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tenant-pay-stat-icon--blue { background: #EFF6FF; color: #2563EB; }
+        .tenant-pay-stat-icon--purple { background: #F5F3FF; color: #7C3AED; }
+        .tenant-pay-stat-icon--amber { background: #FFFBEB; color: #D97706; }
+        .tenant-pay-stat-icon--green { background: #ECFDF5; color: #16A34A; }
+        .tenant-pay-stat-copy { min-width: 0; }
+        .tenant-pay-stat-label { font-size: 11px; color: #94A3B8; margin: 0 0 2px; }
+        .tenant-pay-stat-value { font-size: 15px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.2; }
+        .tenant-pay-stat-meta { font-size: 11px; color: #94A3B8; margin: 2px 0 0; }
+        .tenant-pay-record {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            width: 100%; min-height: 42px; padding: 10px 14px; font-size: 13px;
+        }
+        .rent-history-list--compact .rent-history-line,
+        .rent-history-list--compact .rent-history-line-main { min-height: 56px; }
+        .rent-history-list--compact .rent-history-line-main { padding: 11px 8px 11px 14px; }
+        .rent-history-list--compact .rent-history-copy { gap: 3px; }
+        .rent-history-list--compact .rent-history-title { font-size: 13px; }
+        .rent-history-list--compact .rent-history-meta { font-size: 11px; }
+        .rent-history-list--compact .rent-history-download { width: 40px; height: 40px; margin: 0; }
+        .flat-dt-payments-v2 { display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
+        .flat-pay-hero {
+            padding: var(--card-pad);
+            border-radius: var(--radius-card);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .flat-pay-hero-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .flat-pay-hero-kicker {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .flat-pay-hero-rent {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0F172A;
+            margin: 4px 0 0;
+            line-height: 1.2;
+        }
+        .flat-pay-hero-rent span { font-size: 12px; font-weight: 500; color: #64748B; }
+        .flat-pay-hero-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 700;
+            background: #ECFDF5;
+            color: #059669;
+            border: 1px solid #D1FAE5;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .flat-pay-hero-pill.is-overdue {
+            background: #FEE2E2;
+            color: #DC2626;
+            border-color: #FECACA;
+        }
+        .flat-pay-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .flat-pay-metric {
+            padding: 12px;
+            border-radius: var(--radius-control);
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+        }
+        .flat-pay-metric.is-overdue { background: #FEF2F2; border-color: #FECACA; }
+        .flat-pay-metric-label { display: block; font-size: 11px; font-weight: 500; color: #64748B; }
+        .flat-pay-metric.is-overdue .flat-pay-metric-label { color: #DC2626; }
+        .flat-pay-metric-value {
+            font-size: 15px; font-weight: 700; color: #0F172A;
+            margin: 6px 0 0; line-height: 1.2;
+        }
+        .flat-pay-metric.is-overdue .flat-pay-metric-value { color: #DC2626; }
+        .flat-pay-metric-hint {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 10px; font-weight: 600; color: #64748B; margin-top: 4px;
+        }
+        .flat-pay-metric-hint.is-ok { color: #059669; }
+        .flat-pay-hero .btn-primary { border-radius: var(--radius-control); }
+        .flat-dt-ledger { display: flex; flex-direction: column; gap: 8px; }
+        .flat-dt-ledger-head h3 {
+            font-size: 13px; font-weight: 700; color: #0F172A; margin: 0;
+        }
+        .flat-dt-ledger-head p { font-size: 11px; color: #94A3B8; margin: 2px 0 0; }
 
         .tenant-id-card { padding: 14px 16px; }
         .tenant-id-main { display: flex; align-items: center; gap: 12px; }
@@ -6510,12 +6961,12 @@
         .doc-preview-content {
             flex: 1; min-height: 0; padding-bottom: 12px;
         }
-        .doc-preview-hero { padding: 16px; }
+        .doc-preview-hero { padding: 14px; }
         .doc-preview-hero-row {
-            display: flex; align-items: flex-start; gap: 14px;
+            display: flex; align-items: flex-start; gap: 12px;
         }
         .doc-preview-icon-lg {
-            width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+            width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
         }
         .doc-preview-hero-copy { flex: 1; min-width: 0; }
@@ -6563,6 +7014,40 @@
         }
         .doc-preview-empty-sub {
             font-size: 12px; color: #94A3B8; margin: 6px 0 0; line-height: 1.45; max-width: 240px;
+        }
+        .doc-demo-sheet {
+            width: 100%; padding: 18px 16px 16px; background: #fff; text-align: left;
+        }
+        .doc-demo-watermark {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            color: #94A3B8; margin: 0 0 10px;
+        }
+        .doc-demo-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+        .doc-demo-brand { font-size: 11px; font-weight: 800; color: #2563EB; }
+        .doc-demo-kind { font-size: 11px; color: #64748B; }
+        .doc-demo-title { font-size: 15px; font-weight: 800; color: #0F172A; margin: 10px 0 12px; line-height: 1.3; }
+        .doc-demo-rows { display: flex; flex-direction: column; }
+        .doc-demo-row {
+            display: flex; justify-content: space-between; gap: 12px;
+            padding: 8px 0; border-bottom: 1px solid #F1F5F9; font-size: 12px; color: #64748B;
+        }
+        .doc-demo-row strong { color: #0F172A; font-weight: 700; text-align: right; }
+        .doc-demo-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+        .doc-demo-sign-line { display: block; height: 1px; background: #E2E8F0; margin-bottom: 6px; }
+        .doc-demo-sign p { font-size: 11px; color: #94A3B8; margin: 0; }
+        .doc-demo-foot { font-size: 11px; color: #94A3B8; margin: 14px 0 0; line-height: 1.4; }
+        .doc-demo-sheet--id { padding: 16px; }
+        .doc-demo-id-card { display: flex; gap: 14px; align-items: center; }
+        .doc-demo-id-photo {
+            width: 72px; height: 88px; border-radius: 10px; object-fit: cover; background: #F1F5F9; flex-shrink: 0;
+        }
+        .doc-demo-id-photo--empty { display: flex; align-items: center; justify-content: center; color: #94A3B8; }
+        .doc-demo-id-name { font-size: 16px; font-weight: 800; color: #0F172A; margin: 4px 0; }
+        .doc-demo-id-meta { font-size: 12px; color: #64748B; margin: 2px 0 0; }
+        .doc-demo-kicker { font-size: 10px; font-weight: 700; color: #2563EB; text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+        .tenancy-doc-status-row--link {
+            width: 100%; display: flex; align-items: center; gap: 8px;
+            border: 0; background: none; padding: 0; cursor: pointer;
         }
         .doc-preview-placeholder {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -6613,11 +7098,19 @@
         .tenant-maint-meta { font-size: 11px; color: var(--color-text-muted); margin: 6px 0 0; }
 
         .tenant-note-card {
-            padding: 14px 16px; border-radius: var(--radius-card);
-            border: 1px solid transparent;
+            padding: 14px 16px; position: relative;
+            border: 1px solid #E2E8F0;
         }
-        .tenant-note-text { font-size: var(--text-body); color: var(--color-text-subtle); margin: 0; line-height: 1.5; }
-        .tenant-note-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+        .tenant-note-head {
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .tenant-note-text {
+            flex: 1; min-width: 0;
+            font-size: var(--text-body); color: var(--color-text-subtle); margin: 0; line-height: 1.5;
+        }
+        .tenant-note-menu-slot { position: relative; flex-shrink: 0; margin: -6px -8px 0 0; }
+        .tenant-note-menu-slot .action-menu-btn { width: 36px; height: 36px; }
+        .tenant-note-footer { display: flex; align-items: center; margin-top: 10px; }
         .tenant-note-meta { font-size: 10px; color: var(--color-text-muted); }
         .tenant-note-edit { background: none; border: none; color: var(--color-text-muted); cursor: pointer; padding: 4px; }
         .tenant-note-card--compact .tenant-note-footer { margin-top: 6px; }
@@ -7843,6 +8336,110 @@
         .building-info-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .building-info-name { font-size: 15px; font-weight: 800; color: #0F172A; line-height: 1.2; }
         .building-info-addr { font-size: 12px; color: #64748B; margin-top: 2px; line-height: 1.3; }
+        .tenant-home-location { padding: 14px; cursor: pointer; }
+        .tenant-home-location-main { display: flex; align-items: center; gap: 12px; }
+        .tenant-home-location-thumb {
+            width: 56px; height: 56px; border-radius: var(--radius-control); object-fit: cover;
+            background: #F1F5F9; flex-shrink: 0;
+        }
+        .tenant-home-location-building { font-size: 15px; font-weight: 800; color: #0F172A; line-height: 1.25; margin: 0; }
+        .tenant-home-location-addr { font-size: 12px; color: #64748B; margin: 3px 0 0; line-height: 1.35; }
+        .tenant-home-location-flat { font-size: 13px; font-weight: 700; color: #0F172A; margin: 4px 0 0; }
+        .building-svc-page { padding-bottom: 8px; }
+        .building-svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .building-svc-card {
+            padding: 10px;
+            border-radius: var(--radius-card);
+            overflow: hidden;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+        .building-svc-photo {
+            position: relative;
+            height: 96px;
+            border-radius: var(--radius-control);
+            overflow: hidden;
+            background: #F1F5F9;
+        }
+        .building-svc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .building-svc-icon {
+            position: absolute; top: 8px; left: 8px;
+            width: 28px; height: 28px;
+            border-radius: var(--radius-sm);
+            background: #fff; color: #2563EB;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .building-svc-badge {
+            position: absolute; bottom: 8px; left: 8px;
+            padding: 3px 8px;
+            border-radius: var(--radius-sm);
+            background: #fff; color: #0F172A;
+            font-size: 10px; font-weight: 700;
+        }
+        .building-svc-copy {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 6px; margin-top: 10px;
+        }
+        .building-svc-title { font-size: 14px; font-weight: 700; color: #0F172A; }
+        .building-svc-chevron { color: #94A3B8; flex-shrink: 0; }
+        .building-svc-sub {
+            display: block; font-size: 11px; font-weight: 500; color: #64748B;
+            line-height: 1.4; margin-top: 2px;
+        }
+        .building-svc-edit {
+            min-height: 32px;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            border-radius: var(--radius-control);
+        }
+        .util-detail-page { display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
+        .util-detail-hero {
+            position: relative;
+            height: 160px;
+            padding: 0;
+            overflow: hidden;
+            border-radius: var(--radius-card);
+        }
+        .util-detail-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .util-detail-badge {
+            position: absolute; left: 12px; bottom: 12px;
+            padding: 5px 10px;
+            border-radius: var(--radius-full);
+            background: #fff;
+            color: #0F172A;
+            font-size: 11px; font-weight: 700;
+        }
+        .util-detail-list {
+            padding: 4px 16px;
+            border-radius: var(--radius-card);
+            overflow: hidden;
+        }
+        .util-detail-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 0;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .util-detail-row:last-child { border-bottom: none; }
+        .util-detail-label {
+            flex: 0 0 auto;
+            max-width: 38%;
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+        }
+        .util-detail-value {
+            flex: 1;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0F172A;
+            line-height: 1.4;
+        }
         .prop-hub-page .prop-building-header { margin-bottom: 4px; }
         .building-metrics-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
@@ -9263,6 +9860,13 @@
         .broadcast-scope-segments {
             display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;
         }
+        .broadcast-scope-segments--3 { grid-template-columns: 1fr 1fr 1fr; }
+        .broadcast-everyone-card {
+            padding: 12px 14px; margin-bottom: 8px; border: 1px solid #BFDBFE; background: #F8FBFF;
+        }
+        .broadcast-everyone-title { margin: 0; font-size: 13px; font-weight: 700; color: #1D4ED8; }
+        .broadcast-everyone-meta { margin: 2px 0 0; font-size: 12px; color: #64748B; }
+        .broadcast-detail-badge--portfolio { background: #EFF6FF; color: #2563EB; }
         .broadcast-scope-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 6px; padding: 14px 10px; min-height: 72px;
@@ -9282,6 +9886,9 @@
         }
         .broadcast-scope-label {
             font-size: 12px; font-weight: 700; line-height: 1.2; white-space: nowrap;
+        }
+        .broadcast-scope-segments--3 .broadcast-scope-label {
+            white-space: normal; font-size: 11px;
         }
         .notify-flat-icon {
             width: 32px; height: 32px; border-radius: 10px; background: #F1F5F9; color: #64748B;
@@ -10304,10 +10911,10 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=300"></script>
-    <script src="landlord_hq_contractor.js?v=300"></script>
-    <script src="landlord_hq_features.js?v=300"></script>
-    <script src="landlord_hq_product.js?v=300"></script>
+    <script src="landlord_hq_screens.js?v=332"></script>
+    <script src="landlord_hq_contractor.js?v=332"></script>
+    <script src="landlord_hq_features.js?v=332"></script>
+    <script src="landlord_hq_product.js?v=332"></script>
     <script>
     (function () {
         function showBootError(msg) {

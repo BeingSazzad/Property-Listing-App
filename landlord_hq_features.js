@@ -1283,9 +1283,9 @@ function renderTenantLivingCard(listItem) {
     <div class="tenant-living-card card">
         <div class="tenant-living-head">
             <p class="tenant-living-label">Currently living in</p>
-            <button type="button" data-go="tenant-building-info" class="tenant-living-link">Photos & info</button>
+            <button type="button" data-go="property-detail" data-pid="${pid}" data-tab="info" data-unit="${escapeHtml(listItem.unit)}" class="tenant-living-link">Photos & info</button>
         </div>
-        <button type="button" data-go="tenant-building-info" class="tenant-living-main w-full text-left">
+        <button type="button" data-go="property-detail" data-pid="${pid}" data-tab="info" data-unit="${escapeHtml(listItem.unit)}" class="tenant-living-main w-full text-left">
             <img src="${escapeHtml(cover)}" alt="" class="tenant-living-thumb">
             <div class="tenant-living-body min-w-0">
                 <p class="tenant-living-name">${escapeHtml(p.name)}</p>
@@ -1572,19 +1572,32 @@ function tenantLeaseRemainder(leaseEnd) {
     return years === 1 ? '(1 year left)' : `(${years} years left)`;
 }
 
+function isLeaseDocumentName(name) {
+    const text = String(name || '');
+    if (/nid|passport|id proof|identity/i.test(text)) return false;
+    return /lease|tenancy agreement/i.test(text);
+}
+
 function getTenantLeaseDocIndex(tenantId) {
     const docs = getTenantDocuments(tenantId);
-    return docs.findIndex(d => /lease/i.test(d[1] || ''));
+    return docs.findIndex(d => isLeaseDocumentName(d[1]));
 }
 
 function resolveTenantLeaseDocument(tenantId) {
     const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST[tenantId];
     if (!t) return null;
     const docs = AppStore.documents || [];
-    const forProperty = docs.filter(d => d.propertyId === t.propertyId);
-    return forProperty.find(d => d.type === 'Tenancy Agreement')
-        || forProperty.find(d => /tenancy agreement|lease/i.test(`${d.type || ''} ${d.name || ''}`))
-        || null;
+    const forProperty = docs.filter(d => d.propertyId === (t.propertyId ?? listItem?.propertyId));
+    const isLease = d => d.type === 'Tenancy Agreement' || isLeaseDocumentName(`${d.type || ''} ${d.name || ''}`);
+    const leases = forProperty.filter(isLease);
+    const unit = listItem?.unit || t.unit || '';
+    if (unit) {
+        const unitRe = new RegExp(unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        const unitMatch = leases.find(d => unitRe.test(d.name || '') || unitRe.test(d.unit || ''));
+        if (unitMatch) return unitMatch;
+    }
+    return leases[0] || null;
 }
 
 function renderTenantContactQuickActions(tenantId) {
@@ -1597,20 +1610,21 @@ function renderTenantContactQuickActions(tenantId) {
     const leaseDoc = resolveTenantLeaseDocument(tenantId);
     const leaseIdx = getTenantLeaseDocIndex(tenantId);
     const leaseAttrs = leaseDoc
-        ? `data-go="document-preview" data-doc="${leaseDoc.id}"`
+        ? `data-go="document-preview" data-preview-source="property" data-doc="${leaseDoc.id}" data-tid="${tenantId}"`
         : leaseIdx >= 0
             ? `data-go="document-preview" data-preview-source="tenant" data-preview-idx="${leaseIdx}" data-tid="${tenantId}"`
             : `data-ttab="documents"`;
     const actions = [
         ['phone', 'Call', `data-action="call-tenant" data-tid="${tenantId}"`, 'tenant-v2-quick-icon--call'],
         ['message-square', 'Message', msgAttrs, 'tenant-v2-quick-icon--msg'],
-        ['file-text', 'View lease', leaseAttrs, 'tenant-v2-quick-icon--lease'],
+        ['banknote', 'View rent', `data-ttab="payments"`, 'tenant-v2-quick-icon--lease'],
+        ['file-text', 'View lease', leaseAttrs, 'tenant-v2-quick-icon--email'],
     ];
     return `
-        <div class="tenant-v2-quick-grid tenant-v2-quick-grid--3">
+        <div class="tenant-v2-quick-grid tenant-v2-quick-grid--4">
             ${actions.map(([ic, label, attrs, tone]) => `
             <button type="button" ${attrs} class="tenant-v2-quick-btn">
-                <span class="tenant-v2-quick-icon ${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></span>
+                <span class="tenant-v2-quick-icon ${tone}"><i data-lucide="${ic}" class="w-4 h-4"></i></span>
                 <span class="tenant-v2-quick-label">${label}</span>
             </button>`).join('')}
         </div>`;
@@ -1702,6 +1716,20 @@ function tenantPreviousAddress(tenantId) {
     const t = TENANTS[tenantId];
     const ref = typeof getTenantReferencing === 'function' ? getTenantReferencing(tenantId) : null;
     return t?.homeAddress?.trim() || ref?.previousLandlord?.address?.trim() || '';
+}
+
+function tenantCurrentAddress(tenantId) {
+    const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST[tenantId] || TENANT_LIST.find(x => x.id === tenantId);
+    const prop = listItem?.propertyId != null ? PROPERTIES[listItem.propertyId] : null;
+    const unit = (listItem?.unit || t?.unit || '').trim();
+    const name = (prop?.name || listItem?.prop || t?.prop || '').trim();
+    const street = (prop?.address || '').trim();
+    const head = [unit, name].filter(Boolean).join(', ');
+    const parts = [];
+    if (head) parts.push(head);
+    if (street && !parts.some(p => p.includes(street))) parts.push(street);
+    return parts.join(', ') || '—';
 }
 
 function tenantEmergencySummary(t) {
@@ -1822,8 +1850,8 @@ function renderTenantPersonalIdCard(tenantId, opts = {}) {
                 <div class="tenant-info-cell tenant-info-cell--full">
                     <span class="tenant-info-icon"><i data-lucide="map-pin" class="w-4 h-4"></i></span>
                     <span class="tenant-info-copy">
-                        <span class="tenant-info-label">Previous / home address</span>
-                        <span class="tenant-info-value tenant-info-value--wrap">${escapeHtml(prevAddress || '—')}</span>
+                        <span class="tenant-info-label">Current address</span>
+                        <span class="tenant-info-value tenant-info-value--wrap">${escapeHtml(typeof tenantCurrentAddress === 'function' ? tenantCurrentAddress(tenantId) : (prevAddress || '—'))}</span>
                     </span>
                 </div>
             </div>
@@ -1834,6 +1862,191 @@ function renderTenantPersonalIdCard(tenantId, opts = {}) {
 function renderTenantProfileInfoSections(tenantId) {
     return `${renderTenantContactCard(tenantId, { linkPhoneEmail: false, linkEmergency: true })}
     ${renderTenantPersonalIdCard(tenantId, { showPreviousAddress: true, viewDocs: true })}`;
+}
+
+function tenantFactsRow(label, value, attrs) {
+    const val = value == null || value === '' ? '—' : String(value);
+    const inner = `
+        <span class="tenant-facts-label">${escapeHtml(label)}</span>
+        <span class="tenant-facts-value">${escapeHtml(val)}</span>`;
+    if (attrs) {
+        return `<button type="button" ${attrs} class="tenant-facts-row tenant-facts-row--link">${inner}<i data-lucide="chevron-right" class="tenant-hub-chevron w-4 h-4"></i></button>`;
+    }
+    return `<div class="tenant-facts-row">${inner}</div>`;
+}
+
+function tenantUnpaidExtraInvoices(tenantId) {
+    const listItem = TENANT_LIST[tenantId];
+    if (!listItem) return [];
+    return INVOICES.filter(i =>
+        i.status !== 'Paid' &&
+        (isLandlordExtraCharge(i) || isMaintenanceBill(i)) &&
+        invoiceBelongsToTenant(i, tenantId)
+    );
+}
+
+function renderTenantMainFactsCard(tenantId) {
+    const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST[tenantId];
+    if (!t || !listItem) return '';
+    const nidDoc = typeof getTenantNidProof === 'function' ? getTenantNidProof(tenantId) : null;
+    const nidAttrs = nidDoc
+        ? `data-go="document-preview" data-preview-source="tenant-nid" data-tid="${tenantId}"`
+        : '';
+    return `
+    <div class="card tenant-facts-card">
+        ${tenantFactsRow('Full name', fullNameFromParts(t.firstName, t.lastName) || listItem.name)}
+        ${tenantFactsRow('Date of birth', formatTenantDob(t.dob))}
+        ${tenantFactsRow('NID', t.idNumber || '—')}
+        ${tenantFactsRow('Email', t.email || '—')}
+        ${tenantFactsRow('Phone', t.phone || '—')}
+        ${tenantFactsRow('Emergency contact', t.emergency && t.emergency !== '—' ? t.emergency : '—')}
+        ${tenantFactsRow('Emergency phone', t.emergencyPhone && t.emergencyPhone !== '—' ? t.emergencyPhone : '—')}
+        ${tenantFactsRow('Address', tenantCurrentAddress(tenantId))}
+        ${tenantFactsRow('NID document', nidDoc ? nidDoc.name : 'Not uploaded', nidAttrs)}
+    </div>`;
+}
+
+function renderTenantMoneyBlock(tenantId) {
+    const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST[tenantId];
+    if (!t || !listItem) return '';
+    const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tenantId) : {};
+    const rent = typeof formatTenantRent === 'function' ? formatTenantRent(t.rent) : (listItem.rent || t.rent || '—');
+    const extras = tenantUnpaidExtraInvoices(tenantId);
+    const extraTotal = pay.billBalance && pay.billBalance !== '£0.00' ? pay.billBalance : '£0';
+    const nextDue = pay.nextDue && pay.nextDue !== '—' ? pay.nextDue : `${rent} · next month`;
+    const canEdit = listItem.propertyId != null && listItem.unit;
+    return `
+    <section class="tenant-money-block">
+        <div class="tenant-v2-section-head">
+            <h3>Rent & charges</h3>
+            ${canEdit ? `<button type="button" data-go="edit-flat" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit rent</button>` : ''}
+        </div>
+        <div class="card tenant-money-card">
+            <div class="tenant-money-grid">
+                <div class="tenant-money-stat">
+                    <p class="tenant-money-label">Monthly rent</p>
+                    <p class="tenant-money-value">${escapeHtml(rent)}</p>
+                </div>
+                <div class="tenant-money-stat">
+                    <p class="tenant-money-label">Due charges</p>
+                    <p class="tenant-money-value ${extraTotal === '£0' ? '' : 'is-due'}">${escapeHtml(extraTotal)}</p>
+                </div>
+                <div class="tenant-money-stat tenant-money-stat--wide">
+                    <p class="tenant-money-label">Next month</p>
+                    <p class="tenant-money-value">${escapeHtml(nextDue)}</p>
+                </div>
+            </div>
+            ${extras.length ? `
+            <div class="tenant-money-charges">
+                ${extras.map(i => {
+                    const name = typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(i) : (i.desc || 'Charge');
+                    return `
+                <button type="button" data-go="invoice-detail" data-iid="${i.id}" class="tenant-money-charge">
+                    <span>${escapeHtml(name)}</span>
+                    <span class="tenant-money-charge-amt">${escapeHtml(i.amount)}</span>
+                </button>`;
+                }).join('')}
+            </div>` : ''}
+            <button type="button" data-ttab="payments" class="tenant-money-more">View payments</button>
+        </div>
+    </section>`;
+}
+
+function tenantHubRow({ icon, title, meta, attrs, tone = 'blue' }) {
+    return `
+    <button type="button" ${attrs} class="tenant-hub-row">
+        <span class="tenant-hub-icon tenant-hub-icon--${tone}"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
+        <span class="tenant-hub-copy">
+            <span class="tenant-hub-title">${title}</span>
+            ${meta ? `<span class="tenant-hub-meta">${meta}</span>` : ''}
+        </span>
+        <i data-lucide="chevron-right" class="tenant-hub-chevron w-4 h-4"></i>
+    </button>`;
+}
+
+function renderTenantCompactHub(tenantId) {
+    const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST[tenantId];
+    if (!t || !listItem) return '';
+    const dep = typeof getTenantDepositProtection === 'function' ? getTenantDepositProtection(tenantId) : {};
+    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tenantId) : {};
+    const docs = typeof getTenantDocuments === 'function' ? getTenantDocuments(tenantId) : [];
+    const notes = typeof getTenantNotes === 'function' ? getTenantNotes(tenantId) : [];
+    const ref = typeof getTenantReferencing === 'function' ? getTenantReferencing(tenantId) : {};
+    const keys = listItem.propertyId != null && listItem.unit
+        ? (typeof keysHeldByTenant === 'function' ? keysHeldByTenant(listItem.propertyId, listItem.unit, `${t.firstName || ''} ${t.lastName || ''}`.trim()) : [])
+        : [];
+    const unit = listItem.propertyId != null && listItem.unit
+        ? getPropertyUnits(listItem.propertyId).find(u => unitName(u) === listItem.unit)
+        : null;
+    const refEntries = Object.values(ref || {});
+    const verifiedCount = refEntries.filter(x => x?.status === 'verified' || x?.status === 'complete').length;
+    const rtr = ref?.rightToRent?.status === 'verified' ? 'Right to rent verified' : `${verifiedCount} of ${Math.max(refEntries.length, 1)} checks done`;
+    const moveIn = dep.moveIn && dep.moveIn !== '—' ? dep.moveIn : (fin.moveIn && typeof formatDisplayDate === 'function' ? formatDisplayDate(fin.moveIn) : fin.moveIn);
+    const depositLine = [
+        dep.deposit && dep.deposit !== '—' ? `Deposited ${dep.deposit}` : null,
+        dep.advancePaid && dep.advancePaid !== '—' && dep.advancePaid !== dep.deposit ? `Advance ${dep.advancePaid}` : null,
+        moveIn && moveIn !== '—' ? moveIn : null,
+        dep.scheme && dep.scheme !== '—' ? dep.scheme : null,
+    ].filter(Boolean).join(' · ') || 'No deposit on file';
+    const prop = listItem.propertyId != null ? PROPERTIES[listItem.propertyId] : null;
+    const buildingBits = [
+        prop?.name || listItem.prop,
+        listItem.unit,
+        unit?.floor ? `Floor ${unit.floor}` : null,
+    ].filter(Boolean).join(' · ') || (listItem.prop || 'Property');
+    const keyLine = keys.length
+        ? `${keys.length} key${keys.length === 1 ? '' : 's'} assigned${keys[0]?.label ? ` · ${keys[0].label}` : ''}`
+        : 'No keys assigned';
+    const note = notes[0];
+    const noteLine = note
+        ? `${escapeHtml((note.text || '').slice(0, 72))}${note.text && note.text.length > 72 ? '…' : ''}`
+        : 'No notes yet';
+    const noteMeta = note?.meta ? escapeHtml(String(note.meta).split('·')[0].trim()) : '';
+
+    const groupA = [
+        tenantHubRow({
+            icon: 'banknote', title: 'Deposit & move-in', meta: escapeHtml(depositLine),
+            attrs: `data-ttab="property"`, tone: 'green',
+        }),
+        tenantHubRow({
+            icon: 'key-round', title: 'Keys', meta: escapeHtml(keyLine),
+            attrs: listItem.propertyId != null && listItem.unit
+                ? `data-go="flat-keys" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}"`
+                : `data-ttab="property"`,
+            tone: 'blue',
+        }),
+        tenantHubRow({
+            icon: 'shield-check', title: 'Reference / checks', meta: escapeHtml(rtr),
+            attrs: `data-ttab="documents"`, tone: 'green',
+        }),
+        tenantHubRow({
+            icon: 'building-2', title: 'Building information', meta: escapeHtml(buildingBits),
+            attrs: listItem.propertyId != null
+                ? `data-go="property-detail" data-pid="${listItem.propertyId}" data-tab="info"${listItem.unit ? ` data-unit="${listItem.unit}"` : ''} data-tid="${tenantId}"`
+                : `data-ttab="property"`,
+            tone: 'blue',
+        }),
+        tenantHubRow({
+            icon: 'folder', title: 'Documents', meta: `${docs.length} file${docs.length === 1 ? '' : 's'} uploaded`,
+            attrs: `data-ttab="documents"`, tone: 'blue',
+        }),
+    ].join('');
+
+    return `
+    ${renderTenantMainFactsCard(tenantId)}
+    ${renderTenantMoneyBlock(tenantId)}
+    <div class="card tenant-hub-group">${groupA}</div>
+    <div class="card tenant-hub-group">
+        ${tenantHubRow({
+            icon: 'sticky-note', title: 'Notes',
+            meta: note ? `${noteLine}${noteMeta ? ` · ${noteMeta}` : ''}` : noteLine,
+            attrs: notes.length ? `data-ttab="notes"` : `data-go="tenant-add-note" data-tid="${tenantId}"`,
+            tone: 'amber',
+        })}
+    </div>`;
 }
 
 const TENANT_SUPPORT_PREFILLS = {
@@ -4162,9 +4375,13 @@ function notifyTenantsAboutEvent(propertyId, tenantIds, { title, desc, screen = 
 }
 
 function broadcastAudienceLabel(b) {
-    if (!b || b.scope === 'all' || !b.units?.length) return 'Entire property';
-    if (b.units.length === 1) return b.units[0];
-    return `${b.units.length} flats`;
+    if (!b) return 'Entire property';
+    if (b.scope === 'portfolio') return 'All properties';
+    if (b.scope === 'units' && b.units?.length) {
+        if (b.units.length === 1) return b.units[0];
+        return `${b.units.length} flats`;
+    }
+    return 'Entire property';
 }
 
 function tenantUnitForBroadcast(tenant) {
@@ -4176,6 +4393,7 @@ function tenantUnitForBroadcast(tenant) {
 
 function broadcastVisibleToTenant(b, tenant) {
     if (!b || !tenant || tenant.propertyId == null) return false;
+    if (b.scope === 'portfolio') return true;
     if (b.propertyId !== tenant.propertyId) return false;
     if (b.scope === 'all' || !b.units?.length) return true;
     const unit = tenantUnitForBroadcast(tenant);
@@ -4211,12 +4429,15 @@ function markBroadcastsReadForTenant(tenant) {
 }
 
 function getBroadcastRecipientTenantIds(propertyId, scope, units) {
-    const active = TENANT_LIST.filter(t =>
-        t.propertyId === propertyId && (t.status === 'active' || t.status === 'pending')
-    );
-    if (scope === 'all') return active.map(t => t.id);
-    const picked = units || [];
-    return active.filter(t => picked.includes(t.unit)).map(t => t.id);
+    const live = TENANT_LIST.filter(t => t.status === 'active' || t.status === 'pending');
+    if (scope === 'portfolio') return live.map(t => t.id);
+    const active = live.filter(t => t.propertyId === propertyId);
+    if (scope === 'all' || !units?.length) return active.map(t => t.id);
+    return active.filter(t => units.includes(t.unit)).map(t => t.id);
+}
+
+function broadcastRecipientCount(b) {
+    return getBroadcastRecipientTenantIds(b.propertyId, b.scope, b.units).length;
 }
 
 function broadcastById(id) {
@@ -4246,9 +4467,13 @@ function renderBroadcastImageField() {
 function renderBroadcastDetailContent(b, opts = {}) {
     const p = PROPERTIES[b.propertyId];
     const recipients = getBroadcastRecipientTenantIds(b.propertyId, b.scope, b.units);
-    const badgeClass = b.scope === 'units' ? 'broadcast-detail-badge--units' : 'broadcast-detail-badge--all';
-    const badgeLabel = b.scope === 'units' ? 'Selected Flats' : 'Entire Property';
-    
+    const isPortfolio = b.scope === 'portfolio';
+    const badgeClass = b.scope === 'units'
+        ? 'broadcast-detail-badge--units'
+        : isPortfolio ? 'broadcast-detail-badge--portfolio' : 'broadcast-detail-badge--all';
+    const badgeLabel = b.scope === 'units' ? 'Selected flats' : isPortfolio ? 'All properties' : 'Entire property';
+    const placeLabel = isPortfolio ? 'All properties' : (p?.name || 'Property');
+
     let targetsHTML = '';
     if (b.scope === 'units') {
         const flatsText = b.units && b.units.length ? b.units.join(', ') : 'None';
@@ -4265,7 +4490,9 @@ function renderBroadcastDetailContent(b, opts = {}) {
             <div class="broadcast-detail-targets-label">
                 <i data-lucide="building-2" class="w-3.5 h-3.5"></i> Sent to
             </div>
-            <div class="broadcast-detail-targets-content">All flats in ${escapeHtml(p?.name?.split(',')[0] || 'property')}</div>
+            <div class="broadcast-detail-targets-content">${isPortfolio
+                ? `Every flat across ${PROPERTIES.length} ${PROPERTIES.length === 1 ? 'property' : 'properties'}`
+                : `All flats in ${escapeHtml(p?.name?.split(',')[0] || 'property')}`}</div>
         </div>`;
     }
 
@@ -4279,7 +4506,7 @@ function renderBroadcastDetailContent(b, opts = {}) {
             <span class="broadcast-detail-icon"><i data-lucide="megaphone" class="w-5 h-5"></i></span>
             <div class="min-w-0">
                 <h2 class="broadcast-detail-title">${escapeHtml(b.title)}</h2>
-                <p class="broadcast-detail-sub">${escapeHtml(p?.name || 'Property')}</p>
+                <p class="broadcast-detail-sub">${escapeHtml(placeLabel)}</p>
                 <span class="broadcast-detail-badge ${badgeClass}">${badgeLabel}</span>
             </div>
         </div>
@@ -4303,25 +4530,42 @@ async function uploadBroadcastImageAction() {
 }
 
 function renderBroadcastAudienceSection(propertyId) {
-    const scope = STATE.broadcastScope || 'all';
+    const scope = STATE.broadcastScope || (PROPERTIES.length > 1 ? 'portfolio' : 'all');
+    const showEveryone = PROPERTIES.length > 1;
     const units = getPropertyUnits(propertyId);
     const unitNames = units.map(u => unitName(u));
     const selected = STATE.broadcastUnits?.length
         ? STATE.broadcastUnits
         : unitNames.filter(un => TENANT_LIST.some(t => t.propertyId === propertyId && t.unit === un && t.status === 'active'));
+    const everyoneCount = TENANT_LIST.filter(t => t.status === 'active' || t.status === 'pending').length;
+    const helper = scope === 'portfolio'
+        ? `One notice goes to every tenant across all ${PROPERTIES.length} properties.`
+        : scope === 'units'
+            ? 'Only tenants in the selected flats will see this in their portal.'
+            : 'Every active tenant in this building will see the notice under Announcements.';
     return `
     <div class="broadcast-audience">
         <p class="form-label broadcast-form-label"><i data-lucide="users" class="w-4 h-4"></i> Who should see this?</p>
-        <div class="broadcast-scope-segments">
+        <div class="broadcast-scope-segments ${showEveryone ? 'broadcast-scope-segments--3' : ''}">
+            ${showEveryone ? `
+            <button type="button" data-broadcast-scope="portfolio" class="broadcast-scope-btn ${scope === 'portfolio' ? 'active' : ''}">
+                <span class="broadcast-scope-icon"><i data-lucide="globe" class="w-5 h-5"></i></span>
+                <span class="broadcast-scope-label">Everyone</span>
+            </button>` : ''}
             <button type="button" data-broadcast-scope="all" class="broadcast-scope-btn ${scope === 'all' ? 'active' : ''}">
                 <span class="broadcast-scope-icon"><i data-lucide="building-2" class="w-5 h-5"></i></span>
-                <span class="broadcast-scope-label">Entire property</span>
+                <span class="broadcast-scope-label">This property</span>
             </button>
             <button type="button" data-broadcast-scope="units" class="broadcast-scope-btn ${scope === 'units' ? 'active' : ''}">
                 <span class="broadcast-scope-icon"><i data-lucide="layout-grid" class="w-5 h-5"></i></span>
                 <span class="broadcast-scope-label">Selected flats</span>
             </button>
         </div>
+        ${scope === 'portfolio' ? `
+        <div class="broadcast-everyone-card card">
+            <p class="broadcast-everyone-title">1 notice for all</p>
+            <p class="broadcast-everyone-meta">${PROPERTIES.length} properties · ${everyoneCount} tenant${everyoneCount === 1 ? '' : 's'}</p>
+        </div>` : ''}
         ${scope === 'units' ? `
         <div class="notify-tenant-section">
             ${unitNames.length > 1 ? `
@@ -4348,9 +4592,8 @@ function renderBroadcastAudienceSection(propertyId) {
                 </label>`;
                 }).join('')}
             </div>
-            <p class="form-helper">Only tenants in the selected flats will see this in their portal.</p>
-        </div>` : `
-        <p class="form-helper">Every active tenant in this building will see the notice under Announcements.</p>`}
+        </div>` : ''}
+        <p class="form-helper">${helper}</p>
     </div>`;
 }
 
@@ -4365,7 +4608,8 @@ function screenBroadcastNotices() {
         <p class="txn-section-label txn-section-label--spaced">Sent</p>
         <div class="txn-list">${list.map(b => {
             const p = PROPERTIES[b.propertyId];
-            const recipients = getBroadcastRecipientTenantIds(b.propertyId, b.scope, b.units);
+            const place = b.scope === 'portfolio' ? 'All properties' : (p?.name || 'Property');
+            const recipients = broadcastRecipientCount(b);
             const thumb = b.image
                 ? `<img src="${b.image}" alt="" class="broadcast-list-thumb">`
                 : `<div class="txn-icon txn-icon-pending"><i data-lucide="megaphone" class="w-4 h-4"></i></div>`;
@@ -4374,8 +4618,8 @@ function screenBroadcastNotices() {
             ${thumb}
             <div class="txn-body">
                 <p class="txn-title">${escapeHtml(b.title)}</p>
-                <p class="txn-sub">${escapeHtml(p?.name || 'Property')} · ${broadcastAudienceLabel(b)}</p>
-                <p class="txn-sub txn-sub--muted">${b.date} · ${recipients.length} tenant${recipients.length === 1 ? '' : 's'}</p>
+                <p class="txn-sub">${escapeHtml(place)} · ${broadcastAudienceLabel(b)}</p>
+                <p class="txn-sub txn-sub--muted">${b.date} · ${recipients} tenant${recipients === 1 ? '' : 's'}</p>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>`;
@@ -4406,17 +4650,22 @@ function screenBroadcastDetail() {
 function screenSendBroadcast() {
     const pid = STATE.broadcastPropertyId ?? STATE.propertyId ?? 0;
     const p = PROPERTIES[pid];
-    if (!p) return `${topBar('Send announcement', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Add a property first.</p></div>`;
+    if (!PROPERTIES.length) {
+        return `${topBar('Send announcement', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Add a property first.</p></div>`;
+    }
+    const scope = STATE.broadcastScope || (PROPERTIES.length > 1 ? 'portfolio' : 'all');
     const propertyOptions = PROPERTIES.map((prop, i) =>
         `<option value="${i}" ${i === pid ? 'selected' : ''}>${escapeHtml(prop.name)}</option>`
     ).join('');
-    return `${topBar('Send announcement', { back: true, sub: p.name.split(',')[0] })}
+    const sub = scope === 'portfolio' ? 'All properties' : (p?.name || 'Property').split(',')[0];
+    return `${topBar('Send announcement', { back: true, sub })}
     <div class="screen-content screen-enter broadcast-form-page">
+        ${renderBroadcastAudienceSection(pid)}
+        ${scope !== 'portfolio' ? `
         <div class="form-group">
             <label class="form-label broadcast-form-label"><i data-lucide="building-2" class="w-4 h-4"></i> Property</label>
             <select data-broadcast-property class="form-input form-select">${propertyOptions}</select>
-        </div>
-        ${renderBroadcastAudienceSection(pid)}
+        </div>` : ''}
         <div class="form-group">
             <label class="form-label broadcast-form-label"><i data-lucide="type" class="w-4 h-4"></i> Announcement title <span class="form-required">*</span></label>
             <input data-field="broadcastTitle" type="text" class="form-input" placeholder="e.g. Boiler service next week">
@@ -4434,14 +4683,12 @@ function screenSendBroadcast() {
 
 function sendBroadcastNotice() {
     const pid = STATE.broadcastPropertyId ?? STATE.propertyId ?? 0;
-    const p = PROPERTIES[pid];
-    if (!p) { toast('Select a property'); return; }
+    const scope = STATE.broadcastScope || (PROPERTIES.length > 1 ? 'portfolio' : 'all');
+    if (scope !== 'portfolio' && !PROPERTIES[pid]) { toastError('Select a property'); return; }
     const title = (fieldVal('broadcastTitle') || '').trim();
     const body = (fieldVal('broadcastBody') || '').trim();
     if (!title) { toastError('Enter an announcement title'); return; }
     if (!body) { toastError('Enter a message'); return; }
-    const scope = STATE.broadcastScope || 'all';
-    const unitNames = getPropertyUnits(pid).map(u => unitName(u));
     const units = scope === 'units'
         ? [...document.querySelectorAll('[data-broadcast-unit]:checked')].map(el => el.dataset.broadcastUnit)
         : [];
@@ -4449,11 +4696,11 @@ function sendBroadcastNotice() {
         toastError('Select at least one flat');
         return;
     }
-    const tenantIds = getBroadcastRecipientTenantIds(pid, scope, units);
+    const tenantIds = getBroadcastRecipientTenantIds(scope === 'portfolio' ? null : pid, scope, units);
     const from = `${LANDLORD_USER.firstName || 'John'} ${LANDLORD_USER.lastName || 'Smith'}`.trim();
     const entry = {
         id: AppStore.nextId(AppStore.broadcasts || []),
-        propertyId: pid,
+        propertyId: scope === 'portfolio' ? null : pid,
         title,
         body,
         date: typeof formatEventDate === 'function' ? formatEventDate() : 'Today',
@@ -4467,7 +4714,8 @@ function sendBroadcastNotice() {
     AppStore.broadcasts.unshift(entry);
     STATE.broadcastDraftImage = null;
     if (tenantIds.length) {
-        notifyTenantsAboutEvent(pid, tenantIds, {
+        const notifyPid = scope === 'portfolio' ? (tenantIds[0] != null ? TENANT_LIST.find(t => t.id === tenantIds[0])?.propertyId : 0) : pid;
+        notifyTenantsAboutEvent(notifyPid, tenantIds, {
             title: 'New notice from landlord',
             desc: title,
             screen: 'tenant-announcements',
@@ -4475,8 +4723,8 @@ function sendBroadcastNotice() {
     }
     AppStore.save();
     toast(tenantIds.length
-        ? `Notice sent to ${tenantIds.length} tenant${tenantIds.length === 1 ? '' : 's'}`
-        : 'Notice saved — no active tenants on selected flats yet');
+        ? `Notice sent to ${tenantIds.length} tenant${tenantIds.length === 1 ? '' : 's'}${scope === 'portfolio' ? ' across all properties' : ''}`
+        : 'Notice saved — no active tenants on this audience yet');
     go('broadcast-notices');
 }
 
@@ -4526,17 +4774,29 @@ function truncateNote(text, max = 90) {
     return t.length <= max ? t : `${t.slice(0, max - 1)}…`;
 }
 
+function tenantNoteMenuItems(noteId) {
+    return [
+        { label: 'Edit', icon: 'pencil', action: 'edit-tenant-note', attrs: `data-nid="${noteId}"` },
+        { label: 'Delete', icon: 'trash-2', action: 'delete-tenant-note', danger: true, attrs: `data-nid="${noteId}"` },
+    ];
+}
+
 function renderTenantNoteCard(n, { compact = false, showActions = true } = {}) {
+    const menuKey = actionMenuKeyFor('note', n.id);
+    const menuOpen = isActionMenuOpen(menuKey);
+    const text = compact ? truncateNote(n.text, 120) : String(n.text || '');
     return `
-        <div class="tenant-note-card${compact ? ' tenant-note-card--compact' : ''}" style="background:${n.bg};border-color:${n.color}22">
-            <p class="tenant-note-text">${compact ? truncateNote(n.text, 120) : n.text}</p>
-            <div class="tenant-note-footer">
-                <span class="tenant-note-meta">${n.meta}</span>
+        <div class="card tenant-note-card${compact ? ' tenant-note-card--compact' : ''}${menuOpen ? ' tenant-note-card--menu-open' : ''}">
+            <div class="tenant-note-head">
+                <p class="tenant-note-text">${escapeHtml(text)}</p>
                 ${showActions ? `
-                <div class="row-actions">
-                    <button type="button" data-action="edit-tenant-note" data-nid="${n.id}" class="row-icon-btn row-icon-btn--primary" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                    <button type="button" data-action="delete-tenant-note" data-nid="${n.id}" class="row-icon-btn row-icon-btn--danger" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                <div class="tenant-note-menu-slot">
+                    ${renderActionMenuButton(menuKey, 'Note options', 'more-horizontal')}
+                    ${renderActionMenuPopover(menuKey, tenantNoteMenuItems(n.id))}
                 </div>` : ''}
+            </div>
+            <div class="tenant-note-footer">
+                <span class="tenant-note-meta">${escapeHtml(n.meta || '')}</span>
             </div>
         </div>`;
 }
@@ -4889,8 +5149,8 @@ function renderLogMaintContextLink(propertyId, unit, label = 'Log issue for this
     return `<button type="button" data-go="log-maintenance"${pidAttr}${unitAttr} class="flat-dt-log-maint-link">${label}<i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>`;
 }
 
-function renderActionMenuButton(key, label = 'Options') {
-    return `<button type="button" data-action="open-action-menu" data-menu-key="${key}" class="action-menu-btn" aria-label="${label}" aria-expanded="${isActionMenuOpen(key)}"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>`;
+function renderActionMenuButton(key, label = 'Options', icon = 'more-vertical') {
+    return `<button type="button" data-action="open-action-menu" data-menu-key="${key}" class="action-menu-btn" aria-label="${label}" aria-expanded="${isActionMenuOpen(key)}"><i data-lucide="${icon}" class="w-4 h-4"></i></button>`;
 }
 
 function renderActionMenuItem(item) {
@@ -5324,6 +5584,34 @@ function renderBuildingSectionHead(title, metaHtml = '') {
     </div>`;
 }
 
+function renderTenantPropertyLocationCard(propertyId) {
+    const tid = STATE.tenantId;
+    const listItem = tid != null ? (TENANT_LIST[tid] || TENANT_LIST.find(x => x.id === tid)) : null;
+    if (!listItem || listItem.propertyId !== propertyId || !listItem.unit) return '';
+    const p = PROPERTIES[propertyId];
+    if (!p) return '';
+    const unit = getPropertyUnits(propertyId).find(u => unitName(u) === listItem.unit);
+    const bits = [
+        listItem.unit,
+        unit?.floor ? `Floor ${unit.floor}` : null,
+        unit?.furnished || null,
+    ].filter(Boolean).join(' · ');
+    const cover = typeof getFlatCoverPhoto === 'function'
+        ? getFlatCoverPhoto(propertyId, listItem.unit)
+        : (typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(propertyId) : '');
+    return `
+    <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${listItem.unit}" data-flat-tab="overview" class="card tenant-home-location mb-3 w-full text-left">
+        <div class="tenant-home-location-main">
+            ${cover ? `<img src="${escapeHtml(cover)}" alt="" class="tenant-home-location-thumb">` : ''}
+            <div class="min-w-0">
+                <p class="tenant-home-location-building">${escapeHtml(p.name)}</p>
+                <p class="tenant-home-location-addr">${escapeHtml(p.address || '')}</p>
+                ${bits ? `<p class="tenant-home-location-flat">${escapeHtml(bits)}</p>` : ''}
+            </div>
+        </div>
+    </button>`;
+}
+
 function renderPropertyOverviewDetails(propertyId) {
     const p = PROPERTIES[propertyId];
     if (!p) return '';
@@ -5414,7 +5702,7 @@ function renderPropertyOverviewDetails(propertyId) {
     return `
     <div class="screen-content screen-content-sm building-info-page building-info-page--v2">
         ${justSaved ? `<p class="text-[12px] font-semibold text-[#16A34A] mb-3" id="property-saved-output">Property saved</p>` : ''}
-        
+        ${typeof renderTenantPropertyLocationCard === 'function' ? renderTenantPropertyLocationCard(propertyId) : ''}
         <div class="prop-overview-strip card mb-3">
             <div class="prop-overview-stat"><strong>${occupied}</strong><span>Occupied</span></div>
             <div class="prop-overview-divider"></div>
@@ -6842,11 +7130,7 @@ function tenantPaymentSummary(tenantId) {
     const listItem = TENANT_LIST[tenantId];
     const t = TENANTS[tenantId];
     if (!listItem || !t) return { balance: '£0.00', lastPayment: '—', nextDue: '—', deposit: '—', advancePaid: '—' };
-    const invs = INVOICES.filter(i =>
-        i.tenantId === tenantId ||
-        i.tenant === listItem.name ||
-        (i.prop.includes(listItem.prop) && (!i.unit || i.unit === listItem.unit))
-    );
+    const invs = invoicesForTenant(tenantId);
     let rentInvs = invs.filter(i => isRentInvoice(i));
     if (listItem.propertyId != null && listItem.unit) {
         const { tenancy, members } = getFlatMemberRoster(listItem.propertyId, listItem.unit);
@@ -6879,7 +7163,11 @@ function tenantPaymentSummary(tenantId) {
         maintBalance: maintDue ? formatRentAmount(maintDue) : '£0.00',
         billBalance: (chargeDue + maintDue) ? formatRentAmount(chargeDue + maintDue) : '£0.00',
         lastPayment: lastPaid ? `${lastPaid.amount} · ${lastPaid.paidOn || lastPaid.due}` : '—',
+        lastPaymentAmount: lastPaid?.amount || '—',
+        lastPaymentDate: lastPaid ? (lastPaid.paidOn || lastPaid.due) : '—',
         nextDue: nextDue ? `${nextDue.amount} · ${nextDue.due}` : '—',
+        nextDueAmount: nextDue?.amount || '—',
+        nextDueDate: nextDue?.due || '—',
         nextChargeDue: chargeLine,
         nextMaintDue: maintLine,
         overdueCount: overdue.length,
@@ -7401,13 +7689,20 @@ function renderTenancyDocumentsChecklist(propertyId, unit, tenancy) {
     const sent = tenancy?.documentsSent || {};
     const rows = TENANCY_SEND_DOC_OPTIONS.map(opt => {
         const ticked = !!sent[opt.type];
-        const onFile = propertyDocumentsForType(propertyId, opt.type, unit).length > 0;
+        const files = propertyDocumentsForType(propertyId, opt.type, unit);
+        const onFile = files.length > 0;
         return `
+        ${onFile && files[0] ? `
+        <button type="button" data-go="document-preview" data-preview-source="property" data-doc="${files[0].id}" class="tenancy-doc-status-row tenancy-doc-status-row--link">
+            <i data-lucide="${ticked ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${ticked ? 'text-[#16A34A]' : 'text-[#CBD5E1]'}"></i>
+            <span class="flex-1 text-left">${escapeHtml(opt.label)}</span>
+            <span class="tenancy-doc-chip">On file</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1]"></i>
+        </button>` : `
         <div class="tenancy-doc-status-row">
             <i data-lucide="${ticked ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${ticked ? 'text-[#16A34A]' : 'text-[#CBD5E1]'}"></i>
             <span class="flex-1">${escapeHtml(opt.label)}</span>
-            ${onFile ? '<span class="tenancy-doc-chip">On file</span>' : ''}
-        </div>`;
+        </div>`}`;
     }).join('');
     return `
     <section class="card tenancy-docs-checklist p-4 mb-3">
@@ -8172,17 +8467,28 @@ function normalizeDemoPortfolio() {
         { id: 8, num: 'INV-2026-1032', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£2,450', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 2, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1032' },
         { id: 11, num: 'INV-2026-1029', prop: '45 Queens Road, London SW2 3TR', unit: 'Flat 1A', tenant: 'David Wilson', tenantId: 1, propertyId: 1, amount: '£1,850', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 3, 2026', paymentMethod: 'Stripe', paymentReference: 'LH-INV-2026-1029' },
         { id: 5, num: 'INV-2026-1050', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 2A', tenant: 'Sarah Johnson', tenantId: 0, propertyId: 0, amount: '£85', status: 'Pending', due: 'Jul 20, 2026', month: 'Jul 2026', type: 'maintenance', desc: 'Kitchen sink repair share' },
+        { id: 101, num: 'INV-2026-1061', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 90, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jul 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-JUL' },
+        { id: 102, num: 'INV-2026-1060', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 90, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Jun 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-JUN' },
+        { id: 103, num: 'INV-2026-1059', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 90, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'May 1, 2026', month: 'May 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'May 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-MAY' },
+        { id: 104, num: 'INV-2026-1058', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 90, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Apr 1, 2026', month: 'Apr 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Apr 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-APR' },
+        { id: 105, num: 'INV-2026-1057', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 90, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Mar 1, 2026', month: 'Mar 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Mar 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-MAR' },
+        { id: 106, num: 'INV-2026-1056', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 90, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Feb 1, 2026', month: 'Feb 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Feb 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-FEB' },
+        { id: 107, num: 'INV-2026-1062', prop: '12 Park Lane, London SW1A 1AA', unit: 'Flat 1', tenant: 'Emma Thompson', tenantId: 90, propertyId: 0, amount: '£1,400', status: 'Paid', due: 'Sep 1, 2026', month: 'Sept 2026', type: 'rent', desc: 'Monthly rent', paidOn: 'Sep 1, 2026', paymentMethod: 'Direct Debit', paymentReference: 'DD-PL01-SEP' },
         // 88 King Street (HMO) Room Invoices
         { id: 120, num: 'INV-2026-1080', prop: '88 King Street, London EC2V 8BB', unit: 'Room 1', tenant: 'Emma Roberts', tenantId: 3, propertyId: 2, amount: '£650', status: 'Paid', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jul 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R1-JUL' },
         { id: 121, num: 'INV-2026-1079', prop: '88 King Street, London EC2V 8BB', unit: 'Room 1', tenant: 'Emma Roberts', tenantId: 3, propertyId: 2, amount: '£650', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jun 1, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R1-JUN' },
         { id: 122, num: 'INV-2026-1082', prop: '88 King Street, London EC2V 8BB', unit: 'Room 3', tenant: 'Mark Davis', tenantId: 6, propertyId: 2, amount: '£680', status: 'Pending', due: 'Jul 1, 2026', month: 'Jul 2026', type: 'rent', desc: 'Monthly room rent' },
         { id: 123, num: 'INV-2026-1081', prop: '88 King Street, London EC2V 8BB', unit: 'Room 3', tenant: 'Mark Davis', tenantId: 6, propertyId: 2, amount: '£680', status: 'Paid', due: 'Jun 1, 2026', month: 'Jun 2026', type: 'rent', desc: 'Monthly room rent', paidOn: 'Jun 2, 2026', paymentMethod: 'Bank transfer', paymentReference: 'TX-88KS-R3-JUN' },
     ];
-    const invoiceSeedVersion = '2026-rent-history-v3';
-    if (AppStore.invoiceSeedVersion !== invoiceSeedVersion
-        || INVOICES.length !== canonicalInvoices.length
-        || INVOICES.some((inv, idx) => inv.num !== canonicalInvoices[idx]?.num)) {
-        INVOICES.splice(0, INVOICES.length, ...canonicalInvoices);
+    const invoiceSeedVersion = '2026-rent-history-v5-flat1-ledger';
+    const missingCanonical = canonicalInvoices.some(c => !INVOICES.some(inv => inv.num === c.num));
+    if (AppStore.invoiceSeedVersion !== invoiceSeedVersion || missingCanonical) {
+        // Preserve any already-seeded current-month demo rows when refreshing history.
+        const currentMonth = typeof getCurrentRentMonthLabel === 'function' ? getCurrentRentMonthLabel() : '';
+        const keepCurrent = currentMonth
+            ? INVOICES.filter(inv => (!inv.type || inv.type === 'rent') && inv.month === currentMonth)
+            : [];
+        INVOICES.splice(0, INVOICES.length, ...canonicalInvoices, ...keepCurrent.filter(k => !canonicalInvoices.some(c => c.num === k.num)));
         AppStore.invoiceSeedVersion = invoiceSeedVersion;
         if (typeof syncTransactionsFromInvoices === 'function') syncTransactionsFromInvoices();
         AppStore.save();
@@ -8222,6 +8528,7 @@ function normalizeDemoPortfolio() {
         if (!ten.advancePaid) ten.advancePaid = canon.advancePaid;
     });
     syncInspectionDates();
+    ensureCurrentMonthRentDemo();
 }
 
 function tenantNameForInvoice(inv) {
@@ -8937,7 +9244,7 @@ function screenPropertyCompliance() {
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2 px-0.5">Property Documents (${customDocs.length})</p>
             <div class="card divide-y divide-[#F1F5F9] rounded-xl overflow-hidden border border-[#E2E8F0] bg-white shadow-xs">
                 ${customDocs.map(d => `
-                <div class="p-3 flex items-center justify-between gap-3">
+                <button type="button" data-go="document-preview" data-doc="${d.id}" class="p-3 flex items-center justify-between gap-3 w-full text-left hover:bg-[#F8FAFC] transition-colors cursor-pointer">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <div class="w-8 h-8 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#2563EB] flex items-center justify-center shrink-0">
                             <i data-lucide="file-text" class="w-4 h-4"></i>
@@ -8947,10 +9254,10 @@ function screenPropertyCompliance() {
                             <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${escapeHtml(d.date || 'Uploaded')} · ${escapeHtml(d.type || 'General file')}</p>
                         </div>
                     </div>
-                    <button type="button" data-action="view-doc" data-did="${d.id}" class="w-7 h-7 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 transition-colors cursor-pointer" title="View Document">
+                    <span class="w-7 h-7 rounded-lg bg-[#F1F5F9] text-[#64748B] flex items-center justify-center shrink-0" title="View document">
                         <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>`).join('')}
+                    </span>
+                </button>`).join('')}
             </div>
         </div>` : ''}
     </div>`;
@@ -10120,13 +10427,14 @@ function invoicesForUnit(propertyId, unit) {
         const rentStr = u?.rent || p?.rent || '£1,650';
         const numRent = (typeof parseRentAmount === 'function' ? parseRentAmount(rentStr) : 0) || 1650;
         const tenantName = (typeof getFlatMemberRoster === 'function' ? getFlatMemberRoster(propertyId, unit)?.tenancy?.leadName : null) || 'Lead Tenant';
-        const months = [
-            { m: 'Jul 2026', due: 'Jul 1, 2026', status: 'Paid', paidOn: 'Jul 1, 2026', method: 'Direct Debit' },
-            { m: 'Jun 2026', due: 'Jun 1, 2026', status: 'Paid', paidOn: 'Jun 1, 2026', method: 'Direct Debit' },
-            { m: 'May 2026', due: 'May 1, 2026', status: 'Paid', paidOn: 'May 1, 2026', method: 'Direct Debit' },
-            { m: 'Apr 2026', due: 'Apr 1, 2026', status: 'Paid', paidOn: 'Apr 1, 2026', method: 'Direct Debit' },
-            { m: 'Mar 2026', due: 'Mar 1, 2026', status: 'Paid', paidOn: 'Mar 1, 2026', method: 'Direct Debit' },
-        ];
+        const months = [];
+        const now = new Date();
+        for (let i = 0; i < 5; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const m = d.toLocaleString('en-GB', { month: 'short', year: 'numeric' });
+            const due = `${d.toLocaleString('en-GB', { month: 'short' })} 1, ${d.getFullYear()}`;
+            months.push({ m, due, status: 'Paid', paidOn: due, method: 'Direct Debit' });
+        }
         months.forEach((item, idx) => {
             const id = 5000 + (propertyId * 100) + (Math.abs((unit || '').charCodeAt(0) || 0) * 10) + idx;
             const newInv = {
@@ -10149,6 +10457,7 @@ function invoicesForUnit(propertyId, unit) {
             INVOICES.push(newInv);
             list.push(newInv);
         });
+        if (typeof AppStore !== 'undefined' && typeof AppStore.save === 'function') AppStore.save();
     }
     return list.sort((a, b) => (b.month || b.due).localeCompare(a.month || a.due));
 }
@@ -10257,19 +10566,9 @@ function unitRentStats(propertyId, unit) {
 
 function renderUnitRentHistory(propertyId, unit) {
     const invs = invoicesForUnit(propertyId, unit);
-    if (!invs.length) {
-        return `
-        <div class="card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2">
-            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto">
-                <i data-lucide="receipt" class="w-5 h-5"></i>
-            </div>
-            <h4 class="text-[14px] font-bold text-[#0F172A] m-0">No Rent Records Yet</h4>
-            <p class="text-[12px] text-[#64748B] m-0 max-w-[280px] mx-auto">Monthly invoices and payment statements will be recorded here once tenancy rent begins.</p>
-        </div>`;
-    }
     return `
-    <div class="rent-history-list flat-rent-history-list space-y-2.5">
-        ${invs.map(inv => renderRentHistoryRow(inv, { showUnit: false })).join('')}
+    <div class="card rent-history-list rent-history-list--clean rent-history-list--compact flat-rent-history-list">
+        ${invs.map(inv => renderRentHistoryRow(inv, { showUnit: false, compact: true })).join('')}
     </div>`;
 }
 
@@ -10838,44 +11137,38 @@ function renderFlatDetailPaymentsTab(propertyId, unit) {
     const rentAmount = u?.rent || (stats.collected ? `£${stats.collected.toLocaleString()}` : '—');
 
     return `
-    <div class="flat-dt-tab-panel flat-dt-payments-v2 space-y-4 text-left pb-10">
-        <!-- Financial Overview Hero Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
-            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+    <div class="flat-dt-tab-panel flat-dt-payments-v2 text-left">
+        <div class="card flat-pay-hero">
+            <div class="flat-pay-hero-top">
                 <div>
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Contracted Rent</span>
-                    <h3 class="text-[20px] font-extrabold text-[#0F172A] m-0 mt-0.5">${escapeHtml(rentAmount)} <span class="text-[12px] font-normal text-[#64748B]">/ month</span></h3>
+                    <span class="flat-pay-hero-kicker">Contracted rent</span>
+                    <h3 class="flat-pay-hero-rent">${escapeHtml(rentAmount)} <span>/ month</span></h3>
                 </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${hasOverdue ? 'bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]' : 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]'}">
+                <span class="flat-pay-hero-pill${hasOverdue ? ' is-overdue' : ''}">
                     <i data-lucide="${hasOverdue ? 'alert-triangle' : 'check-circle-2'}" class="w-3.5 h-3.5"></i>
-                    ${hasOverdue ? 'Overdue Payment' : 'Active Tenancy'}
+                    ${hasOverdue ? 'Overdue payment' : 'Active tenancy'}
                 </span>
             </div>
-
-            <!-- Financial Metrics Strip -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                    <span class="block text-[11px] font-medium text-[#64748B]">Collected (YTD)</span>
-                    <p class="text-[15px] font-bold text-[#0F172A] m-0 mt-1">£${(stats.collected || 0).toLocaleString()}</p>
-                    <span class="text-[10px] font-semibold text-[#059669] flex items-center gap-1 mt-0.5">
+            <div class="flat-pay-metrics">
+                <div class="flat-pay-metric">
+                    <span class="flat-pay-metric-label">Collected (YTD)</span>
+                    <p class="flat-pay-metric-value">£${(stats.collected || 0).toLocaleString()}</p>
+                    <span class="flat-pay-metric-hint is-ok">
                         <i data-lucide="arrow-up-right" class="w-3 h-3"></i> 100% on schedule
                     </span>
                 </div>
-                <div class="p-3 rounded-xl ${hasOverdue ? 'bg-[#FEF2F2] border border-[#FECACA]' : 'bg-[#F8FAFC] border border-[#E2E8F0]'}">
-                    <span class="block text-[11px] font-medium ${hasOverdue ? 'text-[#DC2626]' : 'text-[#64748B]'}">Current Balance</span>
-                    <p class="text-[15px] font-bold ${hasOverdue ? 'text-[#DC2626]' : 'text-[#0F172A]'} m-0 mt-1">
-                        ${hasOverdue ? `£${(stats.outstanding || 0).toLocaleString()} Overdue` : '£0.00 (Up to date)'}
-                    </p>
-                    <span class="text-[10px] font-semibold ${hasOverdue ? 'text-[#DC2626]' : 'text-[#64748B]'} flex items-center gap-1 mt-0.5">
+                <div class="flat-pay-metric${hasOverdue ? ' is-overdue' : ''}">
+                    <span class="flat-pay-metric-label">Current balance</span>
+                    <p class="flat-pay-metric-value">${hasOverdue ? `£${(stats.outstanding || 0).toLocaleString()} overdue` : '£0.00 (Up to date)'}</p>
+                    <span class="flat-pay-metric-hint">
                         ${hasOverdue ? `${unpaid.length} unpaid bill` : 'Next due 1st of month'}
                     </span>
                 </div>
             </div>
-
             ${unpaid.length ? `
-            <button type="button" data-go="mark-rent-received"${unpaid.length === 1 ? ` data-iid="${unpaid[0].id}"` : ''} class="w-full py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] shadow-xs hover:bg-[#1D4ED8] transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <button type="button" data-go="mark-rent-received"${unpaid.length === 1 ? ` data-iid="${unpaid[0].id}"` : ''} class="btn-primary w-full">
                 <i data-lucide="badge-pound-sterling" class="w-4 h-4"></i>
-                <span>Record Rent Received</span>
+                <span>Record rent received</span>
             </button>` : ''}
         </div>
 
@@ -10883,12 +11176,10 @@ function renderFlatDetailPaymentsTab(propertyId, unit) {
         ${depositBlock}
 
         <!-- Monthly Payment Ledger Stream -->
-        <div class="space-y-2">
-            <div class="flex items-center justify-between px-1">
-                <div>
-                    <h3 class="text-[13px] font-bold text-[#0F172A] uppercase tracking-wider m-0">Monthly Payment Ledger</h3>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Chronological rent and utility records</p>
-                </div>
+        <div class="flat-dt-ledger">
+            <div class="flat-dt-ledger-head">
+                <h3>Monthly payment ledger</h3>
+                <p>Rent and charges for this unit</p>
             </div>
             ${history}
         </div>
@@ -11337,6 +11628,130 @@ function renderDocumentPreviewChips(parts) {
     return `<div class="doc-preview-chips">${chips.map(p => `<span class="doc-preview-chip">${escapeHtml(String(p))}</span>`).join('')}</div>`;
 }
 
+function findDocumentByName(name) {
+    const needle = String(name || '').trim().toLowerCase();
+    if (!needle) return null;
+    return (AppStore.documents || []).find(d => String(d.name || '').trim().toLowerCase() === needle)
+        || (AppStore.documents || []).find(d => {
+            const n = String(d.name || '').toLowerCase();
+            return n && (n.includes(needle) || needle.includes(n.replace(/\.[a-z0-9]+$/, '')));
+        })
+        || null;
+}
+
+function demoDocKindFromName(name, type) {
+    const t = `${type || ''} ${name || ''}`.toLowerCase();
+    if (/nid|passport|id proof|identity|photo id/.test(t)) return 'id';
+    if (/gas|cp12/.test(t)) return 'gas';
+    if (/eicr|electrical/.test(t)) return 'electrical';
+    if (/\bepc\b/.test(t)) return 'epc';
+    if (/deposit/.test(t)) return 'deposit';
+    if (/how to rent/.test(t)) return 'guide';
+    if (/inventory|checkout/.test(t)) return 'inventory';
+    if (/lease|tenancy|agreement/.test(t)) return 'lease';
+    return 'file';
+}
+
+function renderDemoDocumentSheet(ctx = {}) {
+    const name = ctx.name || 'Document';
+    const kind = ctx.kind || demoDocKindFromName(name, ctx.type);
+    const date = ctx.date || 'On file';
+    const landlord = typeof LANDLORD_USER !== 'undefined'
+        ? `${LANDLORD_USER.firstName || ''} ${LANDLORD_USER.lastName || ''}`.trim() || 'Landlord'
+        : 'Landlord';
+    const tenant = ctx.tenant || 'Tenant';
+    const property = ctx.property || 'Property';
+    const unit = ctx.unit || '';
+    const address = ctx.address || property;
+    const idNumber = ctx.idNumber || '—';
+    const photo = ctx.photo || '';
+    const titles = {
+        lease: 'Assured Shorthold Tenancy',
+        gas: 'Gas Safety Record (CP12)',
+        electrical: 'Electrical Installation Condition Report',
+        epc: 'Energy Performance Certificate',
+        deposit: 'Tenancy Deposit Protection',
+        guide: 'How to Rent — England',
+        inventory: 'Inventory & Schedule of Condition',
+        id: 'Photo identification',
+        file: ctx.type || 'Official document',
+    };
+    const title = titles[kind] || titles.file;
+    if (kind === 'id') {
+        return `
+        <div class="doc-demo-sheet doc-demo-sheet--id">
+            <p class="doc-demo-watermark">Demo preview</p>
+            <div class="doc-demo-id-card">
+                ${photo ? `<img src="${escapeHtml(photo)}" alt="" class="doc-demo-id-photo">` : `
+                <div class="doc-demo-id-photo doc-demo-id-photo--empty"><i data-lucide="user" class="w-8 h-8"></i></div>`}
+                <div class="doc-demo-id-copy">
+                    <p class="doc-demo-kicker">United Kingdom · Photo ID</p>
+                    <p class="doc-demo-id-name">${escapeHtml(tenant)}</p>
+                    <p class="doc-demo-id-meta">Document no. ${escapeHtml(idNumber)}</p>
+                    <p class="doc-demo-id-meta">${escapeHtml(name)}</p>
+                    <p class="doc-demo-id-meta">On file · ${escapeHtml(date)}</p>
+                </div>
+            </div>
+        </div>`;
+    }
+    const rows = [
+        ['Document', name],
+        ['Issued', date],
+        ['Landlord', landlord],
+        ['Tenant', tenant],
+        ['Property', property],
+        unit ? ['Unit', unit] : null,
+        ['Address', address],
+    ].filter(Boolean);
+    const footer = kind === 'lease'
+        ? 'This demo copy shows the tenancy on file. Download to keep a local PDF.'
+        : kind === 'deposit'
+            ? 'Deposit protection scheme certificate — demo preview for this tenancy.'
+            : 'Official copy on file. Demo preview for this prototype.';
+    return `
+    <div class="doc-demo-sheet">
+        <p class="doc-demo-watermark">Demo preview</p>
+        <div class="doc-demo-head">
+            <span class="doc-demo-brand">Landlord HQ</span>
+            <span class="doc-demo-kind">${escapeHtml(title)}</span>
+        </div>
+        <h3 class="doc-demo-title">${escapeHtml(name)}</h3>
+        <div class="doc-demo-rows">
+            ${rows.map(([k, v]) => `
+            <div class="doc-demo-row">
+                <span>${escapeHtml(k)}</span>
+                <strong>${escapeHtml(String(v))}</strong>
+            </div>`).join('')}
+        </div>
+        <div class="doc-demo-sign">
+            <div>
+                <span class="doc-demo-sign-line"></span>
+                <p>Landlord</p>
+            </div>
+            <div>
+                <span class="doc-demo-sign-line"></span>
+                <p>Tenant / issuer</p>
+            </div>
+        </div>
+        <p class="doc-demo-foot">${escapeHtml(footer)}</p>
+    </div>`;
+}
+
+function documentPreviewContext() {
+    const tid = STATE.tenantId;
+    const listItem = tid != null ? (TENANT_LIST[tid] || TENANT_LIST.find(x => x.id === tid)) : null;
+    const t = tid != null ? TENANTS[tid] : null;
+    const prop = listItem?.propertyId != null ? PROPERTIES[listItem.propertyId] : (STATE.propertyId != null ? PROPERTIES[STATE.propertyId] : null);
+    return {
+        tenant: listItem?.name || (t ? `${t.firstName || ''} ${t.lastName || ''}`.trim() : ''),
+        idNumber: t?.idNumber || '',
+        photo: listItem?.img || (typeof tenantAvatarUrl === 'function' && tid != null ? tenantAvatarUrl(tid) : ''),
+        property: prop?.name || listItem?.prop || '',
+        address: prop?.address || '',
+        unit: listItem?.unit || STATE.selectedUnit || '',
+    };
+}
+
 function documentPreviewMetaParts(doc, metaFallback = '') {
     if (doc) {
         const typeLabel = doc.type === 'Custom Document' ? docFileKindLabel(doc) : (doc.type || 'Document');
@@ -11354,22 +11769,29 @@ function screenDocumentPreviewEnhanced() {
     let meta = '—';
     let docId = null;
     let doc = null;
+    const ctx = documentPreviewContext();
     if (STATE.previewDocSource === 'tenant-nid') {
         const tid = STATE.tenantId ?? 0;
         const proof = getTenantNidProof(tid);
         if (proof) { name = proof.name; meta = proof.date; }
+        doc = { name, date: meta, type: 'ID Document' };
     } else if (STATE.previewDocSource === 'unit-util') {
         const util = getUnitUtilityMeta(STATE.propertyId, STATE.selectedUnit);
         const row = util.uploads?.[STATE.previewUtilDocIdx ?? 0];
         if (row) {
             name = row.name;
             meta = row.date || 'Uploaded';
-            doc = { name: row.name, fileUrl: row.fileUrl, mime: row.mime, date: row.date };
+            doc = { name: row.name, fileUrl: row.fileUrl, mime: row.mime, date: row.date, type: 'Utility document' };
         }
     } else if (STATE.previewDocSource === 'tenant') {
         const docs = getTenantDocuments(STATE.tenantId ?? 0);
         const row = docs[STATE.previewDocIdx ?? 0];
-        if (row) { name = row[1]; meta = row[2]; }
+        if (row) {
+            name = row[1];
+            meta = row[2];
+            doc = findDocumentByName(name) || { name, date: meta, type: /nid|passport|id/i.test(name) ? 'ID Document' : 'Tenancy document' };
+            if (doc.id != null) docId = doc.id;
+        }
     } else {
         doc = AppStore.documents.find(d => d.id === STATE.previewDocId);
         if (doc) {
@@ -11380,25 +11802,29 @@ function screenDocumentPreviewEnhanced() {
     }
     const { icon, color, bg } = doc ? documentRowVisual(doc) : { icon: 'file-text', color: '#2563EB', bg: '#EFF6FF' };
     const chips = documentPreviewMetaParts(doc, meta);
-    const fileKind = doc ? docFileKindLabel(doc) : (chips[0] || 'File');
-    const previewBody = doc?.fileUrl && isDocImage(doc)
+    const hasImage = !!(doc?.fileUrl && typeof isDocImage === 'function' && isDocImage(doc));
+    const hasPdf = !!(doc?.fileUrl && (doc.mime?.includes('pdf') || String(doc.name).toLowerCase().endsWith('.pdf')));
+    const previewBody = hasImage
         ? `<img src="${doc.fileUrl}" alt="" class="doc-preview-image">`
-        : doc?.fileUrl && (doc.mime?.includes('pdf') || String(doc.name).toLowerCase().endsWith('.pdf'))
+        : hasPdf
             ? `<iframe src="${doc.fileUrl}" class="doc-preview-frame" title="PDF preview"></iframe>`
-            : `<div class="doc-preview-empty">
-                <div class="doc-preview-empty-icon" style="color:${color};background:${bg}">
-                    <i data-lucide="${icon}" class="w-7 h-7"></i>
-                </div>
-                <p class="doc-preview-empty-title">Preview not available</p>
-                <p class="doc-preview-empty-sub">${escapeHtml(fileKind)} file · Use Download to open on your device</p>
-            </div>`;
+            : renderDemoDocumentSheet({
+                name,
+                type: doc?.type,
+                date: doc?.date || meta,
+                kind: STATE.previewDocSource === 'tenant-nid' ? 'id' : demoDocKindFromName(name, doc?.type),
+                ...ctx,
+                property: ctx.property || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.name : ''),
+                address: ctx.address || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.address : ''),
+                unit: ctx.unit || doc?.unit || '',
+            });
     return `${topBar('Document', { back: true })}
     <div class="doc-preview-page screen-enter">
         <div class="screen-content doc-preview-content">
             <div class="doc-preview-hero card">
                 <div class="doc-preview-hero-row">
                     <div class="doc-preview-icon-lg" style="color:${color};background:${bg}">
-                        <i data-lucide="${icon}" class="w-7 h-7"></i>
+                        <i data-lucide="${icon}" class="w-6 h-6"></i>
                     </div>
                     <div class="doc-preview-hero-copy">
                         <h2 class="doc-preview-title">${escapeHtml(name)}</h2>
@@ -11406,10 +11832,10 @@ function screenDocumentPreviewEnhanced() {
                     </div>
                 </div>
             </div>
+            ${previewBody ? `
             <div class="doc-preview-viewer card">
-                <p class="doc-preview-viewer-label">Preview</p>
                 <div class="doc-preview-panel">${previewBody}</div>
-            </div>
+            </div>` : ''}
         </div>
         <div class="doc-preview-footer">
             <div class="doc-preview-actions">
@@ -14110,48 +14536,61 @@ function invoicePurposeBadge(inv) {
     return '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB]">Rent</span>';
 }
 
+function rentHistoryKind(inv) {
+    if (inv.type === 'maintenance') return 'Repair';
+    if (typeof isLandlordExtraCharge === 'function' && isLandlordExtraCharge(inv)) {
+        return typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(inv) : 'Charge';
+    }
+    if (inv.type === 'utility' || inv.type === 'bill') return 'Utility';
+    if (inv.type === 'deposit') return 'Deposit';
+    if (inv.type && inv.type !== 'rent') return typeof invoiceTypeLabel === 'function' ? invoiceTypeLabel(inv) : inv.type;
+    return '';
+}
+
+function rentHistoryGroupLabel(inv) {
+    if (typeof isRentInvoice === 'function' ? isRentInvoice(inv) : (!inv.type || inv.type === 'rent')) return 'Rent';
+    return 'Extra charge';
+}
+
+function paymentPurposeLabel(inv) {
+    const group = rentHistoryGroupLabel(inv);
+    if (group !== 'Extra charge') return 'Rent';
+    const kind = rentHistoryKind(inv);
+    return kind && kind !== 'Charge' ? kind : 'Extra charge';
+}
+
 function renderRentHistoryRow(inv, opts = {}) {
     const paid = inv.status === 'Paid';
-    const [bg, color] = invoiceStatusStyle(inv.status);
-    const unitPrefix = opts.showUnit !== false && inv.unit ? `${inv.unit} · ` : '';
-    const monthLabel = inv.month || inv.due || 'Rent Period';
-    const typeLabel = invoiceTypeLabel(inv);
     const isOverdue = inv.status === 'Overdue';
-    const purposeBadge = invoicePurposeBadge(inv);
-
-    const body = `
-        <div class="rent-history-icon ${paid ? 'rent-history-icon--paid' : isOverdue ? 'rent-history-icon--due bg-[#FEE2E2] text-[#DC2626]' : 'rent-history-icon--due'}">
-            <i data-lucide="${paid ? 'check-circle-2' : isOverdue ? 'alert-triangle' : 'clock'}" class="w-4 h-4"></i>
-        </div>
-        <div class="rent-history-body min-w-0 flex-1">
-            <div class="flex items-center gap-1.5 flex-wrap">
-                <p class="rent-history-title font-bold text-[13px] text-[#0F172A] m-0">${escapeHtml(monthLabel)}</p>
-                ${purposeBadge}
-            </div>
-            <p class="rent-history-meta text-[11px] text-[#64748B] m-0 mt-0.5">
-                ${paid ? `Paid ${inv.paidOn || inv.due}${inv.paymentMethod ? ` via ${inv.paymentMethod}` : ''}` : `Due ${inv.due}${isOverdue ? ' · Payment overdue' : ''}`}
-            </p>
-        </div>
-        <div class="rent-history-right text-right shrink-0">
-            <p class="rent-history-amount font-bold text-[13px] text-[#0F172A] m-0">${inv.amount}</p>
-            <span class="fin-inv-status inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mt-0.5" style="background:${bg};color:${color}">${inv.status}</span>
-        </div>`;
-
-    if (!paid) {
-        return `
-        <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="rent-history-row card w-full text-left p-3.5 flex items-center gap-3 hover:bg-[#F8FAFC] transition-colors">
-            ${body}
-            <i data-lucide="chevron-right" class="rent-history-chevron w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-        </button>`;
-    }
+    const unitPrefix = opts.showUnit !== false && inv.unit ? `${inv.unit} · ` : '';
+    const monthLabel = inv.month || inv.due || 'Payment';
+    const group = rentHistoryGroupLabel(inv);
+    const purpose = paymentPurposeLabel(inv);
+    const title = `${unitPrefix}${monthLabel}`;
+    const when = paid
+        ? (inv.paidOn || inv.due || 'Paid')
+        : `Due ${inv.due || '—'}${isOverdue ? ' · Overdue' : ''}`;
+    const meta = `${when} · ${purpose}`;
+    const amountTone = paid ? '' : isOverdue ? ' is-overdue' : ' is-due';
     return `
-    <div class="rent-history-row-wrap card p-3.5 flex items-center justify-between gap-3">
-        <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="rent-history-row rent-history-row--main flex-1 text-left flex items-center gap-3 min-w-0">
-            ${body}
+    <div class="rent-history-line">
+        <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="rent-history-line-main">
+            <span class="rent-history-copy">
+                <span class="rent-history-title">${escapeHtml(title)}</span>
+                <span class="rent-history-meta">${escapeHtml(meta)}</span>
+            </span>
+            <span class="rent-history-end">
+                <span class="rent-history-amount${amountTone}">${escapeHtml(inv.amount)}</span>
+                <span class="rent-history-kind${group === 'Extra charge' ? ' is-charge' : ''}">${escapeHtml(group)}</span>
+            </span>
         </button>
-        <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="rent-history-download w-8 h-8 rounded-lg bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0] hover:text-[#0F172A] flex items-center justify-center shrink-0 transition-colors cursor-pointer" aria-label="Download receipt" title="Download receipt">
-            <i data-lucide="download" class="w-4 h-4"></i>
-        </button>
+        ${paid ? `
+        <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="rent-history-download" aria-label="Download receipt" title="Download receipt">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        </button>` : `
+        <span class="rent-history-download rent-history-download--hint" aria-hidden="true">
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        </span>`}
     </div>`;
 }
 
@@ -14199,13 +14638,19 @@ function unmarkOveragePaidForInvoice(inv) {
     if (charge) charge.status = 'Pending';
 }
 
-function invoicesForTenant(tenantId) {
+function invoiceBelongsToTenant(inv, tenantId) {
     const listItem = TENANT_LIST[tenantId];
-    if (!listItem) return [];
-    return INVOICES.filter(i =>
-        i.tenantId === tenantId ||
-        (i.tenant === listItem.name && i.prop.includes(listItem.prop))
-    ).sort((a, b) => (b.month || b.due).localeCompare(a.month || a.due));
+    if (!inv || !listItem) return false;
+    if (listItem.unit && inv.unit && inv.unit !== listItem.unit) return false;
+    if (inv.tenant && inv.tenant !== listItem.name && inv.tenantId !== tenantId) return false;
+    if (inv.tenant === listItem.name) return true;
+    if (inv.tenantId === tenantId && (!inv.unit || inv.unit === listItem.unit)) return true;
+    return !!(listItem.prop && inv.prop && inv.prop.includes(listItem.prop) && (!inv.unit || inv.unit === listItem.unit));
+}
+
+function invoicesForTenant(tenantId) {
+    return INVOICES.filter(i => invoiceBelongsToTenant(i, tenantId))
+        .sort((a, b) => (b.month || b.due).localeCompare(a.month || a.due));
 }
 
 function invoiceTypeLabel(inv) {
@@ -14223,23 +14668,19 @@ function renderTenantPaymentRow(inv) {
     const iconClass = isPaid ? 'txn-icon-paid' : isOverdue ? 'txn-icon-overdue' : 'txn-icon-pending';
     const badgeClass = isPaid ? 'txn-badge-paid' : isOverdue ? 'txn-badge-overdue' : 'txn-badge-pending';
     const statusLabel = isPaid ? 'Paid' : isOverdue ? 'Overdue' : 'Due';
-    const dateLine = isPaid
-        ? `Paid ${inv.paidOn || inv.due}${inv.paymentMethod ? ` · ${inv.paymentMethod}` : ''}`
-        : `Due ${inv.due}`;
-    const subLine = isCharge && inv.desc?.includes(' · ')
-        ? inv.desc.split(' · ').slice(1).join(' · ')
-        : (isMaint ? 'Maintenance or utility bill' : '');
+    const dateLine = isPaid ? (inv.paidOn || inv.due) : `Due ${inv.due}`;
+    const kind = typeof rentHistoryGroupLabel === 'function' ? rentHistoryGroupLabel(inv) : (isCharge || isMaint ? 'Extra charge' : 'Rent');
     const row = `
         <div class="txn-icon ${iconClass}">
             <i data-lucide="${isPaid ? 'check' : isOverdue ? 'alert-circle' : chargeInvoiceIcon(inv)}" class="w-4 h-4"></i>
         </div>
         <div class="txn-body">
             <p class="txn-title">${chargeInvoiceLabel(inv)}</p>
-            <p class="txn-sub txn-sub--muted">${subLine ? `${subLine} · ${dateLine}` : dateLine}</p>
+            <p class="txn-sub txn-sub--muted">${dateLine}</p>
         </div>
         <div class="txn-meta">
             <p class="txn-amount">${inv.amount}</p>
-            <span class="txn-badge ${badgeClass}">${statusLabel}</span>
+            <span class="rent-history-kind${kind === 'Extra charge' ? ' is-charge' : ''}">${kind}</span>
         </div>`;
     if (!isPaid) {
         return `
@@ -14264,7 +14705,69 @@ function getCurrentRentMonthLabel() {
     return d.toLocaleString('en-GB', { month: 'short', year: 'numeric' });
 }
 
+/** Keep rent roll filled with demo invoices for the live calendar month. */
+function ensureCurrentMonthRentDemo() {
+    if (!Array.isArray(INVOICES) || !INVOICES.length) return;
+    const month = getCurrentRentMonthLabel();
+    const hasCurrent = INVOICES.some(i => (!i.type || i.type === 'rent') && i.month === month);
+    if (hasCurrent) return;
+
+    const rentInvs = INVOICES.filter(i => (!i.type || i.type === 'rent'));
+    const byMonth = {};
+    rentInvs.forEach(inv => {
+        if (!inv.month) return;
+        (byMonth[inv.month] || (byMonth[inv.month] = [])).push(inv);
+    });
+    const templateMonth = byMonth['Jul 2026']
+        ? 'Jul 2026'
+        : Object.keys(byMonth).sort((a, b) => byMonth[b].length - byMonth[a].length)[0];
+    const templates = (templateMonth && byMonth[templateMonth]) || [];
+    if (!templates.length) return;
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const due = `${now.toLocaleString('en-US', { month: 'short' })} 1, ${y}`;
+    const paidOn = `${now.toLocaleString('en-US', { month: 'short' })} 2, ${y}`;
+    let nextId = INVOICES.reduce((max, inv) => Math.max(max, Number(inv.id) || 0), 0) + 1;
+    const stamp = `${y}${String(m + 1).padStart(2, '0')}`;
+
+    const seeded = templates.map((src, idx) => {
+        const copy = { ...src };
+        copy.id = nextId++;
+        copy.month = month;
+        copy.due = due;
+        copy.num = `INV-${stamp}-${String(900 + idx).slice(-3)}`;
+        if (copy.status === 'Paid') {
+            copy.paidOn = paidOn;
+            if (!copy.paymentMethod) copy.paymentMethod = 'Stripe';
+            if (!copy.paymentReference) copy.paymentReference = `LH-${copy.num}`;
+        } else {
+            delete copy.paidOn;
+            delete copy.paymentMethod;
+            delete copy.paymentReference;
+            // Keep a visible overdue + pending + paid mix for the current roll
+            if (idx === 1) {
+                copy.status = 'Overdue';
+            } else if (idx % 3 === 0) {
+                copy.status = 'Paid';
+                copy.paidOn = paidOn;
+                copy.paymentMethod = 'Stripe';
+                copy.paymentReference = `LH-${copy.num}`;
+            } else {
+                copy.status = 'Pending';
+            }
+        }
+        return copy;
+    });
+
+    INVOICES.unshift(...seeded);
+    if (typeof syncTransactionsFromInvoices === 'function') syncTransactionsFromInvoices();
+    if (typeof AppStore !== 'undefined' && AppStore.save) AppStore.save();
+}
+
 function buildRentRollRows(month = getCurrentRentMonthLabel(), propertyId = null) {
+    ensureCurrentMonthRentDemo();
     let invs = INVOICES.filter(i => (!i.type || i.type === 'rent') && i.month === month);
     if (propertyId != null) invs = invs.filter(i => i.propertyId === propertyId);
     const order = { overdue: 0, due: 1, paid: 2 };
@@ -14490,14 +14993,52 @@ function renderFinanceRentDueList() {
     </div>`;
 }
 
-function renderTenantRentHistory(tenantId) {
-    const invs = invoicesForTenant(tenantId);
+function renderTenantStillDueCard(tenantId) {
+    const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tenantId) : {};
+    const rentDue = pay.balance && pay.balance !== '£0.00';
+    const extraDue = pay.billBalance && pay.billBalance !== '£0.00';
+    if (!rentDue && !extraDue) {
+        return `
+        <div class="card tenant-still-due tenant-still-due--clear">
+            <p class="tenant-still-due-kicker">Still due</p>
+            <p class="tenant-still-due-clear-text">Nothing outstanding</p>
+        </div>`;
+    }
+    const extras = typeof tenantUnpaidExtraInvoices === 'function' ? tenantUnpaidExtraInvoices(tenantId) : [];
+    return `
+    <div class="card tenant-still-due">
+        <p class="tenant-still-due-kicker">Still due</p>
+        ${rentDue ? `
+        <div class="tenant-still-due-row">
+            <span>Rent</span>
+            <strong>${escapeHtml(pay.balance)}</strong>
+        </div>
+        ${pay.nextDueDate && pay.nextDueDate !== '—' ? `<p class="tenant-still-due-hint">Next rent due ${escapeHtml(pay.nextDueDate)}</p>` : ''}` : ''}
+        ${extraDue ? `
+        <div class="tenant-still-due-row">
+            <span>Extra charges</span>
+            <strong>${escapeHtml(pay.billBalance)}</strong>
+        </div>
+        ${extras.map(i => {
+            const name = typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(i) : (i.desc || 'Charge');
+            return `<button type="button" data-go="invoice-detail" data-iid="${i.id}" class="tenant-still-due-item">
+                <span>${escapeHtml(name)}</span>
+                <span>${escapeHtml(i.amount)}</span>
+            </button>`;
+        }).join('')}` : ''}
+    </div>`;
+}
+
+function renderTenantRentHistory(tenantId, opts = {}) {
+    let invs = invoicesForTenant(tenantId);
     if (!invs.length) {
-        return `<div class="card p-6 text-center"><p class="text-[13px] text-[#64748B]">No rent records yet for this tenant.</p></div>`;
+        const listItem = TENANT_LIST[tenantId];
+        if (listItem?.propertyId != null && listItem.unit) invs = invoicesForUnit(listItem.propertyId, listItem.unit);
     }
     return `
-    <div class="rent-history-list">
-        ${invs.map(inv => renderRentHistoryRow(inv)).join('')}
+    ${opts.hideStillDue ? '' : renderTenantStillDueCard(tenantId)}
+    <div class="card rent-history-list rent-history-list--clean${opts.compact ? ' rent-history-list--compact' : ''}">
+        ${invs.map(inv => renderRentHistoryRow(inv, { showUnit: false, ...opts })).join('')}
     </div>`;
 }
 
@@ -14556,9 +15097,12 @@ function renderTransactionRow(t) {
     const iconClass = isPaid ? 'txn-icon-paid' : isOverdue ? 'txn-icon-overdue' : 'txn-icon-pending';
     const badgeClass = isPaid ? 'txn-badge-paid' : isOverdue ? 'txn-badge-overdue' : 'txn-badge-pending';
     const location = [t.unit, t.prop].filter(Boolean).join(' · ');
+    const purpose = typeof paymentPurposeLabel === 'function'
+        ? paymentPurposeLabel(t)
+        : (t.type && t.type !== 'rent' ? 'Extra charge' : 'Rent');
     const dateLine = isPaid
-        ? `${t.paymentMethod ? `${t.paymentMethod} · ` : ''}${t.date || ''}`
-        : `Due ${t.date || ''}`;
+        ? `${t.date || 'Paid'} · ${purpose}`
+        : `Due ${t.date || '—'} · ${purpose}`;
     return `
     <button type="button" data-go="invoice-detail" data-iid="${t.iid}" class="txn-row">
         <div class="txn-icon ${iconClass}">
@@ -17637,31 +18181,26 @@ function screenPropertyUtilitiesView() {
         },
     ];
 
-    const editBtn = `<button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+    const editBtn = `<button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="btn-primary building-svc-edit">
         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
         <span>Edit</span>
     </button>`;
 
     return `${topBar('Building Services & Meters', { back: true, sub: `${p?.name || ''} · Whole building & meters`, rightBtn: editBtn })}
-    <div class="screen-content screen-enter space-y-4 text-left">
-        <div class="grid grid-cols-2 gap-3">
+    <div class="screen-content screen-enter building-svc-page text-left">
+        <div class="building-svc-grid">
             ${gridCards.map(c => `
-            <button type="button" data-go="utility-detail" data-utility-id="${c.id}" data-pid="${pid}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all text-left flex flex-col justify-between cursor-pointer group overflow-hidden">
-                <div>
-                    <div class="relative w-full h-24 rounded-xl overflow-hidden mb-2.5 bg-[#F1F5F9]">
-                        <img src="${c.photo}" alt="${c.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
-                        <div class="absolute top-2 left-2 w-7 h-7 rounded-lg bg-white/90 backdrop-blur-sm text-[#2563EB] flex items-center justify-center shadow-sm">
-                            <i data-lucide="${c.icon}" class="w-4 h-4"></i>
-                        </div>
-                        <span class="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/90 text-[#0F172A] backdrop-blur-sm">${c.badge}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="block text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${c.title}</span>
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors"></i>
-                    </div>
-                    <span class="block text-[11px] font-medium text-[#64748B] leading-relaxed mt-0.5 line-clamp-2">${escapeHtml(c.sub)}</span>
+            <button type="button" data-go="utility-detail" data-utility-id="${c.id}" data-pid="${pid}" class="card building-svc-card">
+                <div class="building-svc-photo">
+                    <img src="${c.photo}" alt="">
+                    <span class="building-svc-icon"><i data-lucide="${c.icon}" class="w-4 h-4"></i></span>
+                    <span class="building-svc-badge">${escapeHtml(c.badge)}</span>
                 </div>
+                <div class="building-svc-copy">
+                    <span class="building-svc-title">${escapeHtml(c.title)}</span>
+                    <i data-lucide="chevron-right" class="building-svc-chevron w-3.5 h-3.5"></i>
+                </div>
+                <span class="building-svc-sub">${escapeHtml(c.sub)}</span>
             </button>`).join('')}
         </div>
     </div>`;
@@ -17676,127 +18215,106 @@ function screenUtilityDetail() {
     const info = meta.info || {};
     const utilityId = STATE.utilityId || 'electricity';
 
+    const gas = getUtilityEntry(meta, 'gas') || {};
+    const elec = getUtilityEntry(meta, 'electricity') || {};
+    const water = getUtilityEntry(meta, 'water') || {};
+    const wifi = getUtilityEntry(meta, 'wifi') || {};
     const detailsMap = {
         gas: {
-            title: 'Gas Utility & Meter',
-            icon: 'flame',
+            title: 'Gas',
             photo: utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
-            badge: 'Gas CP12 Registered',
-            badgeBg: 'bg-[#22C55E]',
+            badge: 'CP12 on file',
             rows: [
-                ['Supplier / Provider', getUtilityEntry(meta, 'gas')?.provider || utils.gasSupplier || (typeof utils.gas === 'object' ? utils.gas?.provider : utils.gas) || 'British Gas'],
-                ['Meter Number (MPRN)', getUtilityEntry(meta, 'gas')?.meterNumber || utils.gasNo || '84920173'],
-                ['Meter Location', getUtilityEntry(meta, 'gas')?.meterLocation || utils.gasLoc || 'Front exterior meter box (Wall-mounted)'],
-                ['Emergency Shutoff', 'Brass lever valve beside meter (Turn 90° clockwise)'],
-                ['Safety Status', 'Gas Safe CP12 Certified (Valid until 15 Nov 2026)'],
-                ['Customer Helpline', getUtilityEntry(meta, 'gas')?.phone || '0333 202 9802 · National Gas Emergency: 0800 111 999'],
+                ['Supplier', gas.provider || utils.gasSupplier || (typeof utils.gas === 'object' ? utils.gas?.provider : utils.gas) || 'British Gas'],
+                ['Meter', gas.meterNumber || utils.gasNo || '84920173'],
+                ['Location', gas.meterLocation || utils.gasLoc || 'Front exterior meter box'],
+                ['Shut-off', 'Lever beside meter'],
+                ['Safety', 'CP12 valid to 15 Nov 2026'],
+                ['Helpline', gas.phone || '0333 202 9802'],
             ],
         },
         electricity: {
-            title: 'Electricity & Consumer Unit',
-            icon: 'zap',
+            title: 'Electricity',
             photo: utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
-            badge: 'EICR Electrical Certified',
-            badgeBg: 'bg-[#22C55E]',
+            badge: 'EICR certified',
             rows: [
-                ['Supplier / Provider', getUtilityEntry(meta, 'electricity')?.provider || utils.electricitySupplier || (typeof utils.electricity === 'object' ? utils.electricity?.provider : utils.electricity) || (typeof utils.electric === 'object' ? utils.electric?.provider : utils.electric) || 'Octopus Energy'],
-                ['Meter Number (MPAN)', getUtilityEntry(meta, 'electricity')?.meterNumber || utils.electricityNo || '12093841'],
-                ['Meter Location', getUtilityEntry(meta, 'electricity')?.meterLocation || utils.electricityLoc || 'Basement intake cupboard & hallway intake'],
-                ['Consumer Unit / Fusebox', 'High level hallway cupboard with main RCD isolation switch'],
-                ['Safety Status', 'EICR 5-Year Inspection Satisfactory (Valid to Oct 2027)'],
-                ['Helpline / Power Cut', getUtilityEntry(meta, 'electricity')?.phone || 'Octopus: 0808 164 1088 · UK Power Networks: 105'],
+                ['Supplier', elec.provider || utils.electricitySupplier || (typeof utils.electricity === 'object' ? utils.electricity?.provider : utils.electricity) || (typeof utils.electric === 'object' ? utils.electric?.provider : utils.electric) || 'Octopus Energy'],
+                ['Meter', elec.meterNumber || utils.electricityNo || '12093841'],
+                ['Location', elec.meterLocation || utils.electricityLoc || 'Basement intake cupboard'],
+                ['Consumer unit', 'Hallway cupboard · main RCD'],
+                ['Safety', 'EICR valid to Oct 2027'],
+                ['Helpline', elec.phone || '0808 164 1088'],
             ],
         },
         water: {
-            title: 'Water Supply & Stopcock',
-            icon: 'droplets',
+            title: 'Water',
             photo: utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
-            badge: 'Direct Debit Active',
-            badgeBg: 'bg-[#0284C7]',
+            badge: 'Metered',
             rows: [
-                ['Supplier / Provider', getUtilityEntry(meta, 'water')?.provider || utils.waterSupplier || (typeof utils.water === 'object' ? utils.water?.provider : utils.water) || 'Thames Water'],
-                ['Meter Number', getUtilityEntry(meta, 'water')?.meterNumber || utils.waterNo || 'WTR-99402'],
-                ['Internal Stopcock', getUtilityEntry(meta, 'water')?.meterLocation || utils.waterLoc || 'Under kitchen sink (Turn clockwise to isolate supply)'],
-                ['External Street Valve', 'Pavement outside front boundary (Blue meter cover)'],
-                ['Account Status', 'Metered active account · Direct Debit'],
-                ['Helpline / Emergencies', getUtilityEntry(meta, 'water')?.phone || 'Thames Water 24/7 Helpline: 0800 316 9800'],
+                ['Supplier', water.provider || utils.waterSupplier || (typeof utils.water === 'object' ? utils.water?.provider : utils.water) || 'Thames Water'],
+                ['Meter', water.meterNumber || utils.waterNo || 'WTR-99402'],
+                ['Stopcock', water.meterLocation || utils.waterLoc || 'Under kitchen sink'],
+                ['Street valve', 'Pavement outside front boundary'],
+                ['Helpline', water.phone || '0800 316 9800'],
             ],
         },
         wifi: {
-            title: 'Wi-Fi & Broadband',
-            icon: 'wifi',
+            title: 'Wi-Fi',
             photo: utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
-            badge: 'Fibre 900 Mbps Active',
-            badgeBg: 'bg-[#8B5CF6]',
+            badge: '900 Mbps',
             rows: [
-                ['Broadband Provider', getUtilityEntry(meta, 'wifi')?.provider || utils.broadbandSupplier || (typeof utils.wifi === 'object' ? utils.wifi?.provider : utils.wifi) || (typeof utils.broadband === 'object' ? utils.broadband?.provider : utils.broadband) || 'BT Fibre Broadband'],
-                ['Network Name (SSID)', utils.wifiSsid || 'BT-Hub-2-ParkLane'],
-                ['Wi-Fi Password', utils.wifiPassword || 'London2026!Fast'],
-                ['Package & Speed', 'BT Smart Hub 2 · Ultrafast Full Fibre (900 Mbps)'],
-                ['Router Location', getUtilityEntry(meta, 'wifi')?.meterLocation || utils.routerLoc || 'Main hallway entrance console table'],
-                ['Support Helpline', getUtilityEntry(meta, 'wifi')?.phone || '+44 800 800 150 · Account #992812'],
+                ['Provider', wifi.provider || utils.broadbandSupplier || (typeof utils.wifi === 'object' ? utils.wifi?.provider : utils.wifi) || (typeof utils.broadband === 'object' ? utils.broadband?.provider : utils.broadband) || 'BT Fibre'],
+                ['Network', utils.wifiSsid || 'BT-Hub-2-ParkLane'],
+                ['Password', utils.wifiPassword || 'London2026!Fast'],
+                ['Speed', 'Full fibre · 900 Mbps'],
+                ['Router', wifi.meterLocation || utils.routerLoc || 'Hallway'],
+                ['Support', wifi.phone || '0800 800 150'],
             ],
         },
         council: {
-            title: 'Council Tax & Local Authority',
-            icon: 'building-2',
+            title: 'Council',
             photo: DEMO_UTILITY_PHOTOS.council,
-            badge: info.councilTax ? `Tax Band ${info.councilTax}` : 'Tax Band D',
-            badgeBg: 'bg-[#3B82F6]',
+            badge: info.councilTax ? `Band ${info.councilTax}` : 'Band D',
             rows: [
-                ['Local Authority', utils.council?.name || (typeof utils.council === 'string' ? utils.council : '') || 'London Borough of Westminster'],
-                ['Council Tax Band', info.councilTax ? `Band ${info.councilTax}` : 'Band D (£1,988 / year)'],
-                ['Council Reference / Account', utils.council?.notes || 'WES-894012-TX'],
-                ['Bin Collection Schedule', 'General Waste: Tuesdays · Recycling: Fridays'],
-                ['Responsible Party', 'Tenant (Single occupancy & student exemptions applicable)'],
-                ['Council Contact', '020 7641 6000 · westminster.gov.uk/council-tax'],
+                ['Authority', utils.council?.name || (typeof utils.council === 'string' ? utils.council : '') || 'Westminster City Council'],
+                ['Tax band', info.councilTax ? `Band ${info.councilTax}` : 'Band D'],
+                ['Reference', utils.council?.notes && !/^band\s/i.test(utils.council.notes) ? utils.council.notes : 'WES-894012-TX'],
+                ['Bins', 'Waste Tue · Recycling Fri'],
+                ['Contact', '020 7641 6000'],
             ],
         },
         parking: {
-            title: 'Parking Allocation & Permits',
-            icon: 'car',
+            title: 'Parking',
             photo: DEMO_UTILITY_PHOTOS.parking,
-            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'Allocated Space',
-            badgeBg: 'bg-[#10B981]',
+            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'Allocated',
             rows: [
-                ['Parking Type', parking.type || 'Off-Street Allocated Bay'],
-                ['Allocated Space', parking.details ? parking.details : (parking.spaces ? `${parking.spaces} Allocated Bay(s)` : 'Bay #12 (Clearly marked)')],
-                ['Permit Number', parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'LB-4421 (Resident Permit)'],
-                ['Access & Security', 'Electronic barrier fob / Keypad gate code #4492'],
-                ['Visitor Parking', 'Visitor scratchcards available from managing agent'],
-                ['EV Charging', '7.4kW Type 2 Pod Point Charger installed'],
+                ['Type', parking.type || 'Off-street bay'],
+                ['Space', parking.details || (parking.spaces ? `${parking.spaces} bay(s)` : 'Bay 12')],
+                ['Permit', parking.permit || 'LB-4421'],
+                ['Access', 'Barrier fob · gate 4492'],
+                ['EV', '7.4kW Type 2 charger'],
             ],
         },
     };
 
     const d = detailsMap[utilityId] || detailsMap.electricity;
-    const editBtn = `<button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+    const editBtn = `<button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="btn-primary building-svc-edit">
         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
         <span>Edit</span>
     </button>`;
 
-    return `${topBar(d.title, { back: true, sub: p?.name || 'Building Services', rightBtn: editBtn })}
-    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-6">
-        <!-- Clean Hero Banner -->
-        <div class="relative h-44 w-full rounded-2xl overflow-hidden bg-[#0F172A] border border-[#E2E8F0] shadow-sm">
-            <img src="${d.photo}" alt="${d.title}" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-            <div class="absolute bottom-3.5 left-4 right-4">
-                <span class="inline-block text-[11px] font-bold text-white px-2.5 py-0.5 rounded-full ${d.badgeBg} shadow-sm mb-1">${d.badge}</span>
-                <h3 class="text-[17px] font-bold text-white leading-snug m-0 drop-shadow-sm">${d.title}</h3>
-            </div>
+    return `${topBar(d.title, { back: true, sub: p?.name || '', rightBtn: editBtn })}
+    <div class="screen-content screen-content-sm screen-enter util-detail-page">
+        <div class="card util-detail-hero">
+            <img src="${d.photo}" alt="">
+            <span class="util-detail-badge">${escapeHtml(d.badge)}</span>
         </div>
-
-        <!-- Specifications & Details List -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
-            <h4 class="text-[12px] font-bold text-[#64748B] uppercase tracking-wider m-0">Service Specifications</h4>
-            <div class="space-y-2">
-                ${d.rows.map(([label, val]) => `
-                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${escapeHtml(label)}</span>
-                    <span class="block text-[13px] font-semibold text-[#0F172A] mt-0.5 leading-relaxed">${escapeHtml(val)}</span>
-                </div>`).join('')}
-            </div>
+        <div class="card util-detail-list">
+            ${d.rows.map(([label, val]) => `
+            <div class="util-detail-row">
+                <span class="util-detail-label">${escapeHtml(label)}</span>
+                <span class="util-detail-value">${escapeHtml(val)}</span>
+            </div>`).join('')}
         </div>
     </div>`;
 }
@@ -20702,7 +21220,10 @@ function bindFeatureEvents() {
         el.onclick = (e) => { e.stopPropagation(); deleteReminderAction(+el.dataset.rid); };
     });
     app.querySelectorAll('[data-action="delete-tenant-note"]').forEach(el => {
-        el.onclick = () => deleteTenantNoteAction(+el.dataset.nid);
+        el.onclick = () => {
+            STATE.actionMenuKey = null;
+            deleteTenantNoteAction(+el.dataset.nid);
+        };
     });
     app.querySelectorAll('[data-action="cancel-invite"]').forEach(el => {
         el.onclick = () => cancelInviteAction(el.dataset.token);
@@ -20779,7 +21300,10 @@ function bindFeatureEvents() {
         el.onclick = () => toast('Electronic signatures are coming soon — share documents via the tenant portal for now.');
     });
     app.querySelectorAll('[data-action="edit-tenant-note"]').forEach(el => {
-        el.onclick = () => go('tenant-edit-note', { tenantId: STATE.tenantId, noteId: +el.dataset.nid });
+        el.onclick = () => {
+            STATE.actionMenuKey = null;
+            go('tenant-edit-note', { tenantId: STATE.tenantId, noteId: +el.dataset.nid });
+        };
     });
     app.querySelectorAll('[data-action="save-property-meta"]').forEach(el => {
         el.onclick = () => savePropertyMeta(el.dataset.section);
@@ -21084,8 +21608,14 @@ function goFeature(screen, opts = {}) {
     if (opts.unit) STATE.selectedUnit = opts.unit;
     if (screen === 'send-broadcast') {
         STATE.broadcastPropertyId = opts.propertyId != null ? opts.propertyId : (STATE.broadcastPropertyId ?? STATE.propertyId ?? 0);
-        if (from !== 'send-broadcast' && !STATE.broadcastScope) STATE.broadcastScope = 'all';
-        if (from !== 'send-broadcast') STATE.broadcastDraftImage = null;
+        if (from !== 'send-broadcast') {
+            STATE.broadcastScope = opts.propertyId != null
+                ? 'all'
+                : (PROPERTIES.length > 1 ? 'portfolio' : 'all');
+            STATE.broadcastDraftImage = null;
+            STATE.broadcastUnits = null;
+            STATE.broadcastPropertyIds = null;
+        }
     }
     if (screen === 'broadcast-detail' && opts.broadcastId != null) {
         STATE.broadcastId = opts.broadcastId;

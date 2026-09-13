@@ -985,10 +985,13 @@ function screenContractorCertPreview() {
             <p class="ctr-cert-preview-file">${escapeHtml(cert.fileName)}</p>
             <p class="ctr-cert-preview-meta">${cert.validUntil ? `Valid until ${escapeHtml(cert.validUntil)}` : `Uploaded ${escapeHtml(cert.uploadedAt)}`}</p>
         </div>
-        <div class="ctr-cert-preview-doc card p-6 text-center">
-            <i data-lucide="file-text" class="w-12 h-12 text-[#94A3B8] mx-auto"></i>
-            <p class="text-[14px] font-semibold text-[#0F172A] mt-3">${escapeHtml(cert.fileName)}</p>
-            <p class="text-[12px] text-[#64748B] mt-1">Certificate document on file</p>
+        <div class="ctr-cert-preview-doc card overflow-hidden">
+            ${typeof renderDemoDocumentSheet === 'function' ? renderDemoDocumentSheet({
+                name: cert.fileName || cert.name,
+                type: cert.type || 'Certificate',
+                date: cert.validUntil ? `Valid until ${cert.validUntil}` : cert.uploadedAt,
+                kind: 'file',
+            }) : `<p class="p-6 text-center text-[13px] text-[#64748B]">Certificate on file</p>`}
         </div>
         <p class="text-[12px] text-[#64748B] text-center mt-3">Visible to landlords and tenants assigned to your jobs</p>
     </div>`;
@@ -2176,6 +2179,7 @@ function screenTenantPaymentHistory() {
         maintenance: { title: 'No maintenance bills', desc: 'Repair shares and utility overage bills will show here.' },
     };
     const empty = emptyCopy[kind] || emptyCopy.charges;
+    const stillDue = typeof renderTenantStillDueCard === 'function' ? renderTenantStillDueCard(tid) : '';
     const listBody = !rows.length ? `
         <div class="empty-state card">
             <i data-lucide="receipt" class="empty-state-icon"></i>
@@ -2184,7 +2188,7 @@ function screenTenantPaymentHistory() {
         </div>` : `
         ${unpaid.length && dueTotal ? `
         <div class="fin-summary card">
-            <p class="fin-summary-label">Amount due</p>
+            <p class="fin-summary-label">Still due · ${kind === 'rent' ? 'Rent' : 'Extra charge'}</p>
             <p class="fin-summary-amount">${typeof formatRentAmount === 'function' ? formatRentAmount(dueTotal) : `£${dueTotal}`}</p>
             <p class="fin-summary-hint">${unpaid.length} outstanding · tap a row to pay</p>
         </div>` : ''}
@@ -2202,6 +2206,7 @@ function screenTenantPaymentHistory() {
                 <span class="fin-segment-label">${l}</span>
             </button>`).join('')}
         </div>
+        ${kind === 'rent' ? stillDue : ''}
         ${listBody}
     </div>`;
 }

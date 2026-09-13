@@ -1632,3 +1632,6 @@ function initProductLayer() {
 }
 
 initProductLayer();
+if (typeof bootAppRoute === 'function') {
+    if (!bootAppRoute() && typeof render === 'function' && !document.getElementById('app')?.innerHTML) render();
+} else if (typeof render === 'function' && !document.getElementById('app')?.innerHTML) render();
