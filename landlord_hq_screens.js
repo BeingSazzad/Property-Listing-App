@@ -719,7 +719,7 @@ const faqList = (items, cat) => {
     </div>`;
 };
 
-const TENANT_TABS = ['overview','personal','contact','property','documents','payments','maintenance','activity'];
+const TENANT_TABS = ['overview','personal','contact','property','documents','payments','deposit','keys','maintenance','activity'];
 
 const TENANT_LIST = [
     { id: 0, propertyId: 0, chatId: 0, name: 'Sarah Johnson', prop: '12 Park Lane', unit: 'Flat 2A', lease: 'Jan 2024 – Jan 2027', leaseEnd: 'Jan 2027', img: IMG.avatar.sarah, status: 'active', rent: '£2,450/mo' },
@@ -785,7 +785,7 @@ const NAV_MAIN_TABS = new Set([
 ]);
 
 const FLAT_QUICK_ACTION_SCREENS = new Set([
-    'flat-rent-history', 'unit-utilities', 'flat-members', 'flat-keys',
+    'flat-rent-history', 'unit-utilities', 'flat-members', 'flat-keys', 'edit-flat-keys',
     'property-detail', 'property-inspections', 'property-inventory',
     'property-flat-documents', 'property-doc-folder',
     'mark-rent-received', 'maintenance-detail', 'invite-tenant',
@@ -851,6 +851,7 @@ const APP_ROUTE = { ignore: false, depth: 0, bound: false, pending: null };
 
 const PRETTY_ROUTES = [
     { re: /^properties\/(\d+)\/units\/([^/]+)\/rent$/i, screen: 'flat-rent-history', keys: ['propertyId', 'unit'] },
+    { re: /^properties\/(\d+)\/units\/([^/]+)\/keys\/edit$/i, screen: 'edit-flat-keys', keys: ['propertyId', 'unit'] },
     { re: /^properties\/(\d+)\/units\/([^/]+)\/keys$/i, screen: 'flat-keys', keys: ['propertyId', 'unit'] },
     { re: /^properties\/(\d+)\/units\/([^/]+)\/members$/i, screen: 'flat-members', keys: ['propertyId', 'unit'] },
     { re: /^properties\/(\d+)\/units\/([^/]+)\/tenancy$/i, screen: 'tenancy-detail', keys: ['propertyId', 'unit'] },
@@ -994,6 +995,7 @@ function prettyPathFor(screen, p) {
         case 'flat-detail': return pid != null && unit ? `properties/${pid}/units/${unit}` : null;
         case 'flat-rent-history': return pid != null && unit ? `properties/${pid}/units/${unit}/rent` : null;
         case 'flat-keys': return pid != null && unit ? `properties/${pid}/units/${unit}/keys` : null;
+        case 'edit-flat-keys': return pid != null && unit ? `properties/${pid}/units/${unit}/keys/edit` : null;
         case 'flat-members': return pid != null && unit ? `properties/${pid}/units/${unit}/members` : null;
         case 'tenancy-detail': return pid != null && unit ? `properties/${pid}/units/${unit}/tenancy` : null;
         case 'unit-utilities': return pid != null && unit ? `properties/${pid}/units/${unit}/utilities` : null;
@@ -1027,6 +1029,7 @@ function prettyUsedKeys(screen) {
         'flat-detail': ['propertyId', 'unit'],
         'flat-rent-history': ['propertyId', 'unit'],
         'flat-keys': ['propertyId', 'unit'],
+        'edit-flat-keys': ['propertyId', 'unit'],
         'flat-members': ['propertyId', 'unit'],
         'tenancy-detail': ['propertyId', 'unit'],
         'unit-utilities': ['propertyId', 'unit'],
@@ -2527,9 +2530,21 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
-    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms') {
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
+    }
+    if (screen === 'flat-keys' || screen === 'edit-flat-keys') {
+        if (opts.keysReturn) {
+            STATE.keysReturn = {
+                from: opts.keysReturn,
+                tenantId: STATE.tenantId,
+                propertyId: opts.propertyId ?? STATE.propertyId,
+                unit: opts.unit || STATE.selectedUnit,
+            };
+        } else if (from !== 'flat-keys' && from !== 'edit-flat-keys') {
+            STATE.keysReturn = null;
+        }
     }
     if (screen === 'certificate-assign') {
         if (from === 'property-detail' && STATE.tab === 'records' && STATE.recordsView === 'compliance') {
@@ -2676,6 +2691,8 @@ function navigateBackFallback() {
         'property-compliance': 'property-detail', 'property-doc-vault': 'property-detail',
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
         'edit-tenancy-deposit': 'tenancy-detail',
+        'flat-keys': 'flat-detail',
+        'edit-flat-keys': 'flat-keys',
         'maintenance-history': 'maintenance', 'select-property-invite': 'tenants',
         'select-unit-invite': 'property-detail',
         'global-search': 'dashboard',
@@ -2755,7 +2772,7 @@ function navigateBackFallback() {
     if (STATE.screen === 'edit-preference') opts.prefKey = STATE.prefKey;
     if (['edit-payment-method'].includes(STATE.screen)) opts.paymentId = STATE.paymentId;
     if (STATE.screen === 'assign-contractor') opts.maintId = STATE.maintId;
-    if (['flat-detail', 'flat-members', 'tenancy-detail', 'edit-flat', 'flat-rent-history', 'flat-keys', 'unit-utilities'].includes(STATE.screen)) {
+    if (['flat-detail', 'flat-members', 'tenancy-detail', 'edit-flat', 'flat-rent-history', 'flat-keys', 'edit-flat-keys', 'unit-utilities'].includes(STATE.screen)) {
         opts.unit = STATE.selectedUnit;
         opts.propertyId = STATE.propertyId;
     }
@@ -2926,6 +2943,18 @@ function back() {
     if (prev) {
         restoreNav(prev);
         return;
+    }
+    if ((STATE.screen === 'flat-keys' || STATE.screen === 'edit-flat-keys') && STATE.keysReturn) {
+        const ret = STATE.keysReturn;
+        STATE.keysReturn = null;
+        if (ret.from === 'tenant' && ret.tenantId != null) {
+            go('tenant-detail', { tenantId: ret.tenantId, tenantTab: 'keys', noHistory: true });
+            return;
+        }
+        if (ret.from === 'tenancy') {
+            go('tenancy-detail', { propertyId: ret.propertyId, unit: ret.unit, noHistory: true });
+            return;
+        }
     }
     navigateBackFallback();
 }
@@ -4493,6 +4522,12 @@ const tenantSectionContent = (tab, t) => {
         notes: () => typeof renderTenantNotesSection === 'function'
             ? renderTenantNotesSection(STATE.tenantId)
             : `<div class="card p-6 text-center"><p class="text-[13px] text-[#64748B]">No notes yet.</p></div>`,
+        deposit: () => typeof renderTenantMoneyBlock === 'function'
+            ? renderTenantMoneyBlock(STATE.tenantId, { asPage: true })
+            : `<div class="card p-6 text-center"><p class="text-[13px] text-[#64748B]">No deposit on file</p></div>`,
+        keys: () => typeof renderTenantIssuedKeys === 'function'
+            ? renderTenantIssuedKeys(STATE.tenantId)
+            : `<div class="card p-6 text-center"><p class="text-[13px] text-[#64748B]">No keys issued</p></div>`,
     };
     return sections[tab] ? sections[tab]() : '';
 };
@@ -4501,7 +4536,7 @@ const TENANT_SECTION_TITLES = {
     personal: 'Personal & ID', contact: 'Contact',
     property: 'Tenancy', lease: 'Tenancy',
     identity: 'Documents', documents: 'Documents',
-    payments: 'Payments', maintenance: 'Maintenance',
+    payments: 'Payments', deposit: 'Deposit', keys: 'Keys', maintenance: 'Maintenance',
     notes: 'Notes',
 };
 
@@ -6199,6 +6234,7 @@ function collectGoOptions(el) {
     else if (el.getAttribute('data-tenant-tab')) opts.tenantTab = el.getAttribute('data-tenant-tab');
     if (el.dataset.flatTab) opts.flatTab = el.dataset.flatTab;
     if (el.dataset.unit) opts.unit = el.dataset.unit;
+    if (el.dataset.keysReturn) opts.keysReturn = el.dataset.keysReturn;
     if (el.dataset.refKey) opts.refKey = el.dataset.refKey;
     if (el.dataset.tenantPayPreset) opts.tenantPayFilter = el.dataset.tenantPayPreset;
     if (el.dataset.duplicateFrom) opts.duplicateFrom = el.dataset.duplicateFrom;

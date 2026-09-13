@@ -6187,6 +6187,15 @@
             line-height: 1.35; word-break: break-word;
         }
         .tenant-money-block { display: flex; flex-direction: column; gap: 6px; }
+        .tenant-money-block--page { gap: 0; }
+        .tenant-money-page-head {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; margin-bottom: 10px;
+        }
+        .tenant-money-page-kicker {
+            font-size: 11px; font-weight: 700; color: #94A3B8;
+            text-transform: uppercase; letter-spacing: 0.04em; margin: 0;
+        }
         .tenant-money-card { padding: 12px 14px 8px; }
         .tenant-money-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
@@ -6212,6 +6221,23 @@
         .tenant-money-more {
             width: 100%; margin-top: 6px; padding: 8px 0 4px; border: none;
             background: transparent; color: #2563EB; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .tenant-money-deposit {
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid #F1F5F9;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .tenant-money-deposit-head {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px; margin-bottom: 4px;
+        }
+        .tenant-money-fact {
+            display: flex; justify-content: space-between; align-items: baseline;
+            gap: 12px; padding: 7px 0;
+            font-size: 13px; color: #64748B;
+        }
+        .tenant-money-fact span:last-child { font-weight: 600; color: #0F172A; text-align: right; }
+        .tenant-money-fact--link {
+            width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;
         }
         .tenant-v2-finance {
             display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; padding: 14px;
@@ -6249,6 +6275,41 @@
         .tenant-deposit-fact-value {
             font-size: 12px; font-weight: 600; color: #334155; line-height: 1.35;
             word-break: break-word; overflow-wrap: anywhere;
+        }
+        .flat-key-view {
+            padding: 14px 16px;
+            border-radius: var(--radius-card);
+        }
+        .flat-key-view-title {
+            font-size: 15px; font-weight: 800; color: #0F172A;
+            margin: 0; letter-spacing: -0.02em;
+        }
+        .flat-key-view-facts {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-top: 10px; padding-top: 10px;
+            border-top: 1px solid #F1F5F9;
+        }
+        .flat-key-view-fact {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            gap: 12px;
+        }
+        .flat-key-view-fact > span:first-child {
+            font-size: 12px; font-weight: 600; color: #94A3B8; flex-shrink: 0;
+        }
+        .flat-key-view-fact > span:last-child {
+            font-size: 13px; font-weight: 600; color: #334155;
+            text-align: right; word-break: break-word; overflow-wrap: anywhere;
+        }
+        .tenant-keys-page-sub {
+            margin: 6px 0 0;
+            font-size: 12px; font-weight: 500; color: #64748B; line-height: 1.4;
+        }
+        .tenant-keys-holder {
+            margin: 4px 2px 0;
+            font-size: 12px; font-weight: 700; color: #64748B;
+        }
+        .member-row-key-meta {
+            font-size: 11px; font-weight: 600; color: #64748B;
         }
         .tenant-v2-section-head {
             display: flex; align-items: center; justify-content: space-between;
@@ -6730,10 +6791,15 @@
         .rent-history-list--compact .rent-history-meta { font-size: 11px; }
         .rent-history-list--compact .rent-history-download { width: 40px; height: 40px; margin: 0; }
         .flat-dt-payments-v2 { display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
-        .flat-pay-hero {
-            padding: var(--card-pad);
+        .flat-dt-payments-v2 .card,
+        .flat-dt-payments-v2 .flat-pay-hero,
+        .flat-dt-payments-v2 .flat-pay-deposit,
+        .flat-dt-payments-v2 .rent-history-list {
             border-radius: var(--radius-card);
             overflow: hidden;
+        }
+        .flat-pay-hero {
+            padding: var(--card-pad);
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -6801,7 +6867,11 @@
             font-size: 10px; font-weight: 600; color: #64748B; margin-top: 4px;
         }
         .flat-pay-metric-hint.is-ok { color: #059669; }
-        .flat-pay-hero .btn-primary { border-radius: var(--radius-control); }
+        .flat-dt-payments-v2 .btn-primary,
+        .flat-dt-payments-v2 .btn-secondary,
+        .flat-pay-hero .btn-primary {
+            border-radius: var(--radius-control) !important;
+        }
         .flat-dt-ledger { display: flex; flex-direction: column; gap: 8px; }
         .flat-dt-ledger-head h3 {
             font-size: 13px; font-weight: 700; color: #0F172A; margin: 0;
@@ -8260,7 +8330,8 @@
         .flat-pay-summary--overdue .flat-pay-summary-amount { color: #DC2626; }
         .flat-pay-summary-hint { font-size: 12px; color: #64748B; margin: 6px 0 0; }
         .flat-pay-summary-btn {
-            width: 100%; margin-top: 12px; padding: 12px; border: none; border-radius: 10px;
+            width: 100%; margin-top: 12px; padding: 12px; border: none;
+            border-radius: var(--radius-control);
             background: #2563EB; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
         }
         .flat-pay-deposit { padding: 14px 16px; margin-bottom: 10px; }
@@ -10911,10 +10982,10 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=332"></script>
-    <script src="landlord_hq_contractor.js?v=332"></script>
-    <script src="landlord_hq_features.js?v=332"></script>
-    <script src="landlord_hq_product.js?v=332"></script>
+    <script src="landlord_hq_screens.js?v=339"></script>
+    <script src="landlord_hq_contractor.js?v=339"></script>
+    <script src="landlord_hq_features.js?v=339"></script>
+    <script src="landlord_hq_product.js?v=339"></script>
     <script>
     (function () {
         function showBootError(msg) {

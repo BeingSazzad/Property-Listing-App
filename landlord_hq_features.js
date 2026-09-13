@@ -119,6 +119,7 @@ const AppStore = {
                 this.documents.filter(d => d.shared).forEach(syncSharedDocToTenants);
             }
             migrateInventoryKeys();
+            if (typeof migrateUnitKeysFromSeed === 'function') migrateUnitKeysFromSeed();
             if (typeof migratePropertyInfoFields === 'function') migratePropertyInfoFields();
             if (typeof migrateTenancyLeadUniqueness === 'function') migrateTenancyLeadUniqueness();
             // Backfill rich demo datasets if missing or partial
@@ -507,8 +508,9 @@ const AppStore = {
                     ],
                     'Flat 2B': [
                         { label: 'Front entrance key', qty: '2', location: 'Flat entrance', holder: 'Priya Sharma' },
-                        { label: 'Building electronic fob', qty: '2', location: 'Lobby & gate', holder: 'Priya Sharma' },
+                        { label: 'Building electronic fob', qty: '1', location: 'Lobby & gate', holder: 'Priya Sharma' },
                         { label: 'Mailbox key', qty: '1', location: 'Ground floor', holder: 'Priya Sharma' },
+                        { label: 'Building electronic fob', qty: '1', location: 'Lobby & gate', holder: 'James Chen' },
                     ],
                 },
                 utilities: { gas: 'British Gas (Smart Meter: 489201)', electric: 'Octopus Energy (MPAN: 120002948192)', water: 'Thames Water (Account: 902184)', broadband: 'BT Full Fibre 500', council: { name: 'Westminster City Council', notes: 'Council Tax Band D' } },
@@ -550,6 +552,10 @@ const AppStore = {
                     'Flat 1A': [
                         { label: 'Front entrance key', qty: '2', location: 'Flat 1A entrance', holder: 'David Wilson' },
                         { label: 'Garden gate padlock key', qty: '1', location: 'Side passage', holder: 'David Wilson' },
+                    ],
+                    'Flat 1B': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat 1B entrance', holder: 'David Chen' },
+                        { label: 'Mailbox key', qty: '1', location: 'Front porch', holder: 'David Chen' },
                     ],
                 },
                 utilities: { gas: 'E.ON Next', electric: 'EDF Energy', water: 'Thames Water', broadband: 'Virgin Media Gig1', council: { name: 'Lambeth Council', notes: 'Band C' } },
@@ -593,7 +599,12 @@ const AppStore = {
                 ],
                 unitKeys: {
                     'Room 1': [
-                        { label: 'Room 1 Key & Front Door Key', qty: '2', location: 'Key safe box', holder: 'Tenant' },
+                        { label: 'Room key', qty: '1', location: 'Room 1 door', holder: 'Emma Roberts' },
+                        { label: 'Front door key', qty: '1', location: 'Street entrance', holder: 'Emma Roberts' },
+                    ],
+                    'Room 3': [
+                        { label: 'Room key', qty: '1', location: 'Room 3 door', holder: 'Mark Davis' },
+                        { label: 'Front door key', qty: '1', location: 'Street entrance', holder: 'Mark Davis' },
                     ],
                 },
                 utilities: { gas: 'N/A (All Electric Eco)', electric: 'Good Energy 100% Renewable', water: 'Thames Water', broadband: 'Hyperoptic 1Gbps Symmetric', council: { name: 'City of London', notes: 'Band E' } },
@@ -637,6 +648,10 @@ const AppStore = {
                         { label: 'Front entrance key', qty: '2', location: 'Flat 2A entrance', holder: 'Michael Lee' },
                         { label: 'Street door key', qty: '2', location: 'Main building porch', holder: 'Michael Lee' },
                         { label: 'Courtyard gate key', qty: '1', location: 'Rear courtyard', holder: 'Michael Lee' },
+                    ],
+                    'Flat 2B': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat 2B entrance', holder: 'Michael Lee' },
+                        { label: 'Street door key', qty: '1', location: 'Main building porch', holder: 'Michael Lee' },
                     ],
                 },
                 utilities: { gas: 'British Gas', electric: 'OVO Energy', water: 'Thames Water', broadband: 'Community Fibre 1Gbps', council: { name: 'Islington Council', notes: 'Band D' } },
@@ -1907,7 +1922,26 @@ function renderTenantMainFactsCard(tenantId) {
     </div>`;
 }
 
-function renderTenantMoneyBlock(tenantId) {
+function tenantDepositMoveInFacts(tenantId) {
+    const dep = typeof getTenantDepositProtection === 'function' ? getTenantDepositProtection(tenantId) : {};
+    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tenantId) : {};
+    const checkoutRec = AppStore.checkoutRecords?.find(r => r.tenantId === tenantId);
+    const leaseEndRaw = fin.leaseEnd;
+    const leaseEnd = leaseEndRaw && typeof formatDisplayDate === 'function'
+        ? formatDisplayDate(leaseEndRaw) || leaseEndRaw
+        : (leaseEndRaw || null);
+    const rows = [
+        dep.deposit && dep.deposit !== '—' ? ['Deposit', dep.deposit] : null,
+        dep.advancePaid && dep.advancePaid !== '—' && dep.advancePaid !== dep.deposit ? ['Advance', dep.advancePaid] : null,
+        dep.moveIn && dep.moveIn !== '—' ? ['Move-in', dep.moveIn] : null,
+        dep.scheme && dep.scheme !== '—' ? ['Scheme', depositSchemeSummaryLine(dep.scheme, dep.protectionRef)] : null,
+        leaseEnd ? ['Lease ends', leaseEnd] : null,
+        checkoutRec?.deposit ? ['Deposit return', checkoutRec.deposit] : null,
+    ].filter(Boolean);
+    return { dep, rows };
+}
+
+function renderTenantMoneyBlock(tenantId, opts = {}) {
     const t = TENANTS[tenantId];
     const listItem = TENANT_LIST[tenantId];
     if (!t || !listItem) return '';
@@ -1917,13 +1951,21 @@ function renderTenantMoneyBlock(tenantId) {
     const extraTotal = pay.billBalance && pay.billBalance !== '£0.00' ? pay.billBalance : '£0';
     const nextDue = pay.nextDue && pay.nextDue !== '—' ? pay.nextDue : `${rent} · next month`;
     const canEdit = listItem.propertyId != null && listItem.unit;
+    const { dep, rows: depositRows } = tenantDepositMoveInFacts(tenantId);
+    const asPage = !!opts.asPage;
     return `
-    <section class="tenant-money-block">
+    <section class="tenant-money-block${asPage ? ' tenant-money-block--page' : ''}">
+        ${asPage ? '' : `
         <div class="tenant-v2-section-head">
-            <h3>Rent & charges</h3>
-            ${canEdit ? `<button type="button" data-go="edit-flat" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit rent</button>` : ''}
-        </div>
+            <h3>Rent & deposit</h3>
+            ${canEdit ? `<button type="button" data-ttab="deposit" class="tenant-v2-link">View</button>` : ''}
+        </div>`}
         <div class="card tenant-money-card">
+            ${asPage && canEdit ? `
+            <div class="tenant-money-page-head">
+                <p class="tenant-money-page-kicker">Rent, charges & deposit</p>
+                <button type="button" data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit</button>
+            </div>` : ''}
             <div class="tenant-money-grid">
                 <div class="tenant-money-stat">
                     <p class="tenant-money-label">Monthly rent</p>
@@ -1949,6 +1991,21 @@ function renderTenantMoneyBlock(tenantId) {
                 </button>`;
                 }).join('')}
             </div>` : ''}
+            ${depositRows.length ? `
+            <div class="tenant-money-deposit">
+                <div class="tenant-money-deposit-head">
+                    <p class="tenant-money-label">Deposit & move-in</p>
+                    ${typeof renderDepositStatusBadge === 'function' ? renderDepositStatusBadge(dep.status, dep.scheme) : ''}
+                </div>
+                ${depositRows.map(([label, value]) => {
+                    const schemeLink = label === 'Scheme' && canEdit
+                        ? `data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}"`
+                        : '';
+                    return schemeLink
+                        ? `<button type="button" ${schemeLink} class="tenant-money-fact tenant-money-fact--link"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></button>`
+                        : `<div class="tenant-money-fact"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`;
+                }).join('')}
+            </div>` : ''}
             <button type="button" data-ttab="payments" class="tenant-money-more">View payments</button>
         </div>
     </section>`;
@@ -1970,27 +2027,16 @@ function renderTenantCompactHub(tenantId) {
     const t = TENANTS[tenantId];
     const listItem = TENANT_LIST[tenantId];
     if (!t || !listItem) return '';
-    const dep = typeof getTenantDepositProtection === 'function' ? getTenantDepositProtection(tenantId) : {};
-    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tenantId) : {};
     const docs = typeof getTenantDocuments === 'function' ? getTenantDocuments(tenantId) : [];
     const notes = typeof getTenantNotes === 'function' ? getTenantNotes(tenantId) : [];
     const ref = typeof getTenantReferencing === 'function' ? getTenantReferencing(tenantId) : {};
-    const keys = listItem.propertyId != null && listItem.unit
-        ? (typeof keysHeldByTenant === 'function' ? keysHeldByTenant(listItem.propertyId, listItem.unit, `${t.firstName || ''} ${t.lastName || ''}`.trim()) : [])
-        : [];
+    const keys = typeof keysHeldByTenantId === 'function' ? keysHeldByTenantId(tenantId) : [];
     const unit = listItem.propertyId != null && listItem.unit
         ? getPropertyUnits(listItem.propertyId).find(u => unitName(u) === listItem.unit)
         : null;
     const refEntries = Object.values(ref || {});
     const verifiedCount = refEntries.filter(x => x?.status === 'verified' || x?.status === 'complete').length;
     const rtr = ref?.rightToRent?.status === 'verified' ? 'Right to rent verified' : `${verifiedCount} of ${Math.max(refEntries.length, 1)} checks done`;
-    const moveIn = dep.moveIn && dep.moveIn !== '—' ? dep.moveIn : (fin.moveIn && typeof formatDisplayDate === 'function' ? formatDisplayDate(fin.moveIn) : fin.moveIn);
-    const depositLine = [
-        dep.deposit && dep.deposit !== '—' ? `Deposited ${dep.deposit}` : null,
-        dep.advancePaid && dep.advancePaid !== '—' && dep.advancePaid !== dep.deposit ? `Advance ${dep.advancePaid}` : null,
-        moveIn && moveIn !== '—' ? moveIn : null,
-        dep.scheme && dep.scheme !== '—' ? dep.scheme : null,
-    ].filter(Boolean).join(' · ') || 'No deposit on file';
     const prop = listItem.propertyId != null ? PROPERTIES[listItem.propertyId] : null;
     const buildingBits = [
         prop?.name || listItem.prop,
@@ -1998,25 +2044,30 @@ function renderTenantCompactHub(tenantId) {
         unit?.floor ? `Floor ${unit.floor}` : null,
     ].filter(Boolean).join(' · ') || (listItem.prop || 'Property');
     const keyLine = keys.length
-        ? `${keys.length} key${keys.length === 1 ? '' : 's'} assigned${keys[0]?.label ? ` · ${keys[0].label}` : ''}`
-        : 'No keys assigned';
+        ? `${keys.length} key set${keys.length === 1 ? '' : 's'} issued`
+        : 'No keys issued';
     const note = notes[0];
     const noteLine = note
         ? `${escapeHtml((note.text || '').slice(0, 72))}${note.text && note.text.length > 72 ? '…' : ''}`
         : 'No notes yet';
     const noteMeta = note?.meta ? escapeHtml(String(note.meta).split('·')[0].trim()) : '';
 
+    const dep = typeof getTenantDepositProtection === 'function' ? getTenantDepositProtection(tenantId) : {};
+    const depStatus = typeof depositStatusDisplay === 'function'
+        ? depositStatusDisplay(dep.status, dep.scheme)
+        : null;
+    const depLine = [dep.deposit && dep.deposit !== '—' ? dep.deposit : null, depStatus?.label || (dep.scheme && dep.scheme !== '—' ? dep.scheme : null)]
+        .filter(Boolean).join(' · ') || 'No deposit on file';
+
     const groupA = [
         tenantHubRow({
-            icon: 'banknote', title: 'Deposit & move-in', meta: escapeHtml(depositLine),
-            attrs: `data-ttab="property"`, tone: 'green',
+            icon: 'key-round', title: 'Keys', meta: escapeHtml(keyLine),
+            attrs: `data-ttab="keys"`,
+            tone: 'blue',
         }),
         tenantHubRow({
-            icon: 'key-round', title: 'Keys', meta: escapeHtml(keyLine),
-            attrs: listItem.propertyId != null && listItem.unit
-                ? `data-go="flat-keys" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}"`
-                : `data-ttab="property"`,
-            tone: 'blue',
+            icon: 'wallet', title: 'Deposit', meta: escapeHtml(depLine),
+            attrs: `data-ttab="deposit"`, tone: 'amber',
         }),
         tenantHubRow({
             icon: 'shield-check', title: 'Reference / checks', meta: escapeHtml(rtr),
@@ -2037,7 +2088,6 @@ function renderTenantCompactHub(tenantId) {
 
     return `
     ${renderTenantMainFactsCard(tenantId)}
-    ${renderTenantMoneyBlock(tenantId)}
     <div class="card tenant-hub-group">${groupA}</div>
     <div class="card tenant-hub-group">
         ${tenantHubRow({
@@ -3633,6 +3683,48 @@ function migrateTenancyLeadUniqueness() {
     if (changed) AppStore.save();
 }
 
+function normKeyName(s) {
+    return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function isGenericTenantHolder(holder) {
+    const h = normKeyName(holder);
+    return h === 'tenant' || h === 'the tenant' || h === 'occupant';
+}
+
+function migrateUnitKeysFromSeed() {
+    try {
+        const tempStore = {};
+        AppStore.seed.call(tempStore);
+        [0, 1, 2, 3].forEach(pid => {
+            const seedKeys = tempStore.propertyMeta?.[pid]?.unitKeys;
+            if (!seedKeys) return;
+            const meta = AppStore.meta(pid);
+            if (!meta.unitKeys) meta.unitKeys = {};
+            Object.entries(seedKeys).forEach(([unit, rows]) => {
+                if (!meta.unitKeys[unit] || !meta.unitKeys[unit].length) {
+                    meta.unitKeys[unit] = rows.map(k => ({ ...k }));
+                }
+            });
+            Object.entries(meta.unitKeys).forEach(([unit, list]) => {
+                (list || []).forEach(k => {
+                    if (!isGenericTenantHolder(k.holder)) return;
+                    const occupants = TENANT_LIST.filter(t => t.propertyId === pid && t.unit === unit);
+                    if (occupants.length === 1) k.holder = occupants[0].name;
+                });
+                if (pid === 0 && unit === 'Flat 2B') {
+                    const hasJames = (list || []).some(k => normKeyName(k.holder) === 'james chen');
+                    if (!hasJames) {
+                        const priyaFob = (list || []).find(k => normKeyName(k.holder) === 'priya sharma' && /fob/i.test(k.label || ''));
+                        if (priyaFob && String(priyaFob.qty) === '2') priyaFob.qty = '1';
+                        list.push({ label: 'Building electronic fob', qty: '1', location: 'Lobby & gate', holder: 'James Chen' });
+                    }
+                }
+            });
+        });
+    } catch (_) { /* seed helpers may not be ready */ }
+}
+
 function migrateInventoryKeys() {
     if (!AppStore.inventory) return;
     Object.keys({ ...AppStore.inventory }).forEach(key => {
@@ -3964,18 +4056,164 @@ function getInventoryRoomSize(pid, rid) {
     return ensureInventoryRoom(pid, rid).sizeSqft?.trim() || '';
 }
 
-function keysHeldByTenant(propertyId, unitName, tenantName) {
-    if (!tenantName) return [];
-    const norm = tenantName.trim().toLowerCase();
-    return getUnitKeys(propertyId, unitName).filter(k =>
-        (k.holder || '').trim().toLowerCase() === norm
-    );
+function landlordKeyHolderNames() {
+    const names = [];
+    if (typeof ACCOUNT !== 'undefined' && ACCOUNT.landlord) names.push(ACCOUNT.landlord);
+    if (typeof USERS !== 'undefined' && USERS[0]) {
+        const n = typeof fullNameFromParts === 'function'
+            ? fullNameFromParts(USERS[0].firstName, USERS[0].lastName)
+            : `${USERS[0].firstName || ''} ${USERS[0].lastName || ''}`.trim();
+        if (n) names.push(n);
+    }
+    names.push('John Smith');
+    return [...new Set(names.filter(Boolean))];
 }
 
-function renderTenantKeysCard(propertyId, unitName, tenantName) {
-    const keys = keysHeldByTenant(propertyId, unitName, tenantName);
-    const allKeys = getUnitKeys(propertyId, unitName);
-    if (!allKeys.length && !keys.length) return '';
+function tenantKeyNames(tenantId, extraName) {
+    const names = [];
+    if (extraName) names.push(extraName);
+    const t = typeof TENANTS !== 'undefined' ? TENANTS[tenantId] : null;
+    const list = typeof TENANT_LIST !== 'undefined' ? TENANT_LIST[tenantId] : null;
+    if (t) {
+        const full = typeof fullNameFromParts === 'function'
+            ? fullNameFromParts(t.firstName, t.lastName)
+            : `${t.firstName || ''} ${t.lastName || ''}`.trim();
+        if (full) names.push(full);
+    }
+    if (list?.name) names.push(list.name);
+    return [...new Set(names.map(n => String(n || '').trim()).filter(Boolean))];
+}
+
+function keysHeldByTenant(propertyId, unitName, tenantName) {
+    if (propertyId == null || !unitName || !tenantName) return [];
+    const want = normKeyName(tenantName);
+    if (!want) return [];
+    const keys = getUnitKeys(propertyId, unitName);
+    const roster = typeof getFlatMemberRoster === 'function'
+        ? (getFlatMemberRoster(propertyId, unitName).members || [])
+        : [];
+    const unitTenants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+        t.propertyId === propertyId && t.unit === unitName
+    );
+    const aliases = new Set([want]);
+    unitTenants.forEach(t => { if (normKeyName(t.name) === want) aliases.add(normKeyName(t.name)); });
+    roster.forEach(m => { if (normKeyName(m.name) === want) aliases.add(normKeyName(m.name)); });
+    const soleOccupant = (unitTenants.length === 1 && normKeyName(unitTenants[0].name) === want)
+        || (roster.filter(m => m.name).length === 1 && normKeyName(roster[0]?.name) === want);
+    return keys.filter(k => {
+        const h = normKeyName(k.holder);
+        if (!h) return false;
+        if (aliases.has(h)) return true;
+        return isGenericTenantHolder(k.holder) && soleOccupant;
+    });
+}
+
+function keysHeldByTenantId(tenantId) {
+    const list = typeof TENANT_LIST !== 'undefined' ? TENANT_LIST[tenantId] : null;
+    const t = typeof TENANTS !== 'undefined' ? TENANTS[tenantId] : null;
+    const propertyId = list?.propertyId ?? t?.propertyId;
+    const unit = list?.unit || t?.unit;
+    if (propertyId == null || !unit) return [];
+    const seen = new Set();
+    const out = [];
+    tenantKeyNames(tenantId).forEach(n => {
+        keysHeldByTenant(propertyId, unit, n).forEach(k => {
+            const id = `${k.label}|${k.qty}|${k.location}|${k.holder}`;
+            if (seen.has(id)) return;
+            seen.add(id);
+            out.push(k);
+        });
+    });
+    return out;
+}
+
+function renderIssuedKeyCards(keys) {
+    return (keys || []).map(k => `
+            <div class="card flat-key-view">
+                <p class="flat-key-view-title">${escapeHtml(k.label || 'Key')}</p>
+                <div class="flat-key-view-facts">
+                    <div class="flat-key-view-fact"><span>Quantity</span><span>×${escapeHtml(String(k.qty || '1'))}</span></div>
+                    <div class="flat-key-view-fact"><span>Location</span><span>${escapeHtml(k.location || '—')}</span></div>
+                </div>
+            </div>`).join('');
+}
+
+function unitKeyRegisterBtn(propertyId, unitName, asPage) {
+    if (propertyId == null || !unitName) return '';
+    const from = STATE.screen === 'tenant-detail' ? 'tenant' : STATE.screen === 'tenancy-detail' ? 'tenancy' : '';
+    const ret = from ? ` data-keys-return="${from}"` : '';
+    return `<button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(unitName)}"${ret} class="${asPage ? 'btn-secondary w-full py-3 text-[13px] mt-3' : 'header-text-link'}">${asPage ? 'View unit keys' : 'Unit keys'}</button>`;
+}
+
+function renderTenantIssuedKeys(tenantId) {
+    const t = TENANTS[tenantId];
+    const listItem = TENANT_LIST[tenantId];
+    if (!t || !listItem) return '';
+    const name = tenantKeyNames(tenantId)[0] || listItem.name || 'this tenant';
+    return renderTenantKeysCard(listItem.propertyId, listItem.unit, name, { asPage: true, tenantId });
+}
+
+function renderTenancyIssuedKeys(propertyId, unitName, members) {
+    const roster = members || [];
+    const groups = roster
+        .map(m => ({ name: m.name, keys: keysHeldByTenant(propertyId, unitName, m.name) }))
+        .filter(g => g.keys.length);
+    const total = groups.reduce((n, g) => n + g.keys.length, 0);
+    const showHolders = roster.length > 1;
+    const unitBtn = unitKeyRegisterBtn(propertyId, unitName, true);
+    if (!groups.length) {
+        const unitHas = getUnitKeys(propertyId, unitName).length;
+        return `
+        <div class="tenant-keys-page stack-sm">
+            <div class="card flat-key-view">
+                <p class="flat-key-view-title">No keys issued</p>
+                <p class="tenant-keys-page-sub">${unitHas
+                    ? 'This tenancy has no issued sets. Other copies are on the unit.'
+                    : 'Add sets on the unit, then mark who holds them.'}</p>
+            </div>
+            ${unitBtn}
+        </div>`;
+    }
+    return `
+        <div class="tenant-keys-page stack-sm">
+            <div class="card flat-key-view">
+                <p class="flat-key-view-title">${total} key set${total === 1 ? '' : 's'} issued</p>
+                <p class="tenant-keys-page-sub">${showHolders
+                    ? 'Only sets issued to people on this tenancy.'
+                    : 'Issued to this tenant.'}</p>
+            </div>
+            ${groups.map(g => `
+            ${showHolders ? `<p class="tenant-keys-holder">${escapeHtml(g.name)}</p>` : ''}
+            ${renderIssuedKeyCards(g.keys)}`).join('')}
+            ${unitBtn}
+        </div>`;
+}
+
+function renderTenantKeysCard(propertyId, unitName, tenantName, opts = {}) {
+    const keys = opts.tenantId != null
+        ? keysHeldByTenantId(opts.tenantId)
+        : (propertyId != null && unitName ? keysHeldByTenant(propertyId, unitName, tenantName) : []);
+    const asPage = !!opts.asPage;
+    const unitBtn = unitKeyRegisterBtn(propertyId, unitName, asPage);
+    const issuedRows = renderIssuedKeyCards(keys);
+    const unitCount = propertyId != null && unitName ? getUnitKeys(propertyId, unitName).length : 0;
+    if (asPage) {
+        const emptySub = unitCount > keys.length
+            ? `${escapeHtml(tenantName)} has none issued. Other sets are on the unit.`
+            : `${escapeHtml(tenantName)} has not been issued a key set.`;
+        return `
+        <div class="tenant-keys-page stack-sm">
+            <div class="card flat-key-view">
+                <p class="flat-key-view-title">${keys.length ? `${keys.length} key set${keys.length === 1 ? '' : 's'} issued` : 'No keys issued'}</p>
+                <p class="tenant-keys-page-sub">${keys.length
+                    ? `With ${escapeHtml(tenantName)}.`
+                    : emptySub}</p>
+            </div>
+            ${issuedRows}
+            ${unitBtn}
+        </div>`;
+    }
+    if (!keys.length) return '';
     return `
     <div class="card p-4 tenant-keys-card">
         <div class="flex items-center justify-between mb-3">
@@ -3984,23 +4222,22 @@ function renderTenantKeysCard(propertyId, unitName, tenantName) {
                     <i data-lucide="key-round" class="w-4 h-4 text-[#2563EB]"></i>
                 </div>
                 <div>
-                    <h3 class="text-[14px] font-bold text-[#0F172A] m-0">Keys</h3>
-                    <p class="text-[11px] text-[#64748B] m-0">${keys.length ? `${keys.length} key set${keys.length === 1 ? '' : 's'} assigned` : 'No keys assigned'}</p>
+                    <h3 class="text-[14px] font-bold text-[#0F172A] m-0">Keys issued</h3>
+                    <p class="text-[11px] text-[#64748B] m-0">${keys.length} key set${keys.length === 1 ? '' : 's'} with ${escapeHtml(tenantName)}</p>
                 </div>
             </div>
-            ${propertyId != null && unitName ? `<button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${unitName}" class="header-text-link">Manage</button>` : ''}
+            ${unitBtn}
         </div>
-        ${keys.length ? `
         <div class="space-y-2">
             ${keys.map(k => `
             <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9] flex items-start justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <p class="text-[13px] font-semibold text-[#0F172A] mb-0.5">${escapeHtml(k.label || 'Key')}</p>
-                    <p class="text-[11px] text-[#64748B] mb-0">${[k.location, k.holder ? `Held by ${k.holder}` : ''].filter(Boolean).join(' · ') || 'On issue'}</p>
+                    <p class="text-[11px] text-[#64748B] mb-0">${escapeHtml(k.location || 'On issue')}</p>
                 </div>
                 ${k.qty ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] shrink-0">×${escapeHtml(String(k.qty))}</span>` : ''}
             </div>`).join('')}
-        </div>` : `<p class="text-[13px] text-[#64748B] m-0">No keys currently assigned to this tenant.${allKeys.length ? ' Other key sets are registered for this unit.' : ''}</p>`}
+        </div>
     </div>`;
 }
 
@@ -6302,12 +6539,16 @@ function renderMemberRow(member, propertyId, unitName, opts = {}) {
         </div>`;
     }
     if (opts.tenantTab) {
+        const issued = typeof keysHeldByTenant === 'function' && propertyId != null && unitName
+            ? keysHeldByTenant(propertyId, unitName, member.name)
+            : [];
+        const keyMeta = issued.length ? `${issued.length} key set${issued.length === 1 ? '' : 's'}` : '';
         return `
     <button type="button" ${action} class="member-row member-row--tenant-tab">
         ${renderMemberAvatar(member, 'md')}
         <div class="member-row-body">
             <p class="member-row-name">${member.name}</p>
-            <div class="member-row-tags">${memberStatusPill(member)}</div>
+            <div class="member-row-tags">${memberStatusPill(member)}${keyMeta ? `<span class="member-row-key-meta">${keyMeta}</span>` : ''}</div>
         </div>
         <i data-lucide="chevron-right" class="member-row-chevron w-4 h-4"></i>
     </button>`;
@@ -6457,7 +6698,7 @@ function screenTenancyDetail() {
         ${renderTenancyDocumentsChecklist(propertyId, unit, tenancy)}
         <button type="button" data-go="edit-tenancy-deposit" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full py-2.5 text-[13px] mb-3">Edit deposit scheme</button>
         ${renderTenancyMembersSection(propertyId, unit, tenancy, members)}
-        ${typeof renderTenantKeysCard === 'function' && lead ? renderTenantKeysCard(propertyId, unit, lead.name) : ''}
+        ${typeof renderTenancyIssuedKeys === 'function' ? renderTenancyIssuedKeys(propertyId, unit, members) : ''}
         <button data-go="flat-detail" data-pid="${propertyId}" data-unit="${unit}" class="btn-secondary w-full">Back to ${unitWord}</button>
     </div>`;
 }
@@ -7931,9 +8172,11 @@ function checkoutTenantContext(tenantId) {
 function syncCheckoutKeysFromTenancy(co, tenantId) {
     const { propertyId, unit, tenantName } = checkoutTenantContext(tenantId);
     if (propertyId == null || !unit) return co.keys || [];
-    const issued = typeof keysHeldByTenant === 'function'
-        ? keysHeldByTenant(propertyId, unit, tenantName)
-        : (typeof getUnitKeys === 'function' ? getUnitKeys(propertyId, unit) : []);
+    const issued = typeof keysHeldByTenantId === 'function'
+        ? keysHeldByTenantId(tenantId)
+        : (typeof keysHeldByTenant === 'function'
+            ? keysHeldByTenant(propertyId, unit, tenantName)
+            : (typeof getUnitKeys === 'function' ? getUnitKeys(propertyId, unit) : []));
     const existing = Array.isArray(co.keys) ? co.keys : [];
     const byLabel = new Map(existing.map(k => [`${(k.label || '').toLowerCase()}|${k.qty || '1'}`, k]));
     const synced = issued.map((k, i) => {
@@ -8224,7 +8467,7 @@ function renderCheckoutKeysSection(co, opts = {}) {
         return `
         <div class="card p-4">
             <p class="text-[13px] font-bold text-[#0F172A]">Keys to return</p>
-            <p class="text-[12px] text-[#64748B] mt-1">No keys were registered for this tenancy yet. Ask your landlord to add keys on the unit record.</p>
+            <p class="text-[12px] text-[#64748B] mt-1">No keys are issued to this tenant. The landlord can assign sets on the unit.</p>
         </div>`;
     }
     return `
@@ -17986,12 +18229,40 @@ function initFlatKeysEdit() {
 function screenFlatKeys() {
     const unit = STATE.selectedUnit || '';
     const p = PROPERTIES[STATE.propertyId];
+    const keys = getUnitKeys(STATE.propertyId, unit);
+    const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
+    const editBtn = `<button type="button" data-go="edit-flat-keys" data-pid="${STATE.propertyId}" data-unit="${escapeHtml(unit)}" class="header-text-link">Edit</button>`;
+    return `${topBar('Keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}`, rightBtn: editBtn })}
+    <div class="screen-content screen-content-sm screen-enter">
+        ${keys.length ? `
+        <div class="stack-sm">
+            ${keys.map(k => `
+            <div class="card flat-key-view">
+                <p class="flat-key-view-title">${escapeHtml(k.label || 'Key')}</p>
+                <div class="flat-key-view-facts">
+                    <div class="flat-key-view-fact"><span>Quantity</span><span>×${escapeHtml(String(k.qty || '1'))}</span></div>
+                    <div class="flat-key-view-fact"><span>Location</span><span>${escapeHtml(k.location || '—')}</span></div>
+                    <div class="flat-key-view-fact"><span>Held by</span><span>${escapeHtml(k.holder || 'Unassigned')}</span></div>
+                </div>
+            </div>`).join('')}
+        </div>` : `
+        <div class="card p-6 text-center">
+            <p class="text-[13px] text-[#64748B]">No key sets registered for this unit.</p>
+        </div>`}
+        <button type="button" data-go="edit-flat-keys" data-pid="${STATE.propertyId}" data-unit="${escapeHtml(unit)}" class="btn-secondary w-full py-3 text-[13px] mt-3">${keys.length ? 'Edit keys' : '+ Add key set'}</button>
+    </div>`;
+}
+
+function screenEditFlatKeys() {
+    const unit = STATE.selectedUnit || '';
+    const p = PROPERTIES[STATE.propertyId];
     if (!STATE.flatKeysEdit) initFlatKeysEdit();
     const keys = STATE.flatKeysEdit;
     const { members } = getFlatMemberRoster(STATE.propertyId, unit);
-    const holderOptions = members.map(m => m.name).filter(Boolean);
+    const holderOptions = [...members.map(m => m.name), ...landlordKeyHolderNames()].filter(Boolean)
+        .filter((n, i, arr) => arr.findIndex(x => normKeyName(x) === normKeyName(n)) === i);
     const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
-    return `${topBar('Keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
+    return `${topBar('Edit keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
     <div class="screen-content screen-content-sm screen-enter">
         <div class="stack-sm">
         ${keys.map((k, i) => `
@@ -17999,7 +18270,7 @@ function screenFlatKeys() {
             <div class="form-field"><label class="form-label">Key type</label><input data-flat-key-label class="form-input" value="${escapeHtml(k.label || '')}" placeholder="e.g. Front door"></div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="form-field"><label class="form-label">Quantity</label><input data-flat-key-qty class="form-input" value="${escapeHtml(String(k.qty || '1'))}" placeholder="1"></div>
-                <div class="form-field"><label class="form-label">Location / notes</label><input data-flat-key-location class="form-input" value="${escapeHtml(k.location || '')}" placeholder="e.g. Key safe"></div>
+                <div class="form-field"><label class="form-label">Location</label><input data-flat-key-location class="form-input" value="${escapeHtml(k.location || '')}" placeholder="e.g. Key safe"></div>
             </div>
             <div class="form-field">
                 <label class="form-label">Held by</label>
@@ -18020,7 +18291,7 @@ function saveFlatKeys() {
     const rows = [...document.querySelectorAll('[data-flat-key-row]')];
     const keys = rows.map(row => ({
         label: row.querySelector('[data-flat-key-label]')?.value?.trim() || 'Key',
-        qty: row.querySelector('[data-flat-key-qty]')?.value?.trim() || '1',
+        qty: String(Math.max(1, parseInt(row.querySelector('[data-flat-key-qty]')?.value, 10) || 1)),
         location: row.querySelector('[data-flat-key-location]')?.value?.trim() || '',
         holder: row.querySelector('[data-flat-key-holder]')?.value?.trim() || '',
     })).filter(k => k.label);
@@ -18029,7 +18300,7 @@ function saveFlatKeys() {
     withLoading(() => {
         AppStore.save();
         toast('Keys saved');
-        go('flat-detail', { propertyId: STATE.propertyId, unit, tab: 'records' });
+        go('flat-keys', { propertyId: STATE.propertyId, unit });
     });
 }
 
@@ -18538,7 +18809,7 @@ function handleFeatureSave(el) {
     if (screen === 'add-property') return saveAddProperty();
     if (screen === 'edit-property') return saveEditProperty();
     if (screen === 'edit-flat') return saveFlatDetails();
-    if (screen === 'flat-keys') return saveFlatKeys();
+    if (screen === 'edit-flat-keys') return saveFlatKeys();
     if (screen === 'add-flat') return saveAddFlat();
     if (screen === 'log-maintenance') return saveLogMaintenance();
     if (screen === 'create-invoice') return saveCreateInvoice();
@@ -20441,7 +20712,7 @@ const FEATURE_SCREENS = [
     'broadcast-notices', 'send-broadcast', 'broadcast-detail',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
-    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-appliance-records', 'property-utilities', 'property-parking', 'property-info', 'property-compliance', 'property-doc-vault', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'tenancy-detail', 'edit-tenancy-deposit',
+    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-appliance-records', 'property-utilities', 'property-parking', 'property-info', 'property-compliance', 'property-doc-vault', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'edit-flat-keys', 'tenancy-detail', 'edit-tenancy-deposit',
     'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'select-unit-invite', 'global-search', 'contractors', 'invite-contractor', 'contractor-invite-sent', 'inspection-detail',
 ];
 
@@ -20490,6 +20761,7 @@ Object.assign(SCREEN_MAP, {
     'flat-members': screenFlatMembers,
     'flat-rent-history': screenFlatRentHistory,
     'flat-keys': screenFlatKeys,
+    'edit-flat-keys': screenEditFlatKeys,
     'tenancy-detail': screenTenancyDetail,
     'tenant-add-note': screenTenantAddNote,
     'tenant-edit-note': screenTenantEditNote,
@@ -20552,6 +20824,7 @@ const FEATURE_BACK_MAP = {
     'flat-members': 'flat-detail',
     'flat-rent-history': 'flat-detail',
     'flat-keys': 'flat-detail',
+    'edit-flat-keys': 'flat-keys',
     'tenancy-detail': 'flat-detail',
     'tenant-add-note': 'tenant-detail',
     'tenant-edit-note': 'tenant-detail',
@@ -21596,8 +21869,8 @@ function goFeature(screen, opts = {}) {
     } else {
         STATE.inventoryEditItems = null;
     }
-    if (screen === 'flat-keys') {
-        initFlatKeysEdit();
+    if (screen === 'edit-flat-keys') {
+        if (from !== 'edit-flat-keys') initFlatKeysEdit();
     } else {
         STATE.flatKeysEdit = null;
     }
@@ -21686,7 +21959,7 @@ function goFeature(screen, opts = {}) {
     } else if (screen === 'property-flat-documents' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit') {
         STATE.propertyId = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
         if (opts.unit) STATE.selectedUnit = opts.unit;
-    } else if (screen === 'flat-rent-history' || screen === 'flat-members' || screen === 'flat-keys') {
+    } else if (screen === 'flat-rent-history' || screen === 'flat-members' || screen === 'flat-keys' || screen === 'edit-flat-keys') {
         STATE.propertyId = opts.propertyId != null ? opts.propertyId : STATE.propertyId;
         if (opts.unit) STATE.selectedUnit = opts.unit;
     } else if (screen !== 'invoice-detail') {
