@@ -1677,6 +1677,121 @@ function renderTenantHomeAnnouncement(t) {
     </button>`;
 }
 
+function renderTenantStandbyDashboard(t) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const name = [t?.firstName, t?.lastName].filter(Boolean).join(' ') || 'Tenant';
+    const email = t?.email || '';
+    const pendingInvites = typeof pendingInvitesForTenantEmail === 'function' ? pendingInvitesForTenantEmail(email) : [];
+    const history = t?.tenancyHistory || [];
+
+    return `${topBar('Tenant Portal', { hideBell: false })}
+    <div class="screen-content screen-enter tnt-home-page space-y-4">
+        <!-- Verified Account Summary Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-left">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-[#EFF6FF] text-[#2563EB] font-bold text-[18px] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                    ${esc(t?.firstName ? t.firstName[0] : 'T')}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <p class="text-[16px] font-bold text-[#0F172A] truncate">${esc(name)}</p>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCFCE7] text-[#16A34A] border border-[#BBF7D0]">
+                            <i data-lucide="check-circle-2" class="w-3 h-3"></i> Verified
+                        </span>
+                    </div>
+                    <p class="text-[12px] text-[#64748B] truncate mt-0.5">${esc(email)}</p>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                <span class="text-[12px] text-[#64748B]">Tenancy Status</span>
+                <span class="text-[11px] font-bold text-[#D97706] bg-[#FEF3C7] px-2.5 py-0.5 rounded-full">No active flat · Standby</span>
+            </div>
+        </div>
+
+        <!-- Pending Landlord Invitations (if any) -->
+        ${pendingInvites.length > 0 ? `
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">New Flat Invitations (${pendingInvites.length})</h3>
+                <p class="dash-section-sub">A landlord has invited you to join a flat</p>
+            </div>
+        </div>
+        <div class="space-y-3">
+            ${pendingInvites.map(inv => {
+                const prop = PROPERTIES[inv.propertyId];
+                return `
+                <div class="card p-4 rounded-2xl bg-white border border-[#BFDBFE] shadow-sm space-y-3 text-left">
+                    <div class="flex items-center gap-3">
+                        <img src="${(IMG.props && IMG.props[inv.propertyId]) || 'assets/house1.jpg'}" class="w-12 h-12 rounded-xl object-cover" alt="">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[14px] font-bold text-[#0F172A] truncate">${esc(prop?.name || 'Property')}</p>
+                            <p class="text-[12px] text-[#64748B] truncate">${esc(inv.unit)} · ${esc(prop?.address || '')}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 bg-[#F8FAFC] p-2.5 rounded-xl text-[12px]">
+                        <div><span class="text-[#64748B]">Rent:</span> <strong class="text-[#0F172A]">${esc(inv.rent)}</strong></div>
+                        <div><span class="text-[#64748B]">Landlord:</span> <strong class="text-[#0F172A]">${esc(inv.landlord || 'Landlord')}</strong></div>
+                    </div>
+                    <button type="button" data-action="accept-tenant-invite" data-token="${inv.token}" class="btn-primary w-full py-3 text-[13px] font-bold flex items-center justify-center gap-1.5">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Accept &amp; Join This Flat
+                    </button>
+                </div>`;
+            }).join('')}
+        </div>` : ''}
+
+        <!-- Join with Invite Code Box -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <div>
+                <h4 class="text-[14px] font-bold text-[#0F172A]">Have an Invitation Code?</h4>
+                <p class="text-[12px] text-[#64748B] mt-0.5">Enter the code from your landlord to link your account to your new flat.</p>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" data-tenant-invite-code-input class="form-input flex-1 uppercase tracking-wider font-semibold" placeholder="e.g. INV-ABC123">
+                <button type="button" data-action="tenant-join-code" class="btn-primary px-4 py-2.5 text-[13px] font-bold shrink-0">Join Flat</button>
+            </div>
+        </div>
+
+        <!-- Share Email Note Banner -->
+        <div class="card p-4 rounded-2xl bg-[#EFF6FF] border border-[#DBEAFE] space-y-2 text-left">
+            <div class="flex items-center gap-2 text-[#1D4ED8]">
+                <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+                <span class="text-[13px] font-bold">Moving into a new flat?</span>
+            </div>
+            <p class="text-[12px] text-[#3B82F6] leading-relaxed">
+                Give your email <strong class="text-[#1E40AF]">${esc(email)}</strong> to your landlord. When they send the invite, you'll see it here and can connect with 1 click without re-uploading documents.
+            </p>
+        </div>
+
+        <!-- Rental History (Past Tenancies) -->
+        ${history.length > 0 ? `
+        <div class="dash-section-head">
+            <div>
+                <h3 class="screen-section-title">Rental History</h3>
+                <p class="dash-section-sub">Past flats and leases on your account</p>
+            </div>
+        </div>
+        <div class="space-y-2">
+            ${history.map(h => {
+                const prop = PROPERTIES[h.propertyId];
+                return `
+                <div class="card p-3 rounded-xl bg-white border border-[#E2E8F0] text-left">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[13px] font-bold text-[#0F172A]">${esc(prop?.name || h.propertyName || 'Previous Property')} · ${esc(h.unit)}</p>
+                        <span class="text-[10px] font-bold bg-[#F1F5F9] text-[#64748B] px-2 py-0.5 rounded-full">Completed</span>
+                    </div>
+                    <p class="text-[11px] text-[#64748B] mt-1">Landlord: ${esc(h.landlord || '—')} · Lease: ${esc(h.leaseStart || '—')} → ${esc(h.leaseEnd || '—')}</p>
+                    ${h.deposit ? `<p class="text-[11px] text-[#059669] font-medium mt-0.5">Deposit: ${esc(h.deposit)}</p>` : ''}
+                </div>`;
+            }).join('')}
+        </div>` : ''}
+
+        <!-- Quick Access Profile Link -->
+        <button type="button" data-go="personal-info" class="btn-secondary w-full py-3 text-[13px] font-bold">
+            <i data-lucide="user" class="w-4 h-4 mr-1.5 inline"></i> View My Profile &amp; Documents
+        </button>
+    </div>`;
+}
+
 function screenTenantDashboard() {
     if (typeof ensureDemoTenantAccount === 'function') ensureDemoTenantAccount();
     let t = getActiveTenant();
@@ -1693,7 +1808,12 @@ function screenTenantDashboard() {
             </div>
         </div>`;
     }
-    if (typeof tenantHasPropertyLink === 'function') tenantHasPropertyLink(t);
+
+    const isLinked = !t.awaitingInvite && t.propertyId != null && t.propertyId !== '' && t.unit && !!PROPERTIES[t.propertyId];
+    if (!isLinked) {
+        return renderTenantStandbyDashboard(t);
+    }
+
     const p = PROPERTIES[t.propertyId];
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t.id;
     const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tid) : null;
@@ -2463,6 +2583,22 @@ function screenTenantActiveTenancy() {
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
             </button>`).join('')}
         </div>
+        ${t?.tenancyHistory && t.tenancyHistory.length > 0 ? `
+        <p class="screen-section-title">Rental history</p>
+        <div class="space-y-2">
+            ${t.tenancyHistory.map(h => {
+                const prop = PROPERTIES[h.propertyId];
+                return `
+                <div class="card p-3.5 rounded-xl bg-white border border-[#E2E8F0] text-left">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[13px] font-bold text-[#0F172A]">${prop?.name || h.propertyName || 'Previous Property'} · ${h.unit}</p>
+                        <span class="text-[10px] font-bold bg-[#F1F5F9] text-[#64748B] px-2 py-0.5 rounded-full">Completed</span>
+                    </div>
+                    <p class="text-[11px] text-[#64748B] mt-1">Landlord: ${h.landlord || '—'} · Lease: ${h.leaseStart || '—'} → ${h.leaseEnd || '—'}</p>
+                    ${h.deposit ? `<p class="text-[11px] text-[#059669] font-medium mt-0.5">Deposit: ${h.deposit}</p>` : ''}
+                </div>`;
+            }).join('')}
+        </div>` : ''}
     </div>`;
 }
 

@@ -417,14 +417,9 @@ const getActiveTenant = () => {
 /** Tenant may have an account but is not a flat member until a landlord invite is accepted. */
 function tenantHasPropertyLink(account = getActiveTenant()) {
     if (!account) return false;
+    if (account.awaitingInvite === true || (account.propertyId == null && !account.unit)) return false;
     if (account.propertyId != null && account.propertyId !== '' && account.unit) return true;
-    // Prototype: never strand a tenant without a demo flat
-    account.propertyId = account.propertyId != null && account.propertyId !== '' ? account.propertyId : 0;
-    account.unit = account.unit || 'Flat 2A';
-    account.landlord = account.landlord || 'John Smith';
-    account.awaitingInvite = false;
-    if (typeof saveTenantData === 'function') saveTenantData();
-    return true;
+    return false;
 }
 
 function pendingInvitesForTenantEmail(email) {
@@ -1482,6 +1477,24 @@ function sendTenantInvitation() {
 
 function attachTenantAccountToInvite(account, invite) {
     if (!account || !invite) return false;
+    
+    // Archive previous active tenancy into history if changing property/unit
+    if (account.propertyId != null && account.unit && (account.propertyId !== invite.propertyId || account.unit !== invite.unit)) {
+        if (!account.tenancyHistory) account.tenancyHistory = [];
+        const prevProp = PROPERTIES[account.propertyId];
+        account.tenancyHistory.unshift({
+            propertyId: account.propertyId,
+            propertyName: prevProp?.name || 'Previous Property',
+            unit: account.unit,
+            landlord: account.landlord || 'Previous Landlord',
+            rent: account.rent || '—',
+            leaseStart: account.leaseStart || '—',
+            leaseEnd: account.leaseEnd || 'Ended',
+            endedAt: new Date().toISOString().slice(0, 10),
+            status: 'completed'
+        });
+    }
+
     const tid = typeof syncLandlordAfterActivation === 'function'
         ? syncLandlordAfterActivation(invite)
         : (typeof tenantListItemForInvite === 'function' ? tenantListItemForInvite(invite)?.id : null) ?? account.id;
@@ -1507,7 +1520,8 @@ function attachTenantAccountToInvite(account, invite) {
 
 function acceptTenantInviteForLoggedInUser(token) {
     loadTenantData();
-    const invite = tenantInviteByToken(token || STATE.tenantInviteToken);
+    const cleanToken = String(token || STATE.tenantInviteToken || '').trim().toUpperCase();
+    const invite = tenantInviteByToken(cleanToken) || (typeof TENANT_INVITATIONS !== 'undefined' ? TENANT_INVITATIONS.find(i => i.token && i.token.toUpperCase() === cleanToken) : null);
     const account = getActiveTenant();
     if (!invite) {
         toast('Invitation not found or expired');
@@ -1675,9 +1689,10 @@ function openTenantInvite(token) {
 }
 
 function tryOpenInviteFromInput() {
-    const raw = document.querySelector('[data-tenant-invite-code]')?.value?.trim() || '';
+    const el = document.querySelector('[data-tenant-invite-code]') || document.querySelector('[data-tenant-invite-code-input]');
+    const raw = el?.value?.trim() || '';
     if (!raw) {
-        toast('Paste the invitation link or code from your landlord');
+        toast('Enter or paste the invitation code from your landlord');
         return;
     }
     let token = raw;
@@ -2424,9 +2439,16 @@ function go(screen, opts = {}) {
         if (opts.propertyId !== undefined && opts.propertyId !== STATE.propertyId) STATE.unitFilter = 'all';
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
-    if (screen === 'utility-detail') {
+    if (screen === 'utility-detail' || screen === 'edit-utility' || screen === 'add-building-service') {
         if (opts.propertyId !== undefined) STATE.propertyId = opts.propertyId;
         if (opts.utilityId) STATE.utilityId = opts.utilityId;
+        if (screen === 'edit-utility' && opts.utilityId) {
+            const meta = typeof AppStore !== 'undefined' ? AppStore.meta(STATE.propertyId) : null;
+            const on = meta && typeof isBuildingServiceOn === 'function'
+                ? isBuildingServiceOn(meta, opts.utilityId)
+                : false;
+            STATE.utilityNew = opts.utilityId === 'custom-new' || (!on && !String(opts.utilityId).startsWith('custom-'));
+        }
     }
     if (screen === 'flat-detail') {
         STATE.propertyId = opts.propertyId ?? STATE.propertyId;
@@ -2530,7 +2552,7 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'utility-detail' || screen === 'add-building-service' || screen === 'edit-utility' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
     if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
@@ -2687,6 +2709,9 @@ function navigateBackFallback() {
         'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
         'property-appliance-records': 'property-detail',
         'property-utilities': 'property-detail', 'property-parking': 'property-detail',
+        'utility-detail': 'property-utilities',
+        'add-building-service': 'property-utilities',
+        'edit-utility': 'utility-detail',
         'property-info': 'property-detail', 'unit-utilities': 'flat-detail',
         'property-compliance': 'property-detail', 'property-doc-vault': 'property-detail',
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
@@ -3876,7 +3901,7 @@ const propSectionBar = (title, subtitle, detail = '') => {
     const propertyMenuKey = `property:${pid}`;
     const propertyMenuOpen = STATE.actionMenuKey === propertyMenuKey;
     return `
-<div class="prop-section-header">
+<div class="prop-section-header${propertyMenuOpen ? ' prop-section-header--menu-open' : ''}">
 <div class="prop-section-bar">
     <div class="sub-header-left">
         <button type="button" data-action="back" class="back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
@@ -3884,7 +3909,7 @@ const propSectionBar = (title, subtitle, detail = '') => {
             <h2 class="sub-header-title">${title}</h2>
         </div>
     </div>
-    <div class="prop-section-bar-actions">
+    <div class="prop-section-bar-actions${propertyMenuOpen ? ' prop-section-bar-actions--menu-open' : ''}">
         <button type="button" data-action="open-action-menu" data-menu-key="${propertyMenuKey}" class="prop-section-menu-btn action-menu-btn" aria-label="Property options" aria-expanded="${propertyMenuOpen}">
             <i data-lucide="more-vertical" class="w-5 h-5"></i>
         </button>
@@ -4426,8 +4451,10 @@ const tenantSectionContent = (tab, t) => {
                 ['Move-in', fin?.moveIn && typeof formatDisplayDate === 'function' ? formatDisplayDate(fin.moveIn) || '—' : '—'],
                 ['Lease ends', leaseEndLabel],
                 ['Deposit held', fin?.deposit || '—'],
-                ['Advance paid', fin?.advancePaid || '—'],
-            ].filter((row) => row[1] !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held', 'Advance paid'].includes(row[0])))) : ''}
+                ...(typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(fin?.deposit, fin?.advancePaid)
+                    ? [['Advance paid', fin.advancePaid]]
+                    : []),
+            ].filter((row) => row[1] !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held'].includes(row[0])))) : ''}
             ${checkoutNotes || depositReturn ? `
             <div class="card p-4 note-block-item">
                 ${depositReturn ? `<p class="note-block-label">Deposit return</p><p class="note-block-text">${depositReturn}</p>` : ''}
@@ -4496,7 +4523,9 @@ const tenantSectionContent = (tab, t) => {
                     ${stat('credit-card', 'blue', 'Last payment', pay?.lastPaymentAmount || pay?.lastPayment, pay?.lastPaymentDate && pay.lastPaymentDate !== '—' ? pay.lastPaymentDate : '')}
                     ${stat('calendar', 'purple', 'Next due', pay?.nextDueAmount || pay?.nextDue, pay?.nextDueDate && pay.nextDueDate !== '—' ? pay.nextDueDate : '')}
                     ${stat('shield', 'amber', 'Deposit held', pay?.deposit || '—')}
-                    ${stat('coins', 'green', 'Advance paid', pay?.advancePaid || '—')}
+                    ${typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(pay?.deposit, pay?.advancePaid)
+                        ? stat('coins', 'green', 'Advance paid', pay.advancePaid)
+                        : ''}
                 </div>
                 <button type="button" data-go="mark-rent-received"${unpaidInv ? ` data-iid="${unpaidInv.id}"` : ''} class="btn-primary tenant-pay-record">
                     <i data-lucide="plus" class="w-4 h-4"></i>
@@ -4669,6 +4698,7 @@ function screenChat() {
             <button data-action="back" class="back-btn shrink-0"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
             ${headerInfo}
             <div class="chat-header-actions">
+                <button type="button" data-action="clear-chat-history" class="chat-header-action" aria-label="Clear messages"><i data-lucide="eraser" class="w-[18px] h-[18px]"></i></button>
                 <button type="button" data-action="chat-options" class="chat-header-action" aria-label="Chat options"><i data-lucide="more-vertical" class="w-[18px] h-[18px]"></i></button>
             </div>
         </div>
@@ -4682,6 +4712,8 @@ function screenChat() {
             <input type="text" data-chat-input class="chat-input-field" placeholder="${inputPlaceholder}" value="${STATE.chatDraft || ''}" ${ended ? 'disabled' : ''}>
             <button type="button" data-action="send-chat" class="chat-send-btn" ${ended ? 'disabled' : ''}><i data-lucide="send" class="w-[17px] h-[17px]"></i></button>
         </div>
+        ${typeof chatMessageActionSheet === 'function' ? chatMessageActionSheet() : ''}
+        ${typeof chatOptionsActionSheet === 'function' ? chatOptionsActionSheet() : ''}
     </div>`;
 }
 
@@ -5754,7 +5786,7 @@ function screenTenantInviteSent() {
         </div>
         <div class="card p-4 space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Invitation Details</p>
-            ${[['Invite email', invite.email], ['Shown as', tenantLabel], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Tenancy dates', leaseFmt], ['Security deposit', depositFmt], ['Advance paid', advanceFmt || '—'], ['Deposit scheme', invite.depositScheme || 'MyDeposits'], ...(invite.protectionRef ? [['Protection ref', invite.protectionRef]] : []), ['Status', statusLabel]].map(([k, v]) => `
+            ${[['Invite email', invite.email], ['Shown as', tenantLabel], ['Property', p.name], ['Unit', invite.unit], ['Rent', invite.rent], ['Tenancy dates', leaseFmt], ['Security deposit', depositFmt], ...(typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(depositFmt, advanceFmt) ? [['Advance paid', advanceFmt]] : []), ['Deposit scheme', invite.depositScheme || 'MyDeposits'], ...(invite.protectionRef ? [['Protection ref', invite.protectionRef]] : []), ['Status', statusLabel]].map(([k, v]) => `
             <div class="flex justify-between text-[13px] py-1"><span class="text-[#64748B]">${k}</span><span class="font-semibold text-right">${v}</span></div>`).join('')}
         </div>
         <button type="button" data-go="tenant-invite" data-invite-token="${invite.token}" class="btn-primary w-full py-3.5 text-[14px] mt-3">Open invite link (tenant view)</button>
@@ -6327,7 +6359,7 @@ function handleDelegatedAction(e, el) {
         case 'close-chat-options':
             if (isModalBackdropMiss(e, el)) return false;
             return run(() => { if (typeof closeChatOptionsMenu === 'function') closeChatOptionsMenu(); });
-        case 'clear-chat-history': return run(() => { if (typeof clearChatHistoryForMe === 'function') clearChatHistoryForMe(); });
+        case 'clear-chat-history': return run(() => { if (typeof confirmClearChatHistory === 'function') confirmClearChatHistory(); else if (typeof clearChatHistoryForMe === 'function') clearChatHistoryForMe(); });
         case 'leave-job-chat': return run(() => { if (typeof leaveJobGroupChat === 'function') leaveJobGroupChat(); });
         case 'end-job-chat': return run(() => { if (typeof endJobGroupChat === 'function') endJobGroupChat(); });
         case 'mute-job-chat': return run(() => { if (typeof toggleJobChatMute === 'function') toggleJobChatMute(true); });
@@ -6344,12 +6376,23 @@ function handleDelegatedAction(e, el) {
         case 'toast': return run(() => toast(el.dataset.msg || 'Done'));
         case 'maint-status': return run(() => { if (typeof updateMaintStatus === 'function') updateMaintStatus(el.dataset.status); });
         case 'go-assign-contractor': return run(() => go('assign-contractor', { maintId: STATE.maintId }));
+        case 'assign-contractor': {
+            e.stopPropagation();
+            return run(() => {
+                if (typeof assignContractorToJob !== 'function') return;
+                const mid = el.dataset.mid != null && el.dataset.mid !== '' ? +el.dataset.mid : undefined;
+                assignContractorToJob(+el.dataset.cid, mid);
+            });
+        }
         case 'quick-assign-contractor': {
             e.stopPropagation();
             const mid = +el.dataset.mid;
             return run(() => go('assign-contractor', { maintId: mid }));
         }
         case 'reset-contractor-filters': return run(() => { if (typeof resetContractorFilters === 'function') resetContractorFilters(); });
+        case 'pick-building-service': return run(() => { if (typeof pickBuildingService === 'function') pickBuildingService(el.dataset.pickValue); });
+        case 'save-utility-detail': return run(() => { if (typeof saveUtilityDetail === 'function') saveUtilityDetail(); });
+        case 'remove-building-service': return run(() => { if (typeof removeBuildingService === 'function') removeBuildingService(); });
         case 'clear-maint-place-filters': return run(() => clearMaintPlaceFilters());
         case 'clear-tenant-place-filters': return run(() => clearTenantPlaceFilters());
         case 'clear-rent-receive-place-filters': return run(() => clearRentReceivePlaceFilters());
@@ -6360,10 +6403,78 @@ function handleDelegatedAction(e, el) {
         case 'toggle-rent-receive-group': return run(() => { e.stopPropagation(); if (typeof toggleRentReceiveGroup === 'function') toggleRentReceiveGroup(+el.dataset.pid); });
         case 'toggle-rent-receive-all': return run(() => { if (typeof toggleRentReceiveAll === 'function') toggleRentReceiveAll(); });
         case 'confirm-rent-received': return run(() => { if (typeof confirmMarkRentReceived === 'function') confirmMarkRentReceived(); });
-        case 'send-tenant-invite': return run(() => sendTenantInvitation());
-        case 'confirm-contractor-schedule': return run(() => { if (typeof confirmContractorSchedule === 'function') confirmContractorSchedule(); });
-        case 'save-contractor-note': return run(() => { if (typeof saveContractorNote === 'function') saveContractorNote(); });
-        case 'mark-contractor-complete': return run(() => { if (typeof markContractorJobComplete === 'function') markContractorJobComplete(); });
+        case 'open-action-menu': return run(() => {
+            e.stopPropagation();
+            const key = el.dataset.menuKey;
+            STATE.actionMenuKey = STATE.actionMenuKey === key ? null : key;
+            render();
+        });
+        case 'close-action-menu': return run(() => {
+            e.stopPropagation();
+            STATE.actionMenuKey = null;
+            render();
+        });
+        case 'action-menu-go': return run(() => {
+            e.stopPropagation();
+            STATE.actionMenuKey = null;
+            const opts = {};
+            if (el.dataset.pid !== undefined && el.dataset.pid !== '') opts.propertyId = +el.dataset.pid;
+            if (el.dataset.tid !== undefined && el.dataset.tid !== '') opts.tenantId = +el.dataset.tid;
+            if (el.dataset.unit) opts.unit = el.dataset.unit;
+            if (el.dataset.duplicateFrom) opts.duplicateFrom = el.dataset.duplicateFrom;
+            if (el.dataset.tab) opts.tab = el.dataset.tab;
+            if (el.dataset.flatTab) opts.flatTab = el.dataset.flatTab;
+            if (el.dataset.chat !== undefined && el.dataset.chat !== '') opts.chatId = +el.dataset.chat;
+            if (opts.propertyId != null) STATE.propertyId = opts.propertyId;
+            if (opts.tenantId != null) STATE.tenantId = opts.tenantId;
+            if (opts.unit) STATE.selectedUnit = opts.unit;
+            go(el.dataset.go, opts);
+        });
+        case 'action-menu-delete-property': return run(() => {
+            e.stopPropagation();
+            if (el.dataset.pid !== undefined && el.dataset.pid !== '') STATE.propertyId = +el.dataset.pid;
+            STATE.actionMenuKey = null;
+            if (typeof deleteProperty === 'function') deleteProperty();
+        });
+        case 'action-menu-delete-flat': return run(() => {
+            e.stopPropagation();
+            if (el.dataset.pid !== undefined && el.dataset.pid !== '') STATE.propertyId = +el.dataset.pid;
+            if (el.dataset.unit) STATE.selectedUnit = el.dataset.unit;
+            STATE.actionMenuKey = null;
+            if (typeof deleteFlatAction === 'function') deleteFlatAction();
+        });
+        case 'action-menu-upload-flat-photo': return run(() => {
+            e.stopPropagation();
+            if (el.dataset.pid !== undefined && el.dataset.pid !== '') STATE.propertyId = +el.dataset.pid;
+            if (el.dataset.unit) STATE.selectedUnit = el.dataset.unit;
+            STATE.actionMenuKey = null;
+            if (typeof uploadFlatPhotoAction === 'function') uploadFlatPhotoAction();
+        });
+        case 'action-menu-share-doc': return run(() => {
+            e.stopPropagation();
+            STATE.actionMenuKey = null;
+            if (el.dataset.doc !== undefined) go('share-document', { shareDocId: +el.dataset.doc });
+        });
+        case 'action-menu-edit-document': return run(() => {
+            e.stopPropagation();
+            STATE.actionMenuKey = null;
+            if (typeof editDocumentAction === 'function') editDocumentAction(+el.dataset.doc);
+        });
+        case 'action-menu-delete-document': return run(() => {
+            e.stopPropagation();
+            STATE.actionMenuKey = null;
+            if (typeof deleteDocumentAction === 'function') deleteDocumentAction(+el.dataset.doc);
+        });
+        case 'action-menu-delete-member': return run(() => {
+            e.stopPropagation();
+            STATE.actionMenuKey = null;
+            if (typeof removeMemberAction === 'function') removeMemberAction(+el.dataset.pid, el.dataset.unit, el.dataset.memberEmail, el.dataset.memberName);
+        });
+        case 'action-menu-make-lead': return run(() => {
+            e.stopPropagation();
+            STATE.actionMenuKey = null;
+            if (typeof makeLeadTenantAction === 'function') makeLeadTenantAction(+el.dataset.pid, el.dataset.unit, el.dataset.memberEmail, el.dataset.memberName);
+        });
         default: return false;
     }
 }
@@ -6639,7 +6750,7 @@ function bindEvents() {
     app.querySelectorAll('[data-action="accept-tenant-invite"]').forEach(el => {
         el.onclick = () => acceptTenantInviteForLoggedInUser(el.dataset.token);
     });
-    app.querySelectorAll('[data-action="open-invite-from-input"]').forEach(el => {
+    app.querySelectorAll('[data-action="open-invite-from-input"], [data-action="tenant-join-code"]').forEach(el => {
         el.onclick = tryOpenInviteFromInput;
     });
     app.querySelectorAll('[data-action="tenant-sign-in"]').forEach(el => {

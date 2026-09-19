@@ -1356,8 +1356,10 @@ function renderTenantTenancyDetailsCard(listItem, tenancy, fin, t) {
         ['Move-in', moveIn],
         ['Lease ends', leaseEndLabel],
         ['Deposit held', fin?.deposit || '—'],
-        ['Advance paid', fin?.advancePaid || '—'],
-    ].filter(([label, val]) => val !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held', 'Advance paid'].includes(label));
+        ...(typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(fin?.deposit, fin?.advancePaid)
+            ? [['Advance paid', fin.advancePaid]]
+            : []),
+    ].filter(([label, val]) => val !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held'].includes(label));
     if (!stats.length) return '';
     return `
     <div class="card tenant-tenancy-summary">
@@ -1404,6 +1406,19 @@ function formatMoneyField(val) {
     if (typeof val === 'string' && val.trim().startsWith('£')) return val.trim();
     const n = typeof val === 'number' ? val : parseRentAmount(val);
     return n ? formatRentAmount(n) : '—';
+}
+
+function sameMoneyAmount(a, b) {
+    const digits = (v) => String(v ?? '').replace(/[^\d]/g, '');
+    const x = digits(a);
+    const y = digits(b);
+    return !!x && x === y;
+}
+
+function shouldShowAdvancePaid(deposit, advance) {
+    if (advance == null || advance === '' || advance === '—') return false;
+    if (deposit == null || deposit === '' || deposit === '—') return true;
+    return !sameMoneyAmount(deposit, advance);
 }
 
 function getTenantFinancials(tenantId) {
@@ -1513,7 +1528,9 @@ function renderTenantDepositSection(tenantId) {
     const fin = getTenantFinancials(tenantId);
     const amounts = [];
     if (dep.deposit !== '—') amounts.push(`Deposit ${dep.deposit}`);
-    if (dep.advancePaid !== '—' && dep.advancePaid !== dep.deposit) amounts.push(`Advance ${dep.advancePaid}`);
+    if (typeof shouldShowAdvancePaid === 'function' ? shouldShowAdvancePaid(dep.deposit, dep.advancePaid) : (dep.advancePaid !== '—' && dep.advancePaid !== dep.deposit)) {
+        amounts.push(`Advance ${dep.advancePaid}`);
+    }
     const tenure = tenantMonthsSince(fin.moveIn);
     const tenantSince = tenure !== '—' ? `Tenant since ${tenure}` : null;
     const leaseEndRaw = fin.leaseEnd;
@@ -1940,7 +1957,7 @@ function tenantDepositMoveInFacts(tenantId) {
         : (leaseEndRaw || null);
     const rows = [
         dep.deposit && dep.deposit !== '—' ? ['Deposit', dep.deposit] : null,
-        dep.advancePaid && dep.advancePaid !== '—' && dep.advancePaid !== dep.deposit ? ['Advance', dep.advancePaid] : null,
+        dep.advancePaid && dep.advancePaid !== '—' && (typeof shouldShowAdvancePaid === 'function' ? shouldShowAdvancePaid(dep.deposit, dep.advancePaid) : dep.advancePaid !== dep.deposit) ? ['Advance', dep.advancePaid] : null,
         dep.moveIn && dep.moveIn !== '—' ? ['Move-in', dep.moveIn] : null,
         dep.scheme && dep.scheme !== '—' ? ['Scheme', depositSchemeSummaryLine(dep.scheme, dep.protectionRef)] : null,
         leaseEnd ? ['Lease ends', leaseEnd] : null,
@@ -5395,12 +5412,11 @@ function renderActionMenuPopover(key, items) {
 }
 
 function propertyActionMenuItems(propertyId) {
+    const isHmo = typeof isPropertyHmo === 'function' ? isPropertyHmo(propertyId) : false;
+    const unitWord = isHmo ? 'room' : 'unit';
     return [
-        { label: LANDLORD_MAINT_CREATE_LABEL, icon: 'wrench', action: 'action-menu-go', attrs: `data-go="log-maintenance" data-pid="${propertyId}"` },
-        { label: 'Send announcement', icon: 'megaphone', action: 'action-menu-go', attrs: `data-go="send-broadcast" data-pid="${propertyId}"` },
         { label: 'Edit property', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="property-info" data-pid="${propertyId}"` },
-        { label: 'Add unit', icon: 'plus', action: 'action-menu-go', attrs: `data-go="add-flat" data-pid="${propertyId}"` },
-        { label: 'View property', icon: 'eye', action: 'action-menu-go', attrs: `data-go="property-detail" data-pid="${propertyId}" data-tab="units"` },
+        { label: `Add ${unitWord}`, icon: 'plus', action: 'action-menu-go', attrs: `data-go="add-flat" data-pid="${propertyId}"` },
         { label: 'Delete property', icon: 'trash-2', action: 'action-menu-delete-property', danger: true, attrs: `data-pid="${propertyId}"` },
     ];
 }
@@ -6622,7 +6638,9 @@ function renderTenancyContextCard(tenantId) {
 function renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead) {
     const depStatus = resolveDepositStatus(tenancy.depositScheme, tenancy.protectionRef);
     const schemeLine = depositSchemeSummaryLine(tenancy.depositScheme, tenancy.protectionRef);
-    const showAdvance = tenancy.advancePaid && tenancy.advancePaid !== tenancy.deposit;
+    const showAdvance = typeof shouldShowAdvancePaid === 'function'
+        ? shouldShowAdvancePaid(tenancy.deposit, tenancy.advancePaid)
+        : (tenancy.advancePaid && tenancy.advancePaid !== tenancy.deposit);
   return `
     <section class="card tenancy-summary">
         <div class="tenancy-summary-head">
@@ -11303,7 +11321,7 @@ function renderFlatDepositContext(propertyId, unit) {
     const schemeLine = depositSchemeSummaryLine(tenancy.depositScheme, tenancy.protectionRef);
     const rows = [
         ['Deposit held', tenancy.deposit || '—'],
-        tenancy.advancePaid && tenancy.advancePaid !== tenancy.deposit ? ['Advance paid', tenancy.advancePaid] : null,
+        tenancy.advancePaid && (typeof shouldShowAdvancePaid === 'function' ? shouldShowAdvancePaid(tenancy.deposit, tenancy.advancePaid) : tenancy.advancePaid !== tenancy.deposit) ? ['Advance paid', tenancy.advancePaid] : null,
         ['Protection', depStatus],
         schemeLine !== '—' ? ['Scheme', schemeLine] : null,
     ].filter(Boolean);
@@ -13444,7 +13462,7 @@ function renderMaintAssignContractorSection(item, limit = 3) {
                 const isAssigned = item.contractor === c.name;
                 return `
             <div class="maint-v2-contractor-row card${isAssigned ? ' maint-v2-contractor-row--assigned' : ''}">
-                <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="maint-v2-contractor-main w-full text-left">
+                <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="maint-v2-contractor-main text-left">
                     <img src="${c.img}" alt="" class="maint-v2-contractor-avatar">
                     <span class="min-w-0 flex-1">
                         <span class="maint-v2-contractor-name">${escapeHtml(c.name)}</span>
@@ -13454,7 +13472,7 @@ function renderMaintAssignContractorSection(item, limit = 3) {
                 </button>
                 ${isAssigned
                     ? `<span class="maint-v2-assign-btn maint-v2-assign-btn--assigned">Assigned</span>`
-                    : `<button type="button" data-action="assign-contractor" data-cid="${c.id}" class="maint-v2-assign-btn">Assign</button>`}
+                    : `<button type="button" data-action="assign-contractor" data-cid="${c.id}" data-mid="${item.id}" class="maint-v2-assign-btn">Assign</button>`}
             </div>`;
             }).join('')}
         </div>
@@ -14051,6 +14069,19 @@ function deleteChatMessageForEveryone(msgId) {
     toast('Message deleted for everyone');
 }
 
+function confirmClearChatHistory() {
+    const c = conversation(STATE.chatId);
+    STATE.chatOptionsOpen = false;
+    if (!c?.messages?.length) {
+        toast('No messages to clear');
+        render();
+        return;
+    }
+    showConfirm('Clear messages', 'Hide this chat history on this device?', () => {
+        clearChatHistoryForMe();
+    }, { okLabel: 'Clear' });
+}
+
 function clearChatHistoryForMe() {
     const c = conversation(STATE.chatId);
     if (!c?.messages?.length) {
@@ -14160,9 +14191,14 @@ function renderChatMessageBubble(m, flipped = chatMessageFlipped(), conv = null)
     return `
     <div class="chat-bubble-wrap chat-bubble-wrap--${displayType}">
         ${showSender ? `<p class="chat-sender">${esc(m.sender)}</p>` : ''}
-        <button type="button" data-action="chat-message-menu" data-msg-id="${esc(m.id)}" class="chat-bubble-${displayType} chat-bubble-btn">
-            <p>${esc(m.text)}</p>
-        </button>
+        <div class="chat-bubble-row">
+            <button type="button" data-action="chat-message-menu" data-msg-id="${esc(m.id)}" class="chat-bubble-${displayType} chat-bubble-btn">
+                <p>${esc(m.text)}</p>
+            </button>
+            <button type="button" data-action="chat-message-menu" data-msg-id="${esc(m.id)}" class="chat-msg-more" aria-label="Message options">
+                <i data-lucide="ellipsis-vertical" class="w-4 h-4"></i>
+            </button>
+        </div>
         <span class="chat-time">${esc(timeLabel)}${displayType === 'out' ? ' · Sent' : ''}</span>
     </div>`;
 }
@@ -16344,6 +16380,10 @@ function screenInviteTenantEnhanced() {
         ? `<p class="text-[12px] text-[#64748B] mb-3">${pendingMembers.length} member${pendingMembers.length === 1 ? '' : 's'} still need an invite on this ${unitWord}.</p>`
         : '';
     let stepBody = '';
+    const existingAcc = prefill.email && typeof TENANT_ACCOUNTS !== 'undefined'
+        ? TENANT_ACCOUNTS.find(a => a.email && String(a.email).toLowerCase() === String(prefill.email).toLowerCase())
+        : null;
+
     if (step === 1) {
         stepBody = `
         ${selectedUnit ? `
@@ -16357,6 +16397,16 @@ function screenInviteTenantEnhanced() {
         </div>` : `
         <button type="button" data-go="select-unit-invite" data-pid="${STATE.propertyId}" class="btn-secondary w-full py-3 text-[13px] mb-3">Select ${unitWord}</button>`}
         ${inviteFormFieldReq('Email Address', 'email', prefill.email || '', 'email')}
+        ${existingAcc ? `
+        <div class="card p-3 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] text-[12px] flex items-center gap-2.5 mb-3">
+            <div class="w-6 h-6 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="font-bold text-[#065F46] mb-0">Registered Tenant Profile Found</p>
+                <p class="text-[11px] text-[#047857] mb-0">${escapeHtml(existingAcc.firstName || 'Tenant')} ${escapeHtml(existingAcc.lastName || '')} is registered. They can join this flat instantly with 1 tap.</p>
+            </div>
+        </div>` : ''}
         <div class="form-group">
             <label class="form-label">Personal Message</label>
             <textarea data-invite="message" class="form-input" rows="3" placeholder="Optional note in the invite email">${prefill.message || ''}</textarea>
@@ -16386,13 +16436,18 @@ function screenInviteTenantEnhanced() {
         ${inviteFormField('Protection reference', prefill.protectionRef || '', 'text', 'Optional scheme reference number', 'protectionRef')}`;
     } else {
         stepBody = `
+        ${existingAcc ? `
+        <div class="card p-3 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] text-[12px] flex items-center gap-2 mb-3">
+            <i data-lucide="user-check" class="w-4 h-4 text-[#10B981] shrink-0"></i>
+            <span>Existing verified account for <strong>${escapeHtml(existingAcc.email)}</strong> will link automatically.</span>
+        </div>` : ''}
         <div class="invite-review-card">
             <div class="invite-review-row"><span class="invite-review-label">Invite email</span><span class="invite-review-value">${prefill.email || '—'}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">${unitWordCap}</span><span class="invite-review-value">${typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(selectedUnit, STATE.propertyId) : (selectedUnit || '—')}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">Rent</span><span class="invite-review-value">${typeof formatMoneyField === 'function' ? formatMoneyField(prefill.rent || unitRent) : (prefill.rent || unitRent)}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">Lease</span><span class="invite-review-value">${prefill.leaseStart && prefill.leaseEnd ? `${typeof formatDisplayDate === 'function' ? formatDisplayDate(prefill.leaseStart) : prefill.leaseStart} → ${typeof formatDisplayDate === 'function' ? formatDisplayDate(prefill.leaseEnd) : prefill.leaseEnd}` : '—'}</span></div>
             <div class="invite-review-row"><span class="invite-review-label">Security deposit</span><span class="invite-review-value">${prefill.deposit ? (typeof formatMoneyField === 'function' ? formatMoneyField(prefill.deposit) : `£${String(prefill.deposit).replace(/[^\d]/g, '')}`) : '—'}</span></div>
-            <div class="invite-review-row"><span class="invite-review-label">Advance paid</span><span class="invite-review-value">${prefill.advancePaid ? (typeof formatMoneyField === 'function' ? formatMoneyField(prefill.advancePaid) : `£${String(prefill.advancePaid).replace(/[^\d]/g, '')}`) : '—'}</span></div>
+            ${typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(prefill.deposit, prefill.advancePaid) ? `<div class="invite-review-row"><span class="invite-review-label">Advance paid</span><span class="invite-review-value">${typeof formatMoneyField === 'function' ? formatMoneyField(prefill.advancePaid) : `£${String(prefill.advancePaid).replace(/[^\d]/g, '')}`}</span></div>` : ''}
             <div class="invite-review-row"><span class="invite-review-label">Deposit scheme</span><span class="invite-review-value">${prefill.depositScheme || 'MyDeposits'}</span></div>
             ${prefill.protectionRef ? `<div class="invite-review-row"><span class="invite-review-label">Protection ref</span><span class="invite-review-value">${prefill.protectionRef}</span></div>` : ''}
             ${prefill.message ? `<div class="invite-review-row"><span class="invite-review-label">Message</span><span class="invite-review-value">${prefill.message}</span></div>` : ''}
@@ -17126,7 +17181,7 @@ function renderAssignContractorRow(c, item, isSuggested) {
         </button>
         ${isAssigned
             ? `<span class="assign-ctr-assign-btn assign-ctr-assign-btn--assigned">Assigned</span>`
-            : `<button type="button" data-action="assign-contractor" data-cid="${c.id}" class="assign-ctr-assign-btn">Assign</button>`}
+            : `<button type="button" data-action="assign-contractor" data-cid="${c.id}" data-mid="${item.id}" class="assign-ctr-assign-btn">Assign</button>`}
     </article>`;
 }
 
@@ -17405,6 +17460,8 @@ function renderRentReceivePlaceFilters() {
     const units = propF != null ? unitsWithOutstandingInvoices(propF) : [];
     const propLabel = propF != null ? (PROPERTIES[propF]?.name || 'Property') : 'All properties';
     const scoped = propF != null || unitF;
+    const visible = rentReceiveInvoices();
+    const allSelected = visible.length && visible.every(i => STATE.rentReceiveIds.includes(i.id));
     return `
     <div class="maint-place-filters rent-receive-filters">
         <label class="maint-place-select-wrap">
@@ -17421,13 +17478,13 @@ function renderRentReceivePlaceFilters() {
             </select>
             <i data-lucide="chevron-down" class="maint-place-select-icon w-3.5 h-3.5"></i>
         </label>
+        <button type="button" data-action="toggle-rent-receive-all" class="rent-receive-select-all">${allSelected ? 'None' : 'All'}</button>
     </div>
     ${scoped ? `
     <div class="maint-place-banner">
-        <span>${escapeHtml(propLabel)}${unitF ? ` · ${escapeHtml(unitF)}` : ''} · ${rentReceiveInvoices().length} due</span>
+        <span>${escapeHtml(propLabel)}${unitF ? ` · ${escapeHtml(unitF)}` : ''} · ${visible.length} due</span>
         <button type="button" data-action="clear-rent-receive-place-filters" class="maint-place-clear">Clear</button>
-    </div>` : `
-    <p class="rent-receive-filter-hint">Choose a property and unit to narrow the list — or pick from grouped payments below.</p>`}`;
+    </div>` : ''}`;
 }
 
 function renderRentReceiveList(invoices) {
@@ -17623,7 +17680,6 @@ function screenMarkRentReceived() {
     const pending = unpaid.filter(i => i.status === 'Pending');
     const dueTotal = unpaid.reduce((s, i) => s + parseInvoiceAmount(i.amount), 0);
     const selected = rentReceiveSummary();
-    const allSelected = unpaid.length && unpaid.every(i => STATE.rentReceiveIds.includes(i.id));
     const receiveDate = STATE.rentReceiveDate || new Date().toISOString().slice(0, 10);
     const unitScoped = Boolean(STATE.rentReceiveUnitFilter);
     const backTarget = STATE.rentReturnScreen || 'financial';
@@ -17646,30 +17702,27 @@ function screenMarkRentReceived() {
                 <p class="rent-receive-summary-hint">${unpaid.length} due${overdue.length ? ` · ${overdue.length} overdue` : ''}</p>
             </div>
         </div>
-        <div class="rent-receive-list-head">
-            <p class="rent-receive-list-title">Select payments</p>
-            <button type="button" data-action="toggle-rent-receive-all" class="rent-receive-select-all">
-                ${allSelected ? 'None' : 'All'}
-            </button>
-        </div>
         ${typeof renderRentReceivePlaceFilters === 'function' ? renderRentReceivePlaceFilters() : ''}
         ${typeof renderRentReceiveList === 'function' ? renderRentReceiveList(sorted) : `<div class="rent-receive-list">${sorted.map(rentReceiveRow).join('')}</div>`}
-        <div class="rent-receive-date card">
-            <label class="form-label">Payment received on</label>
-            <input type="date" data-field="receivedDate" class="form-input" value="${receiveDate}">
+        <div class="card rent-receive-info">
+            <div class="rent-receive-info-grid">
+                <div class="form-group">
+                    <label class="form-label">Payment received on</label>
+                    <input type="date" data-field="receivedDate" class="form-input" value="${receiveDate}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">How did they pay?</label>
+                    <select data-field="paymentMethod" class="form-input form-select">
+                        ${PAYMENT_METHOD_OPTIONS.map(m => `<option value="${m.id}" ${STATE.rentPaymentMethod === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}
+                    </select>
+                </div>
+                ${selected.count === 1 ? `
+                <div class="form-group rent-receive-info-span">
+                    <label class="form-label">Amount received (optional)</label>
+                    <input type="text" data-field="receivedAmount" class="form-input" placeholder="${formatInvoiceAmount(selected.total)}" value="">
+                </div>` : ''}
+            </div>
         </div>
-        <div class="rent-receive-date card">
-            <label class="form-label">How did they pay?</label>
-            <select data-field="paymentMethod" class="form-input form-select">
-                ${PAYMENT_METHOD_OPTIONS.map(m => `<option value="${m.id}" ${STATE.rentPaymentMethod === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}
-            </select>
-        </div>
-        ${selected.count === 1 ? `
-        <div class="rent-receive-date card">
-            <label class="form-label">Amount received (optional)</label>
-            <input type="text" data-field="receivedAmount" class="form-input" placeholder="${formatInvoiceAmount(selected.total)}" value="">
-            <p class="form-helper">Leave blank to record the full invoice amount</p>
-        </div>` : ''}
     </div>
     <div class="rent-receive-bar ${selected.count ? 'rent-receive-bar--active' : ''}">
         <div class="rent-receive-bar-info">
@@ -18337,77 +18390,110 @@ const DEMO_UTILITY_PHOTOS = {
     parking: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&auto=format&fit=crop&q=80',
 };
 
+const BUILDING_SERVICES = [
+    { id: 'gas', keys: ['gas'], label: 'Gas', icon: 'flame', photoKey: 'gas' },
+    { id: 'electricity', keys: ['electricity', 'electric'], label: 'Electricity', icon: 'zap', photoKey: 'electricity' },
+    { id: 'water', keys: ['water'], label: 'Water', icon: 'droplets', photoKey: 'water' },
+    { id: 'wifi', keys: ['wifi', 'broadband'], label: 'Wi-Fi', icon: 'wifi', photoKey: 'wifi' },
+    { id: 'council', keys: ['council'], label: 'Council', icon: 'building-2', photoKey: 'council' },
+    { id: 'parking', keys: ['parking'], label: 'Parking', icon: 'car', photoKey: 'parking' },
+];
+
+function buildingServiceDef(id) {
+    return BUILDING_SERVICES.find(s => s.id === id);
+}
+
+function customBuildingServices(meta) {
+    return (meta?.utilities?.customServices || []).filter(s => s && (s.name || s.provider));
+}
+
+function buildingServiceEntry(meta, id) {
+    if (id === 'parking') {
+        const p = meta?.parking || {};
+        return { provider: p.type || '', meterNumber: p.permit || '', meterLocation: p.details || p.notes || '', phone: '' };
+    }
+    const def = buildingServiceDef(id);
+    if (!def) return null;
+    for (const key of def.keys) {
+        const entry = getUtilityEntry(meta, key);
+        if (entry) return entry;
+    }
+    return null;
+}
+
+function isBuildingServiceOn(meta, id) {
+    migrateUtilityKeys(meta);
+    if (id === 'parking') return propertyHasParking(meta) || meta.utilities?.parking != null;
+    if (id === 'council') {
+        const c = meta.utilities?.council;
+        return !!(c && (c.name || c.notes || c.phone));
+    }
+    return !!buildingServiceEntry(meta, id);
+}
+
+function nextCustomServiceId(meta) {
+    const used = customBuildingServices(meta).map(s => s.id);
+    let n = 0;
+    while (used.includes(n)) n += 1;
+    return n;
+}
+
+function buildingServiceHubCard(meta, def) {
+    const utils = meta.utilities || {};
+    const parking = meta.parking || {};
+    const info = meta.info || {};
+    const entry = buildingServiceEntry(meta, def.id) || {};
+    const photo = utils[`${def.photoKey}Photo`] || DEMO_UTILITY_PHOTOS[def.photoKey];
+    const cards = {
+        gas: {
+            sub: `${entry.provider || 'British Gas'} · MPRN ${entry.meterNumber || utils.gasNo || '84920173'}`,
+            badge: 'CP12 On File',
+        },
+        electricity: {
+            sub: `${entry.provider || 'Octopus Energy'} · MPAN ${entry.meterNumber || utils.electricityNo || '12093841'}`,
+            badge: 'EICR Verified',
+        },
+        water: {
+            sub: `${entry.provider || 'Thames Water'} · Meter ${entry.meterNumber || utils.waterNo || 'WTR-99402'}`,
+            badge: 'Stopcock Active',
+        },
+        wifi: {
+            sub: `${entry.provider || utils.broadbandSupplier || 'BT Fibre Hub 2'} · ${entry.speed || '900 Mbps'}`,
+            badge: 'Broadband Live',
+        },
+        council: {
+            sub: `${info.councilTax && info.councilTax !== '—' ? info.councilTax : 'Band D'} · ${utils.council?.name || 'Westminster City Council'}`,
+            badge: info.councilTax && info.councilTax !== '—' ? `Tax ${info.councilTax}` : 'Tax Band D',
+        },
+        parking: {
+            sub: `${parking.type || 'Off-street'} · ${parking.details || (parking.spaces ? `${parking.spaces} bay(s)` : 'Allocated bay')}`,
+            badge: parking.permit || 'Permit',
+        },
+    };
+    const extra = cards[def.id] || { sub: entry.provider || '', badge: def.label };
+    return { id: def.id, title: def.label, icon: def.icon, photo, ...extra };
+}
+
 function screenPropertyUtilitiesView() {
     const pid = STATE.propertyId ?? 0;
     const p = PROPERTIES[pid];
     const meta = AppStore.meta(pid);
-    const utils = meta.utilities || {};
-    const parking = meta.parking || {};
-    const info = meta.info || {};
+    migrateUtilityKeys(meta);
+    const gridCards = BUILDING_SERVICES
+        .filter(def => isBuildingServiceOn(meta, def.id))
+        .map(def => buildingServiceHubCard(meta, def));
+    customBuildingServices(meta).forEach(s => {
+        gridCards.push({
+            id: `custom-${s.id}`,
+            title: s.name || 'Other',
+            icon: 'plug',
+            photo: s.photo || DEMO_UTILITY_PHOTOS.water,
+            sub: [s.provider, s.meterNumber].filter(Boolean).join(' · ') || 'Custom service',
+            badge: 'Other',
+        });
+    });
 
-    const gridCards = [
-        {
-            id: 'gas',
-            title: 'Gas',
-            icon: 'flame',
-            photo: utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
-            sub: `${getUtilityEntry(meta, 'gas')?.provider || utils.gasSupplier || (typeof utils.gas === 'object' ? utils.gas?.provider : utils.gas) || 'British Gas'} · MPRN ${getUtilityEntry(meta, 'gas')?.meterNumber || utils.gasNo || '84920173'}`,
-            loc: getUtilityEntry(meta, 'gas')?.meterLocation || utils.gasLoc || 'Front exterior meter box',
-            badge: 'CP12 On File',
-        },
-        {
-            id: 'electricity',
-            title: 'Electricity',
-            icon: 'zap',
-            photo: utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
-            sub: `${getUtilityEntry(meta, 'electricity')?.provider || utils.electricitySupplier || (typeof utils.electricity === 'object' ? utils.electricity?.provider : utils.electricity) || (typeof utils.electric === 'object' ? utils.electric?.provider : utils.electric) || 'Octopus Energy'} · MPAN ${getUtilityEntry(meta, 'electricity')?.meterNumber || utils.electricityNo || '12093841'}`,
-            loc: getUtilityEntry(meta, 'electricity')?.meterLocation || utils.electricityLoc || 'Basement intake cupboard',
-            badge: 'EICR Verified',
-        },
-        {
-            id: 'water',
-            title: 'Water',
-            icon: 'droplets',
-            photo: utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
-            sub: `${getUtilityEntry(meta, 'water')?.provider || utils.waterSupplier || (typeof utils.water === 'object' ? utils.water?.provider : utils.water) || 'Thames Water'} · Meter ${getUtilityEntry(meta, 'water')?.meterNumber || utils.waterNo || 'WTR-99402'}`,
-            loc: getUtilityEntry(meta, 'water')?.meterLocation || utils.waterLoc || 'Kitchen sink undercupboard',
-            badge: 'Stopcock Active',
-        },
-        {
-            id: 'wifi',
-            title: 'Wi-Fi',
-            icon: 'wifi',
-            photo: utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
-            sub: `${getUtilityEntry(meta, 'wifi')?.provider || utils.broadbandSupplier || (typeof utils.wifi === 'object' ? utils.wifi?.provider : utils.wifi) || (typeof utils.broadband === 'object' ? utils.broadband?.provider : utils.broadband) || 'BT Fibre Hub 2'} · 900 Mbps`,
-            loc: getUtilityEntry(meta, 'wifi')?.meterLocation || utils.routerLoc || 'Main hallway intake',
-            badge: 'Broadband Live',
-        },
-        {
-            id: 'council',
-            title: 'Council',
-            icon: 'building-2',
-            photo: DEMO_UTILITY_PHOTOS.council,
-            sub: `${info.councilTax ? `Band ${info.councilTax}` : 'Band D'} · ${utils.council?.name || (typeof utils.council === 'string' ? utils.council : '') || 'Camden Council'}`,
-            loc: 'Local Authority',
-            badge: info.councilTax ? `Tax Band ${info.councilTax}` : 'Tax Band D',
-        },
-        {
-            id: 'parking',
-            title: 'Parking',
-            icon: 'car',
-            photo: DEMO_UTILITY_PHOTOS.parking,
-            sub: `${parking.type || 'Off-street'} · ${parking.details || (parking.bay ? `Bay #${parking.bay}` : (parking.spaces ? `${parking.spaces} Allocated Bay(s)` : 'Allocated Bay #12'))}`,
-            loc: 'Parking Bay',
-            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'Permit LB-4421',
-        },
-    ];
-
-    const editBtn = `<button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="btn-primary building-svc-edit">
-        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-        <span>Edit</span>
-    </button>`;
-
-    return `${topBar('Building Services & Meters', { back: true, sub: `${p?.name || ''} · Whole building & meters`, rightBtn: editBtn })}
+    return `${topBar('Building Services & Meters', { back: true, sub: `${p?.name || ''} · Whole building` })}
     <div class="screen-content screen-enter building-svc-page text-left">
         <div class="building-svc-grid">
             ${gridCards.map(c => `
@@ -18423,6 +18509,10 @@ function screenPropertyUtilitiesView() {
                 </div>
                 <span class="building-svc-sub">${escapeHtml(c.sub)}</span>
             </button>`).join('')}
+            <button type="button" data-go="add-building-service" data-pid="${pid}" class="card building-svc-card building-svc-card--add">
+                <span class="building-svc-add-icon"><i data-lucide="plus" class="w-5 h-5"></i></span>
+                <span class="building-svc-title">Add service</span>
+            </button>
         </div>
     </div>`;
 }
@@ -18518,8 +18608,8 @@ function screenUtilityDetail() {
         },
     };
 
-    const d = detailsMap[utilityId] || detailsMap.electricity;
-    const editBtn = `<button type="button" data-go="edit-property-utilities" data-pid="${pid}" class="btn-primary building-svc-edit">
+    const d = detailsMap[utilityId] || (String(utilityId).startsWith('custom-') ? customUtilityDetail(meta, utilityId) : detailsMap.electricity);
+    const editBtn = `<button type="button" data-go="edit-utility" data-utility-id="${utilityId}" data-pid="${pid}" class="btn-primary building-svc-edit">
         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
         <span>Edit</span>
     </button>`;
@@ -18540,8 +18630,135 @@ function screenUtilityDetail() {
     </div>`;
 }
 
+function customUtilityDetail(meta, utilityId) {
+    const idx = +String(utilityId).replace('custom-', '');
+    const s = customBuildingServices(meta).find(x => x.id === idx) || {};
+    return {
+        title: s.name || 'Other',
+        photo: s.photo || DEMO_UTILITY_PHOTOS.water,
+        badge: 'Other',
+        rows: [
+            ['Name', s.name || 'Other'],
+            ['Provider', s.provider || ''],
+            ['Account / meter', s.meterNumber || ''],
+            ['Location', s.meterLocation || ''],
+            ['Contact', s.phone || ''],
+            ['Notes', s.notes || ''],
+        ].filter(([, val]) => val),
+    };
+}
+
 function openUtilityDetailModal(utilityId) {
     go('utility-detail', { utilityId, propertyId: STATE.propertyId });
+}
+
+function availableBuildingServices(meta) {
+    migrateUtilityKeys(meta);
+    return BUILDING_SERVICES.filter(s => !isBuildingServiceOn(meta, s.id));
+}
+
+function screenAddBuildingService() {
+    const pid = STATE.propertyId ?? 0;
+    const p = PROPERTIES[pid];
+    const meta = AppStore.meta(pid);
+    const available = availableBuildingServices(meta);
+    const picks = [...available, { id: 'custom-new', label: 'Other', icon: 'plus-circle' }];
+    return `${topBar('Add service', { back: true, sub: p?.name || '' })}
+    <div class="screen-content screen-enter">
+        <div class="feature-pick-section card p-4">
+            ${renderFeaturePickGrid(picks, {
+                isActive: () => false,
+                action: 'pick-building-service',
+                valueKey: 'id',
+                labelKey: 'label',
+            })}
+        </div>
+    </div>`;
+}
+
+function screenEditUtility() {
+    const pid = STATE.propertyId ?? 0;
+    const p = PROPERTIES[pid];
+    const meta = AppStore.meta(pid);
+    migrateUtilityKeys(meta);
+    const id = STATE.utilityId || 'gas';
+    const isNew = !!STATE.utilityNew;
+    const title = editUtilityTitle(id);
+    return `${topBar(title, { back: true, sub: p?.name || '' })}
+    <div class="screen-content screen-enter">
+        <div class="card p-4">${renderUtilityEditFields(meta, id)}</div>
+        <button type="button" data-action="save-utility-detail" class="btn-primary w-full py-3.5 text-[14px] mt-3">Save Changes</button>
+        ${isNew ? '' : `<button type="button" data-action="remove-building-service" class="maint-cancel-link mt-2">Remove service</button>`}
+    </div>`;
+}
+
+function editUtilityTitle(id) {
+    if (id === 'custom-new' || String(id).startsWith('custom-')) return 'Edit other info';
+    const def = buildingServiceDef(id);
+    return def ? `Edit ${def.label} info` : 'Edit service';
+}
+
+function renderUtilityEditFields(meta, id) {
+    const utils = meta.utilities || {};
+    const parking = meta.parking || {};
+    const info = meta.info || {};
+    const entry = buildingServiceEntry(meta, id) || {};
+    const field = (label, key, value, extra = '') => `
+        <div class="form-group">
+            <label class="form-label">${label}</label>
+            <input data-field="${key}" class="form-input" value="${escapeHtml(value || '')}" ${extra}>
+        </div>`;
+    const area = (label, key, value, ph) => `
+        <div class="form-group">
+            <label class="form-label">${label}</label>
+            <textarea data-field="${key}" class="form-input" rows="2" placeholder="${ph || ''}">${escapeHtml(value || '')}</textarea>
+        </div>`;
+
+    if (id === 'council') {
+        const council = utils.council || {};
+        return `
+            ${field('Authority', 'util_council_name', council.name, 'placeholder="e.g. Westminster City Council"')}
+            ${formSelectField('Council tax band', 'info_council', COUNCIL_TAX_BAND_OPTIONS, info.councilTax, { blankLabel: 'Select band' })}
+            ${field('Reference', 'util_council_notes', /^band\s/i.test(council.notes || '') ? '' : council.notes, 'placeholder="Account reference"')}
+            ${field('Contact', 'util_council_phone', council.phone, 'placeholder="020 7641 6000" type="tel"')}`;
+    }
+    if (id === 'parking') {
+        return `
+            ${field('Type', 'park_type', parking.type, 'placeholder="e.g. Off-street"')}
+            ${field('Space', 'park_details', parking.details, 'placeholder="e.g. Bay 12"')}
+            ${field('Permit', 'park_permit', parking.permit, 'placeholder="e.g. LB-4421"')}
+            ${field('Spaces', 'park_spaces', parking.spaces != null ? parking.spaces : '', 'type="number" min="0"')}`;
+    }
+    if (id === 'wifi') {
+        return `
+            ${field('Provider', 'util_wifi_provider', entry.provider || utils.broadbandSupplier, 'placeholder="e.g. BT"')}
+            ${field('Network', 'util_wifi_ssid', utils.wifiSsid || entry.ssid, 'placeholder="Network name"')}
+            ${field('Password', 'util_wifi_password', utils.wifiPassword || entry.password, 'placeholder="Wi-Fi password"')}
+            ${field('Router location', 'util_wifi_location', entry.meterLocation || utils.routerLoc, 'placeholder="e.g. Hallway"')}
+            ${field('Support', 'util_wifi_phone', entry.phone, 'placeholder="0800 800 150" type="tel"')}`;
+    }
+    if (id === 'custom-new' || String(id).startsWith('custom-')) {
+        const idx = id === 'custom-new' ? null : +String(id).replace('custom-', '');
+        const s = idx == null ? {} : (customBuildingServices(meta).find(x => x.id === idx) || {});
+        return `
+            ${field('Name', 'util_custom_name', s.name, 'placeholder="e.g. Communal heat"')}
+            ${field('Provider', 'util_custom_provider', s.provider, 'placeholder="Supplier"')}
+            ${field('Account / meter', 'util_custom_meter', s.meterNumber, '')}
+            ${field('Location', 'util_custom_location', s.meterLocation, '')}
+            ${field('Contact', 'util_custom_phone', s.phone, 'type="tel"')}
+            ${area('Notes', 'util_custom_notes', s.notes, '')}`;
+    }
+    const storeKey = id === 'electricity' ? 'electric' : id;
+    const meterLabel = id === 'gas' ? 'MPRN' : id === 'electricity' ? 'MPAN' : 'Meter / account';
+    const locLabel = id === 'water' ? 'Stopcock' : 'Meter location';
+    return `
+        ${field('Supplier', `util_${storeKey}_provider`, entry.provider, `placeholder="${utilityProviderPlaceholder(storeKey)}"`)}
+        ${field(meterLabel, `util_${storeKey}_meter`, entry.meterNumber, '')}
+        ${field(locLabel, `util_${storeKey}_location`, entry.meterLocation, '')}
+        ${id === 'gas' ? field('Shut-off', `util_${storeKey}_shutoff`, entry.shutOff, 'placeholder="e.g. Lever beside meter"') : ''}
+        ${id === 'electricity' ? field('Consumer unit', `util_${storeKey}_consumer`, entry.consumerUnit, 'placeholder="e.g. Hallway cupboard"') : ''}
+        ${field('Helpline', `util_${storeKey}_phone`, entry.phone, 'type="tel"')}
+        <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Meter picture', `util_${storeKey}_picture`, entry.meterPicture || '') : ''}</div>`;
 }
 
 function screenPropertyDetailsEdit(section) {
@@ -19356,6 +19573,32 @@ function saveCheckout() {
             .forEach(i => { i.status = 'cancelled'; });
         syncPropertyStatus(listItem.propertyId);
     }
+    // Update matching persistent tenant account
+    const tenantEmail = t?.email || listItem?.email;
+    let tenantAcc = typeof tenantAccountByEmail === 'function' ? tenantAccountByEmail(tenantEmail) : null;
+    if (!tenantAcc && typeof TENANT_ACCOUNTS !== 'undefined' && STATE.tenantId != null) {
+        tenantAcc = TENANT_ACCOUNTS.find(a => a.id === STATE.tenantId || String(a.id) === String(STATE.tenantId));
+    }
+    if (tenantAcc) {
+        if (!tenantAcc.tenancyHistory) tenantAcc.tenancyHistory = [];
+        const propObj = PROPERTIES[listItem?.propertyId];
+        tenantAcc.tenancyHistory.unshift({
+            propertyId: listItem?.propertyId,
+            propertyName: propObj?.name || 'Previous Property',
+            unit: listItem?.unit || tenantAcc.unit,
+            landlord: `${LANDLORD_USER.firstName} ${LANDLORD_USER.lastName}`,
+            rent: listItem?.rent || tenantAcc.rent,
+            leaseStart: tenantAcc.leaseStart || listItem?.leaseStart || '—',
+            leaseEnd: checkoutDate,
+            checkoutDate: checkoutDate,
+            deposit: deposit,
+            status: 'completed'
+        });
+        tenantAcc.awaitingInvite = true;
+        tenantAcc.propertyId = null;
+        tenantAcc.unit = null;
+        if (typeof saveTenantData === 'function') saveTenantData();
+    }
     STATE.checkoutPhotos = [];
     STATE.checkoutMeterPhotos = [];
     withLoading(() => { syncSmartReminders(); AppStore.save(); toast('Check-out completed'); go('tenants'); });
@@ -19830,10 +20073,21 @@ function screenTenantEditNote() {
     </div>`;
 }
 
-function assignContractorToJob(cid) {
-    const item = maintItem(STATE.assignMaintId ?? STATE.maintId);
-    const c = CONTRACTORS[cid];
-    if (!item || !c) return;
+function assignContractorToJob(cid, mid) {
+    const jobId = mid != null && !Number.isNaN(+mid)
+        ? +mid
+        : +(STATE.screen === 'assign-contractor'
+            ? (STATE.assignMaintId ?? STATE.maintId)
+            : (STATE.maintId ?? STATE.assignMaintId));
+    const item = (typeof MAINTENANCE_ITEMS !== 'undefined' ? MAINTENANCE_ITEMS : []).find(m => m.id === jobId)
+        || (typeof maintItem === 'function' ? maintItem(jobId) : null);
+    const c = CONTRACTORS.find(x => x.id === +cid);
+    if (!item || !c) {
+        toast('Could not assign contractor');
+        return;
+    }
+    STATE.maintId = item.id;
+    STATE.assignMaintId = item.id;
     ensureMaintPaidBy(item);
     const tenant = getMaintTenantForItem(item);
     item.contractor = c.name;
@@ -20279,6 +20533,116 @@ function toggleUtilityType(key) {
     go('edit-property-utilities', { propertyId: STATE.propertyId });
 }
 
+function pickBuildingService(id) {
+    STATE.utilityId = id;
+    STATE.utilityNew = true;
+    go('edit-utility', { utilityId: id, propertyId: STATE.propertyId });
+}
+
+function saveUtilityDetail() {
+    const meta = AppStore.meta(STATE.propertyId);
+    if (!meta.utilities) meta.utilities = {};
+    migrateUtilityKeys(meta);
+    let id = STATE.utilityId || 'gas';
+
+    if (id === 'parking') {
+        if (!meta.parking) meta.parking = {};
+        meta.parking.type = fieldVal('park_type') || 'Off-street';
+        meta.parking.details = fieldVal('park_details');
+        meta.parking.permit = fieldVal('park_permit');
+        const spaces = fieldVal('park_spaces');
+        meta.parking.spaces = spaces === '' ? (meta.parking.spaces || 0) : (+spaces || 0);
+        meta.utilities.parking = { provider: meta.parking.type };
+    } else if (id === 'council') {
+        if (!meta.info) meta.info = {};
+        const band = fieldVal('info_council');
+        if (band) meta.info.councilTax = band;
+        meta.utilities.council = {
+            name: fieldVal('util_council_name'),
+            notes: fieldVal('util_council_notes'),
+            phone: fieldVal('util_council_phone'),
+        };
+    } else if (id === 'wifi') {
+        const wifi = {
+            provider: fieldVal('util_wifi_provider'),
+            ssid: fieldVal('util_wifi_ssid'),
+            password: fieldVal('util_wifi_password'),
+            meterLocation: fieldVal('util_wifi_location'),
+            phone: fieldVal('util_wifi_phone'),
+        };
+        meta.utilities.wifi = wifi;
+        meta.utilities.wifiSsid = wifi.ssid;
+        meta.utilities.wifiPassword = wifi.password;
+        meta.utilities.routerLoc = wifi.meterLocation;
+    } else if (id === 'custom-new' || String(id).startsWith('custom-')) {
+        if (!meta.utilities.customServices) meta.utilities.customServices = [];
+        const rec = {
+            name: fieldVal('util_custom_name').trim(),
+            provider: fieldVal('util_custom_provider'),
+            meterNumber: fieldVal('util_custom_meter'),
+            meterLocation: fieldVal('util_custom_location'),
+            phone: fieldVal('util_custom_phone'),
+            notes: fieldVal('util_custom_notes'),
+        };
+        if (!rec.name && !rec.provider) {
+            toast('Add a name or provider');
+            return;
+        }
+        if (id === 'custom-new') {
+            rec.id = nextCustomServiceId(meta);
+            meta.utilities.customServices.push(rec);
+            id = `custom-${rec.id}`;
+        } else {
+            const idx = +String(id).replace('custom-', '');
+            const i = meta.utilities.customServices.findIndex(s => s.id === idx);
+            if (i >= 0) meta.utilities.customServices[i] = { ...meta.utilities.customServices[i], ...rec, id: idx };
+            else meta.utilities.customServices.push({ ...rec, id: idx });
+        }
+        STATE.utilityId = id;
+    } else {
+        const storeKey = id === 'electricity' ? 'electric' : id;
+        meta.utilities[storeKey] = {
+            provider: fieldVal(`util_${storeKey}_provider`),
+            meterNumber: fieldVal(`util_${storeKey}_meter`),
+            meterLocation: fieldVal(`util_${storeKey}_location`),
+            phone: fieldVal(`util_${storeKey}_phone`),
+            meterPicture: fieldVal(`util_${storeKey}_picture`),
+            shutOff: fieldVal(`util_${storeKey}_shutoff`),
+            consumerUnit: fieldVal(`util_${storeKey}_consumer`),
+        };
+        if (id === 'electricity') meta.utilities.electricity = meta.utilities.electric;
+    }
+    STATE.utilityNew = false;
+    AppStore.save();
+    toast('Saved');
+    go('utility-detail', { utilityId: id, propertyId: STATE.propertyId });
+}
+
+function removeBuildingService() {
+    const id = STATE.utilityId;
+    const label = buildingServiceDef(id)?.label || 'This service';
+    const doRemove = () => {
+        const meta = AppStore.meta(STATE.propertyId);
+        if (!meta.utilities) meta.utilities = {};
+        if (id === 'parking') {
+            meta.parking = {};
+            delete meta.utilities.parking;
+        } else if (id === 'council') {
+            delete meta.utilities.council;
+        } else if (String(id).startsWith('custom-')) {
+            const idx = +String(id).replace('custom-', '');
+            meta.utilities.customServices = customBuildingServices(meta).filter(s => s.id !== idx);
+        } else {
+            const def = buildingServiceDef(id);
+            (def?.keys || [id]).forEach(k => delete meta.utilities[k]);
+        }
+        AppStore.save();
+        toast(`${label} removed`);
+        go('property-utilities', { propertyId: STATE.propertyId });
+    };
+    showConfirm('Remove service', `Remove ${label.toLowerCase()} from this building?`, doRemove, { okLabel: 'Remove', danger: true });
+}
+
 function removeApplianceRow(idx) {
     const meta = AppStore.meta(STATE.propertyId);
     captureApplianceDraftFromForm(meta);
@@ -20662,7 +21026,7 @@ const FEATURE_SCREENS = [
     'broadcast-notices', 'send-broadcast', 'broadcast-detail',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
-    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-appliance-records', 'property-utilities', 'property-parking', 'property-info', 'property-compliance', 'property-doc-vault', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'edit-flat-keys', 'tenancy-detail', 'edit-tenancy-deposit',
+    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-appliance-records', 'property-utilities', 'utility-detail', 'add-building-service', 'edit-utility', 'property-parking', 'property-info', 'property-compliance', 'property-doc-vault', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'edit-flat-keys', 'tenancy-detail', 'edit-tenancy-deposit',
     'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'select-unit-invite', 'global-search', 'contractors', 'invite-contractor', 'contractor-invite-sent', 'inspection-detail',
 ];
 
@@ -20694,6 +21058,8 @@ Object.assign(SCREEN_MAP, {
     'edit-property-alarms': () => screenPropertyDetailsEdit('alarms'),
     'property-utilities': screenPropertyUtilitiesView,
     'utility-detail': screenUtilityDetail,
+    'add-building-service': screenAddBuildingService,
+    'edit-utility': screenEditUtility,
     'edit-property-utilities': () => screenPropertyDetailsEdit('utilities'),
     'property-parking': () => screenPropertyDetailsEdit('parking'),
     'property-info': () => screenPropertyDetailsEdit('info'),
@@ -20761,6 +21127,9 @@ const FEATURE_BACK_MAP = {
     'property-appliances': 'property-detail',
     'property-appliance-records': 'property-detail',
     'property-utilities': 'property-detail',
+    'utility-detail': 'property-utilities',
+    'add-building-service': 'property-utilities',
+    'edit-utility': 'utility-detail',
     'property-parking': 'property-detail',
     'property-info': 'property-detail',
     'property-flat-documents': 'property-detail',
@@ -20826,13 +21195,6 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="save-checkout"]').forEach(el => { el.onclick = saveCheckout; });
     app.querySelectorAll('[data-action="save-inspection"]').forEach(el => { el.onclick = saveInspection; });
     app.querySelectorAll('[data-action="save-invoice"]').forEach(el => { el.onclick = saveCreateInvoice; });
-    app.querySelectorAll('[data-action="assign-contractor"]').forEach(el => {
-        el.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            assignContractorToJob(+el.dataset.cid);
-        };
-    });
     app.querySelectorAll('[data-action="pay-contractor"]').forEach(el => {
         el.onclick = () => payContractorInvoice(+el.dataset.cid);
     });
@@ -20931,6 +21293,19 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="toggle-utility"]').forEach(el => {
         el.onclick = () => toggleUtilityType(el.dataset.pickValue);
+    });
+    app.querySelectorAll('[data-action="pick-building-service"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            pickBuildingService(el.dataset.pickValue);
+        };
+    });
+    app.querySelectorAll('[data-action="save-utility-detail"]').forEach(el => {
+        el.onclick = saveUtilityDetail;
+    });
+    app.querySelectorAll('[data-action="remove-building-service"]').forEach(el => {
+        el.onclick = removeBuildingService;
     });
     app.querySelectorAll('[data-action="remove-appliance"]').forEach(el => {
         el.onclick = () => removeApplianceRow(+el.dataset.appIdx);

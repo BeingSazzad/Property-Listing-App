@@ -926,8 +926,12 @@
         .quick-action-circle { width: 48px; height: 48px; border-radius: 50%; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; }
         .quick-action span { font-size: 11px; font-weight: 600; color: #475569; }
         .prop-section-header {
-            position: sticky; top: 0; z-index: 10;
+            position: sticky; top: 0; z-index: 20;
             background: #fff;
+        }
+        .prop-section-header--menu-open,
+        .prop-section-header:has(.action-menu-popover) {
+            z-index: 55;
         }
         .prop-section-bar {
             display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -936,6 +940,10 @@
         }
         .prop-section-bar-actions {
             position: relative; flex-shrink: 0;
+        }
+        .prop-section-bar-actions--menu-open,
+        .prop-section-bar-actions:has(.action-menu-popover) {
+            z-index: 60;
         }
         .prop-section-menu-btn {
             width: 36px; height: 36px; border-radius: 10px;
@@ -1267,17 +1275,19 @@
             background: #EFF6FF; color: #2563EB;
         }
         .action-menu-popover, .prop-card-menu-popover {
-            position: absolute; top: calc(100% + 4px); right: 0; z-index: 52;
+            position: absolute; top: calc(100% + 4px); right: 0; z-index: 60;
             min-width: 176px; padding: 6px;
             background: #fff; border: 1px solid #E2E8F0;
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(15,23,42,.12);
+            pointer-events: auto;
         }
         .action-menu-item, .prop-card-menu-item {
             display: flex; align-items: center; gap: 10px;
             width: 100%; padding: 10px 12px; border: none; border-radius: 8px;
             background: transparent; text-align: left;
             font-size: 13px; font-weight: 600; color: #0F172A; cursor: pointer;
+            pointer-events: auto;
         }
         .action-menu-item:active, .prop-card-menu-item:active { background: #F8FAFC; }
         .action-menu-item--danger, .prop-card-menu-item--danger { color: #DC2626; }
@@ -1293,9 +1303,11 @@
         .tenant-row-wrap--menu-open,
         .flat-detail-menu-slot--menu-open,
         .tenant-profile-menu-slot--open,
-        .tenant-note-card--menu-open {
+        .tenant-note-card--menu-open,
+        .prop-section-bar-actions--menu-open,
+        .prop-section-header--menu-open {
             position: relative;
-            z-index: 50;
+            z-index: 55;
         }
         .prop-card-v2-top {
             display: flex; gap: 12px; align-items: flex-start;
@@ -4542,7 +4554,7 @@
             border: none; background: transparent; cursor: pointer; padding: 0; text-align: left;
         }
         .chat-header-info--btn:active { opacity: 0.85; }
-        .chat-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .chat-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; z-index: 2; }
         .chat-header-avatar { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
         .chat-header-avatar--group {
             display: flex; align-items: center; justify-content: center;
@@ -4552,7 +4564,7 @@
             width: 36px; height: 36px; border-radius: 10px;
             background: var(--color-bg); border: 1px solid #E2E8F0;
             display: flex; align-items: center; justify-content: center;
-            color: #64748B; cursor: pointer; flex-shrink: 0;
+            color: #0F172A; cursor: pointer; flex-shrink: 0;
         }
         .chat-screen .screen-body-inner {
             flex: 1; min-height: 0; overflow-y: auto;
@@ -4608,6 +4620,14 @@
             display: block; width: fit-content; max-width: 100%;
         }
         .chat-bubble-btn:active { opacity: 0.92; }
+        .chat-bubble-row { display: flex; align-items: flex-end; gap: 2px; max-width: 100%; }
+        .chat-bubble-wrap--out .chat-bubble-row { flex-direction: row-reverse; }
+        .chat-msg-more {
+            width: 28px; height: 28px; border: none; background: transparent;
+            color: #94A3B8; cursor: pointer; flex-shrink: 0; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .chat-msg-more:active { color: #0F172A; }
         .chat-bubble--deleted {
             opacity: 0.85; background: #F1F5F9 !important; color: #94A3B8 !important;
             box-shadow: none !important; border: 1px dashed #E2E8F0;
@@ -5291,7 +5311,9 @@
         .fin-history-entry-sub { font-size: 12px; color: #64748B; margin: 2px 0 0; }
         .fin-history-entry-chevron { color: #CBD5E1; flex-shrink: 0; }
 
-        .rent-receive-filters { margin-bottom: 10px; }
+        .rent-receive-filters {
+            grid-template-columns: 1fr 1fr auto; align-items: center; margin-bottom: 10px;
+        }
         .rent-receive-filter-hint {
             font-size: 12px; color: #64748B; margin: 0 0 12px; line-height: 1.45;
         }
@@ -8460,6 +8482,20 @@
             display: block; font-size: 11px; font-weight: 500; color: #64748B;
             line-height: 1.4; margin-top: 2px;
         }
+        .building-svc-card--add {
+            box-shadow: none;
+            min-height: 168px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #F8FAFC;
+            border: 1.5px dashed #CBD5E1;
+        }
+        .building-svc-add-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #EFF6FF; color: #2563EB;
+            display: flex; align-items: center; justify-content: center;
+        }
         .building-svc-edit {
             min-height: 32px;
             padding: 6px 12px !important;
@@ -9537,6 +9573,7 @@
         .maint-v2-assign-btn {
             border: none; background: #2563EB; color: #fff;
             font-size: 11px; font-weight: 700; padding: 8px 12px; border-radius: 8px; cursor: pointer; flex-shrink: 0; margin-right: 10px;
+            position: relative; z-index: 1;
         }
         .maint-v2-assign-btn--assigned {
             background: #DCFCE7; color: #16A34A; cursor: default; pointer-events: none;
@@ -10837,6 +10874,16 @@
         .rent-receive-list-title { font-size: 12px; font-weight: 700; color: var(--color-text); margin: 0; }
         .rent-receive-page--compact .rent-receive-row { padding: 10px 12px; gap: 10px; }
         .rent-receive-date--compact { padding: 10px 12px; }
+        .rent-receive-info { padding: 12px; margin-top: 4px; }
+        .rent-receive-info-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+        }
+        .rent-receive-info-grid .form-group { margin-bottom: 0; min-width: 0; }
+        .rent-receive-info-span { grid-column: 1 / -1; }
+        .rent-receive-info-check {
+            grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;
+            margin: 0; font-size: 13px; color: #475569;
+        }
         .rent-receive-bar--compact { justify-content: stretch; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); }
         .rent-receive-bar-btn--full { flex: 1; width: 100%; }
         /* Payment reminder */
@@ -10983,10 +11030,10 @@
 </head>
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=344"></script>
-    <script src="landlord_hq_contractor.js?v=344"></script>
-    <script src="landlord_hq_features.js?v=344"></script>
-    <script src="landlord_hq_product.js?v=344"></script>
+    <script src="landlord_hq_screens.js?v=354"></script>
+    <script src="landlord_hq_contractor.js?v=354"></script>
+    <script src="landlord_hq_features.js?v=354"></script>
+    <script src="landlord_hq_product.js?v=354"></script>
     <script>
     (function () {
         function showBootError(msg) {

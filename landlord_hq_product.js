@@ -983,7 +983,6 @@ function screenMarkRentReceivedProduct() {
     const overdue = unpaid.filter(i => i.status === 'Overdue');
     const pending = unpaid.filter(i => i.status === 'Pending');
     const selected = rentReceiveSummary();
-    const allSelected = unpaid.length && unpaid.every(i => STATE.rentReceiveIds.includes(i.id));
     const receiveDate = STATE.rentReceiveDate || new Date().toISOString().slice(0, 10);
     const unitScoped = Boolean(STATE.rentReceiveUnitFilter);
     const backTarget = STATE.rentReturnScreen || 'financial';
@@ -1012,39 +1011,38 @@ function screenMarkRentReceivedProduct() {
                 <span class="rent-summary-triple-val">${summary.selectedCount} of ${summary.dueCount}</span>
             </div>
         </div>
-        <div class="rent-receive-list-head">
-            <p class="rent-receive-list-title">Select payments</p>
-            <button type="button" data-action="toggle-rent-receive-all" class="rent-receive-select-all">${allSelected ? 'None' : 'All'}</button>
-        </div>
         ${typeof renderRentReceivePlaceFilters === 'function' ? renderRentReceivePlaceFilters() : ''}
         ${typeof renderRentReceiveList === 'function' ? renderRentReceiveList(sorted) : `<div class="rent-receive-list">${sorted.map(rentReceiveRow).join('')}</div>`}
-        <div class="rent-receive-date card rent-receive-date--compact">
-            <label class="form-label">Payment received on</label>
-            <input type="date" data-field="receivedDate" class="form-input" value="${receiveDate}">
+        <div class="card rent-receive-info">
+            <div class="rent-receive-info-grid">
+                <div class="form-group">
+                    <label class="form-label">Payment received on</label>
+                    <input type="date" data-field="receivedDate" class="form-input" value="${receiveDate}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment method</label>
+                    <select data-field="paymentMethod" class="form-input form-select">
+                        ${OFFLINE_PAYMENT_METHODS.map(m => `<option value="${m.id}" ${STATE.rentPaymentMethod === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group${selected.count === 1 ? '' : ' rent-receive-info-span'}">
+                    <label class="form-label">Reference number (optional)</label>
+                    <input type="text" data-field="paymentReference" class="form-input" placeholder="e.g. BACS ref, cheque #">
+                </div>
+                ${selected.count === 1 ? `
+                <div class="form-group">
+                    <label class="form-label">Amount received (optional)</label>
+                    <input type="text" data-field="receivedAmount" class="form-input" placeholder="${formatInvoiceAmount(selected.total)}">
+                </div>` : ''}
+                <div class="form-group rent-receive-info-span">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea data-field="paymentNotes" class="form-input" rows="2" placeholder="Any notes about this payment"></textarea>
+                </div>
+                <label class="rent-receive-info-check">
+                    <input type="checkbox" data-field="receiptSent" class="accent-[#2563EB]"> Receipt sent to tenant
+                </label>
+            </div>
         </div>
-        <div class="rent-receive-date card rent-receive-date--compact">
-            <label class="form-label">Payment method</label>
-            <select data-field="paymentMethod" class="form-input form-select">
-                ${OFFLINE_PAYMENT_METHODS.map(m => `<option value="${m.id}" ${STATE.rentPaymentMethod === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}
-            </select>
-        </div>
-        <div class="rent-receive-date card rent-receive-date--compact">
-            <label class="form-label">Reference number (optional)</label>
-            <input type="text" data-field="paymentReference" class="form-input" placeholder="e.g. BACS ref, cheque #">
-        </div>
-        <div class="rent-receive-date card rent-receive-date--compact">
-            <label class="form-label">Notes (optional)</label>
-            <textarea data-field="paymentNotes" class="form-input" rows="2" placeholder="Any notes about this payment"></textarea>
-        </div>
-        ${selected.count === 1 ? `
-        <div class="rent-receive-date card rent-receive-date--compact">
-            <label class="form-label">Amount received (optional)</label>
-            <input type="text" data-field="receivedAmount" class="form-input" placeholder="${formatInvoiceAmount(selected.total)}">
-            <p class="form-helper">Leave blank for full amount · partial payments marked for future ledger</p>
-        </div>` : ''}
-        <label class="flex items-center gap-2 text-[13px] text-[#475569] px-1">
-            <input type="checkbox" data-field="receiptSent" class="accent-[#2563EB]"> Receipt sent to tenant
-        </label>
     </div>
     <div class="rent-receive-bar rent-receive-bar--compact ${selected.count ? 'rent-receive-bar--active' : ''}">
         <button type="button" data-action="confirm-rent-received" class="rent-receive-bar-btn rent-receive-bar-btn--full" ${selected.count ? '' : 'disabled'}>Record payment${selected.count ? ` · £${selected.total.toLocaleString()}` : ''}</button>

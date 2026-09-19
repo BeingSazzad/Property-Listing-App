@@ -15,6 +15,7 @@ const context = {
     clearTimeout: () => {},
     setInterval: () => {},
     clearInterval: () => {},
+    queueMicrotask: (fn) => fn(),
     Date: Date,
     Math: Math,
     JSON: JSON,
