@@ -1994,16 +1994,23 @@ function screenTenantBuildingInfo() {
     const unitGal = t.unit && typeof getFlatPhotoGallery === 'function' ? getFlatPhotoGallery(pid, t.unit) : null;
     const unitPhotos = unitGal?.photos?.length ? unitGal.photos : [];
     const appliances = meta.appliances || [];
-    const alarmEntries = typeof ALARM_CATALOG !== 'undefined' && typeof alarmHasData === 'function'
-        ? [
-            ...ALARM_CATALOG.filter(a => alarmHasData(meta.alarms?.[a.key])).map(a => ({
-                ...meta.alarms[a.key],
-                name: `${a.label} Alarm`,
-                icon: a.icon,
-            })),
-            ...(meta.customAlarms || []).filter(a => typeof alarmHasData === 'function' ? alarmHasData(a) : true),
-        ]
-        : [];
+    const rawAlarms = meta.alarms || [];
+    const alarmEntries = (Array.isArray(rawAlarms) && rawAlarms.length)
+        ? rawAlarms
+        : (typeof ALARM_CATALOG !== 'undefined' && typeof alarmHasData === 'function'
+            ? [
+                ...ALARM_CATALOG.filter(a => alarmHasData(meta.alarms?.[a.key])).map(a => ({
+                    ...meta.alarms[a.key],
+                    name: `${a.label} Alarm`,
+                    icon: a.icon,
+                })),
+                ...(meta.customAlarms || []).filter(a => typeof alarmHasData === 'function' ? alarmHasData(a) : true),
+            ]
+            : [
+                { id: 'smoke', name: 'Smoke Alarm', location: 'Hallway / Landing', expiry: 'Exp: 15 Jan 2026', photo: typeof DEMO_ALARM_PHOTOS !== 'undefined' ? DEMO_ALARM_PHOTOS.smoke : '', icon: 'bell-ring' },
+                { id: 'heat', name: 'Heat Alarm', location: 'Kitchen Ceiling', expiry: 'Exp: 15 Jan 2026', photo: typeof DEMO_ALARM_PHOTOS !== 'undefined' ? DEMO_ALARM_PHOTOS.heat : '', icon: 'thermometer' },
+                { id: 'co', name: 'CO Alarm', location: 'Boiler Room / Bedroom', expiry: 'Exp: 15 Jan 2026', photo: typeof DEMO_ALARM_PHOTOS !== 'undefined' ? DEMO_ALARM_PHOTOS.co : '', icon: 'shield-alert' },
+            ]);
     const invRooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const renderIcon = typeof renderBuildingIconItem === 'function'
         ? renderBuildingIconItem
@@ -2273,13 +2280,19 @@ function screenTenantAnnouncementDetail() {
 function screenTenantHouseRules() {
     const t = getActiveTenant();
     const rules = typeof houseRulesForTenant === 'function' ? houseRulesForTenant(t) : [];
-    return `${topBar('House rules', { back: true })}
-    <div class="screen-content screen-enter">
-        <p class="text-[13px] text-[#64748B] mb-3">Rules for your building — set by your landlord.</p>
-        <div class="card p-4">
-            <ul class="tnt-rules-list tnt-rules-list--full">
-                ${rules.map((r, i) => `<li><span class="tnt-rule-num">${i + 1}</span>${typeof escapeHtml === 'function' ? escapeHtml(r) : r}</li>`).join('')}
-            </ul>
+    const pid = t?.propertyId ?? 0;
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : { name: 'Your Building' };
+
+    const badge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">${rules.length} Rules</span>`;
+
+    return `${topBar('House rules', { back: true, sub: p.name || '', rightBtn: badge })}
+    <div class="screen-content screen-enter space-y-3 text-left pb-8">
+        <div class="space-y-2">
+            ${rules.map((r, i) => `
+            <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
+                <span class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>
+                <p class="text-[13.5px] font-medium text-[#0F172A] m-0 leading-snug flex-1">${typeof escapeHtml === 'function' ? escapeHtml(r) : r}</p>
+            </div>`).join('')}
         </div>
     </div>`;
 }
@@ -2741,26 +2754,30 @@ function screenTenantCompliance() {
     const t = getActiveTenant();
     const rows = typeof tenantComplianceForTenant === 'function' ? tenantComplianceForTenant(t) : [];
     return `${topBar('Compliance', { back: true, sub: 'Your building' })}
-    <div class="screen-content screen-enter stack-sm">
-        <p class="text-[13px] text-[#64748B]">Safety certificates for your property. Your landlord is responsible for keeping these up to date.</p>
-        ${rows.map(r => {
-            const ok = r.status === 'valid';
-            return `
-        <div class="card p-4">
-            <div class="flex items-center justify-between gap-3">
+    <div class="screen-content screen-enter space-y-3 text-left pb-8">
+        <div class="space-y-2.5">
+            ${rows.map(r => {
+                const ok = r.status === 'valid';
+                return `
+            <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
-                    <span class="tnt-compliance-icon"><i data-lucide="${r.icon}" class="w-5 h-5"></i></span>
+                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="${r.icon || 'shield-check'}" class="w-5 h-5"></i>
+                    </div>
                     <div class="min-w-0">
-                        <p class="text-[13px] font-bold text-[#0F172A]">${r.name}</p>
-                        <p class="text-[11px] text-[#64748B] mt-0.5">${r.certNumber} · ${r.issuedBy}</p>
+                        <p class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${r.name}</p>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${r.certNumber} · Expires ${r.expiry}</p>
                     </div>
                 </div>
-                <span class="badge shrink-0" style="background:${ok ? '#ECFDF5' : '#FEE2E2'};color:${ok ? '#059669' : '#DC2626'}">${ok ? 'Valid' : 'Action needed'}</span>
-            </div>
-            <p class="text-[12px] text-[#64748B] mt-2">Expires ${r.expiry}</p>
-        </div>`;
-        }).join('')}
-        <button type="button" data-go="tenant-documents" class="btn-secondary w-full py-3 text-[13px]">View certificate documents</button>
+                <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold border shrink-0 ${ok ? 'bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]' : 'bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]'}">
+                    ${ok ? 'Valid' : 'Expired'}
+                </span>
+            </div>`;
+            }).join('')}
+        </div>
+        <button type="button" data-go="tenant-documents" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] hover:bg-[#1D4ED8] transition-all shadow-xs cursor-pointer mt-4">
+            View Certificate Documents
+        </button>
     </div>`;
 }
 

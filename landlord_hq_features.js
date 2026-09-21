@@ -1,22 +1,28 @@
 /* Landlord HQ — Feature completion layer (persistence, new screens, workflows) */
 
 const CONTRACTORS = [
-    { id: 0, name: 'Plumber Pro', tradeId: 'plumbing', trade: 'Plumbing & Heating', category: 'Plumber', jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains', img: IMG.avatar.plumber, phone: '+44 7700 900201', email: 'jobs@plumberpro.co.uk', gasSafe: true, liabilityInsurance: true, avgRating: '4.8', ratings: [
-        { stars: 5, comment: 'Fixed the leak quickly and left the kitchen spotless.', job: 'Kitchen sink leaking', at: 'Mar 8, 2025', from: 'Sarah Johnson', role: 'tenant' },
-        { stars: 5, comment: 'Clear updates and fair pricing on the invoice.', job: 'Tap replacement', at: 'Mar 2, 2025', from: 'John Smith', role: 'landlord' },
-        { stars: 4, comment: 'Good work — arrived a little later than planned.', job: 'Radiator bleed', at: 'Feb 20, 2025', from: 'Michael Lee', role: 'tenant' },
-        { stars: 5, comment: 'Gas certificate uploaded same day. Very professional.', job: 'Annual gas check', at: 'Jan 30, 2025', from: 'John Smith', role: 'landlord' },
-    ], certificates: [
-        { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'gas-safe-reg-2026.pdf', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027' },
-        { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'liability-insurance-2026.pdf', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026' },
-    ] },
-    { id: 1, name: 'Heating Co.', tradeId: 'heating', trade: 'Heating & Gas', category: 'Heating engineer', jobsFor: 'Boilers, radiators, gas safety, hot water', img: IMG.avatar.heating, phone: '+44 7700 900202', email: 'service@heatingco.co.uk', gasSafe: true, liabilityInsurance: true, certificates: [
-        { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'heating-co-gas-safe.pdf', uploadedAt: 'Feb 2, 2026', validUntil: 'Feb 2027' },
-    ] },
-    { id: 2, name: 'Electric Fix', tradeId: 'electrical', trade: 'Electrical', category: 'Electrician', jobsFor: 'Lights, sockets, wiring, fuse boxes', img: IMG.avatar.electric, phone: '+44 7700 900203', email: 'bookings@electricfix.co.uk', liabilityInsurance: true, certificates: [
-        { id: 0, type: 'trade_qualification', name: 'NICEIC Certification', fileName: 'niceic-cert-2026.pdf', uploadedAt: 'Jan 8, 2026', validUntil: 'Jan 2027' },
-        { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'electric-fix-insurance.pdf', uploadedAt: 'Nov 12, 2025', validUntil: 'Nov 2026' },
-    ] },
+    {
+        id: 0, name: 'Plumber Pro', tradeId: 'plumbing', trade: 'Plumbing & Heating', category: 'Plumber', jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains', img: IMG.avatar.plumber, phone: '+44 7700 900201', email: 'jobs@plumberpro.co.uk', gasSafe: true, liabilityInsurance: true, avgRating: '4.8', ratings: [
+            { stars: 5, comment: 'Fixed the leak quickly and left the kitchen spotless.', job: 'Kitchen sink leaking', at: 'Mar 8, 2025', from: 'Sarah Johnson', role: 'tenant' },
+            { stars: 5, comment: 'Clear updates and fair pricing on the invoice.', job: 'Tap replacement', at: 'Mar 2, 2025', from: 'John Smith', role: 'landlord' },
+            { stars: 4, comment: 'Good work — arrived a little later than planned.', job: 'Radiator bleed', at: 'Feb 20, 2025', from: 'Michael Lee', role: 'tenant' },
+            { stars: 5, comment: 'Gas certificate uploaded same day. Very professional.', job: 'Annual gas check', at: 'Jan 30, 2025', from: 'John Smith', role: 'landlord' },
+        ], certificates: [
+            { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'gas-safe-reg-2026.pdf', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027' },
+            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'liability-insurance-2026.pdf', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026' },
+        ]
+    },
+    {
+        id: 1, name: 'Heating Co.', tradeId: 'heating', trade: 'Heating & Gas', category: 'Heating engineer', jobsFor: 'Boilers, radiators, gas safety, hot water', img: IMG.avatar.heating, phone: '+44 7700 900202', email: 'service@heatingco.co.uk', gasSafe: true, liabilityInsurance: true, certificates: [
+            { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'heating-co-gas-safe.pdf', uploadedAt: 'Feb 2, 2026', validUntil: 'Feb 2027' },
+        ]
+    },
+    {
+        id: 2, name: 'Electric Fix', tradeId: 'electrical', trade: 'Electrical', category: 'Electrician', jobsFor: 'Lights, sockets, wiring, fuse boxes', img: IMG.avatar.electric, phone: '+44 7700 900203', email: 'bookings@electricfix.co.uk', liabilityInsurance: true, certificates: [
+            { id: 0, type: 'trade_qualification', name: 'NICEIC Certification', fileName: 'niceic-cert-2026.pdf', uploadedAt: 'Jan 8, 2026', validUntil: 'Jan 2027' },
+            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'electric-fix-insurance.pdf', uploadedAt: 'Nov 12, 2025', validUntil: 'Nov 2026' },
+        ]
+    },
 ];
 
 function normalizeContractorRecord(c) {
@@ -291,11 +297,13 @@ const AppStore = {
             { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active', leadName: 'Sarah Johnson' },
             { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', start: '2023-06-01', end: '2027-05-31', status: 'active', leadName: 'David Wilson' },
             { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', start: '2024-03-10', end: '2027-03-09', status: 'active', leadName: 'Michael Lee' },
-            { id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
-                { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
-                { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
-                { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
-            ]},
+            {
+                id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
+                    { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
+                    { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
+                    { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
+                ]
+            },
             { id: 4, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 1', rent: '£1,400', start: '2023-09-01', end: '2026-08-31', status: 'active', leadName: 'Sarah Johnson' },
             { id: 5, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 3', rent: '£1,650', start: '2024-02-01', end: '2027-01-31', status: 'active', leadName: 'Sarah Johnson' },
             { id: 6, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1B', rent: '£1,750', start: '2023-11-01', end: '2026-10-31', status: 'active', leadName: 'David Chen' },
@@ -513,8 +521,14 @@ const AppStore = {
                         { label: 'Building electronic fob', qty: '1', location: 'Lobby & gate', holder: 'James Chen' },
                     ],
                 },
-                utilities: { gas: 'British Gas (Smart Meter: 489201)', electric: 'Octopus Energy (MPAN: 120002948192)', water: 'Thames Water (Account: 902184)', broadband: 'BT Full Fibre 500', council: { name: 'Westminster City Council', notes: 'Council Tax Band D' } },
-                parking: { spaces: 4, type: 'Secure underground', permit: 'PL-BAY-01 to 04', notes: 'Allocated numbered bays with automated fob gate and EV charge points.' },
+                utilities: {
+                    gas: { provider: 'British Gas', meterNumber: '489201', meterLocation: 'Cupboard under the stairs', shutOff: 'Lever beside meter', phone: '0800 111 999', notes: 'Fixed rate until 2026', meterPicture: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80' },
+                    electric: { provider: 'Octopus Energy', meterNumber: '120002948192', meterLocation: 'Basement intake cupboard', consumerUnit: 'Hallway cupboard · main RCD', phone: '0808 164 1088', notes: 'Agile eco tariff', meterPicture: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80' },
+                    water: { provider: 'Thames Water', meterNumber: '902184', meterLocation: 'Under kitchen sink', shutOff: 'Pavement outside front boundary', phone: '0800 316 9800', notes: 'Unmetered flat rate', meterPicture: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=crop&q=80' },
+                    wifi: { provider: 'BT Full Fibre 500', ssid: 'BT-HQ-Building-5G', password: 'FastSecure2025!', meterLocation: 'Hallway cupboard, ground floor', phone: '0800 800 150', notes: 'Full fibre · 900 Mbps', meterPicture: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&auto=format&fit=crop&q=80' },
+                    council: { name: 'Westminster City Council', notes: 'WCC-8941029', bins: 'Waste Tue · Recycling Fri', phone: '020 7641 6000' },
+                },
+                parking: { spaces: 4, type: 'Secure underground', details: 'Bays 1 to 4', permit: 'PL-BAY-01 to 04', notes: 'Automated fob gate, EV charge points' },
             },
             1: {
                 info: {
@@ -558,8 +572,14 @@ const AppStore = {
                         { label: 'Mailbox key', qty: '1', location: 'Front porch', holder: 'David Chen' },
                     ],
                 },
-                utilities: { gas: 'E.ON Next', electric: 'EDF Energy', water: 'Thames Water', broadband: 'Virgin Media Gig1', council: { name: 'Lambeth Council', notes: 'Band C' } },
-                parking: { spaces: 2, type: 'On-street resident permit', permit: 'LAM-SW2-881', notes: 'Zone S resident parking permit required Mon-Fri 8:30am-6:30pm.' },
+                utilities: {
+                    gas: { provider: 'E.ON Next', meterNumber: '682910', meterLocation: 'Ground floor hallway cupboard', shutOff: 'Emergency turnoff valve in basement', phone: '0808 501 5200', notes: 'Standard variable rate' },
+                    electric: { provider: 'EDF Energy', meterNumber: '192837465012', meterLocation: 'Under stairs cupboard', consumerUnit: 'Under stairs fuse board', phone: '0333 200 5100', notes: 'Fixed rate business tariff' },
+                    water: { provider: 'Thames Water', meterNumber: 'WTR-44829', meterLocation: 'Kitchen cupboard', shutOff: 'External pavement stopcock', phone: '0800 316 9800', notes: 'Water meter installed' },
+                    wifi: { provider: 'Virgin Media Gig1', ssid: 'VM-SW2-HighSpeed', password: 'SuperFastHome2025', meterLocation: 'Living room hub', phone: '0345 454 1111', notes: 'Gig1 Fibre broadband' },
+                    council: { name: 'Lambeth Council', notes: 'LBC-4489201', bins: 'General Mon · Recyclables Thu', phone: '020 7926 1000' },
+                },
+                parking: { spaces: 2, type: 'On-street resident permit', details: 'Zone S Bays', permit: 'LAM-SW2-881', notes: 'Zone S resident parking permit required Mon-Fri 8:30am-6:30pm.' },
             },
             2: {
                 isHmo: true,
@@ -607,8 +627,14 @@ const AppStore = {
                         { label: 'Front door key', qty: '1', location: 'Street entrance', holder: 'Mark Davis' },
                     ],
                 },
-                utilities: { gas: 'N/A (All Electric Eco)', electric: 'Good Energy 100% Renewable', water: 'Thames Water', broadband: 'Hyperoptic 1Gbps Symmetric', council: { name: 'City of London', notes: 'Band E' } },
-                parking: { spaces: 2, type: 'Driveway parking', permit: 'EC2-VIP-01', notes: 'Shared driveway parking with Pod Point EV charger.' },
+                utilities: {
+                    gas: { provider: 'N/A (All Electric Eco)', meterNumber: 'N/A', meterLocation: 'All electric property', shutOff: 'N/A', phone: '—', notes: 'Eco ground heat pump installed' },
+                    electric: { provider: 'Good Energy 100% Renewable', meterNumber: '992018273645', meterLocation: 'Plant room, ground floor', consumerUnit: 'Plant room main RCD distribution board', phone: '0800 254 0000', notes: '100% renewable electricity tariff' },
+                    water: { provider: 'Thames Water', meterNumber: 'WTR-99402', meterLocation: 'Shared kitchen under sink', shutOff: 'Pavement boundary stopcock', phone: '0800 316 9800', notes: 'Commercial metered water supply' },
+                    wifi: { provider: 'Hyperoptic 1Gbps Symmetric', ssid: 'Hyperoptic-HMO-Fibre', password: 'HyperFast2025Connect', meterLocation: 'Communal hall access point', phone: '0333 332 1111', notes: '1Gbps symmetric gigabit speed' },
+                    council: { name: 'City of London', notes: 'COL-HMO-9821', bins: 'Waste Daily · Recycling Tue/Fri', phone: '020 7606 3030' },
+                },
+                parking: { spaces: 2, type: 'Driveway parking', details: 'Private Driveway Bays 1 & 2', permit: 'EC2-VIP-01', notes: 'Shared driveway parking with Pod Point EV charger.' },
             },
             3: {
                 info: {
@@ -654,8 +680,14 @@ const AppStore = {
                         { label: 'Street door key', qty: '1', location: 'Main building porch', holder: 'Michael Lee' },
                     ],
                 },
-                utilities: { gas: 'British Gas', electric: 'OVO Energy', water: 'Thames Water', broadband: 'Community Fibre 1Gbps', council: { name: 'Islington Council', notes: 'Band D' } },
-                parking: { spaces: 1, type: 'Off-street driveway + resident permit', permit: 'ISL-N1-404', notes: '1 dedicated driveway space plus Islington Zone B permit eligibility.' },
+                utilities: {
+                    gas: { provider: 'British Gas', meterNumber: '772910', meterLocation: 'Basement intake cellar', shutOff: 'Main emergency gas valve cellar', phone: '0800 111 999', notes: 'Fixed rate dual fuel' },
+                    electric: { provider: 'OVO Energy', meterNumber: '448201948271', meterLocation: 'Ground floor communal porch', consumerUnit: 'Porch main distribution board', phone: '0330 303 5063', notes: 'Green energy tariff' },
+                    water: { provider: 'Thames Water', meterNumber: 'WTR-77291', meterLocation: 'Flat 1 kitchen under sink', shutOff: 'Front street stopcock', phone: '0800 316 9800', notes: 'Standard rate' },
+                    wifi: { provider: 'Community Fibre 1Gbps', ssid: 'CF-Islington-Gigabit', password: 'GigabitSecure2025!', meterLocation: 'Communal riser cupboard', phone: '0800 082 0770', notes: '100% full fibre network' },
+                    council: { name: 'Islington Council', notes: 'ISL-882910', bins: 'Rubbish Wed · Recycling Sat', phone: '020 7527 2000' },
+                },
+                parking: { spaces: 1, type: 'Off-street driveway + resident permit', details: 'Bay 1 & On-street', permit: 'ISL-N1-404', notes: '1 dedicated driveway space plus Islington Zone B permit eligibility.' },
             },
         };
         this.tenantNotes = {
@@ -1239,8 +1271,8 @@ function renderMaintMediaPreviewModal() {
             ${preview.kind === 'video' ? `
             <div class="maint-media-preview-video-wrap">
                 ${preview.src
-                    ? `<video src="${preview.src}" controls playsinline class="maint-media-preview-video"></video>`
-                    : `<div class="maint-media-preview-demo">
+                ? `<video src="${preview.src}" controls playsinline class="maint-media-preview-video"></video>`
+                : `<div class="maint-media-preview-demo">
                         <img src="${preview.poster || IMG.maint[0]}" alt="">
                         <p class="maint-media-preview-demo-label"><i data-lucide="play-circle" class="w-6 h-6"></i>${escapeHtml(preview.name || 'Video clip')}</p>
                         <p class="maint-media-preview-demo-sub">Demo video attachment from tenant report</p>
@@ -1559,8 +1591,8 @@ function renderTenantDepositSection(tenantId) {
         <div class="tenant-v2-section-head">
             <h3>${tenantApp ? 'Deposit' : 'Deposit & move-in'}</h3>
             ${canEditScheme
-                ? `<button type="button" data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit scheme</button>`
-                : ''}
+            ? `<button type="button" data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit scheme</button>`
+            : ''}
         </div>
         <div class="card tenant-deposit-card">
             <div class="tenant-deposit-card-head">
@@ -1816,24 +1848,24 @@ function renderTenantContactCard(tenantId, opts = {}) {
         <div class="card tenant-info-compact">
             <div class="tenant-info-row tenant-info-row--stack">
                 ${linkPhoneEmail
-                    ? `<button type="button" data-action="call-tenant" data-tid="${tenantId}" class="tenant-info-cell tenant-info-cell--link tenant-info-cell--full">${phoneInner}</button>`
-                    : `<div class="tenant-info-cell tenant-info-cell--full">${phoneInner}</div>`}
+            ? `<button type="button" data-action="call-tenant" data-tid="${tenantId}" class="tenant-info-cell tenant-info-cell--link tenant-info-cell--full">${phoneInner}</button>`
+            : `<div class="tenant-info-cell tenant-info-cell--full">${phoneInner}</div>`}
             </div>
             <div class="tenant-info-row tenant-info-row--stack">
                 ${linkPhoneEmail
-                    ? `<button type="button" data-action="email-tenant" data-tid="${tenantId}" class="tenant-info-cell tenant-info-cell--link tenant-info-cell--full">${emailInner}</button>`
-                    : `<div class="tenant-info-cell tenant-info-cell--full">${emailInner}</div>`}
+            ? `<button type="button" data-action="email-tenant" data-tid="${tenantId}" class="tenant-info-cell tenant-info-cell--link tenant-info-cell--full">${emailInner}</button>`
+            : `<div class="tenant-info-cell tenant-info-cell--full">${emailInner}</div>`}
             </div>
             <div class="tenant-info-row tenant-info-row--stack">
                 ${emergency.phone && linkEmergency
-                    ? `<button type="button" data-action="call-tenant" data-tid="${tenantId}" data-phone="${escapeHtml(emergency.phone)}" class="tenant-info-cell tenant-info-cell--link tenant-info-cell--full">
+            ? `<button type="button" data-action="call-tenant" data-tid="${tenantId}" data-phone="${escapeHtml(emergency.phone)}" class="tenant-info-cell tenant-info-cell--link tenant-info-cell--full">
                         <span class="tenant-info-icon"><i data-lucide="heart-pulse" class="w-4 h-4"></i></span>
                         <span class="tenant-info-copy">
                             <span class="tenant-info-label">Emergency contact</span>
                             ${emergencyInner}
                         </span>
                     </button>`
-                    : `<div class="tenant-info-cell tenant-info-cell--full">
+            : `<div class="tenant-info-cell tenant-info-cell--full">
                         <span class="tenant-info-icon"><i data-lucide="heart-pulse" class="w-4 h-4"></i></span>
                         <span class="tenant-info-copy">
                             <span class="tenant-info-label">Emergency contact</span>
@@ -2008,13 +2040,13 @@ function renderTenantMoneyBlock(tenantId, opts = {}) {
             ${extras.length ? `
             <div class="tenant-money-charges">
                 ${extras.map(i => {
-                    const name = typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(i) : (i.desc || 'Charge');
-                    return `
+        const name = typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(i) : (i.desc || 'Charge');
+        return `
                 <button type="button" data-go="invoice-detail" data-iid="${i.id}" class="tenant-money-charge">
                     <span>${escapeHtml(name)}</span>
                     <span class="tenant-money-charge-amt">${escapeHtml(i.amount)}</span>
                 </button>`;
-                }).join('')}
+    }).join('')}
             </div>` : ''}
             ${depositRows.length ? `
             <div class="tenant-money-deposit">
@@ -2023,13 +2055,13 @@ function renderTenantMoneyBlock(tenantId, opts = {}) {
                     ${typeof renderDepositStatusBadge === 'function' ? renderDepositStatusBadge(dep.status, dep.scheme) : ''}
                 </div>
                 ${depositRows.map(([label, value]) => {
-                    const schemeLink = label === 'Scheme' && canEdit
-                        ? `data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}"`
-                        : '';
-                    return schemeLink
-                        ? `<button type="button" ${schemeLink} class="tenant-money-fact tenant-money-fact--link"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></button>`
-                        : `<div class="tenant-money-fact"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`;
-                }).join('')}
+        const schemeLink = label === 'Scheme' && canEdit
+            ? `data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}"`
+            : '';
+        return schemeLink
+            ? `<button type="button" ${schemeLink} class="tenant-money-fact tenant-money-fact--link"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></button>`
+            : `<div class="tenant-money-fact"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`;
+    }).join('')}
             </div>` : ''}
             <button type="button" data-ttab="payments" class="tenant-money-more">View payments</button>
         </div>
@@ -2116,11 +2148,11 @@ function renderTenantCompactHub(tenantId) {
     <div class="card tenant-hub-group">${groupA}</div>
     <div class="card tenant-hub-group">
         ${tenantHubRow({
-            icon: 'sticky-note', title: 'Notes',
-            meta: note ? `${noteLine}${noteMeta ? ` · ${noteMeta}` : ''}` : noteLine,
-            attrs: notes.length ? `data-ttab="notes"` : `data-go="tenant-add-note" data-tid="${tenantId}"`,
-            tone: 'amber',
-        })}
+        icon: 'sticky-note', title: 'Notes',
+        meta: note ? `${noteLine}${noteMeta ? ` · ${noteMeta}` : ''}` : noteLine,
+        attrs: notes.length ? `data-ttab="notes"` : `data-go="tenant-add-note" data-tid="${tenantId}"`,
+        tone: 'amber',
+    })}
     </div>`;
 }
 
@@ -2486,12 +2518,12 @@ function renderLogMaintMediaSection(opts = {}) {
     const videoList = videos.length ? `
         <div class="maint-log-media-videos card p-3">
             ${videos.map((video, idx) => {
-                const v = typeof normalizeMaintVideo === 'function' ? normalizeMaintVideo(video, idx) : { name: `Video ${idx + 1}` };
-                return `<div class="maint-log-video-row">
+        const v = typeof normalizeMaintVideo === 'function' ? normalizeMaintVideo(video, idx) : { name: `Video ${idx + 1}` };
+        return `<div class="maint-log-video-row">
                     <span class="maint-log-video-name"><i data-lucide="video" class="w-4 h-4"></i>${escapeHtml(v.name)}</span>
                     <button type="button" data-action="remove-log-maint-video" data-photo-idx="${idx}" class="maint-log-video-remove">Remove</button>
                 </div>`;
-            }).join('')}
+    }).join('')}
         </div>` : '';
     const countHint = total ? ` · ${total} added` : '';
     return `
@@ -2599,8 +2631,8 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
             <div class="flat-unit-photo-thumb${i === cover ? ' is-cover' : ''}">
                 <img src="${src}" alt="">
                 ${i === cover
-                    ? '<span class="flat-unit-photo-badge">Cover</span>'
-                    : `<button type="button" data-action="${coverAction}" data-photo-idx="${i}" class="flat-unit-photo-set-cover" aria-label="Set as cover"><i data-lucide="star" class="w-3.5 h-3.5"></i></button>`}
+            ? '<span class="flat-unit-photo-badge">Cover</span>'
+            : `<button type="button" data-action="${coverAction}" data-photo-idx="${i}" class="flat-unit-photo-set-cover" aria-label="Set as cover"><i data-lucide="star" class="w-3.5 h-3.5"></i></button>`}
                 <button type="button" data-action="${removeAction}" data-photo-idx="${i}" class="photo-preview-remove" aria-label="Remove photo"><i data-lucide="x" class="w-3 h-3"></i></button>
             </div>`).join('')}
         </div>
@@ -2649,20 +2681,26 @@ function alarmReminderTiming(timing) {
 
 function normalizeUtilityEntry(val, meta, key) {
     if (val && typeof val === 'object') return val;
-    if (val && typeof val === 'string') return { provider: val };
+    if (val && typeof val === 'string') {
+        const m = val.match(/^(.*?)\s*\((?:Smart Meter|Meter|MPAN|MPRN|Account)?\s*:?\s*([^)]+)\)$/i);
+        if (m) {
+            return { provider: m[1].trim(), meterNumber: m[2].trim() };
+        }
+        return { provider: val };
+    }
     const u = meta?.utilities;
     if (!u) return null;
     if (key === 'gas' && (u.gasSupplier || u.gasNo || u.gasLoc)) {
-        return { provider: u.gasSupplier || 'British Gas', meterNumber: u.gasNo || '84920173', meterLocation: u.gasLoc || 'Front exterior meter box', phone: '0333 202 9802' };
+        return { provider: u.gasSupplier || 'British Gas', meterNumber: u.gasNo || '489201', meterLocation: u.gasLoc || 'Cupboard under the stairs', shutOff: 'Lever beside meter', phone: '0800 111 999', notes: 'Fixed rate until 2026' };
     }
     if (key === 'electricity' && (u.electricitySupplier || u.electricityNo || u.electricityLoc)) {
-        return { provider: u.electricitySupplier || 'Octopus Energy', meterNumber: u.electricityNo || '12093841', meterLocation: u.electricityLoc || 'Basement intake cupboard', phone: '0808 164 1088' };
+        return { provider: u.electricitySupplier || 'Octopus Energy', meterNumber: u.electricityNo || '120002948192', meterLocation: u.electricityLoc || 'Basement intake cupboard', consumerUnit: 'Hallway cupboard · main RCD', phone: '0808 164 1088', notes: 'Agile eco tariff' };
     }
     if (key === 'water' && (u.waterSupplier || u.waterNo || u.waterLoc)) {
-        return { provider: u.waterSupplier || 'Thames Water', meterNumber: u.waterNo || 'WTR-99402', meterLocation: u.waterLoc || 'Kitchen sink undercupboard', phone: '0800 316 9800' };
+        return { provider: u.waterSupplier || 'Thames Water', meterNumber: u.waterNo || '902184', meterLocation: u.waterLoc || 'Under kitchen sink', shutOff: 'Pavement outside front boundary', phone: '0800 316 9800', notes: 'Unmetered flat rate' };
     }
-    if (key === 'wifi' && (u.broadbandSupplier || u.wifiPassword || u.routerLoc)) {
-        return { provider: u.broadbandSupplier || 'BT Fibre Broadband', meterNumber: u.wifiPassword ? `Key: ${u.wifiPassword}` : 'London2026!Fast', meterLocation: u.routerLoc || 'Main hallway intake', phone: '+44 800 800 150' };
+    if (key === 'wifi' && (u.broadbandSupplier || u.wifiPassword || u.routerLoc || u.wifiSsid)) {
+        return { provider: u.broadbandSupplier || 'BT Full Fibre 500', ssid: u.wifiSsid || 'BT-HQ-Building-5G', password: u.wifiPassword || 'FastSecure2025!', meterLocation: u.routerLoc || 'Hallway cupboard, ground floor', phone: '0800 800 150', notes: 'Full fibre · 900 Mbps' };
     }
     return null;
 }
@@ -2887,10 +2925,10 @@ function renderApplianceQuickPick(meta) {
         <p class="feature-pick-title">What's in this property?</p>
         <p class="feature-pick-sub">Tick each appliance. Ticked items appear in Records with the details you add below.</p>
         ${renderFeaturePickGrid(APPLIANCE_CATALOG, {
-            isActive: (item) => existing.has(item.name.toLowerCase()),
-            action: 'toggle-appliance',
-            checkbox: true,
-        })}
+        isActive: (item) => existing.has(item.name.toLowerCase()),
+        action: 'toggle-appliance',
+        checkbox: true,
+    })}
     </div>`;
 }
 
@@ -2901,11 +2939,11 @@ function renderUtilityQuickPick(meta) {
         <p class="feature-pick-title">Which utilities does this property use?</p>
         <p class="feature-pick-sub">Select types, then type the provider name below. Council tax band is set in Property Information.</p>
         ${renderFeaturePickGrid(UTILITY_CATALOG, {
-            isActive: (item) => utilities[item.key] != null,
-            action: 'toggle-utility',
-            valueKey: 'key',
-            labelKey: 'label',
-        })}
+        isActive: (item) => utilities[item.key] != null,
+        action: 'toggle-utility',
+        valueKey: 'key',
+        labelKey: 'label',
+    })}
     </div>`;
 }
 
@@ -2927,59 +2965,17 @@ function renderUtilityProviderFields(meta) {
     const utilities = meta.utilities || {};
     const parking = meta.parking || {};
 
-    return UTILITY_CATALOG
-        .filter(u => utilities[u.key] != null || (u.key === 'parking' && (parking.details || parking.type)))
-        .map(u => {
-            const entry = getUtilityEntry(meta, u.key) || {};
+    const activeKeys = UTILITY_CATALOG
+        .filter(u => utilities[u.key] != null || (u.key === 'parking' && (parking.details || parking.type || parking.spaces)));
 
-            if (u.key === 'council') {
-                const council = utilities.council || {};
-                return `<div class="utility-provider-card card p-4 mb-3 border border-[#E2E8F0] rounded-2xl">
-                    <div class="utility-provider-head flex items-center gap-2.5 mb-3">
-                        <span class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                            <i data-lucide="${u.icon}" class="w-4 h-4"></i>
-                        </span>
-                        <p class="utility-provider-title text-[14px] font-bold text-[#0F172A] m-0">${u.label}</p>
-                    </div>
-                    <div class="space-y-3">
-                        <div><label class="form-label">Council name</label><input data-field="util_council_name" class="form-input" value="${escapeHtml(council.name || '')}" placeholder="e.g. Westminster City Council"></div>
-                        <div><label class="form-label">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></label><textarea data-field="util_council_notes" class="form-input min-h-[64px] resize-none" placeholder="Account reference, contact details…">${escapeHtml(council.notes || '')}</textarea></div>
-                    </div>
-                </div>`;
-            }
+    if (!activeKeys.length) return '';
 
-            if (u.key === 'parking') {
-                const pk = meta.parking || {};
-                return `<div class="utility-provider-card card p-4 mb-3 border border-[#E2E8F0] rounded-2xl">
-                    <div class="utility-provider-head flex items-center gap-2.5 mb-3">
-                        <span class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                            <i data-lucide="${u.icon}" class="w-4 h-4"></i>
-                        </span>
-                        <p class="utility-provider-title text-[14px] font-bold text-[#0F172A] m-0">${u.label}</p>
-                    </div>
-                    <div class="space-y-3">
-                        <div><label class="form-label">Parking type</label><input data-field="parking_type" class="form-input" value="${escapeHtml(pk.type || 'Off-street')}" placeholder="e.g. Off-street, Allocated Bay, Driveway"></div>
-                        <div><label class="form-label">Space / Permit details</label><input data-field="parking_details" class="form-input" value="${escapeHtml(pk.details || 'Allocated bay #12')}" placeholder="e.g. Bay #12, Permit LB-4421"></div>
-                    </div>
-                </div>`;
-            }
-
-            return `<div class="utility-provider-card card p-4 mb-3 border border-[#E2E8F0] rounded-2xl">
-                <div class="utility-provider-head flex items-center gap-2.5 mb-3">
-                    <span class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                        <i data-lucide="${u.icon}" class="w-4 h-4"></i>
-                    </span>
-                    <p class="utility-provider-title text-[14px] font-bold text-[#0F172A] m-0">${u.label}</p>
-                </div>
-                <div class="space-y-3">
-                    <div><label class="form-label">Provider name</label><input data-field="util_${u.key}_provider" class="form-input" value="${escapeHtml(entry.provider || '')}" placeholder="${utilityProviderPlaceholder(u.key)}"></div>
-                    <div><label class="form-label">Meter / Account number</label><input data-field="util_${u.key}_meter" class="form-input" value="${escapeHtml(entry.meterNumber || '')}" placeholder="e.g. MPAN / MPRN / Account ID"></div>
-                    <div><label class="form-label">Meter location / Details</label><input data-field="util_${u.key}_location" class="form-input" value="${escapeHtml(entry.meterLocation || '')}" placeholder="e.g. Under stairs cupboard, Outside box"></div>
-                    <div><label class="form-label">Phone number</label><input data-field="util_${u.key}_phone" type="tel" class="form-input" value="${escapeHtml(entry.phone || '')}" placeholder="Provider contact phone"></div>
-                    <div>${renderFieldPhotoUpload('Meter picture', `util_${u.key}_picture`, entry.meterPicture || '')}</div>
-                </div>
-            </div>`;
-        }).join('');
+    return activeKeys.map(u => {
+        const id = u.key === 'electric' ? 'electricity' : u.key;
+        return `<div class="utility-provider-card card p-4 mb-3 border border-[#E2E8F0] rounded-2xl">
+            ${renderUtilityEditFields(meta, id)}
+        </div>`;
+    }).join('');
 }
 
 function escapeHtml(s) {
@@ -3410,6 +3406,143 @@ function renderLandlordDocSlotGrid(propertyId) {
         <button type="button" data-action="open-add-document-slot" data-doc-type="Custom Document" class="btn-secondary w-full py-3 text-[13px]">+ Add other file</button>`;
 }
 
+function openEditDocModal(docId) {
+    const doc = AppStore.documents.find(d => d.id === docId);
+    if (!doc) return;
+    STATE.editDocId = docId;
+    render();
+}
+
+function closeEditDocModal() {
+    STATE.editDocId = null;
+    render();
+}
+
+function saveEditDocModal() {
+    if (STATE.editDocId == null) return;
+    const doc = AppStore.documents.find(d => d.id === STATE.editDocId);
+    if (!doc) return;
+
+    const nameInput = document.querySelector('[data-edit-doc-name]');
+    const certNumInput = document.querySelector('[data-edit-doc-cert-num]');
+    const issuedInput = document.querySelector('[data-edit-doc-issued]');
+    const expiryInput = document.querySelector('[data-edit-doc-expiry]');
+    const issuedByInput = document.querySelector('[data-edit-doc-issued-by]');
+    const unitInput = document.querySelector('[data-edit-doc-unit]');
+    const notesInput = document.querySelector('[data-edit-doc-notes]');
+
+    if (nameInput?.value?.trim()) doc.name = nameInput.value.trim();
+    if (certNumInput) doc.certNumber = certNumInput.value.trim();
+    if (issuedInput?.value?.trim()) {
+        doc.issuedDate = issuedInput.value.trim();
+        doc.date = issuedInput.value.trim();
+    }
+    if (expiryInput) doc.expiryDate = expiryInput.value.trim();
+    if (issuedByInput) doc.issuedBy = issuedByInput.value.trim();
+    if (unitInput !== undefined) doc.unit = unitInput ? unitInput.value.trim() : '';
+    if (notesInput) doc.notes = notesInput.value.trim();
+
+    // If it is a statutory certificate, sync with AppStore.complianceCerts
+    const docNameLow = (doc.name || '').toLowerCase();
+    const pid = doc.propertyId ?? STATE.propertyId ?? 0;
+    const updateCompliance = (key) => {
+        if (!AppStore.complianceCerts) AppStore.complianceCerts = {};
+        if (!AppStore.complianceCerts[key]) AppStore.complianceCerts[key] = {};
+        if (doc.expiryDate) AppStore.complianceCerts[key].expiryDate = doc.expiryDate;
+        if (doc.issuedDate) AppStore.complianceCerts[key].issueDate = doc.issuedDate;
+        if (doc.certNumber) AppStore.complianceCerts[key].certNumber = doc.certNumber;
+        if (doc.issuedBy) AppStore.complianceCerts[key].issuedBy = doc.issuedBy;
+        if (doc.notes) AppStore.complianceCerts[key].notes = doc.notes;
+    };
+
+    if (doc.type === 'Gas Certificate' || docNameLow.includes('gas') || doc.folderId === 'gas') {
+        updateCompliance(`${pid}-0`);
+    } else if (doc.type === 'Electrical Certificate' || docNameLow.includes('eicr') || doc.folderId === 'eicr') {
+        updateCompliance(`${pid}-1`);
+    } else if (doc.type === 'EPC Certificate' || docNameLow.includes('epc') || doc.folderId === 'epc') {
+        updateCompliance(`${pid}-7`);
+    } else if (doc.type === 'Building Insurance' || docNameLow.includes('insurance') || doc.folderId === 'insurance') {
+        updateCompliance(`${pid}-5`);
+    } else if (doc.type === 'Property Licence' || docNameLow.includes('licence') || docNameLow.includes('license') || doc.folderId === 'licence') {
+        updateCompliance(`${pid}-8`);
+    } else if (docNameLow.includes('fire') || doc.folderId === 'fire') {
+        updateCompliance(`${pid}-2`);
+    }
+
+    AppStore.save();
+    STATE.editDocId = null;
+    toast('Document details saved');
+    render();
+}
+
+const editDocModal = () => {
+    if (STATE.editDocId == null) return '';
+    const doc = AppStore.documents.find(d => d.id === STATE.editDocId);
+    if (!doc) return '';
+    const pid = doc.propertyId ?? STATE.propertyId ?? 0;
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
+    const name = escapeHtml(doc.name || '');
+    const certNum = escapeHtml(doc.certNumber || doc.refNumber || '');
+    const issuedBy = escapeHtml(doc.issuedBy || doc.contractor || '');
+    const issuedDate = doc.issuedDate || doc.date || '';
+    const expiryDate = doc.expiryDate || '';
+    const unit = doc.unit || '';
+    const notes = escapeHtml(doc.notes || '');
+
+    return `<div class="modal-overlay open" data-action="close-edit-doc">
+        <div class="modal-sheet modal-sheet--tall">
+            <div class="add-doc-modal-head mb-3">
+                <span class="add-doc-back-spacer"></span>
+                <h3 class="modal-title add-doc-modal-title">Edit Document Details</h3>
+                <button type="button" data-action="close-edit-doc" class="add-doc-close-btn" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <p class="text-[12px] text-[#64748B] mb-3">Update certificate metadata, expiry dates, engineer details, and notes.</p>
+            <div class="space-y-3">
+                <div class="form-field">
+                    <label class="form-label text-[12px] font-bold text-[#334155]">Document Name</label>
+                    <input type="text" data-edit-doc-name class="form-input" value="${name}" placeholder="e.g. Gas Certificate 2026">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="form-field">
+                        <label class="form-label text-[12px] font-bold text-[#334155]">Certificate / Ref No.</label>
+                        <input type="text" data-edit-doc-cert-num class="form-input" value="${certNum}" placeholder="e.g. GSR-592811">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label text-[12px] font-bold text-[#334155]">Issued By / Engineer</label>
+                        <input type="text" data-edit-doc-issued-by class="form-input" value="${issuedBy}" placeholder="e.g. EcoPlumb Ltd">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="form-field">
+                        <label class="form-label text-[12px] font-bold text-[#334155]">Issue Date</label>
+                        <input type="text" data-edit-doc-issued class="form-input" value="${escapeHtml(issuedDate)}" placeholder="e.g. 15 Mar 2025">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label text-[12px] font-bold text-[#334155]">Expiry Date</label>
+                        <input type="text" data-edit-doc-expiry class="form-input" value="${escapeHtml(expiryDate)}" placeholder="e.g. 14 Mar 2026">
+                    </div>
+                </div>
+                ${units.length ? `
+                <div class="form-field">
+                    <label class="form-label text-[12px] font-bold text-[#334155]">Applies to Unit / Flat</label>
+                    <select data-edit-doc-unit class="form-input">
+                        <option value="">Building-wide / All units</option>
+                        ${units.map(u => `<option value="${escapeHtml(unitName(u))}"${unit === unitName(u) ? ' selected' : ''}>${escapeHtml(unitName(u))}</option>`).join('')}
+                    </select>
+                </div>` : ''}
+                <div class="form-field">
+                    <label class="form-label text-[12px] font-bold text-[#334155]">Notes &amp; Details</label>
+                    <textarea data-edit-doc-notes class="form-input" rows="2" placeholder="e.g. Combi boiler model, £5M liability cover, inspection notes…">${notes}</textarea>
+                </div>
+            </div>
+            <div class="modal-actions mt-4 flex gap-2">
+                <button type="button" data-action="close-edit-doc" class="btn-secondary flex-1 py-3 text-[14px]">Cancel</button>
+                <button type="button" data-action="confirm-edit-doc" class="btn-primary flex-1 py-3 text-[14px]">Save Changes</button>
+            </div>
+        </div>
+    </div>`;
+};
+
 function openAddDocumentFlow(opts = {}) {
     if (opts.propertyId != null) STATE.propertyId = opts.propertyId;
     STATE.addDocumentUnit = opts.unit ?? null;
@@ -3469,7 +3602,7 @@ async function pickAddDocumentFileAction() {
     const files = await pickDocumentFiles({ multiple: false });
     if (!files.length) return;
     STATE.addDocumentFile = files[0];
-    STATE.addDocumentDisplayName = files[0].name;
+    STATE.addDocumentDisplayName = files[0].name.replace(/\.[a-z0-9]+$/i, '');
     STATE.addDocumentStep = 'review';
     render();
 }
@@ -3496,6 +3629,13 @@ function saveAddDocumentAction() {
         return;
     }
     const name = applyFolderNameHint(rawName, STATE.addDocumentFolderId);
+    const certNum = document.querySelector('[data-add-doc-cert-num]')?.value?.trim() || '';
+    const issuedDate = document.querySelector('[data-add-doc-issued]')?.value?.trim() || formatDocUploadDate();
+    const expiryDate = document.querySelector('[data-add-doc-expiry]')?.value?.trim() || '';
+    const issuedBy = document.querySelector('[data-add-doc-issued-by]')?.value?.trim() || '';
+    const unitVal = document.querySelector('[data-add-doc-unit]')?.value?.trim() || STATE.addDocumentUnit || '';
+    const notesVal = document.querySelector('[data-add-doc-notes]')?.value?.trim() || '';
+
     const shareTargets = getPropertyNotifyTargets(STATE.propertyId);
     const shareTargetIds = getSelectedNotifyTargetIds();
     const shareNow = shareTargets.length && shareTargetIds.length > 0;
@@ -3510,7 +3650,12 @@ function saveAddDocumentAction() {
         propertyId: STATE.propertyId,
         type: STATE.addDocumentType,
         name,
-        date: formatDocUploadDate(),
+        date: issuedDate,
+        issuedDate,
+        expiryDate,
+        certNumber: certNum,
+        issuedBy,
+        notes: notesVal,
         uploadedAt: now,
         shared: shareNow,
         signed: false,
@@ -3518,9 +3663,36 @@ function saveAddDocumentAction() {
         fileUrl: STATE.addDocumentFile.url,
         mime: STATE.addDocumentFile.mime,
     };
-    if (STATE.addDocumentUnit) doc.unit = STATE.addDocumentUnit;
+    if (unitVal) doc.unit = unitVal;
     if (STATE.addDocumentFolderId) doc.folderId = STATE.addDocumentFolderId;
     AppStore.documents.push(doc);
+
+    // Sync to compliance certs if applicable
+    const pid = STATE.propertyId ?? 0;
+    const updateCompliance = (key) => {
+        if (!AppStore.complianceCerts) AppStore.complianceCerts = {};
+        if (!AppStore.complianceCerts[key]) AppStore.complianceCerts[key] = {};
+        if (expiryDate) AppStore.complianceCerts[key].expiryDate = expiryDate;
+        if (issuedDate) AppStore.complianceCerts[key].issueDate = issuedDate;
+        if (certNum) AppStore.complianceCerts[key].certNumber = certNum;
+        if (issuedBy) AppStore.complianceCerts[key].issuedBy = issuedBy;
+        if (notesVal) AppStore.complianceCerts[key].notes = notesVal;
+    };
+
+    if (STATE.addDocumentFolderId === 'gas' || STATE.addDocumentType === 'Gas Certificate') {
+        updateCompliance(`${pid}-0`);
+    } else if (STATE.addDocumentFolderId === 'eicr' || STATE.addDocumentType === 'Electrical Certificate') {
+        updateCompliance(`${pid}-1`);
+    } else if (STATE.addDocumentFolderId === 'epc' || STATE.addDocumentType === 'EPC Certificate') {
+        updateCompliance(`${pid}-7`);
+    } else if (STATE.addDocumentFolderId === 'insurance' || STATE.addDocumentType === 'Building Insurance') {
+        updateCompliance(`${pid}-5`);
+    } else if (STATE.addDocumentFolderId === 'licence' || STATE.addDocumentType === 'Property Licence') {
+        updateCompliance(`${pid}-8`);
+    } else if (STATE.addDocumentFolderId === 'fire') {
+        updateCompliance(`${pid}-2`);
+    }
+
     if (STATE.addDocumentTenantId != null) syncDocToTenantPortal(doc, STATE.addDocumentTenantId);
     if (shareNow && typeof syncSharedDocToTenants === 'function') {
         syncSharedDocToTenants(doc, shareTargetIds);
@@ -3550,9 +3722,11 @@ const addDocumentModal = () => {
     const replacing = STATE.addDocumentReplaceId != null;
     const typeOptions = addDocumentTypeOptionsForContext();
     const contextLabel = addDocumentContextLabel();
+    const pid = STATE.propertyId ?? 0;
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
     const stepTitle = step === 'type' ? 'Upload document'
         : step === 'file' ? (replacing ? 'Replace file' : 'Upload file')
-        : (replacing ? 'Confirm replace' : 'Review & save');
+            : (replacing ? 'Confirm replace' : 'Certificate details');
     const stepBody = step === 'type'
         ? `<p class="modal-body">Choose what you are uploading for <strong>${escapeHtml(contextLabel)}</strong>.</p>
             <div class="add-doc-type-list">
@@ -3570,26 +3744,55 @@ const addDocumentModal = () => {
                     <span class="doc-upload-label">Choose file</span>
                     <span class="doc-upload-hint">PDF, JPG or PNG</span>
                 </button>`
-            : `<p class="modal-body">Check the details before saving to <strong>${escapeHtml(contextLabel)}</strong>.</p>
-                <div class="add-doc-review card p-4">
+            : `<p class="modal-body">Verify and fill in certificate metadata for <strong>${escapeHtml(contextLabel)}</strong>.</p>
+                <div class="add-doc-review card p-3.5 mb-3 bg-[#F8FAFC]">
                     <div class="add-doc-review-type">
                         <span class="add-doc-type-icon" style="color:${typeOpt.color};background:${typeOpt.bg}"><i data-lucide="${typeOpt.icon}" class="w-5 h-5"></i></span>
                         <div class="min-w-0">
-                            <p class="add-doc-review-kind">${escapeHtml(typeOpt.label)}</p>
-                            <p class="add-doc-review-file">${escapeHtml(STATE.addDocumentFile?.name || '')}</p>
+                            <p class="add-doc-review-kind font-bold text-[#0F172A] text-[13px]">${escapeHtml(typeOpt.label)}</p>
+                            <p class="add-doc-review-file text-[11px] text-[#64748B]">${escapeHtml(STATE.addDocumentFile?.name || '')}</p>
                         </div>
                     </div>
                 </div>
-                <div class="form-field mt-3">
-                    <label class="form-label">Display name</label>
-                    <input type="text" data-add-doc-name class="form-input" value="${escapeHtml(STATE.addDocumentDisplayName || '')}" placeholder="Document name">
+                <div class="space-y-3">
+                    <div class="form-field">
+                        <label class="form-label text-[12px] font-bold text-[#334155]">Document / Certificate Name</label>
+                        <input type="text" data-add-doc-name class="form-input" value="${escapeHtml(STATE.addDocumentDisplayName || '')}" placeholder="e.g. Gas Safety Certificate 2026">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="form-field">
+                            <label class="form-label text-[12px] font-bold text-[#334155]">Certificate / Ref No.</label>
+                            <input type="text" data-add-doc-cert-num class="form-input" placeholder="e.g. GSR-592811">
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label text-[12px] font-bold text-[#334155]">Issued By / Engineer</label>
+                            <input type="text" data-add-doc-issued-by class="form-input" placeholder="e.g. EcoPlumb Ltd">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="form-field">
+                            <label class="form-label text-[12px] font-bold text-[#334155]">Issue Date</label>
+                            <input type="text" data-add-doc-issued class="form-input" value="${formatDocUploadDate()}" placeholder="e.g. 15 Mar 2025">
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label text-[12px] font-bold text-[#334155]">Expiry Date</label>
+                            <input type="text" data-add-doc-expiry class="form-input" placeholder="e.g. 14 Mar 2026">
+                        </div>
+                    </div>
+                    ${units.length > 1 ? `
+                    <div class="form-field">
+                        <label class="form-label text-[12px] font-bold text-[#334155]">Applies to Unit / Flat</label>
+                        <select data-add-doc-unit class="form-input">
+                            <option value="">Building-wide / All units</option>
+                            ${units.map(u => `<option value="${escapeHtml(unitName(u))}"${STATE.addDocumentUnit === unitName(u) ? ' selected' : ''}>${escapeHtml(unitName(u))}</option>`).join('')}
+                        </select>
+                    </div>` : ''}
+                    <div class="form-field">
+                        <label class="form-label text-[12px] font-bold text-[#334155]">Notes &amp; Details</label>
+                        <textarea data-add-doc-notes class="form-input" rows="2" placeholder="e.g. Combi boiler model, £5M liability cover, inspection notes…"></textarea>
+                    </div>
                 </div>
-                ${!STATE.addDocumentUnit && !STATE.addDocumentTenantId && getPropertyNotifyTargets(STATE.propertyId).length
-                    ? `<div class="mt-3">${renderTenantNotifySection(STATE.propertyId, { title: 'Share with tenants', hint: 'Select who should see this in their tenant portal. Use Notify all for multi-flat buildings.' })}</div>`
-                    : STATE.addDocumentUnit || STATE.addDocumentTenantId
-                        ? `<p class="form-helper mt-3">This file is saved to the flat and linked to the tenant profile.</p>`
-                        : `<p class="form-helper mt-3">Invite tenants to this property to share documents with them.</p>`}
-                <button type="button" data-action="save-add-document" class="btn-primary w-full py-3.5 text-[14px] mt-4">Save document</button>`;
+                <button type="button" data-action="save-add-document" class="btn-primary w-full py-3.5 text-[14px] mt-4 font-bold shadow-xs">Save Document</button>`;
     return `<div class="modal-overlay open" data-action="close-add-document">
         <div class="modal-sheet modal-sheet--tall">
             <div class="add-doc-modal-head">
@@ -4180,8 +4383,8 @@ function renderTenancyIssuedKeys(propertyId, unitName, members) {
             <div class="card flat-key-view">
                 <p class="flat-key-view-title">No keys issued</p>
                 <p class="tenant-keys-page-sub">${unitHas
-                    ? 'This tenancy has no issued sets. Other copies are on the unit.'
-                    : 'Add sets on the unit, then mark who holds them.'}</p>
+                ? 'This tenancy has no issued sets. Other copies are on the unit.'
+                : 'Add sets on the unit, then mark who holds them.'}</p>
             </div>
             ${unitBtn}
         </div>`;
@@ -4191,8 +4394,8 @@ function renderTenancyIssuedKeys(propertyId, unitName, members) {
             <div class="card flat-key-view">
                 <p class="flat-key-view-title">${total} key set${total === 1 ? '' : 's'} issued</p>
                 <p class="tenant-keys-page-sub">${showHolders
-                    ? 'Only sets issued to people on this tenancy.'
-                    : 'Issued to this tenant.'}</p>
+            ? 'Only sets issued to people on this tenancy.'
+            : 'Issued to this tenant.'}</p>
             </div>
             ${groups.map(g => `
             ${showHolders ? `<p class="tenant-keys-holder">${escapeHtml(g.name)}</p>` : ''}
@@ -4218,8 +4421,8 @@ function renderTenantKeysCard(propertyId, unitName, tenantName, opts = {}) {
             <div class="card flat-key-view">
                 <p class="flat-key-view-title">${keys.length ? `${keys.length} key set${keys.length === 1 ? '' : 's'} issued` : 'No keys issued'}</p>
                 <p class="tenant-keys-page-sub">${keys.length
-                    ? `With ${escapeHtml(tenantName)}.`
-                    : emptySub}</p>
+                ? `With ${escapeHtml(tenantName)}.`
+                : emptySub}</p>
             </div>
             ${issuedRows}
             ${unitBtn}
@@ -4371,9 +4574,9 @@ function screenInventoryRoomEnhanced() {
             ${items.length ? `
             <div class="divide-y divide-[#F1F5F9]">
                 ${items.map((item, idx) => {
-                    const itemName = inventoryItemName(item);
-                    const icon = getInventoryFixtureIcon(itemName);
-                    return `
+        const itemName = inventoryItemName(item);
+        const icon = getInventoryFixtureIcon(itemName);
+        return `
                     <div class="py-3 flex items-center justify-between gap-3 group">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs">
@@ -4393,7 +4596,7 @@ function screenInventoryRoomEnhanced() {
                             </button>
                         </div>
                     </div>`;
-                }).join('')}
+    }).join('')}
             </div>` : `
             <div class="text-center py-6">
                 <p class="text-[13px] text-[#94A3B8] m-0">No items recorded for this room.</p>
@@ -4764,8 +4967,8 @@ function renderBroadcastDetailContent(b, opts = {}) {
         <div class="broadcast-detail-meta">
             <span><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${escapeHtml(b.date)}</span>
             ${opts.showRecipients
-                ? `<span><i data-lucide="users" class="w-3.5 h-3.5"></i>${recipients.length} tenant${recipients.length === 1 ? '' : 's'}</span>`
-                : `<span><i data-lucide="user" class="w-3.5 h-3.5"></i>From ${escapeHtml(b.from || 'landlord')}</span>`}
+            ? `<span><i data-lucide="users" class="w-3.5 h-3.5"></i>${recipients.length} tenant${recipients.length === 1 ? '' : 's'}</span>`
+            : `<span><i data-lucide="user" class="w-3.5 h-3.5"></i>From ${escapeHtml(b.from || 'landlord')}</span>`}
         </div>
     </div>`;
 }
@@ -4827,10 +5030,10 @@ function renderBroadcastAudienceSection(propertyId) {
             </div>` : ''}
             <div class="notify-tenant-list stack-sm">
                 ${unitNames.map(un => {
-                    const tenants = TENANT_LIST.filter(t => t.propertyId === propertyId && t.unit === un);
-                    const occ = tenants.filter(t => t.status === 'active').length;
-                    const checked = selected.includes(un);
-                    return `
+        const tenants = TENANT_LIST.filter(t => t.propertyId === propertyId && t.unit === un);
+        const occ = tenants.filter(t => t.status === 'active').length;
+        const checked = selected.includes(un);
+        return `
                 <label class="member-row card cursor-pointer notify-tenant-row">
                     <input type="checkbox" data-broadcast-unit="${un}" class="accent-[#2563EB]" ${checked ? 'checked' : ''}>
                     <span class="notify-flat-icon"><i data-lucide="door-open" class="w-4 h-4"></i></span>
@@ -4839,7 +5042,7 @@ function renderBroadcastAudienceSection(propertyId) {
                         <p class="member-row-meta">${occ ? `${occ} active tenant${occ === 1 ? '' : 's'}` : 'Vacant — no tenants notified'}</p>
                     </div>
                 </label>`;
-                }).join('')}
+    }).join('')}
             </div>
         </div>` : ''}
         <p class="form-helper">${helper}</p>
@@ -4856,13 +5059,13 @@ function screenBroadcastNotices() {
         ${list.length ? `
         <p class="txn-section-label txn-section-label--spaced">Sent</p>
         <div class="txn-list">${list.map(b => {
-            const p = PROPERTIES[b.propertyId];
-            const place = b.scope === 'portfolio' ? 'All properties' : (p?.name || 'Property');
-            const recipients = broadcastRecipientCount(b);
-            const thumb = b.image
-                ? `<img src="${b.image}" alt="" class="broadcast-list-thumb">`
-                : `<div class="txn-icon txn-icon-pending"><i data-lucide="megaphone" class="w-4 h-4"></i></div>`;
-            return `
+        const p = PROPERTIES[b.propertyId];
+        const place = b.scope === 'portfolio' ? 'All properties' : (p?.name || 'Property');
+        const recipients = broadcastRecipientCount(b);
+        const thumb = b.image
+            ? `<img src="${b.image}" alt="" class="broadcast-list-thumb">`
+            : `<div class="txn-icon txn-icon-pending"><i data-lucide="megaphone" class="w-4 h-4"></i></div>`;
+        return `
         <button type="button" data-go="broadcast-detail" data-bid="${b.id}" class="txn-row broadcast-sent-row w-full text-left">
             ${thumb}
             <div class="txn-body">
@@ -4872,7 +5075,7 @@ function screenBroadcastNotices() {
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
         </button>`;
-        }).join('')}</div>` : `
+    }).join('')}</div>` : `
         <div class="card p-8 text-center mt-4">
             <i data-lucide="megaphone" class="w-10 h-10 text-[#CBD5E1] mx-auto"></i>
             <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No announcements sent yet</p>
@@ -5878,22 +6081,7 @@ function renderPropertyOverviewDetails(propertyId) {
             label: a.name,
             sub: a.brand || '',
         }));
-    const alarmItems = [
-        ...ALARM_CATALOG
-            .filter(a => alarmHasData(meta.alarms?.[a.key]))
-            .map(a => {
-                const alarm = meta.alarms[a.key];
-                const parts = [
-                    alarm.location || '',
-                    alarm.makeModel || '',
-                    alarm.expiry ? `Expires ${formatInfoDate(alarm.expiry)}` : '',
-                    alarm.description || '',
-                ].filter(Boolean);
-                return { icon: a.icon, label: `${a.label} Alarm`, sub: parts.join(' · ') };
-            }),
-        ...propertyCustomAlarmItems(meta),
-    ];
-    const featureItems = [...applianceItems, ...alarmItems];
+    const featureItems = [...applianceItems];
     const valuationAmountLabel = (() => {
         if (info.valuationAmount === '' || info.valuationAmount == null) return '—';
         const money = formatMoneyField(info.valuationAmount);
@@ -5926,14 +6114,7 @@ function renderPropertyOverviewDetails(propertyId) {
         ['calendar-days', 'Valuation date', info.valuationDate ? formatInfoDate(info.valuationDate) : '—'],
     ];
     const extraInfoRows = [
-        ['ruler', 'Total size', info.totalSqft ? `${info.totalSqft} sq ft` : '—'],
-        ...(units.length <= 1 && info.furnished ? [['sofa', 'Furnished', info.furnished]] : []),
-        ['leaf', 'EPC', formatEpcDisplay(info.epc)],
-        ['calendar-clock', 'EPC expiry', info.epcExpiry ? formatInfoDate(info.epcExpiry) : '—'],
-        ['shield', 'Insurance renewal', info.insuranceExpiry ? formatInfoDate(info.insuranceExpiry) : '—'],
-        ['landmark', 'Mortgage renewal', info.mortgageRenewal ? formatInfoDate(info.mortgageRenewal) : '—'],
         ['receipt', 'Council tax', info.councilTax || '—'],
-        ['key-round', 'Alarm code', info.alarmCode || '—'],
     ].filter(([, , value]) => value && value !== '—');
     const b = getPropertyBuilding(propertyId);
     const floors = b.useFloors && b.floors > 1 ? b.floors : Math.max(1, new Set(units.map(u => u.floor || 1)).size);
@@ -5981,14 +6162,9 @@ function renderPropertyOverviewDetails(propertyId) {
                     ${renderInfoRows(coreInfoRows)}
                     ${extraInfoRows.length ? renderInfoRows(extraInfoRows) : ''}
                 </div>
-                ${info.description ? `
-                <div class="building-notes-block">
-                    <p class="building-notes-label">Description</p>
-                    <p class="building-notes-text">${escapeHtml(info.description)}</p>
-                </div>` : ''}
                 ${info.notes ? `
                 <div class="building-notes-block">
-                    <p class="building-notes-label">Notes</p>
+                    <p class="building-notes-label">Building notes</p>
                     <p class="building-notes-text">${escapeHtml(info.notes)}</p>
                 </div>` : ''}
             </button>
@@ -6641,7 +6817,7 @@ function renderTenancySummaryCard(tenancy, leaseStart, leaseEnd, lead) {
     const showAdvance = typeof shouldShowAdvancePaid === 'function'
         ? shouldShowAdvancePaid(tenancy.deposit, tenancy.advancePaid)
         : (tenancy.advancePaid && tenancy.advancePaid !== tenancy.deposit);
-  return `
+    return `
     <section class="card tenancy-summary">
         <div class="tenancy-summary-head">
             ${tenancyTypePill(tenancy.type)}
@@ -6682,8 +6858,8 @@ function renderTenancyMembersSection(propertyId, unit, tenancy, members) {
         </div>
         <div class="tenancy-members-list">
             ${members.length
-                ? members.map(m => renderMemberRow(m, propertyId, unit, rowOpts)).join('')
-                : `<p class="tenancy-members-empty">No members yet</p>`}
+            ? members.map(m => renderMemberRow(m, propertyId, unit, rowOpts)).join('')
+            : `<p class="tenancy-members-empty">No members yet</p>`}
         </div>
     </section>`;
 }
@@ -7491,79 +7667,48 @@ function screenPropertyHouseRules() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
     const rules = getPropertyHouseRules(propertyId);
+    
+    // Format existing rules with bullet points for clean, readable editing
+    const formattedText = rules.map(r => r.startsWith('•') || /^\d+\./.test(r) ? r : `• ${r}`).join('\n\n');
 
-    const presets = [
-        'Quiet hours after 11 PM — please respect residential neighbours.',
-        'No smoking or vaping permitted inside the flat or communal areas.',
-        'Pets require prior written permission from the landlord.',
-        'Household waste and recycling must be separated and placed in designated bins.',
-        'No subletting, short-lets, or Airbnb permitted under any circumstances.',
-        'Fire doors must remain closed at all times and exits kept clear.',
-        'Overnight guests limited to a maximum of 14 consecutive nights.',
-        'Bicycles must be stored in the designated bike racks, not in communal hallways.',
-        'Notify landlord at least 48 hours in advance for prolonged absences over 14 days.'
-    ];
+    const badge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">${rules.length} Rules</span>`;
 
-    return `${topBar('House Rules & Policies', { back: true, sub: p.name || '' })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-10">
-        <!-- Overview Banner -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-                <div>
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Building Guidelines</span>
-                    <h3 class="text-[16px] font-bold text-[#0F172A] m-0 mt-0.5">${escapeHtml(p.name)}</h3>
-                </div>
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">
-                    ${rules.length} Active Rules
-                </span>
-            </div>
-            <p class="text-[12px] text-[#64748B] mt-3 m-0 leading-relaxed">
-                These rules are automatically published to all tenants residing in this property under their <strong>Your building &rarr; House rules</strong> guide.
-            </p>
+    return `${topBar('House Rules & Policies', { back: true, sub: p.name || '', rightBtn: badge })}
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-10">
+        <!-- Subtitle -->
+        <p class="text-[12px] text-[#64748B] leading-relaxed">
+            Write or edit rules below. Use bullet points (<code class="text-[#2563EB] font-bold">•</code>) or numbers (<code class="text-[#2563EB] font-bold">1.</code>) for each clause.
+        </p>
+
+        <!-- Quick Formatting Toolbar -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" data-action="hr-insert-bullet" class="px-2.5 py-1 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#2563EB] hover:text-[#2563EB] text-[11.5px] font-bold text-[#334155] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors">
+                <i data-lucide="list" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                <span>• Add Bullet</span>
+            </button>
+            <button type="button" data-action="hr-insert-number" class="px-2.5 py-1 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#2563EB] hover:text-[#2563EB] text-[11.5px] font-bold text-[#334155] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors">
+                <i data-lucide="list-ordered" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                <span>1. Number</span>
+            </button>
+            <button type="button" data-action="hr-insert-template" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] text-[11.5px] font-bold text-[#2563EB] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Standard Rules</span>
+            </button>
+            <button type="button" data-action="hr-clear-editor" class="px-2 py-1 rounded-lg text-[#94A3B8] hover:text-[#EF4444] text-[11.5px] font-semibold flex items-center gap-1 ml-auto cursor-pointer transition-colors">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Clear</span>
+            </button>
         </div>
 
-        <!-- Preset Suggestions -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5">
-            <div class="flex items-center justify-between">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Quick Presets</span>
-                <span class="text-[11px] text-[#94A3B8]">Tap to add</span>
-            </div>
-            <div class="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1">
-                ${presets.map(rule => `
-                <button type="button" data-action="add-preset-house-rule" data-rule="${escapeHtml(rule)}" class="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0] hover:bg-[#EFF6FF] hover:text-[#2563EB] hover:border-[#BFDBFE] transition-all text-left flex items-center gap-1.5 cursor-pointer">
-                    <i data-lucide="plus" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${escapeHtml(rule)}</span>
-                </button>`).join('')}
-            </div>
-        </div>
-
-        <!-- Rules List & Management -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Active Building Rules (${rules.length})</span>
-            </div>
-            
-            <div class="space-y-2.5" id="houseRulesListContainer">
-                ${rules.map((rule, idx) => `
-                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-2.5 group house-rule-row">
-                    <span class="w-6 h-6 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
-                    <input type="text" data-house-rule-input class="form-input flex-1 text-[13px] py-1.5 bg-white border-[#CBD5E1]" value="${escapeHtml(rule)}" placeholder="Rule description">
-                    <button type="button" data-action="remove-house-rule" data-rule-idx="${idx}" class="w-7 h-7 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer shrink-0 mt-0.5" aria-label="Delete rule">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>`).join('')}
-            </div>
-
-            <!-- Inline Add Rule Input -->
-            <div class="mt-3 pt-3 border-t border-[#F1F5F9] flex items-center gap-2">
-                <input type="text" id="newHouseRuleInput" class="form-input text-[13px] flex-1 py-2" placeholder="Type a custom house rule…">
-                <button type="button" data-action="add-custom-house-rule" class="btn-secondary py-2 px-4 text-[12px] font-bold rounded-xl shrink-0">+ Add</button>
-            </div>
+        <!-- Rich Textarea -->
+        <div class="relative">
+            <textarea id="bulkHouseRulesEditor" rows="13" class="w-full p-4 rounded-2xl bg-white border border-[#CBD5E1] text-[13.5px] font-medium text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 leading-relaxed shadow-xs resize-none" placeholder="• No smoking inside the building...&#10;• Quiet hours after 10 PM...&#10;• Guests max 14 consecutive nights...">${escapeHtml(formattedText)}</textarea>
         </div>
 
         <!-- Save Button -->
-        <button type="button" data-action="save-house-rules" class="btn-primary w-full py-3.5 text-[14px] font-bold rounded-2xl shadow-sm">
-            Save &amp; Broadcast House Rules
+        <button type="button" data-action="save-house-rules" class="w-full py-3.5 text-[13.5px] font-bold rounded-2xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] transition-all shadow-xs cursor-pointer mt-2 flex items-center justify-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Save & Publish Rules</span>
         </button>
     </div>`;
 }
@@ -7902,7 +8047,7 @@ const CHECKOUT_METER_KEYS = [
 ];
 
 const VACATE_NOTICE_TEMPLATE = (tenantName, propertyLabel, vacateDate) =>
-`Dear Landlord,
+    `Dear Landlord,
 
 I am writing to give formal notice that I intend to vacate ${propertyLabel} on ${vacateDate || '[vacating date]'}.
 
@@ -7977,11 +8122,17 @@ function collectTenancyDocSelections() {
 function applyTenancyDocumentShare(tenancy, propertyId, unit) {
     const sent = tenancy.documentsSent || {};
     const types = Object.keys(sent).filter(k => sent[k]);
+    const termStr = tenancy.start && tenancy.end ? `${tenancy.start} – ${tenancy.end}` : '';
     types.forEach(type => {
         let doc = propertyDocumentsForType(propertyId, type, unit)[0];
         if (doc) {
             doc.shared = true;
             if (unit && !doc.unit) doc.unit = unit;
+            if (tenancy.rent && !doc.rent) doc.rent = tenancy.rent;
+            if (tenancy.deposit && !doc.deposit) doc.deposit = tenancy.deposit;
+            if (termStr && !doc.term) doc.term = termStr;
+            if (tenancy.leadName && !doc.tenant) doc.tenant = tenancy.leadName;
+            if (tenancy.tenantId != null && doc.tenantId == null) doc.tenantId = tenancy.tenantId;
         } else {
             const id = AppStore.nextId(AppStore.documents);
             doc = {
@@ -7991,6 +8142,13 @@ function applyTenancyDocumentShare(tenancy, propertyId, unit) {
                 type,
                 name: `${type}${unit ? ` — ${unit}` : ''}`,
                 date: typeof formatDocUploadDate === 'function' ? formatDocUploadDate() : 'Just now',
+                issuedDate: typeof formatDocUploadDate === 'function' ? formatDocUploadDate() : 'Just now',
+                expiryDate: tenancy.end || '',
+                rent: tenancy.rent || '',
+                deposit: tenancy.deposit || '',
+                term: termStr,
+                tenant: tenancy.leadName || '',
+                tenantId: tenancy.tenantId != null ? tenancy.tenantId : undefined,
                 uploadedAt: Date.now(),
                 shared: true,
                 signed: false,
@@ -8495,8 +8653,8 @@ function renderCheckoutKeysSection(co, opts = {}) {
                     <p class="text-[11px] text-[#64748B]">${escapeHtml([k.location, k.holder ? `Issued to ${k.holder}` : ''].filter(Boolean).join(' · ') || 'On issue')}</p>
                 </div>
                 ${editable
-                    ? `<label class="checkout-key-toggle flex items-center gap-2"><input type="checkbox" data-action="toggle-checkout-key" data-key-idx="${i}" ${k.returned ? 'checked' : ''} class="w-5 h-5 accent-[#2563EB] cursor-pointer"></label>`
-                    : `<span class="badge ${k.returned ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FEF2F2] text-[#DC2626]'}">${k.returned ? 'Ticked' : 'Missing'}</span>`}
+            ? `<label class="checkout-key-toggle flex items-center gap-2"><input type="checkbox" data-action="toggle-checkout-key" data-key-idx="${i}" ${k.returned ? 'checked' : ''} class="w-5 h-5 accent-[#2563EB] cursor-pointer"></label>`
+            : `<span class="badge ${k.returned ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FEF2F2] text-[#DC2626]'}">${k.returned ? 'Ticked' : 'Missing'}</span>`}
             </div>`).join('')}
         </div>
         ${missing.length ? `
@@ -8753,11 +8911,13 @@ function normalizeDemoPortfolio() {
         { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', deposit: '£2,450', advancePaid: '£2,450', depositScheme: 'MyDeposits', depositStatus: 'protected', protectionRef: 'MD-20481', start: '2024-01-15', end: '2027-01-14', status: 'active' },
         { id: 1, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1A', rent: '£1,850', deposit: '£1,850', advancePaid: '£1,850', depositScheme: 'DPS', depositStatus: 'protected', protectionRef: 'DPS-88214', start: '2023-06-01', end: '2027-05-31', status: 'active' },
         { id: 2, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2A', rent: '£1,950', deposit: '£1,950', advancePaid: '£1,950', depositScheme: 'TDS', depositStatus: 'protected', protectionRef: 'TDS-44102', start: '2024-03-10', end: '2027-03-09', status: 'active' },
-        { id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', deposit: '£2,200', advancePaid: '£2,200', depositScheme: 'MyDeposits', depositStatus: 'protected', protectionRef: 'MD-31092', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
-            { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
-            { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
-            { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
-        ]},
+        {
+            id: 3, propertyId: 0, tenantId: 4, type: 'group', unit: 'Flat 2B', rent: '£2,200', deposit: '£2,200', advancePaid: '£2,200', depositScheme: 'MyDeposits', depositStatus: 'protected', protectionRef: 'MD-31092', start: '2024-06-01', end: '2027-05-31', status: 'active', occupants: 3, leadName: 'Priya Sharma', members: [
+                { name: 'Priya Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', tenantId: 4, status: 'active', role: 'lead' },
+                { name: 'James Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', tenantId: 5, status: 'pending', role: 'member' },
+                { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
+            ]
+        },
         { id: 4, propertyId: 2, tenantId: 3, type: 'solo', unit: 'Room 1', rent: '£650', deposit: '£650', advancePaid: '£650', depositScheme: 'DPS', depositStatus: 'protected', protectionRef: 'DPS-90812', start: '2025-01-01', end: '2026-12-31', status: 'active' },
         { id: 5, propertyId: 2, tenantId: 6, type: 'solo', unit: 'Room 3', rent: '£680', deposit: '£680', advancePaid: '£680', depositScheme: 'TDS', depositStatus: 'protected', protectionRef: 'TDS-77401', start: '2025-02-01', end: '2027-01-31', status: 'active' },
     ];
@@ -9341,34 +9501,74 @@ function renderBuildingCertTiles(propertyId) {
     const rows = propertyComplianceCertRows(propertyId);
     const allDocs = AppStore.docsForProperty(propertyId);
     const folderCount = (folderId) => (typeof docsForFolder === 'function' ? docsForFolder(allDocs, folderId).length : 0);
-    const tileDefs = [
-        { folderId: 'gas', cid: 0, label: 'Gas (CP12)', icon: 'flame', bg: '#FEE2E2', color: '#DC2626' },
-        { folderId: 'eicr', cid: 1, label: 'EICR', icon: 'zap', bg: '#EFF6FF', color: '#2563EB' },
-        { folderId: 'epc', cid: 7, label: 'EPC', icon: 'leaf', bg: '#ECFDF5', color: '#16A34A' },
-        { folderId: 'deposit', label: 'Deposit', icon: 'shield', bg: '#DBEAFE', color: '#2563EB', folderOnly: true },
-        { folderId: 'license', label: 'Property License', icon: 'badge-check', bg: '#DBEAFE', color: '#2563EB', folderOnly: true, optional: true },
-        { folderId: 'insurance', cid: 5, label: 'Insurance', icon: 'shield-check', bg: '#EFF6FF', color: '#1D4ED8' },
+    const otherCount = (typeof propertyFolderFileCount === 'function' ? propertyFolderFileCount(propertyId, 'custom') + propertyFolderFileCount(propertyId, 'fire') : 0);
+    
+    const allDefs = [
+        { folderId: 'gas', cid: 0, label: 'Gas Safety (CP12)', defaultSub: 'Annual safety inspection', icon: 'flame', iconColor: 'text-[#0284C7] bg-[#F0F9FF]' },
+        { folderId: 'eicr', cid: 1, label: 'Electrical (EICR)', defaultSub: '5-year wiring check', icon: 'zap', iconColor: 'text-[#D97706] bg-[#FFFBEB]' },
+        { folderId: 'epc', cid: 7, label: 'Energy Performance (EPC)', defaultSub: 'Energy efficiency rating', icon: 'leaf', iconColor: 'text-[#059669] bg-[#ECFDF5]' },
+        { folderId: 'insurance', cid: 5, label: 'Landlord Insurance', defaultSub: 'Buildings & liability cover', icon: 'shield-check', iconColor: 'text-[#7C3AED] bg-[#F5F3FF]' },
+        { folderId: 'deposit', label: 'Deposit Protection', defaultSub: 'DPS / TDS scheme records', icon: 'shield', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', folderOnly: true },
+        { folderId: 'license', label: 'Property Licence', defaultSub: 'Council licensing registration', icon: 'badge-check', iconColor: 'text-[#475569] bg-[#F1F5F9]', folderOnly: true, optional: true },
+        { folderId: 'custom', label: 'Document Vault & Archive', defaultSub: `${otherCount} stored files & certificates`, icon: 'folder-archive', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
     ];
-    const toneClass = { ok: 'cert-tile--ok', warn: 'cert-tile--warn', bad: 'cert-tile--bad' };
+    
     return `
-    <div class="cert-tile-grid">
-        ${tileDefs.map(def => {
-            const row = def.cid != null ? rows[def.cid] : null;
-            const count = def.folderOnly ? folderCount(def.folderId) : 0;
-            const st = row?.st || (def.folderOnly
-                ? (count ? { tone: 'ok', label: `${count} on file` } : { tone: 'bad', label: def.optional ? 'Optional' : 'Not set' })
-                : { tone: 'bad', label: 'Not set' });
-            const meta = row?.displayExp ? certTileSummary(row) : (def.folderOnly && count ? `${count} file${count === 1 ? '' : 's'}` : st.label);
-            return `
-            <button type="button" data-go="property-doc-folder" data-folder="${def.folderId}" data-pid="${propertyId}" class="cert-tile ${toneClass[st.tone] || ''}">
-                <span class="cert-tile-icon" style="background:${def.bg};color:${def.color}"><i data-lucide="${def.icon}" class="w-5 h-5"></i></span>
-                <span class="cert-tile-body">
-                    <span class="cert-tile-label">${def.label}</span>
-                    <span class="cert-tile-meta">${meta}</span>
-                </span>
-                <span class="cert-tile-dot cert-tile-dot--${st.tone}" aria-hidden="true"></span>
-            </button>`;
-        }).join('')}
+    <div class="space-y-2.5">
+        <div class="flex items-center justify-between px-1">
+            <span class="text-[12px] font-bold text-[#334155] flex items-center gap-1.5">
+                <i data-lucide="files" class="w-4 h-4 text-[#2563EB]"></i>
+                <span>All Documents & Records (${allDefs.length})</span>
+            </span>
+            <span class="text-[11px] font-semibold text-[#64748B]">Tap to view / upload</span>
+        </div>
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
+            ${allDefs.map(def => {
+                const row = def.cid != null ? rows[def.cid] : null;
+                const count = def.isOther ? otherCount : (def.folderOnly ? folderCount(def.folderId) : 0);
+                const st = def.isOther 
+                    ? { tone: 'neutral', label: count ? `${count} Files` : 'Empty' }
+                    : (row?.st || (def.folderOnly
+                        ? (count ? { tone: 'ok', label: `${count} on file` } : { tone: def.optional ? 'neutral' : 'bad', label: def.optional ? 'Optional' : 'Not set' })
+                        : { tone: 'bad', label: 'Not set' }));
+                
+                const sub = row?.displayExp 
+                    ? (st.tone === 'bad' ? `Expired on ${row.displayExp}` : `Valid until ${row.displayExp}`)
+                    : (def.isOther ? `${count} files on record` : (def.folderOnly && count ? `${count} document${count === 1 ? '' : 's'} protected` : def.defaultSub));
+
+                let badgeHtml = '';
+                if (st.tone === 'bad') {
+                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span>Expired</span>`;
+                } else if (st.tone === 'warn') {
+                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>${st.label}</span>`;
+                } else if (st.tone === 'ok') {
+                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Valid</span>`;
+                } else {
+                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] shrink-0">${def.optional ? 'Optional' : (def.isOther && count ? `${count} Files` : 'Active')}</span>`;
+                }
+
+                const routeAction = def.isOther 
+                    ? `data-go="property-doc-vault" data-pid="${propertyId}"`
+                    : `data-go="property-doc-folder" data-folder="${def.folderId}" data-pid="${propertyId}"`;
+
+                return `
+                <button type="button" ${routeAction} class="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] transition-colors cursor-pointer group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl ${def.iconColor || 'bg-[#F8FAFC] text-[#334155]'} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                            <i data-lucide="${def.icon}" class="w-5 h-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors truncate leading-snug">${def.label}</h4>
+                            <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${sub}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${badgeHtml}
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                    </div>
+                </button>`;
+            }).join('')}
+        </div>
     </div>`;
 }
 
@@ -9471,68 +9671,120 @@ function propertyFlatDocumentCount(propertyId) {
 
 function screenPropertyCompliance() {
     const propertyId = STATE.propertyId ?? 0;
-    const p = PROPERTIES[propertyId];
+    const p = PROPERTIES[propertyId] || PROPERTIES[0];
     const sub = p?.name?.split(',')[0] || '';
     const certIssues = propertyCertTileIssues(propertyId);
-    const docs = typeof AppStore.docsForProperty === 'function' ? AppStore.docsForProperty(propertyId) : [];
-    const customDocs = docs.filter(d => d.type !== 'Gas Safety' && d.type !== 'EICR' && d.type !== 'EPC' && d.type !== 'Insurance');
+    
+    // Count total tracked vs valid
+    const totalCount = 7;
+    const validCount = Math.max(0, totalCount - certIssues.length);
+    const healthPercent = Math.round((validCount / totalCount) * 100);
 
-    return `${topBar('Certificates & Documents', { back: true, sub })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-6">
-        <div class="card p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
-            <div>
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Compliance Status</span>
-                <p class="text-[13px] font-bold text-[#0F172A] mt-0.5 m-0">${certIssues.length ? `<span class="text-[#DC2626] font-bold">${certIssues.length} Renewal Needed</span>` : '<span class="text-[#16A34A] font-bold">All Certificates Up to Date</span>'}</p>
-            </div>
-            <button type="button" data-action="open-add-document-flow" class="px-3 py-1.5 rounded-lg bg-[#2563EB] text-white text-[12px] font-bold hover:bg-[#1D4ED8] transition-colors flex items-center gap-1.5 cursor-pointer">
-                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-                <span>+ Upload File</span>
-            </button>
-        </div>
+    const uploadBtn = `<button type="button" data-action="open-add-document-flow" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+        <span>Upload</span>
+    </button>`;
 
-        <div>
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2 px-0.5">Statutory Certificates</p>
-            ${renderBuildingCertTiles(propertyId)}
-        </div>
-
-        ${customDocs.length ? `
-        <div>
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2 px-0.5">Property Documents (${customDocs.length})</p>
-            <div class="card divide-y divide-[#F1F5F9] rounded-xl overflow-hidden border border-[#E2E8F0] bg-white shadow-xs">
-                ${customDocs.map(d => `
-                <button type="button" data-go="document-preview" data-doc="${d.id}" class="p-3 flex items-center justify-between gap-3 w-full text-left hover:bg-[#F8FAFC] transition-colors cursor-pointer">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <div class="w-8 h-8 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#2563EB] flex items-center justify-center shrink-0">
-                            <i data-lucide="file-text" class="w-4 h-4"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <h5 class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${escapeHtml(d.name || d.type || 'Document')}</h5>
-                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${escapeHtml(d.date || 'Uploaded')} · ${escapeHtml(d.type || 'General file')}</p>
-                        </div>
+    return `${topBar('Certificates & Compliance', { back: true, sub, rightBtn: uploadBtn })}
+    <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
+        <!-- Hero Health Banner (Distinct, Dark Gradient Card) -->
+        <div class="p-4 rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#334155] text-white shadow-md border border-slate-700/60 relative overflow-hidden">
+            <!-- Decorative Subtle Accent Glow -->
+            <div class="absolute -right-8 -bottom-8 w-28 h-28 bg-[#2563EB]/20 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div class="flex items-start justify-between gap-3 relative z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl ${certIssues.length ? 'bg-[#EF4444]/20 border border-[#EF4444]/40 text-[#F87171]' : 'bg-[#10B981]/20 border border-[#10B981]/40 text-[#34D399]'} flex items-center justify-center shrink-0 shadow-inner">
+                        <i data-lucide="${certIssues.length ? 'shield-alert' : 'shield-check'}" class="w-6 h-6"></i>
                     </div>
-                    <span class="w-7 h-7 rounded-lg bg-[#F1F5F9] text-[#64748B] flex items-center justify-center shrink-0" title="View document">
-                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                    <div>
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Compliance Overview</span>
+                        <h3 class="text-[15px] font-bold text-white m-0 mt-0.5">
+                            ${certIssues.length ? `${certIssues.length} Renewal${certIssues.length > 1 ? 's' : ''} Needed` : 'All Documents Up to Date'}
+                        </h3>
+                        <p class="text-[11.5px] font-medium text-slate-300 m-0 mt-0.5">
+                            ${validCount} of ${totalCount} property records active & verified
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right shrink-0">
+                    <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold ${certIssues.length ? 'bg-[#EF4444]/20 text-[#FCA5A5] border border-[#EF4444]/30' : 'bg-[#10B981]/20 text-[#6EE7B7] border border-[#10B981]/30'}">
+                        ${healthPercent}% Ready
                     </span>
-                </button>`).join('')}
+                </div>
             </div>
-        </div>` : ''}
+
+            <!-- Progress Bar -->
+            <div class="mt-3.5 pt-3 border-t border-slate-700/60 flex items-center gap-2.5">
+                <div class="flex-1 h-2 rounded-full bg-slate-800/80 overflow-hidden p-0.5">
+                    <div class="h-full rounded-full ${certIssues.length ? 'bg-gradient-to-r from-[#F59E0B] to-[#EF4444]' : 'bg-gradient-to-r from-[#10B981] to-[#059669]'}" style="width: ${healthPercent}%"></div>
+                </div>
+                <span class="text-[11px] font-bold text-slate-400 shrink-0">${validCount}/${totalCount} OK</span>
+            </div>
+        </div>
+
+        <!-- Unified Document List -->
+        ${renderBuildingCertTiles(propertyId)}
     </div>`;
 }
 
 function screenPropertyDocumentVault() {
     const propertyId = STATE.propertyId ?? 0;
-    const p = PROPERTIES[propertyId];
+    const p = PROPERTIES[propertyId] || PROPERTIES[0];
     const sub = p?.name?.split(',')[0] || '';
     const fireCount = propertyFolderFileCount(propertyId, 'fire');
     const otherCount = propertyFolderFileCount(propertyId, 'custom');
     const flatDocCount = propertyFlatDocumentCount(propertyId);
 
+    const vaultFolders = [
+        {
+            title: 'Flat Documents',
+            sub: 'Tenancy leases & unit files',
+            icon: 'home',
+            iconColor: 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]',
+            route: `data-go="property-flat-documents" data-pid="${propertyId}"`,
+            badge: flatDocCount ? `${flatDocCount} Files` : 'By Unit',
+        },
+        {
+            title: 'Fire Safety Archive',
+            sub: 'FRA, alarms & logs',
+            icon: 'flame-kindling',
+            iconColor: 'text-[#EA580C] bg-[#FFF7ED] border-[#FFEDD5]',
+            route: `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`,
+            badge: fireCount ? `${fireCount} Files` : '0 Files',
+        },
+        {
+            title: 'General Building Files',
+            sub: 'Deeds, warranties & custom docs',
+            icon: 'folder-archive',
+            iconColor: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]',
+            route: `data-go="property-doc-folder" data-folder="custom" data-pid="${propertyId}"`,
+            badge: otherCount ? `${otherCount} Files` : '0 Files',
+        },
+    ];
+
     return `${topBar('Document Vault', { back: true, sub })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-6">
-        <div class="records-hub-nav-list card divide-y divide-[#F1F5F9]">
-            ${renderRecordsHubNavRow('home', 'Flat documents', `data-go="property-flat-documents" data-pid="${propertyId}"`, flatDocCount ? `${flatDocCount} file${flatDocCount === 1 ? '' : 's'}` : 'Open by unit')}
-            ${fireCount ? renderRecordsHubNavRow('flame-kindling', 'Fire safety archive', `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`, `${fireCount} file${fireCount === 1 ? '' : 's'}`) : ''}
-            ${renderRecordsHubNavRow('folder', 'Other building files', `data-go="property-doc-folder" data-folder="custom" data-pid="${propertyId}"`, otherCount ? `${otherCount} file${otherCount === 1 ? '' : 's'}` : 'No files yet')}
+    <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
+        <div class="space-y-3">
+            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Vault Storage</span>
+            <div class="space-y-2.5">
+                ${vaultFolders.map(f => `
+                <button type="button" ${f.route} class="w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#2563EB]/40 active:bg-[#F8FAFC] transition-all text-left flex items-center justify-between gap-3 cursor-pointer group">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="w-11 h-11 rounded-xl ${f.iconColor} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                            <i data-lucide="${f.icon}" class="w-5 h-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${f.title}</h4>
+                            <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${f.sub}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">${f.badge}</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                    </div>
+                </button>`).join('')}
+            </div>
         </div>
     </div>`;
 }
@@ -9571,7 +9823,7 @@ function screenPropertyFlatDocuments() {
         const rent = roster.tenancy?.rent ? `£${roster.tenancy.rent}/mo` : (u.rent ? `${u.rent}/mo` : '');
         const docCount = count || 2;
         const activeLease = u.status === 'occupied';
-        
+
         return `
         <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${escapeHtml(name)}" data-flat-tab="records" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all w-full text-left flex items-center justify-between gap-3.5 group cursor-pointer">
             <div class="flex items-center gap-3.5 min-w-0">
@@ -9676,22 +9928,38 @@ function getAlarmIcon(name = '', iconOverride = '') {
 
 function openAddApplianceModal(propertyId) {
     const pid = propertyId ?? STATE.propertyId ?? 0;
+    let uploadedAppliancePhoto = '';
+
     const modalHtml = `
     <div id="add-appliance-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                        <i data-lucide="plug" class="w-5 h-5"></i>
+                        <i data-lucide="package-plus" class="w-5 h-5"></i>
                     </div>
                     <h3 class="text-[16px] font-bold text-slate-900 m-0">Add New Appliance</h3>
                 </div>
-                <button type="button" onclick="document.getElementById('add-appliance-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <button type="button" onclick="document.getElementById('add-appliance-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
             
             <div class="space-y-3">
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Appliance Photo</label>
+                    <div class="border-2 border-dashed border-slate-200 rounded-2xl p-3 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer group">
+                        <input type="file" id="new-appliance-photo-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                        <div id="new-appliance-photo-preview" class="flex flex-col items-center justify-center gap-1.5 py-1">
+                            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                            </div>
+                            <span class="text-[11.5px] font-bold text-[#2563EB]">Upload or take photo</span>
+                            <span class="text-[10px] text-slate-400">PNG, JPG up to 10MB</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-[12px] font-bold text-slate-700 mb-1">Appliance Name *</label>
                     <input id="new-appliance-name" type="text" placeholder="e.g. Microwave, Washing Machine, Boiler, Air Fryer" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
@@ -9711,14 +9979,32 @@ function openAddApplianceModal(propertyId) {
             </div>
 
             <div class="flex items-center gap-3 pt-2">
-                <button type="button" onclick="document.getElementById('add-appliance-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="button" id="submit-new-appliance-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Appliance</button>
+                <button type="button" onclick="document.getElementById('add-appliance-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors cursor-pointer">Cancel</button>
+                <button type="button" id="submit-new-appliance-btn" class="flex-1 py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] hover:bg-[#1D4ED8] transition-colors shadow-sm cursor-pointer">Save Appliance</button>
             </div>
         </div>
     </div>`;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     if (window.lucide) lucide.createIcons();
+
+    const fileInput = document.getElementById('new-appliance-photo-input');
+    if (fileInput) {
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    uploadedAppliancePhoto = evt.target.result;
+                    const preview = document.getElementById('new-appliance-photo-preview');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${uploadedAppliancePhoto}" alt="" class="max-h-28 rounded-xl object-cover shadow-xs mb-1"><span class="text-[11px] font-bold text-[#2563EB]">Photo attached! Tap to change</span>`;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
 
     document.getElementById('submit-new-appliance-btn').onclick = () => {
         const name = document.getElementById('new-appliance-name').value.trim();
@@ -9739,9 +10025,11 @@ function openAddApplianceModal(propertyId) {
             brand,
             type,
             warranty,
+            photo: uploadedAppliancePhoto || getDemoAppliancePhoto(name),
             icon: getApplianceIcon(name),
             tag: 'Recorded'
         });
+        AppStore.save();
 
         document.getElementById('add-appliance-modal').remove();
         toast(`Appliance "${name}" added successfully!`);
@@ -9751,9 +10039,11 @@ function openAddApplianceModal(propertyId) {
 
 function openAddAlarmModal(propertyId) {
     const pid = propertyId ?? STATE.propertyId ?? 0;
+    let uploadedAlarmPhoto = '';
+
     const modalHtml = `
     <div id="add-alarm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -9761,12 +10051,26 @@ function openAddAlarmModal(propertyId) {
                     </div>
                     <h3 class="text-[16px] font-bold text-slate-900 m-0">Add Safety Alarm / Detector</h3>
                 </div>
-                <button type="button" onclick="document.getElementById('add-alarm-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <button type="button" onclick="document.getElementById('add-alarm-modal').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
             
             <div class="space-y-3">
+                <div>
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Alarm Photo</label>
+                    <div class="border-2 border-dashed border-slate-200 rounded-2xl p-3 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer group">
+                        <input type="file" id="new-alarm-photo-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                        <div id="new-alarm-photo-preview" class="flex flex-col items-center justify-center gap-1.5 py-1">
+                            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                            </div>
+                            <span class="text-[11.5px] font-bold text-[#2563EB]">Upload or take alarm photo</span>
+                            <span class="text-[10px] text-slate-400">PNG, JPG up to 10MB</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-[12px] font-bold text-slate-700 mb-1">Alarm Type / Name *</label>
                     <input id="new-alarm-name" type="text" placeholder="e.g. Smoke Alarm, CO Alarm, Heat Detector, Burglar Alarm" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
@@ -9782,14 +10086,32 @@ function openAddAlarmModal(propertyId) {
             </div>
 
             <div class="flex items-center gap-3 pt-2">
-                <button type="button" onclick="document.getElementById('add-alarm-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="button" id="submit-new-alarm-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Alarm</button>
+                <button type="button" onclick="document.getElementById('add-alarm-modal').remove()" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors cursor-pointer">Cancel</button>
+                <button type="button" id="submit-new-alarm-btn" class="flex-1 py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] hover:bg-[#1D4ED8] transition-colors shadow-sm cursor-pointer">Save Alarm</button>
             </div>
         </div>
     </div>`;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     if (window.lucide) lucide.createIcons();
+
+    const fileInput = document.getElementById('new-alarm-photo-input');
+    if (fileInput) {
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    uploadedAlarmPhoto = evt.target.result;
+                    const preview = document.getElementById('new-alarm-photo-preview');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${uploadedAlarmPhoto}" alt="" class="max-h-28 rounded-xl object-cover shadow-xs mb-1"><span class="text-[11px] font-bold text-[#2563EB]">Photo attached! Tap to change</span>`;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
 
     document.getElementById('submit-new-alarm-btn').onclick = () => {
         const name = document.getElementById('new-alarm-name').value.trim();
@@ -9808,9 +10130,11 @@ function openAddAlarmModal(propertyId) {
             name,
             location,
             expiry,
+            photo: uploadedAlarmPhoto || getDemoAlarmPhoto(name),
             status: 'Tested OK',
             icon: getAlarmIcon(name)
         });
+        AppStore.save();
 
         document.getElementById('add-alarm-modal').remove();
         toast(`Safety Alarm "${name}" added successfully!`);
@@ -9882,7 +10206,7 @@ function openApplianceItemModal(applianceId) {
 
         const photoBlock = editMode
             ? `<div>
-                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Appliance Photo / Label</label>
+                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Appliance Photo</label>
                 <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer group">
                     <input type="file" id="appliance-photo-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                     <div id="appliance-photo-preview-box" class="flex flex-col items-center justify-center gap-2">
@@ -9895,7 +10219,7 @@ function openApplianceItemModal(applianceId) {
                 <img src="${photoSrc}" alt="${escapeHtml(item.name)}" class="w-full h-48 object-cover">
                 <div class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-slate-900/75 backdrop-blur-xs text-white text-[11px] font-semibold flex items-center gap-1.5">
                     <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
-                    <span>Verified on record</span>
+                    <span>${escapeHtml(item.tag || 'Recorded')}</span>
                 </div>
                </div>`;
 
@@ -9906,44 +10230,46 @@ function openApplianceItemModal(applianceId) {
                     <input id="item-name-input" type="text" value="${escapeHtml(item.name || '')}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
                 </div>
                 <div>
-                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Brand / Manufacturer</label>
-                    <input id="item-brand-input" type="text" value="${escapeHtml(item.brand || '')}" placeholder="e.g. Bosch, Samsung, Worcester" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Make / Brand</label>
+                    <input id="item-brand-input" type="text" value="${escapeHtml(item.brand || '')}" placeholder="e.g. Bosch, Worcester Bosch" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
                 </div>
                 <div>
                     <label class="block text-[12px] font-bold text-slate-700 mb-1">Model / Type</label>
-                    <input id="item-type-input" type="text" value="${escapeHtml(item.type || '')}" placeholder="e.g. Combi Boiler 30kW, Built-in Oven" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                    <input id="item-type-input" type="text" value="${escapeHtml(item.type || '')}" placeholder="e.g. Combi Boiler 30kW" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
                 </div>
                 <div>
-                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Warranty & Cover Details</label>
-                    <input id="item-warranty-input" type="text" value="${escapeHtml(item.warranty || '')}" placeholder="e.g. Parts & Labour until Jan 2028" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
+                    <label class="block text-[12px] font-bold text-slate-700 mb-1">Warranty & Service Status</label>
+                    <input id="item-warranty-input" type="text" value="${escapeHtml(item.warranty || '')}" placeholder="e.g. Under manufacturer warranty" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-blue-600">
                 </div>
                </div>`
             : `<div class="card p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 text-left">
                 <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
-                    <span class="text-[12px] font-medium text-[#64748B]">Brand</span>
-                    <span class="text-[13px] font-bold text-[#0F172A]">${escapeHtml(item.brand || 'Recorded')}</span>
-                </div>
-                <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
-                    <span class="text-[12px] font-medium text-[#64748B]">Model / Type</span>
-                    <span class="text-[13px] font-bold text-[#0F172A]">${escapeHtml(item.type || 'Standard Unit')}</span>
+                    <span class="text-[12px] font-medium text-[#64748B]">Brand & Model</span>
+                    <span class="text-[13px] font-bold text-[#0F172A]">${escapeHtml(item.brand || '—')} ${escapeHtml(item.type ? `(${item.type})` : '')}</span>
                 </div>
                 <div class="flex items-center justify-between py-1">
-                    <span class="text-[12px] font-medium text-[#64748B]">Warranty Cover</span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB]">
-                        ${escapeHtml(item.warranty || 'On record')}
-                    </span>
+                    <span class="text-[12px] font-medium text-[#64748B]">Warranty</span>
+                    <span class="text-[13px] font-bold text-[#0F172A]">${escapeHtml(item.warranty || 'On record')}</span>
                 </div>
                </div>`;
 
         const footerHtml = editMode
-            ? `<div class="flex items-center gap-3 pt-2">
-                <button type="button" id="appl-cancel-btn" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="button" id="appl-save-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Changes</button>
+            ? `<div class="space-y-2 pt-2">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="appl-cancel-btn" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
+                    <button type="button" id="appl-save-btn" class="flex-1 py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] hover:bg-[#1D4ED8] transition-colors shadow-sm">Save Changes</button>
+                </div>
+                <button type="button" id="appl-delete-btn" class="w-full py-2.5 rounded-xl text-[#DC2626] font-bold text-[12px] hover:bg-[#FEF2F2] transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Delete This Appliance</span>
+                </button>
                </div>`
-            : `<button type="button" id="appl-edit-btn" class="btn-primary w-full py-3.5 text-[14px] flex items-center justify-center gap-2 shadow-sm cursor-pointer">
-                <i data-lucide="pencil" class="w-4 h-4"></i>
-                <span>Edit Details</span>
-               </button>`;
+            : `<div class="flex items-center gap-2 pt-1">
+                <button type="button" id="appl-edit-btn" class="flex-1 py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-colors shadow-sm cursor-pointer">
+                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                    <span>Edit This Appliance</span>
+                </button>
+               </div>`;
 
         const html = `
         <div id="appliance-item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
@@ -9992,12 +10318,27 @@ function openApplianceItemModal(applianceId) {
                 };
             }
             document.getElementById('appl-cancel-btn').onclick = () => renderModal(false);
+            const delBtn = document.getElementById('appl-delete-btn');
+            if (delBtn) {
+                delBtn.onclick = () => {
+                    const idx = appliances.findIndex(a => (a.id && String(a.id) === String(item.id)) || a.name === item.name);
+                    if (idx !== -1) {
+                        appliances.splice(idx, 1);
+                        meta.appliances = appliances;
+                        AppStore.save();
+                    }
+                    document.getElementById('appliance-item-modal').remove();
+                    toast(`Deleted "${item.name}"`);
+                    render();
+                };
+            }
             document.getElementById('appl-save-btn').onclick = () => {
                 item.name = document.getElementById('item-name-input').value.trim() || item.name;
                 item.brand = document.getElementById('item-brand-input').value.trim() || 'Recorded';
                 item.warranty = document.getElementById('item-warranty-input').value.trim() || 'On record';
                 item.type = document.getElementById('item-type-input').value.trim() || 'Recorded';
                 item.photo = uploadedPhoto;
+                meta.appliances = appliances;
                 AppStore.save();
                 document.getElementById('appliance-item-modal').remove();
                 toast(`Updated "${item.name}" details!`);
@@ -10039,7 +10380,7 @@ function openAlarmItemModal(alarmId) {
 
         const photoBlock = editMode
             ? `<div>
-                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Alarm Photo / Certificate</label>
+                <label class="block text-[12px] font-bold text-slate-700 mb-1.5">Alarm Photo</label>
                 <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100/80 transition-colors relative cursor-pointer group">
                     <input type="file" id="alarm-photo-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                     <div id="alarm-photo-preview-box" class="flex flex-col items-center justify-center gap-2">
@@ -10089,14 +10430,22 @@ function openAlarmItemModal(alarmId) {
                </div>`;
 
         const footerHtml = editMode
-            ? `<div class="flex items-center gap-3 pt-2">
-                <button type="button" id="alarm-cancel-btn" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="button" id="alarm-save-btn" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700 transition-colors shadow-sm">Save Changes</button>
+            ? `<div class="space-y-2 pt-2">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="alarm-cancel-btn" class="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition-colors">Cancel</button>
+                    <button type="button" id="alarm-save-btn" class="flex-1 py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] hover:bg-[#1D4ED8] transition-colors shadow-sm">Save Changes</button>
+                </div>
+                <button type="button" id="alarm-delete-btn" class="w-full py-2.5 rounded-xl text-[#DC2626] font-bold text-[12px] hover:bg-[#FEF2F2] transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Delete This Alarm</span>
+                </button>
                </div>`
-            : `<button type="button" id="alarm-edit-btn" class="btn-primary w-full py-3.5 text-[14px] flex items-center justify-center gap-2 shadow-sm cursor-pointer">
-                <i data-lucide="pencil" class="w-4 h-4"></i>
-                <span>Edit Details</span>
-               </button>`;
+            : `<div class="flex items-center gap-2 pt-1">
+                <button type="button" id="alarm-edit-btn" class="flex-1 py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-colors shadow-sm cursor-pointer">
+                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                    <span>Edit This Alarm</span>
+                </button>
+               </div>`;
 
         const html = `
         <div id="alarm-item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
@@ -10145,11 +10494,26 @@ function openAlarmItemModal(alarmId) {
                 };
             }
             document.getElementById('alarm-cancel-btn').onclick = () => renderModal(false);
+            const delBtn = document.getElementById('alarm-delete-btn');
+            if (delBtn) {
+                delBtn.onclick = () => {
+                    const idx = alarms.findIndex(a => (a.id && String(a.id) === String(al.id)) || a.name === al.name);
+                    if (idx !== -1) {
+                        alarms.splice(idx, 1);
+                        meta.alarms = alarms;
+                        AppStore.save();
+                    }
+                    document.getElementById('alarm-item-modal').remove();
+                    toast(`Deleted "${al.name}"`);
+                    render();
+                };
+            }
             document.getElementById('alarm-save-btn').onclick = () => {
                 al.name = document.getElementById('alarm-item-name-input').value.trim() || al.name;
                 al.location = document.getElementById('alarm-item-loc-input').value.trim() || 'Installed';
                 al.expiry = document.getElementById('alarm-item-expiry-input').value.trim() || 'Exp: 2028';
                 al.photo = uploadedPhoto;
+                meta.alarms = alarms;
                 AppStore.save();
                 document.getElementById('alarm-item-modal').remove();
                 toast(`Updated "${al.name}" details!`);
@@ -10180,42 +10544,44 @@ function screenPropertyAppliances() {
 
     const displayAppliances = appliances.length ? appliances : defaultAppliances;
 
-    const editBtn = `<button type="button" data-go="edit-property-appliances" data-pid="${propertyId}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
-        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-        <span>Edit</span>
+    const addBtn = `<button type="button" data-action="open-add-appliance-modal" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Add Appliance</span>
     </button>`;
 
-    return `${topBar('Appliances', { back: true, sub: p?.name || '', rightBtn: editBtn })}
+    return `${topBar('Appliances', { back: true, sub: p?.name || '', rightBtn: addBtn })}
     <div class="screen-content screen-enter space-y-4 text-left pb-6">
         <div class="space-y-2.5">
             <div class="flex items-center justify-between px-1">
                 <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Appliances (${displayAppliances.length})</span>
             </div>
-            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
+            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAppliances.map(a => {
-                    const iconName = getApplianceIcon(a.name, a.icon);
-                    const photoSrc = a.photo || getDemoAppliancePhoto(a.name, a.id);
-                    return `
-                    <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="w-full p-4 flex items-center justify-between gap-3.5 hover:bg-[#F8FAFC] transition-colors group cursor-pointer text-left">
-                        <div class="flex items-center gap-3.5 min-w-0">
-                            <img src="${photoSrc}" alt="" class="w-12 h-12 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
+        const photoSrc = a.photo || getDemoAppliancePhoto(a.name, a.id);
+        return `
+                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left">
+                        <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer">
+                            <img src="${photoSrc}" alt="" class="w-11 h-11 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
                             <div class="min-w-0">
-                                <h4 class="text-[15px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(a.name || 'Appliance')}</h4>
-                                <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5">${escapeHtml(a.brand || 'Recorded')}</p>
+                                <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(a.name || 'Appliance')}</h4>
+                                <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(a.brand || 'Recorded')}</p>
                             </div>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0 text-right">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
+                        </button>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
                                 ${escapeHtml(a.warranty || a.type || 'On record')}
                             </span>
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                            <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold hover:bg-[#DBEAFE] transition-colors flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="pencil" class="w-3 h-3"></i>
+                                <span>Edit</span>
+                            </button>
                         </div>
-                    </button>`;
-                }).join('')}
+                    </div>`;
+    }).join('')}
             </div>
-            <button type="button" data-action="open-add-appliance-modal" data-pid="${propertyId}" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer mt-3">
+            <button type="button" data-action="open-add-appliance-modal" data-pid="${propertyId}" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-all shadow-xs cursor-pointer mt-3">
                 <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add New Appliance</span>
+                <span>+ Add New Appliance</span>
             </button>
         </div>
     </div>`;
@@ -10235,43 +10601,41 @@ function screenPropertyAlarms() {
 
     const displayAlarms = alarms.length ? alarms : defaultAlarms;
 
-    const editBtn = `<button type="button" data-go="edit-property-alarms" data-pid="${propertyId}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
-        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-        <span>Edit</span>
+    const addBtn = `<button type="button" data-action="open-add-alarm-modal" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Add Alarm</span>
     </button>`;
 
-    return `${topBar('Alarms', { back: true, sub: p?.name || '', rightBtn: editBtn })}
+    return `${topBar('Safety & Smoke Alarms', { back: true, sub: p?.name || '', rightBtn: addBtn })}
     <div class="screen-content screen-enter space-y-4 text-left pb-6">
         <div class="space-y-2.5">
             <div class="flex items-center justify-between px-1">
-                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Alarms (${displayAlarms.length})</span>
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Installed Alarms (${displayAlarms.length})</span>
             </div>
-            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
+            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAlarms.map(al => {
-                    const alarmIcon = getAlarmIcon(al.name, al.icon);
-                    const photoSrc = al.photo || getDemoAlarmPhoto(al.name, al.id);
-                    return `
-                    <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="w-full p-4 flex items-center justify-between gap-3.5 hover:bg-[#F8FAFC] transition-colors group cursor-pointer text-left">
-                        <div class="flex items-center gap-3.5 min-w-0">
-                            <img src="${photoSrc}" alt="" class="w-12 h-12 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
+        const photoSrc = al.photo || getDemoAlarmPhoto(al.name, al.id);
+        return `
+                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left">
+                        <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer">
+                            <img src="${photoSrc}" alt="" class="w-11 h-11 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
                             <div class="min-w-0">
-                                <h4 class="text-[15px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(al.name || 'Alarm')}</h4>
-                                <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(al.location || 'Installed')}</p>
+                                <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(al.name || 'Alarm')}</h4>
+                                <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(al.location || 'Installed')}</p>
                             </div>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0 text-right">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
+                        </button>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
                                 ${escapeHtml(al.expiry || '2026')}
                             </span>
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                            <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold hover:bg-[#DBEAFE] transition-colors flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="pencil" class="w-3 h-3"></i>
+                                <span>Edit</span>
+                            </button>
                         </div>
-                    </button>`;
-                }).join('')}
+                    </div>`;
+    }).join('')}
             </div>
-            <button type="button" data-action="open-add-alarm-modal" data-pid="${propertyId}" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer mt-3">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add Safety Alarm</span>
-            </button>
         </div>
     </div>`;
 }
@@ -10301,11 +10665,11 @@ function renderRecordsHubSmartRemindersSection(propertyId) {
         <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Active Smart Reminders (${list.length})</p>
         <div class="space-y-2.5">
             ${list.map(r => {
-                const title = r.title || r.type || 'Reminder';
-                const due = r.due || r.expiryDate || 'On file';
-                const prop = PROPERTIES[r.propertyId]?.name || 'All properties';
-                const cat = getReminderCategoryMeta(title);
-                return `
+        const title = r.title || r.type || 'Reminder';
+        const due = r.due || r.expiryDate || 'On file';
+        const prop = PROPERTIES[r.propertyId]?.name || 'All properties';
+        const cat = getReminderCategoryMeta(title);
+        return `
                 <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] flex items-center justify-between gap-3.5 w-full text-left transition-all cursor-pointer group">
                     <div class="flex items-center gap-3.5 min-w-0">
                         <div class="w-10 h-10 rounded-xl ${cat.bg} ${cat.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -10323,7 +10687,7 @@ function renderRecordsHubSmartRemindersSection(propertyId) {
                         <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                     </div>
                 </button>`;
-            }).join('')}
+    }).join('')}
         </div>
     </div>`;
 }
@@ -10331,80 +10695,85 @@ function renderRecordsHubSmartRemindersSection(propertyId) {
 function renderPropertyRecordsHub(propertyId) {
     const certIssues = propertyCertTileIssues(propertyId);
     const pastInspections = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
-    const propReminders = (AppStore.reminders || []).filter(r => r.propertyId === propertyId || r.propId === propertyId);
     const meta = AppStore.meta(propertyId);
     const alarmCount = meta?.alarms ? (Array.isArray(meta.alarms) ? meta.alarms.length : Object.keys(meta.alarms).length) : 3;
+    const rooms = getInventoryRooms(propertyId) || [];
+    const houseRules = getPropertyHouseRules(propertyId) || [];
+    const totalDocs = AppStore.docsForProperty(propertyId).length || 6;
 
-    const items = [
+    const cards = [
         {
             route: 'property-compliance',
-            title: 'Certificates & Documents',
-            sub: 'Gas CP12, EICR, EPC, Insurance & Building Files',
+            title: 'Statutory Certs',
+            sub: 'CP12, EICR & EPC',
             icon: 'shield-check',
-            badge: certIssues.length ? `${certIssues.length} attention` : 'Verified',
-            badgeClass: certIssues.length ? 'bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]' : 'bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]',
+            iconColor: 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]',
+            badge: certIssues.length
+                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2]"><span class="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span>${certIssues.length} Attention</span>`
+                : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Valid</span>`,
         },
         {
             route: 'property-alarms',
-            title: 'Safety & Smoke Alarms',
-            sub: 'Smoke, Heat & CO Detectors, Expiry Dates & Tests',
+            title: 'Safety & Alarms',
+            sub: 'Smoke, Heat & CO',
             icon: 'bell-ring',
-            badge: `${alarmCount} Active Detectors`,
-            badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
-        },
-        {
-            route: 'reminders',
-            title: 'Smart Reminders & Alerts',
-            sub: 'Upcoming expiries, reviews & automated renewal alerts',
-            icon: 'bell',
-            badge: `${propReminders.length} Active Reminders`,
-            badgeClass: 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]',
-        },
-        {
-            route: 'property-inventory',
-            title: 'Inventories & Condition',
-            sub: 'Room fixtures, appliances, condition & checklists',
-            icon: 'boxes',
-            badge: 'Room Records',
-            badgeClass: 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0]',
+            iconColor: 'text-[#D97706] bg-[#FFFBEB] border-[#FDE68A]',
+            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]"><span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>${alarmCount} Active</span>`,
         },
         {
             route: 'property-inspections',
-            title: 'Inspections & Reports',
-            sub: 'Room walkthroughs, signed audits & inspection history',
+            title: 'Inspections',
+            sub: 'Visits & Audits',
             icon: 'clipboard-list',
-            badge: `${pastInspections.length} Reports`,
-            badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
+            iconColor: 'text-[#7C3AED] bg-[#F5F3FF] border-[#DDD6FE]',
+            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F5F3FF] text-[#7C3AED] border border-[#DDD6FE]"><span class="w-1.5 h-1.5 rounded-full bg-[#7C3AED]"></span>${pastInspections.length} Reports</span>`,
+        },
+        {
+            route: 'property-inventory',
+            title: 'Inventories',
+            sub: 'Room Schedules',
+            icon: 'boxes',
+            iconColor: 'text-[#059669] bg-[#ECFDF5] border-[#A7F3D0]',
+            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>${rooms.length || 5} Rooms</span>`,
         },
         {
             route: 'property-house-rules',
-            title: 'House Rules & Policies',
-            sub: 'Noise, pets, guests, recycling & communal guidelines',
+            title: 'House Rules',
+            sub: 'Tenant Policies',
             icon: 'book-open',
-            badge: `${(getPropertyHouseRules(propertyId) || []).length} Rules Set`,
-            badgeClass: 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]',
+            iconColor: 'text-[#0891B2] bg-[#ECFEFF] border-[#A5F3FC]',
+            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFEFF] text-[#0891B2] border border-[#A5F3FC]"><span class="w-1.5 h-1.5 rounded-full bg-[#0891B2]"></span>${houseRules.length} Rules</span>`,
+        },
+        {
+            route: 'property-doc-vault',
+            title: 'Document Vault',
+            sub: 'Secure Storage',
+            icon: 'folder-archive',
+            iconColor: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]',
+            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE]"><span class="w-1.5 h-1.5 rounded-full bg-[#4F46E5]"></span>${totalDocs} Files</span>`,
         },
     ];
 
     return `
-    <div class="screen-content screen-content-sm prop-records-page prop-records-unified space-y-2.5 text-left pb-6">
-        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Property Records & Compliance</p>
-        
-        <div class="space-y-2">
-            ${items.map(t => `
-            <button type="button" data-go="${t.route}" data-pid="${propertyId}" class="card p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all cursor-pointer flex items-center justify-between gap-3 w-full text-left group">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-9 h-9 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                        <i data-lucide="${t.icon}" class="w-4 h-4"></i>
+    <div class="screen-content screen-content-sm prop-records-page prop-records-unified space-y-3 text-left pb-8">
+        <!-- Records Bento Grid (2 Columns) -->
+        <div class="grid grid-cols-2 gap-3">
+            ${cards.map(c => `
+            <button type="button" data-go="${c.route}" data-pid="${propertyId}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#2563EB]/40 active:bg-[#F8FAFC] transition-all text-left flex flex-col justify-between h-[132px] cursor-pointer group relative overflow-hidden">
+                <div class="flex items-start justify-between gap-1 w-full">
+                    <div class="w-10 h-10 rounded-xl ${c.iconColor} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                        <i data-lucide="${c.icon}" class="w-5 h-5"></i>
                     </div>
-                    <div class="min-w-0">
-                        <h4 class="text-[13px] font-bold text-[#0F172A] m-0 truncate group-hover:text-[#2563EB] transition-colors">${t.title}</h4>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${t.sub}</p>
+                    <div class="shrink-0 max-w-[55%]">
+                        ${c.badge}
                     </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${t.badgeClass}">${t.badge}</span>
-                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                <div class="w-full mt-2">
+                    <div class="flex items-center justify-between gap-1">
+                        <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0 leading-tight">${c.title}</h4>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
+                    </div>
+                    <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${c.sub}</p>
                 </div>
             </button>`).join('')}
         </div>
@@ -10433,8 +10802,8 @@ function renderPropertySectionNav(activeTab) {
     <div class="prop-section-nav">
         <div class="prop-section-nav-tabs" role="tablist" aria-label="Property sections">
             ${tabs.map(([tab, label, icon]) => {
-                const active = navTab === tab;
-                return `
+        const active = navTab === tab;
+        return `
             <button type="button" data-tab="${tab}" role="tab" aria-selected="${active}" class="prop-section-tab-item ${active ? 'prop-section-tab-item--active' : ''}">
                 <span class="prop-section-tab-icon"><i data-lucide="${icon}" class="w-[20px] h-[20px]"></i></span>
                 <span class="prop-section-tab-label-wrap">
@@ -10442,7 +10811,7 @@ function renderPropertySectionNav(activeTab) {
                     ${active ? '<span class="prop-section-tab-indicator" aria-hidden="true"></span>' : ''}
                 </span>
             </button>`;
-            }).join('')}
+    }).join('')}
         </div>
     </div>`;
 }
@@ -10569,18 +10938,18 @@ function renderPropertyUnitsTab(propertyId) {
             <p class="text-[14px] font-semibold text-[#0F172A] mt-3">No ${unitFilter === 'all' ? '' : unitFilter} ${unitWordPlural}</p>
             <p class="text-[12px] text-[#64748B] mt-1">${unitFilter === 'all' ? `Add your first ${unitWordSingle} to get started` : 'Try another filter'}</p>
             ${unitFilter === 'all'
-                ? `<button type="button" data-go="add-flat" data-pid="${propertyId}" class="btn-primary py-2.5 px-5 text-[13px] mt-3">+ Add ${unitWordSingle}</button>`
-                : `<button type="button" data-unit-filter="all" class="btn-secondary py-2.5 px-5 text-[13px] mt-3">Show all ${unitWordPlural}</button>`}
+            ? `<button type="button" data-go="add-flat" data-pid="${propertyId}" class="btn-primary py-2.5 px-5 text-[13px] mt-3">+ Add ${unitWordSingle}</button>`
+            : `<button type="button" data-unit-filter="all" class="btn-secondary py-2.5 px-5 text-[13px] mt-3">Show all ${unitWordPlural}</button>`}
         </div>`
         : groupFloors
-        ? [...new Set(units.map(u => u.floor || 1))].sort((a, b) => a - b).map(floor => {
-            const floorUnits = units.filter(u => (u.floor || 1) === floor);
-            const note = floorUnits[0]?.floorNote;
-            const collapsed = isFloorGroupCollapsed(propertyId, floor);
-            const countLabel = isHmo
-                ? `${floorUnits.length} ${floorUnits.length === 1 ? 'Room' : 'Rooms'}`
-                : `${floorUnits.length} ${floorUnits.length === 1 ? 'Unit' : 'Units'}`;
-            return `
+            ? [...new Set(units.map(u => u.floor || 1))].sort((a, b) => a - b).map(floor => {
+                const floorUnits = units.filter(u => (u.floor || 1) === floor);
+                const note = floorUnits[0]?.floorNote;
+                const collapsed = isFloorGroupCollapsed(propertyId, floor);
+                const countLabel = isHmo
+                    ? `${floorUnits.length} ${floorUnits.length === 1 ? 'Room' : 'Rooms'}`
+                    : `${floorUnits.length} ${floorUnits.length === 1 ? 'Unit' : 'Units'}`;
+                return `
             <div class="unit-floor-block card${collapsed ? ' unit-floor-block--collapsed' : ''}">
                 <button type="button" data-action="toggle-floor-group" data-pid="${propertyId}" data-floor="${floor}" class="unit-floor-toggle" aria-expanded="${!collapsed}">
                     <div class="unit-floor-head-left">
@@ -10596,8 +10965,8 @@ function renderPropertyUnitsTab(propertyId) {
                     ${floorUnits.map(u => renderFlatRow(u, true)).join('')}
                 </div>
             </div>`;
-        }).join('')
-        : `<div class="unit-floor-block card"><div class="unit-floor-panel unit-floor-panel--solo">${units.map(u => renderFlatRow(u, false)).join('')}</div></div>`;
+            }).join('')
+            : `<div class="unit-floor-block card"><div class="unit-floor-panel unit-floor-panel--solo">${units.map(u => renderFlatRow(u, false)).join('')}</div></div>`;
     const summary = typeof renderPropertyHubSummaryCard === 'function'
         ? renderPropertyHubSummaryCard(propertyId)
         : '';
@@ -10764,8 +11133,8 @@ function renderFlatPeopleSection(propertyId, unit, { occ, tenancy, members, coun
         </div>
         <div class="flat-dt-tenant-section-body">
             ${count
-                ? `<div class="flat-dt-tenant-people${count === 1 ? ' flat-dt-tenant-people--solo' : ''}">${members.map(m => renderMemberRow(m, propertyId, unit, rowOpts)).join('')}</div>`
-                : `<p class="flat-people-empty-desc">No one on the lease yet.</p>`}
+            ? `<div class="flat-dt-tenant-people${count === 1 ? ' flat-dt-tenant-people--solo' : ''}">${members.map(m => renderMemberRow(m, propertyId, unit, rowOpts)).join('')}</div>`
+            : `<p class="flat-people-empty-desc">No one on the lease yet.</p>`}
             ${pendingInvite ? `
             <button data-go="tenant-invite-sent" data-invite-token="${pendingInvite.token}" class="flat-invite-banner flat-invite-banner--inline w-full text-left">
                 <div class="flat-invite-banner-icon"><i data-lucide="mail" class="w-4 h-4"></i></div>
@@ -11068,9 +11437,9 @@ function renderFlatDetailTabNav(activeTab, badges = {}) {
     return `
     <div class="flat-dt-tabs" role="tablist" aria-label="Unit sections">
         ${tabs.map(([tab, label, icon]) => {
-            const active = knownTab && activeTab === tab;
-            const badge = badges[tab];
-            return `
+        const active = knownTab && activeTab === tab;
+        const badge = badges[tab];
+        return `
         <button type="button" data-ftab="${tab}" role="tab" aria-selected="${active}" class="flat-dt-tab ${active ? 'flat-dt-tab--active' : ''}">
             <span class="flat-dt-tab-icon"><i data-lucide="${icon}" class="w-[18px] h-[18px]"></i></span>
             <span class="flat-dt-tab-label-wrap">
@@ -11079,7 +11448,7 @@ function renderFlatDetailTabNav(activeTab, badges = {}) {
                 ${badge ? `<span class="flat-dt-tab-badge">${badge}</span>` : ''}
             </span>
         </button>`;
-        }).join('')}
+    }).join('')}
     </div>`;
 }
 
@@ -11289,20 +11658,9 @@ function renderFlatDetailRecordsTab(propertyId, unit, p) {
     <div class="flat-dt-tab-panel flat-dt-tab-panel--records">
         ${renderFlatUnitDocumentsSection(propertyId, unit, { full: true })}
         <section class="card flat-records-nav-list">
-            ${navRow('zap', 'Utilities', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters & bills')}
-            ${navRow('key-round', 'Keys', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register sets')}
-            ${navRow('images', 'Photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
-        </section>
-        <section class="flat-records-building-block">
-            <p class="flat-section-eyebrow">Building</p>
-            <div class="card flat-records-nav-list">
-                ${navRow('plug', 'Appliances', `data-go="property-appliances" data-pid="${propertyId}"`, 'Boiler, oven, white goods')}
-                ${navRow('shield-alert', 'Alarms', `data-go="property-alarms" data-pid="${propertyId}"`, 'Smoke, heat & CO')}
-                ${navRow('shield-check', 'Certificates', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="compliance"`, issues ? `${issues} need attention` : 'Gas, EICR, EPC')}
-                ${navRow('clipboard-list', 'Inspections', `data-go="property-inspections" data-pid="${propertyId}"`, inspMeta)}
-                ${navRow('package', 'Inventory', `data-go="property-inventory" data-pid="${propertyId}"`, invMeta)}
-                ${navRow('folder-open', 'Files', `data-go="property-detail" data-pid="${propertyId}" data-tab="records" data-records-view="documents"`, 'Documents & folders')}
-            </div>
+            ${navRow('zap', 'Unit Utilities & Meters', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters & bills')}
+            ${navRow('key-round', 'Unit Keys & Fobs', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register sets')}
+            ${navRow('images', 'Unit Photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
         </section>
     </div>`;
 }
@@ -11337,8 +11695,8 @@ function renderFlatDepositContext(propertyId, unit) {
             <div class="flat-pay-deposit-row${label === 'Protection' ? ' flat-pay-deposit-row--status' : ''}">
                 <span class="flat-pay-deposit-label">${escapeHtml(label)}</span>
                 ${label === 'Protection'
-                    ? renderDepositStatusBadge(value, tenancy.depositScheme)
-                    : `<span class="flat-pay-deposit-value">${escapeHtml(value)}</span>`}
+            ? renderDepositStatusBadge(value, tenancy.depositScheme)
+            : `<span class="flat-pay-deposit-value">${escapeHtml(value)}</span>`}
             </div>`).join('')}
         </div>
     </section>`;
@@ -11435,13 +11793,13 @@ function renderFlatDetailGalleryTab(propertyId, unit) {
     return `
     <div class="flat-dt-tab-panel flat-dt-gallery-panel">
         ${renderFlatUnitPhotoPicker(photos, cover, {
-            variant: 'gallery',
-            coverAction: 'set-flat-cover',
-            removeAction: 'remove-flat-photo',
-            uploadAction: 'upload-flat-photo',
-            uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
-            hint: 'Tap the star on a thumbnail to set the cover for Overview and unit lists.',
-        })}
+        variant: 'gallery',
+        coverAction: 'set-flat-cover',
+        removeAction: 'remove-flat-photo',
+        uploadAction: 'upload-flat-photo',
+        uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
+        hint: 'Tap the star on a thumbnail to set the cover for Overview and unit lists.',
+    })}
         ${renderFlatBuildingPhotosSection(propertyId)}
     </div>`;
 }
@@ -11645,8 +12003,8 @@ function renderPropertyTenantTab(propertyId) {
                 <i data-lucide="users" class="w-12 h-12 text-[#CBD5E1] mx-auto"></i>
                 <p class="text-[14px] font-semibold mt-3 text-[#0F172A]">No tenants yet</p>
                 <p class="text-[12px] text-[#64748B] mt-1">${!units.length
-                    ? 'Add a flat first, then invite a tenant to that unit.'
-                    : 'Choose a flat, then send an invite link to the tenant.'}</p>
+                ? 'Add a flat first, then invite a tenant to that unit.'
+                : 'Choose a flat, then send an invite link to the tenant.'}</p>
             </div>
             <button type="button" ${inviteAttrs} class="btn-primary w-full py-3 text-[13px]">${inviteLabel}</button>
             ${units.length ? `<button type="button" data-go="create-tenancy" data-pid="${propertyId}" class="btn-secondary w-full py-3 text-[13px] mt-2">Set up lease</button>` : ''}
@@ -11865,119 +12223,658 @@ function demoDocKindFromName(name, type) {
     if (/how to rent/.test(t)) return 'guide';
     if (/inventory|checkout/.test(t)) return 'inventory';
     if (/lease|tenancy|agreement/.test(t)) return 'lease';
+    if (/licence|license|hmo|selective/.test(t)) return 'licence';
+    if (/insurance|policy/.test(t)) return 'insurance';
+    if (/fire|smoke|alarm/.test(t)) return 'fire';
     return 'file';
 }
 
 function renderDemoDocumentSheet(ctx = {}) {
-    const name = ctx.name || 'Document';
-    const kind = ctx.kind || demoDocKindFromName(name, ctx.type);
-    const date = ctx.date || 'On file';
-    const landlord = typeof LANDLORD_USER !== 'undefined'
-        ? `${LANDLORD_USER.firstName || ''} ${LANDLORD_USER.lastName || ''}`.trim() || 'Landlord'
-        : 'Landlord';
-    const tenant = ctx.tenant || 'Tenant';
-    const property = ctx.property || 'Property';
-    const unit = ctx.unit || '';
-    const address = ctx.address || property;
-    const idNumber = ctx.idNumber || '—';
-    const photo = ctx.photo || '';
-    const titles = {
-        lease: 'Assured Shorthold Tenancy',
-        gas: 'Gas Safety Record (CP12)',
-        electrical: 'Electrical Installation Condition Report',
-        epc: 'Energy Performance Certificate',
-        deposit: 'Tenancy Deposit Protection',
-        guide: 'How to Rent — England',
-        inventory: 'Inventory & Schedule of Condition',
-        id: 'Photo identification',
-        file: ctx.type || 'Official document',
+    const doc = ctx.doc || (STATE.previewDocId != null ? AppStore.documents.find(d => d.id === STATE.previewDocId) : null);
+    const name = ctx.name || doc?.name || 'Document';
+    const kind = ctx.kind || (doc ? demoDocKindFromName(doc.name, doc.type) : demoDocKindFromName(name, ctx.type));
+    const pid = doc?.propertyId ?? STATE.propertyId ?? ctx.propertyId ?? 0;
+    const prop = PROPERTIES[pid] || null;
+
+    const certKeyMap = {
+        gas: `${pid}-0`,
+        electrical: `${pid}-1`,
+        fire: `${pid}-2`,
+        insurance: `${pid}-5`,
+        epc: `${pid}-7`,
+        licence: `${pid}-8`,
     };
-    const title = titles[kind] || titles.file;
+    const savedCert = certKeyMap[kind] ? AppStore.complianceCerts?.[certKeyMap[kind]] : null;
+
+    const issuedDate = doc?.issuedDate || doc?.date || savedCert?.issueDate || ctx.date || 'On file';
+    const expiryDate = doc?.expiryDate || savedCert?.expiryDate || ctx.expiryDate || (kind === 'insurance' ? 'Annual Renewal' : '—');
+    const certNum = doc?.certNumber || doc?.refNumber || savedCert?.certNumber || (kind === 'gas' ? `GSR-${590000 + pid * 131}` : kind === 'electrical' ? `EICR-${2025 + pid}-0${pid + 1}` : kind === 'epc' ? `EPC-${prop?.epc || 'C'}-${1000 + pid * 37}` : kind === 'insurance' ? `POL-AXA-${880 + pid}` : kind === 'licence' ? `LIC-${(prop?.name || 'PROP').split(' ')[0]}-${100 + pid}` : kind === 'deposit' ? `DPS-${992000 + pid * 55}` : `REF-${10000 + (doc?.id || 1)}`);
+    const issuedBy = doc?.issuedBy || doc?.contractor || savedCert?.issuedBy || (kind === 'gas' ? 'SafeGas Certified Engineer (#592811)' : kind === 'electrical' ? 'Spark Electrical Ltd (NICEIC)' : kind === 'insurance' ? 'AXA Landlord Direct' : kind === 'epc' ? 'Stroma Energy Assessors Ltd' : kind === 'licence' ? 'Local Housing Authority' : kind === 'fire' ? 'FireGuard UK' : kind === 'deposit' ? 'Deposit Protection Service (DPS)' : 'Authorized Issuer');
+
+    const landlord = (typeof LANDLORD_USER !== 'undefined' && (LANDLORD_USER.firstName || LANDLORD_USER.lastName))
+        ? `${LANDLORD_USER.firstName || ''} ${LANDLORD_USER.lastName || ''}`.trim()
+        : (ctx.landlord || 'Property Landlord');
+    const tenant = ctx.tenant || doc?.tenant || 'Lead Tenant';
+    const property = ctx.property || prop?.name || 'Property';
+    const unit = ctx.unit || doc?.unit || '';
+    const fullAddress = unit ? `${unit}, ${prop?.address || ctx.address || property}` : (prop?.address || ctx.address || property);
+    const docNotes = doc?.notes || savedCert?.notes || '';
+
+    const rentVal = ctx.rent || doc?.rent || (prop?.rent ? `${prop.rent}/mo` : '£1,450/mo');
+    const depositVal = ctx.deposit || doc?.deposit || (prop?.rent ? prop.rent : '£1,450');
+    const termVal = ctx.term || doc?.term || '12 Months Fixed';
+    const epcRating = doc?.rating || (prop?.epc ? `Band ${prop.epc}` : 'Band C (Score: 72)');
+
+    // 1. Identity Verification Document
     if (kind === 'id') {
+        const photo = ctx.photo || '';
+        const idNumber = doc?.certNumber || ctx.idNumber || '—';
         return `
-        <div class="doc-demo-sheet doc-demo-sheet--id">
-            <p class="doc-demo-watermark">Demo preview</p>
-            <div class="doc-demo-id-card">
-                ${photo ? `<img src="${escapeHtml(photo)}" alt="" class="doc-demo-id-photo">` : `
-                <div class="doc-demo-id-photo doc-demo-id-photo--empty"><i data-lucide="user" class="w-8 h-8"></i></div>`}
-                <div class="doc-demo-id-copy">
-                    <p class="doc-demo-kicker">United Kingdom · Photo ID</p>
-                    <p class="doc-demo-id-name">${escapeHtml(tenant)}</p>
-                    <p class="doc-demo-id-meta">Document no. ${escapeHtml(idNumber)}</p>
-                    <p class="doc-demo-id-meta">${escapeHtml(name)}</p>
-                    <p class="doc-demo-id-meta">On file · ${escapeHtml(date)}</p>
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">IDENTITY VERIFICATION DOCUMENT</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">United Kingdom · Photo ID on File</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 py-2">
+                ${photo ? `<img src="${escapeHtml(photo)}" alt="" class="w-16 h-16 rounded-xl object-cover border border-[#E2E8F0]">` : `
+                <div class="w-16 h-16 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#64748B]"><i data-lucide="user" class="w-8 h-8"></i></div>`}
+                <div class="space-y-1 text-[12px]">
+                    <p class="font-bold text-[14px] text-[#0F172A] m-0">${escapeHtml(tenant)}</p>
+                    <p class="text-[#64748B] m-0">Document No: <strong>${escapeHtml(idNumber)}</strong></p>
+                    <p class="text-[#64748B] m-0">Verified on: ${escapeHtml(issuedDate)}</p>
                 </div>
             </div>
         </div>`;
     }
-    const rows = [
-        ['Document', name],
-        ['Issued', date],
-        ['Landlord', landlord],
-        ['Tenant', tenant],
-        ['Property', property],
-        unit ? ['Unit', unit] : null,
-        ['Address', address],
-    ].filter(Boolean);
-    const footer = kind === 'lease'
-        ? 'This demo copy shows the tenancy on file. Download to keep a local PDF.'
-        : kind === 'deposit'
-            ? 'Deposit protection scheme certificate — demo preview for this tenancy.'
-            : 'Official copy on file. Demo preview for this prototype.';
+
+    // 2. Gas Safety Record (CP12)
+    if (kind === 'gas') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">LANDLORD GAS SAFETY RECORD (CP12)</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Gas Safety (Installation &amp; Use) Regulations</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-[#64748B] block">Ref / Cert No.</span>
+                    <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Property Address</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Landlord / Owner</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(landlord)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Inspection Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedDate)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Next Due / Expiry</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(expiryDate)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Registered Engineer / Company</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedBy)}</strong>
+                </div>
+                ${docNotes ? `
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Engineer Notes</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes)}</p>
+                </div>` : ''}
+            </div>
+
+            <div>
+                <p class="text-[11px] font-bold text-[#475569] uppercase tracking-wider mb-2">Appliance Checks</p>
+                <div class="divide-y divide-[#F1F5F9] text-[12px]">
+                    <div class="py-2 flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold text-[#0F172A] block">Central Heating Boiler</span>
+                            <span class="text-[11px] text-[#64748B]">${unit ? `${unit} · ` : ''}Operating pressure: 21 mbar · Flue flow: Pass</span>
+                        </div>
+                        <span class="text-[11px] font-bold text-[#059669]">PASS</span>
+                    </div>
+                    <div class="py-2 flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold text-[#0F172A] block">Gas Hob &amp; Pipework</span>
+                            <span class="text-[11px] text-[#64748B]">Flame safety device &amp; tightness: Pass</span>
+                        </div>
+                        <span class="text-[11px] font-bold text-[#059669]">PASS</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Overall Outcome</span>
+                    <strong class="text-[#059669] font-bold">PASSED &amp; CERTIFIED</strong>
+                </div>
+                <span class="text-[11px] text-[#64748B] italic">Digital record on file</span>
+            </div>
+        </div>`;
+    }
+
+    // 3. Electrical Installation Condition Report (EICR)
+    if (kind === 'electrical') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">ELECTRICAL INSTALLATION CONDITION REPORT</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">BS 7671 5-Year Inspection for Landlords</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-[#64748B] block">Report No.</span>
+                    <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Installation Address</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Landlord / Owner</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(landlord)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Inspection Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedDate)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Valid Until</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(expiryDate)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Inspector / Scheme</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedBy)}</strong>
+                </div>
+                ${docNotes ? `
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Assessment Notes</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes)}</p>
+                </div>` : ''}
+            </div>
+
+            <div class="space-y-2 text-[12px]">
+                <div class="flex justify-between py-1 border-b border-[#F1F5F9]">
+                    <span class="text-[#64748B]">Consumer Unit &amp; RCD:</span>
+                    <strong class="text-[#0F172A]">Satisfactory</strong>
+                </div>
+                <div class="flex justify-between py-1 border-b border-[#F1F5F9]">
+                    <span class="text-[#64748B]">Earthing &amp; Bonding:</span>
+                    <strong class="text-[#0F172A]">Satisfactory</strong>
+                </div>
+                <div class="flex justify-between py-1">
+                    <span class="text-[#64748B]">Circuits &amp; Sockets:</span>
+                    <strong class="text-[#0F172A]">Satisfactory</strong>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Overall Assessment</span>
+                    <strong class="text-[#059669] font-bold">SATISFACTORY (Pass)</strong>
+                </div>
+                <span class="text-[11px] text-[#64748B] italic">BS 7671 Compliant</span>
+            </div>
+        </div>`;
+    }
+
+    // 4. Energy Performance Certificate (EPC)
+    if (kind === 'epc') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">ENERGY PERFORMANCE CERTIFICATE (EPC)</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Domestic Energy Rating (England &amp; Wales)</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-[#64748B] block">Certificate No.</span>
+                    <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Property Address</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Valid Until</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(expiryDate)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Accredited Assessor</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedBy)}</strong>
+                </div>
+                ${docNotes ? `
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Notes &amp; Recommendations</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes)}</p>
+                </div>` : ''}
+            </div>
+
+            <div class="space-y-2 py-1">
+                <div class="flex justify-between items-center py-1.5 border-b border-[#F1F5F9] text-[12px]">
+                    <span class="text-[#64748B]">Current Energy Rating:</span>
+                    <strong class="text-[#15803D] font-bold text-[13px]">${escapeHtml(epcRating)} · Compliant</strong>
+                </div>
+                <div class="flex justify-between items-center py-1.5 text-[12px]">
+                    <span class="text-[#64748B]">Potential Energy Rating:</span>
+                    <strong class="text-[#1D4ED8] font-bold text-[13px]">Band B (Score: 85)</strong>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <span class="text-[#64748B]">Minimum Energy Standard:</span>
+                <strong class="text-[#059669] font-bold">MEES Compliant (Min Band E)</strong>
+            </div>
+        </div>`;
+    }
+
+    // 5. Deposit Protection Certificate
+    if (kind === 'deposit') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">DEPOSIT PROTECTION CERTIFICATE</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Tenancy Deposit Scheme (Government Approved)</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-[#64748B] block">Scheme Ref</span>
+                    <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Landlord</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(landlord)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Lead Tenant</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(tenant)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Tenancy Address</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Protected Amount</span>
+                    <strong class="text-[#059669] font-bold text-[13px]">${escapeHtml(depositVal)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Protection Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedDate)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Scheme Custodian</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedBy)}</strong>
+                </div>
+                ${docNotes ? `
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Deposit Notes</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes)}</p>
+                </div>` : ''}
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <span class="text-[#64748B]">Status:</span>
+                <strong class="text-[#059669] font-bold">Protected &amp; Prescribed Info Served</strong>
+            </div>
+        </div>`;
+    }
+
+    // 6. Landlord Insurance Policy Schedule
+    if (kind === 'insurance') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">LANDLORD INSURANCE SCHEDULE</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Buildings &amp; Property Owners Liability</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-[#64748B] block">Policy No.</span>
+                    <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Insured Party</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(landlord)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Insurer / Broker</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedBy)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Insured Premises</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Effective Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedDate)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Renewal / Expiry</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(expiryDate)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Cover Summary</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes || '£5,000,000 Public Liability · Full Rebuild Cover')}</p>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <span class="text-[#64748B]">Policy Status:</span>
+                <strong class="text-[#059669] font-bold">Active &amp; In Force</strong>
+            </div>
+        </div>`;
+    }
+
+    // 7. Property Licence Certificate
+    if (kind === 'licence') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">PROPERTY LICENCE CERTIFICATE</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">${prop?.isHmo ? 'HMO Mandatory Licensing Scheme' : 'Selective Property Licensing Scheme'}</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-[#64748B] block">Licence Ref</span>
+                    <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Licence Holder</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(landlord)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Issuing Authority</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedBy)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Licensed Premises</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Date Granted</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedDate)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Expiry Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(expiryDate)}</strong>
+                </div>
+                ${docNotes ? `
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Conditions &amp; Notes</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes)}</p>
+                </div>` : ''}
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <span class="text-[#64748B]">Status:</span>
+                <strong class="text-[#059669] font-bold">Approved &amp; Fully Compliant</strong>
+            </div>
+        </div>`;
+    }
+
+    // 8. Fire Risk & Alarm Assessment
+    if (kind === 'fire') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">FIRE SAFETY RISK ASSESSMENT</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Regulatory Reform (Fire Safety) Order 2005</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-[#64748B] block">Report Ref</span>
+                    <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Responsible Person</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(landlord)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Competent Assessor</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedBy)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Assessed Premises</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Assessment Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedDate)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Next Review Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(expiryDate)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Assessment Summary</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes || 'Mains interlinked smoke alarms & heat detectors tested satisfactory')}</p>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <span class="text-[#64748B]">Risk Level:</span>
+                <strong class="text-[#059669] font-bold">LOW / TOLERABLE (Pass)</strong>
+            </div>
+        </div>`;
+    }
+
+    // 9. Assured Shorthold Tenancy Agreement
+    if (kind === 'lease') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">ASSURED SHORTHOLD TENANCY AGREEMENT</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Housing Act 1988 (as amended 1996)</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Landlord</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(landlord)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Lead Tenant</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(tenant)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Property &amp; Unit</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Monthly Rent</span>
+                    <strong class="text-[#2563EB] font-bold">${escapeHtml(rentVal)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Security Deposit</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(depositVal)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Tenancy Term</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(termVal)}</strong>
+                </div>
+                ${docNotes ? `
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Special Clauses &amp; Notes</span>
+                    <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes)}</p>
+                </div>` : ''}
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <span class="text-[#64748B]">Status:</span>
+                <strong class="text-[#059669] font-bold">Executed &amp; Active</strong>
+            </div>
+        </div>`;
+    }
+
+    // 10. How to Rent Guide
+    if (kind === 'guide') {
+        return `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+            <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-[15px] font-bold text-[#0F172A] m-0">HOW TO RENT: THE CHECKLIST FOR RENTING IN ENGLAND</h3>
+                    <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Department for Levelling Up, Housing and Communities</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[12px] py-1 border-b border-[#F1F5F9] pb-3.5">
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Property</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(fullAddress)}</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] text-[#64748B] block">Served To</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(tenant)}</strong>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-[11px] text-[#64748B] block">Service Date</span>
+                    <strong class="text-[#0F172A] font-semibold">${escapeHtml(issuedDate)}</strong>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                <span class="text-[#64748B]">Compliance Status:</span>
+                <strong class="text-[#059669] font-bold">Served Prior to Tenancy Start</strong>
+            </div>
+        </div>`;
+    }
+
+    // 11. Generic Official / Custom Document Viewer Sheet
     return `
-    <div class="doc-demo-sheet">
-        <p class="doc-demo-watermark">Demo preview</p>
-        <div class="doc-demo-head">
-            <span class="doc-demo-brand">Landlord HQ</span>
-            <span class="doc-demo-kind">${escapeHtml(title)}</span>
-        </div>
-        <h3 class="doc-demo-title">${escapeHtml(name)}</h3>
-        <div class="doc-demo-rows">
-            ${rows.map(([k, v]) => `
-            <div class="doc-demo-row">
-                <span>${escapeHtml(k)}</span>
-                <strong>${escapeHtml(String(v))}</strong>
-            </div>`).join('')}
-        </div>
-        <div class="doc-demo-sign">
+    <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 space-y-4 text-left font-sans">
+        <div class="border-b border-[#E2E8F0] pb-3.5 flex items-start justify-between gap-3">
             <div>
-                <span class="doc-demo-sign-line"></span>
-                <p>Landlord</p>
+                <h3 class="text-[15px] font-bold text-[#0F172A] m-0">${escapeHtml(name)}</h3>
+                <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">${escapeHtml(doc?.type || ctx.type || 'Official File')}</p>
             </div>
-            <div>
-                <span class="doc-demo-sign-line"></span>
-                <p>Tenant / issuer</p>
+            <div class="text-right">
+                <span class="text-[10px] uppercase font-bold text-[#64748B] block">Reference</span>
+                <span class="text-[12px] font-mono font-bold text-[#0F172A]">${escapeHtml(certNum)}</span>
             </div>
         </div>
-        <p class="doc-demo-foot">${escapeHtml(footer)}</p>
+
+        <div class="space-y-2.5 text-[12px] py-1">
+            <div class="flex justify-between py-1 border-b border-[#F1F5F9]">
+                <span class="text-[#64748B]">Property:</span>
+                <strong class="text-[#0F172A]">${escapeHtml(property)}</strong>
+            </div>
+            ${unit ? `
+            <div class="flex justify-between py-1 border-b border-[#F1F5F9]">
+                <span class="text-[#64748B]">Unit / Flat:</span>
+                <strong class="text-[#0F172A]">${escapeHtml(unit)}</strong>
+            </div>` : ''}
+            ${issuedBy && issuedBy !== '—' ? `
+            <div class="flex justify-between py-1 border-b border-[#F1F5F9]">
+                <span class="text-[#64748B]">Issued By / Provider:</span>
+                <strong class="text-[#0F172A]">${escapeHtml(issuedBy)}</strong>
+            </div>` : ''}
+            <div class="flex justify-between py-1${expiryDate && expiryDate !== '—' ? ' border-b border-[#F1F5F9]' : ''}">
+                <span class="text-[#64748B]">Date on Record:</span>
+                <strong class="text-[#0F172A]">${escapeHtml(issuedDate)}</strong>
+            </div>
+            ${expiryDate && expiryDate !== '—' ? `
+            <div class="flex justify-between py-1">
+                <span class="text-[#64748B]">Valid Until / Expiry:</span>
+                <strong class="text-[#0F172A]">${escapeHtml(expiryDate)}</strong>
+            </div>` : ''}
+            ${docNotes ? `
+            <div class="pt-2 border-t border-[#F1F5F9]">
+                <span class="text-[11px] text-[#64748B] block">Notes &amp; Details</span>
+                <p class="text-[#334155] mt-0.5 m-0 font-medium">${escapeHtml(docNotes)}</p>
+            </div>` : ''}
+        </div>
+
+        <div class="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+            <span class="text-[#64748B]">Verification:</span>
+            <strong class="text-[#059669] font-bold">Verified on File</strong>
+        </div>
     </div>`;
 }
 
-function documentPreviewContext() {
-    const tid = STATE.tenantId;
+function documentPreviewContext(doc) {
+    let tid = STATE.tenantId ?? doc?.tenantId;
+    let pid = doc?.propertyId ?? STATE.propertyId;
+    let unit = doc?.unit || STATE.selectedUnit || '';
+
+    let matchedTenancy = null;
+    if (pid != null && unit) {
+        matchedTenancy = (AppStore.tenancies || []).find(t => (t.propertyId === pid || String(t.propertyId) === String(pid)) && t.unit === unit && t.status !== 'ended');
+    }
+    if (!matchedTenancy && pid != null && doc?.name) {
+        matchedTenancy = (AppStore.tenancies || []).find(t => (t.propertyId === pid || String(t.propertyId) === String(pid)) && t.status !== 'ended' && doc.name.includes(t.unit));
+        if (matchedTenancy && !unit) unit = matchedTenancy.unit;
+    }
+    if (!matchedTenancy && pid != null) {
+        matchedTenancy = (AppStore.tenancies || []).find(t => (t.propertyId === pid || String(t.propertyId) === String(pid)) && t.status !== 'ended');
+    }
+
+    if (tid == null && matchedTenancy) {
+        if (matchedTenancy.tenantId != null) tid = matchedTenancy.tenantId;
+        else if (matchedTenancy.leadName) {
+            const matchTenant = TENANT_LIST.find(x => x.name === matchedTenancy.leadName);
+            if (matchTenant) tid = matchTenant.id;
+        }
+    }
+    if (tid == null && pid != null) {
+        const matchTenant = TENANT_LIST.find(x => x.propertyId === pid && (!unit || x.unit === unit));
+        if (matchTenant) tid = matchTenant.id;
+    }
+
     const listItem = tid != null ? (TENANT_LIST[tid] || TENANT_LIST.find(x => x.id === tid)) : null;
     const t = tid != null ? TENANTS[tid] : null;
-    const prop = listItem?.propertyId != null ? PROPERTIES[listItem.propertyId] : (STATE.propertyId != null ? PROPERTIES[STATE.propertyId] : null);
+    const resolvedPropId = doc?.propertyId != null ? doc.propertyId : (listItem?.propertyId != null ? listItem.propertyId : pid);
+    const prop = resolvedPropId != null ? PROPERTIES[resolvedPropId] : null;
+
+    let tenantName = doc?.tenant || (matchedTenancy?.leadName) || listItem?.name || (t ? `${t.firstName || ''} ${t.lastName || ''}`.trim() : '');
+
+    const rent = doc?.rent || matchedTenancy?.rent || listItem?.rent || (t?.rent ? `£${t.rent}/mo` : '');
+    const deposit = doc?.deposit || matchedTenancy?.deposit || (t?.deposit ? `£${t.deposit}` : '');
+    const term = doc?.term || (matchedTenancy?.start && matchedTenancy?.end 
+        ? `${matchedTenancy.start} – ${matchedTenancy.end}`
+        : (listItem?.lease || (t?.leaseStart && t?.leaseEnd ? `${t.leaseStart} – ${t.leaseEnd}` : '')));
+
     return {
-        tenant: listItem?.name || (t ? `${t.firstName || ''} ${t.lastName || ''}`.trim() : ''),
+        doc,
+        tenantId: tid,
+        tenant: tenantName || 'Lead Tenant',
         idNumber: t?.idNumber || '',
         photo: listItem?.img || (typeof tenantAvatarUrl === 'function' && tid != null ? tenantAvatarUrl(tid) : ''),
-        property: prop?.name || listItem?.prop || '',
-        address: prop?.address || '',
-        unit: listItem?.unit || STATE.selectedUnit || '',
+        property: prop?.name || listItem?.prop || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.name : '') || '',
+        address: prop?.address || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.address : '') || '',
+        unit: unit || listItem?.unit || (matchedTenancy?.unit || ''),
+        rent,
+        deposit,
+        term,
     };
-}
-
-function documentPreviewMetaParts(doc, metaFallback = '') {
-    if (doc) {
-        const typeLabel = doc.type === 'Custom Document' ? docFileKindLabel(doc) : (doc.type || 'Document');
-        const parts = [typeLabel, formatDocDisplayDate(doc)];
-        if (doc.propertyId != null && PROPERTIES[doc.propertyId]?.name) parts.push(PROPERTIES[doc.propertyId].name);
-        if (doc.unit) parts.push(doc.unit);
-        if (doc.shared) parts.push('Shared with tenant');
-        return parts;
-    }
-    return String(metaFallback || '—').split(' · ').map(s => s.trim()).filter(Boolean);
 }
 
 function screenDocumentPreviewEnhanced() {
@@ -11985,7 +12882,6 @@ function screenDocumentPreviewEnhanced() {
     let meta = '—';
     let docId = null;
     let doc = null;
-    const ctx = documentPreviewContext();
     if (STATE.previewDocSource === 'tenant-nid') {
         const tid = STATE.tenantId ?? 0;
         const proof = getTenantNidProof(tid);
@@ -12016,54 +12912,51 @@ function screenDocumentPreviewEnhanced() {
             docId = doc.id;
         }
     }
-    const { icon, color, bg } = doc ? documentRowVisual(doc) : { icon: 'file-text', color: '#2563EB', bg: '#EFF6FF' };
-    const chips = documentPreviewMetaParts(doc, meta);
+    const ctx = documentPreviewContext(doc);
+    const propName = ctx.property || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.name : '') || 'Property';
+    const unitPart = ctx.unit || doc?.unit || '';
+    const subtitle = `${propName}${unitPart ? ` · ${unitPart}` : ''}${doc?.expiryDate ? ` · Expires ${doc.expiryDate}` : (doc?.date ? ` · ${doc.date}` : '')}`;
+    
     const hasImage = !!(doc?.fileUrl && typeof isDocImage === 'function' && isDocImage(doc));
     const hasPdf = !!(doc?.fileUrl && (doc.mime?.includes('pdf') || String(doc.name).toLowerCase().endsWith('.pdf')));
     const previewBody = hasImage
-        ? `<img src="${doc.fileUrl}" alt="" class="doc-preview-image">`
+        ? `<img src="${doc.fileUrl}" alt="" class="w-full rounded-xl border border-[#E2E8F0]">`
         : hasPdf
-            ? `<iframe src="${doc.fileUrl}" class="doc-preview-frame" title="PDF preview"></iframe>`
+            ? `<iframe src="${doc.fileUrl}" class="w-full h-[460px] rounded-xl border border-[#E2E8F0]" title="PDF preview"></iframe>`
             : renderDemoDocumentSheet({
                 name,
                 type: doc?.type,
                 date: doc?.date || meta,
                 kind: STATE.previewDocSource === 'tenant-nid' ? 'id' : demoDocKindFromName(name, doc?.type),
                 ...ctx,
+                doc,
                 property: ctx.property || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.name : ''),
                 address: ctx.address || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.address : ''),
                 unit: ctx.unit || doc?.unit || '',
             });
-    return `${topBar('Document', { back: true })}
-    <div class="doc-preview-page screen-enter">
-        <div class="screen-content doc-preview-content">
-            <div class="doc-preview-hero card">
-                <div class="doc-preview-hero-row">
-                    <div class="doc-preview-icon-lg" style="color:${color};background:${bg}">
-                        <i data-lucide="${icon}" class="w-6 h-6"></i>
-                    </div>
-                    <div class="doc-preview-hero-copy">
-                        <h2 class="doc-preview-title">${escapeHtml(name)}</h2>
-                        ${renderDocumentPreviewChips(chips)}
-                    </div>
-                </div>
-            </div>
-            ${previewBody ? `
-            <div class="doc-preview-viewer card">
-                <div class="doc-preview-panel">${previewBody}</div>
-            </div>` : ''}
+    const rightBtn = docId != null
+        ? `<button type="button" data-action="open-edit-doc-modal" data-doc="${docId}" class="px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-[#0F172A] text-[12px] font-bold hover:bg-[#F1F5F9] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"><i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#2563EB]"></i><span>Edit</span></button>`
+        : '';
+    return `${topBar('Document', { back: true, rightBtn })}
+    <div class="screen-content screen-enter space-y-4 pb-20">
+        <!-- Clean uncluttered header info -->
+        <div class="px-1 pt-1">
+            <h1 class="text-[18px] font-bold text-[#0F172A] leading-tight m-0">${escapeHtml(name)}</h1>
+            <p class="text-[12.5px] text-[#64748B] mt-1 m-0">${escapeHtml(subtitle)}</p>
         </div>
-        <div class="doc-preview-footer">
-            <div class="doc-preview-actions">
-                <button data-action="download-doc" class="btn-secondary doc-preview-action-btn">
-                    <i data-lucide="download" class="w-4 h-4"></i><span>Download</span>
-                </button>
-                ${docId != null
-                    ? `<button data-action="share-doc" data-doc="${docId}" class="btn-primary doc-preview-action-btn"><i data-lucide="share-2" class="w-4 h-4"></i><span>Share</span></button>`
-                    : `<button type="button" data-action="back" class="btn-primary doc-preview-action-btn"><span>Done</span></button>`}
-            </div>
+
+        <!-- Clean Document Viewer Sheet -->
+        <div>
+            ${previewBody}
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="pt-2 space-y-2">
+            <button data-action="download-doc" class="btn-primary w-full py-3.5 rounded-xl flex items-center justify-center gap-2 font-bold text-[14px] shadow-xs cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i><span>Download Document (PDF)</span>
+            </button>
             ${docId != null ? `
-            <button type="button" data-action="delete-document" data-doc="${docId}" class="doc-preview-delete">
+            <button type="button" data-action="delete-document" data-doc="${docId}" class="w-full py-2.5 rounded-xl text-[13px] font-bold text-[#DC2626] hover:bg-[#FEF2F2] flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
                 <i data-lucide="trash-2" class="w-4 h-4"></i><span>Delete document</span>
             </button>` : ''}
         </div>
@@ -12334,7 +13227,7 @@ function screenDashboardEnhanced() {
         </div>
         ${renderDashFinancialOverview(finStats)}
         <div class="dash-quick">
-            ${[['megaphone','Announcement','broadcast-notices','indigo'],['wrench','Maintenance','maintenance','warning'],['wallet','Finance','financial','primary']].map(([ic,l,go,tone])=>`
+            ${[['megaphone', 'Announcement', 'broadcast-notices', 'indigo'], ['wrench', 'Maintenance', 'maintenance', 'warning'], ['wallet', 'Finance', 'financial', 'primary']].map(([ic, l, go, tone]) => `
             <button data-go="${go}" class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-5 h-5"></i></div>
                 <span>${l}</span>
@@ -12383,9 +13276,9 @@ function renderTenantPlaceFilters() {
             <select data-tenant-unit-filter class="maint-place-select" aria-label="Filter by flat"${propF == null ? ' disabled' : ''}>
                 <option value="all"${!unitF ? ' selected' : ''}>All flats</option>
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : u.name;
-                    return `<option value="${escapeHtml(name)}"${unitF === name ? ' selected' : ''}>${escapeHtml(name)}</option>`;
-                }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : u.name;
+        return `<option value="${escapeHtml(name)}"${unitF === name ? ' selected' : ''}>${escapeHtml(name)}</option>`;
+    }).join('')}
             </select>
             <i data-lucide="chevron-down" class="maint-place-select-icon w-3.5 h-3.5"></i>
         </label>
@@ -12416,7 +13309,7 @@ function screenTenantsEnhanced() {
         pending: pendingTenantInviteCount(),
     };
     const defaultPid = PROPERTIES.find(p => p.status === 'Vacant')?.id ?? PROPERTIES[0]?.id ?? 0;
-  return `${topBar('Tenants', { back: true })}
+    return `${topBar('Tenants', { back: true })}
     <div class="screen-content screen-enter tenant-list-page tenant-list-page--minimal">
         <div class="tenant-list-toolbar">
             <span class="tenant-list-count">${counts.active} active tenant${counts.active === 1 ? '' : 's'}</span>
@@ -12442,19 +13335,19 @@ function screenSelectPropertyInvite() {
     <div class="screen-content screen-enter">
         <p class="text-[13px] text-[#64748B] mb-3">Choose which property to invite a tenant to.</p>
         ${PROPERTIES.map(p => {
-            const attrs = typeof inviteTenantNavAttrs === 'function'
-                ? inviteTenantNavAttrs(p.id)
-                : `data-go="invite-tenant" data-pid="${p.id}"`;
-            const badge = typeof propertyOccupancyBadge === 'function'
-                ? propertyOccupancyBadge(p.id)
-                : { label: p.status, bg: p.statusColor[0], color: p.statusColor[1] };
-            return `
+        const attrs = typeof inviteTenantNavAttrs === 'function'
+            ? inviteTenantNavAttrs(p.id)
+            : `data-go="invite-tenant" data-pid="${p.id}"`;
+        const badge = typeof propertyOccupancyBadge === 'function'
+            ? propertyOccupancyBadge(p.id)
+            : { label: p.status, bg: p.statusColor[0], color: p.statusColor[1] };
+        return `
         <button type="button" ${attrs} class="card p-4 flex items-center gap-3 w-full text-left mb-2">
             <img src="${IMG.props[p.id]}" class="w-12 h-12 rounded-xl object-cover" alt="">
             <div class="flex-1"><p class="text-[14px] font-bold">${escapeHtml(p.name)}</p><p class="text-[12px] text-[#64748B]">${escapeHtml(badge.label || 'Vacant')} · ${propertyRentListLabel(p.id)}</p></div>
             <span class="badge" style="background:${badge.bg};color:${badge.color}">${escapeHtml(badge.label || p.status)}</span>
         </button>`;
-        }).join('')}
+    }).join('')}
     </div>`;
 }
 
@@ -12484,16 +13377,16 @@ function screenSelectUnitInvite() {
         <p class="text-[13px] text-[#64748B] mb-3">Which ${unitWord} is this invite for?</p>
         <div class="stack-sm">
             ${units.map(u => {
-                const rawName = unitName(u);
-                const displayName = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(rawName, propertyId) : rawName;
-                const occ = u.status === 'occupied';
-                const rent = u.rent && u.rent !== '—' ? u.rent : '—';
-                const sub = [
-                    occ ? 'Occupied' : 'Vacant',
-                    typeof flatFloorLine === 'function' ? flatFloorLine(u) : '',
-                    rent !== '—' ? `${rent}/mo` : '',
-                ].filter(Boolean).join(' · ');
-                return `
+        const rawName = unitName(u);
+        const displayName = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(rawName, propertyId) : rawName;
+        const occ = u.status === 'occupied';
+        const rent = u.rent && u.rent !== '—' ? u.rent : '—';
+        const sub = [
+            occ ? 'Occupied' : 'Vacant',
+            typeof flatFloorLine === 'function' ? flatFloorLine(u) : '',
+            rent !== '—' ? `${rent}/mo` : '',
+        ].filter(Boolean).join(' · ');
+        return `
             <button type="button" data-go="invite-tenant" data-pid="${propertyId}" data-unit="${escapeHtml(rawName)}" class="card p-4 flex items-center gap-3 w-full text-left">
                 <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0">
                     <i data-lucide="home" class="w-5 h-5 text-[#2563EB]"></i>
@@ -12504,7 +13397,7 @@ function screenSelectUnitInvite() {
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
             </button>`;
-            }).join('')}
+    }).join('')}
         </div>
     </div>`;
 }
@@ -13459,8 +14352,8 @@ function renderMaintAssignContractorSection(item, limit = 3) {
         </div>
         <div class="maint-v2-contractor-list">
             ${sorted.map(c => {
-                const isAssigned = item.contractor === c.name;
-                return `
+        const isAssigned = item.contractor === c.name;
+        return `
             <div class="maint-v2-contractor-row card${isAssigned ? ' maint-v2-contractor-row--assigned' : ''}">
                 <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="maint-v2-contractor-main text-left">
                     <img src="${c.img}" alt="" class="maint-v2-contractor-avatar">
@@ -13471,10 +14364,10 @@ function renderMaintAssignContractorSection(item, limit = 3) {
                     <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
                 </button>
                 ${isAssigned
-                    ? `<span class="maint-v2-assign-btn maint-v2-assign-btn--assigned">Assigned</span>`
-                    : `<button type="button" data-action="assign-contractor" data-cid="${c.id}" data-mid="${item.id}" class="maint-v2-assign-btn">Assign</button>`}
+                ? `<span class="maint-v2-assign-btn maint-v2-assign-btn--assigned">Assigned</span>`
+                : `<button type="button" data-action="assign-contractor" data-cid="${c.id}" data-mid="${item.id}" class="maint-v2-assign-btn">Assign</button>`}
             </div>`;
-            }).join('')}
+    }).join('')}
         </div>
     </div>`;
 }
@@ -13649,10 +14542,10 @@ function renderSharedJobInvoiceCard(job, role, item) {
                     <p class="text-[13px] text-[#64748B]">${job.invoice.file} · ${job.invoice.uploadedAt}</p>
                 </div>
                 ${awaiting
-                    ? '<span class="badge shrink-0" style="background:#EFF6FF;color:#2563EB">Review</span>'
-                    : awaitingPay
-                        ? '<span class="badge shrink-0" style="background:#EFF6FF;color:#2563EB">Pay now</span>'
-                        : '<i data-lucide="check-circle" class="w-6 h-6 text-[#16A34A] shrink-0"></i>'}
+                ? '<span class="badge shrink-0" style="background:#EFF6FF;color:#2563EB">Review</span>'
+                : awaitingPay
+                    ? '<span class="badge shrink-0" style="background:#EFF6FF;color:#2563EB">Pay now</span>'
+                    : '<i data-lucide="check-circle" class="w-6 h-6 text-[#16A34A] shrink-0"></i>'}
             </div>
             ${role === 'landlord' && awaiting
                 ? `<p class="text-[12px] text-[#64748B] mt-2">Review the invoice below, then approve from the action at the bottom of the screen.</p>`
@@ -13717,8 +14610,8 @@ function renderMaintAssignmentStatus(item, contractorJob) {
         <p class="maint-progress-title">What happens next</p>
         <div class="maint-progress-track">
             ${steps.map((s, i) => {
-                const isCurrent = currentIdx === i;
-                return `
+        const isCurrent = currentIdx === i;
+        return `
             <div class="maint-progress-step ${s.done ? 'is-done' : ''} ${isCurrent ? 'is-current' : ''}">
                 <div class="maint-progress-rail" aria-hidden="true">
                     <span class="maint-progress-dot">${s.done ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : `<i data-lucide="${s.icon}" class="w-3.5 h-3.5"></i>`}</span>
@@ -13729,7 +14622,7 @@ function renderMaintAssignmentStatus(item, contractorJob) {
                     <p class="maint-progress-meta">${s.detail}</p>
                 </div>
             </div>`;
-            }).join('')}
+    }).join('')}
         </div>
     </div>`;
 }
@@ -13832,7 +14725,7 @@ function getChatContactPhone(conv) {
 function chatViewerKey() {
     return STATE.userRole === 'tenant' ? 'tenant'
         : STATE.userRole === 'contractor' ? 'contractor'
-        : 'landlord';
+            : 'landlord';
 }
 
 function isJobGroupChat(conv) {
@@ -15181,12 +16074,12 @@ function renderFinanceRentDueList() {
                 </thead>
                 <tbody>
                     ${unpaid.map(inv => {
-                        const [bg, color] = invoiceStatusStyle(inv.status);
-                        const typeLabel = typeof invoiceTypeLabel === 'function' ? invoiceTypeLabel(inv) : (inv.month || 'Rent');
-                        const propLabel = [inv.unit, (inv.prop || '').split(',')[0]].filter(Boolean).join(' · ');
-                        const statusLabel = inv.status === 'Overdue' ? 'Overdue' : 'Due';
-                        const recordLabel = isRentInvoice(inv) ? 'Record' : 'Receive';
-                        return `
+        const [bg, color] = invoiceStatusStyle(inv.status);
+        const typeLabel = typeof invoiceTypeLabel === 'function' ? invoiceTypeLabel(inv) : (inv.month || 'Rent');
+        const propLabel = [inv.unit, (inv.prop || '').split(',')[0]].filter(Boolean).join(' · ');
+        const statusLabel = inv.status === 'Overdue' ? 'Overdue' : 'Due';
+        const recordLabel = isRentInvoice(inv) ? 'Record' : 'Receive';
+        return `
                     <tr class="fin-due-table-row">
                         <td>
                             <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="fin-due-table-link">
@@ -15220,7 +16113,7 @@ function renderFinanceRentDueList() {
                             <button type="button" data-go="mark-rent-received" data-iid="${inv.id}" class="fin-due-table-record">${recordLabel}</button>
                         </td>
                     </tr>`;
-                    }).join('')}
+    }).join('')}
                 </tbody>
             </table>
         </div>
@@ -15254,12 +16147,12 @@ function renderTenantStillDueCard(tenantId) {
             <strong>${escapeHtml(pay.billBalance)}</strong>
         </div>
         ${extras.map(i => {
-            const name = typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(i) : (i.desc || 'Charge');
-            return `<button type="button" data-go="invoice-detail" data-iid="${i.id}" class="tenant-still-due-item">
+        const name = typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(i) : (i.desc || 'Charge');
+        return `<button type="button" data-go="invoice-detail" data-iid="${i.id}" class="tenant-still-due-item">
                 <span>${escapeHtml(name)}</span>
                 <span>${escapeHtml(i.amount)}</span>
             </button>`;
-        }).join('')}` : ''}
+    }).join('')}` : ''}
     </div>`;
 }
 
@@ -15539,28 +16432,29 @@ function inspReportRow(report) {
     const dateLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(report.date) || report.date : report.date;
     const typeTitle = report.type || 'Inspection';
     const meta = getInspectionTypeMeta(typeTitle);
-    const unitBadge = report.unit || (report.propertyId ? getPropertyUnits(report.propertyId)[0]?.name || '' : '');
-    const rating = report.rating ? String(report.rating) : null;
+    const unitBadge = report.unit || '';
 
     return `
-    <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all w-full text-left flex items-center justify-between gap-3.5 group cursor-pointer">
-        <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-11 h-11 rounded-xl ${meta.bg} ${meta.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+    <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors cursor-pointer group">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl ${meta.bg} ${meta.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <i data-lucide="${meta.icon}" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
                 <div class="flex items-center gap-2 mb-0.5">
-                    <h4 class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${escapeHtml(typeTitle)}</h4>
-                    ${unitBadge ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#475569] shrink-0">${escapeHtml(unitBadge)}</span>` : ''}
+                    <span class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate leading-snug">${escapeHtml(typeTitle)}</span>
+                    ${unitBadge ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F1F5F9] text-[#475569] shrink-0">${escapeHtml(unitBadge)}</span>` : ''}
                 </div>
-                <p class="text-[12px] font-medium text-[#64748B] m-0 flex items-center gap-1.5 mt-0.5">
-                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                <p class="text-[11.5px] font-medium text-[#64748B] m-0 flex items-center gap-1.5 truncate">
                     <span>${dateLabel}</span>
+                    <span class="text-[#CBD5E1]">·</span>
+                    <span class="text-[#15803D]">Completed</span>
                 </p>
             </div>
         </div>
-        <div class="flex items-center gap-2.5 shrink-0">
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+        <div class="flex items-center gap-2 shrink-0">
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">View Report</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
         </div>
     </button>`;
 }
@@ -15598,9 +16492,9 @@ function screenInspectionDetail() {
         </div>
         ${tenantPhotos.length ? `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <p class="text-[12px] font-bold text-[#0F172A] mb-2.5">Tenant Uploaded Photos (${tenantPhotos.length})</p>
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Tenant Uploaded Photos (${tenantPhotos.length})</p>
             <div class="grid grid-cols-2 gap-2">
-                ${tenantPhotos.map(src => `<img src="${src}" class="w-full h-28 object-cover rounded-xl border border-[#E2E8F0]" alt="">`).join('')}
+                ${tenantPhotos.map(url => `<img src="${url}" class="w-full h-28 object-cover rounded-xl border border-[#E2E8F0]">`).join('')}
             </div>
         </div>` : ''}
         ${photos.length ? `
@@ -15633,98 +16527,91 @@ function renderPropertyInspectionTab(propertyId) {
         ? (typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date)
         : null;
 
-    const avgRating = past.length
-        ? (past.reduce((acc, i) => acc + (parseFloat(i.rating) || 4.5), 0) / past.length).toFixed(1)
-        : '4.8';
-
-    return `
-    <div class="screen-content screen-content-sm prop-hub-page space-y-4 text-left">
-        <!-- Quick KPIs -->
-        <div class="grid grid-cols-2 gap-2.5">
-            <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-center">
-                <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Reports</span>
-                <span class="block text-[17px] font-bold text-[#0F172A] mt-0.5">${past.length}</span>
+    const headerStatusCard = `
+    <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl ${upcoming ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-[#ECFDF5] text-[#059669]'} flex items-center justify-center shrink-0">
+                <i data-lucide="${upcoming ? 'calendar-clock' : 'shield-check'}" class="w-4 h-4"></i>
             </div>
-            <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-center">
-                <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Status</span>
-                <span class="block text-[12px] font-bold text-[#16A34A] mt-1">Up to date</span>
+            <div class="min-w-0">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Audit Status</span>
+                <p class="text-[13.5px] font-bold text-[#0F172A] mt-0.5 m-0 truncate">
+                    ${upcoming ? `Next: ${nextDateLabel}` : (past.length ? `${past.length} Records · All Up to Date` : 'Up to date')}
+                </p>
             </div>
         </div>
-
-        <!-- Action Bar: Conduct Live Inspection & Schedule Visit -->
-        <div class="grid grid-cols-2 gap-2.5">
-            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="py-3 px-3 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] shadow-sm hover:bg-[#1D4ED8] transition-all flex items-center justify-center gap-2 cursor-pointer">
-                <i data-lucide="play-circle" class="w-4 h-4"></i>
-                <span>Conduct Now</span>
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                <span>Conduct</span>
             </button>
-            <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="py-3 px-3 rounded-2xl bg-white border border-[#E2E8F0] text-[#0F172A] font-bold text-[13px] shadow-sm hover:bg-[#F8FAFC] transition-all flex items-center justify-center gap-2 cursor-pointer">
-                <i data-lucide="calendar-plus" class="w-4 h-4 text-[#2563EB]"></i>
-                <span>Schedule Visit</span>
+            <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] text-[12px] font-bold hover:bg-[#F1F5F9] transition-colors flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                <span>Schedule</span>
             </button>
         </div>
+    </div>`;
 
-        <!-- Next Scheduled / Empty Banner -->
-        ${upcoming ? `
-        <div class="card p-4 rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-white border border-[#BFDBFE] shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#2563EB] text-white">${isTenantUploadInspection(upcoming) ? 'Tenant Photo Request' : 'Next Inspection'}</span>
-                <span class="text-[11px] font-bold text-[#2563EB]">${isTenantUploadInspection(upcoming) ? `Photos due ${nextDateLabel}` : `${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}`}</span>
+    const upcomingSection = upcoming ? `
+    <div class="space-y-1.5">
+        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Upcoming Inspection</p>
+        <div class="card p-4 rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-white border border-[#BFDBFE] shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#2563EB] text-white">${isTenantUploadInspection(upcoming) ? 'Tenant Photos Due' : 'Scheduled Visit'}</span>
+                <span class="text-[11.5px] font-bold text-[#2563EB]">${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}</span>
             </div>
-            <h3 class="text-[16px] font-bold text-[#0F172A] m-0">${upcoming.type || 'Inspection'}</h3>
-            ${upcoming.notes?.trim() ? `<p class="text-[12px] text-[#64748B] mt-1 m-0">${truncateNote(upcoming.notes, 90)}</p>` : ''}
-            <div class="flex items-center gap-1.5 text-[11px] font-semibold text-[#2563EB] mt-2.5">
-                <i data-lucide="bell" class="w-3.5 h-3.5"></i>
-                <span>Smart Reminder active</span>
+            <div>
+                <h4 class="text-[15px] font-bold text-[#0F172A] m-0">${escapeHtml(upcoming.type || 'Property Inspection')}</h4>
+                ${upcoming.notes?.trim() ? `<p class="text-[12px] text-[#64748B] mt-1 m-0 leading-relaxed">${escapeHtml(truncateNote(upcoming.notes, 90))}</p>` : ''}
             </div>
-            <div class="insp-upcoming-actions mt-3">
+            <div class="pt-1 flex items-center justify-end gap-2">
                 ${renderScheduledInspectionActions(upcoming, propertyId)}
             </div>
+        </div>
+    </div>` : '';
+
+    const pastSection = `
+    <div class="space-y-1.5">
+        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Inspection History (${past.length})</p>
+        ${past.length ? `
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
+            ${past.map(i => inspReportRow(i)).join('')}
         </div>` : `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-                </div>
-                <div class="min-w-0">
-                    <h4 class="text-[13px] font-bold text-[#0F172A] truncate m-0">No Inspection Scheduled</h4>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Start an instant visit or schedule one</p>
-                </div>
-            </div>
-            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors shrink-0 cursor-pointer">
-                Start
-            </button>
+        <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
+            <i data-lucide="clipboard-list" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
+            <p class="text-[13px] font-semibold text-[#0F172A] m-0">No past reports recorded yet</p>
+            <p class="text-[11.5px] text-[#64748B] mt-1 m-0">Conduct an on-site check or schedule a visit above.</p>
         </div>`}
+    </div>`;
 
-        <!-- Past Reports Section -->
-        <div>
-            <div class="flex items-center justify-between mb-2.5 px-1">
-                <h3 class="text-[13px] font-bold text-[#0F172A] m-0">Past Reports</h3>
-                <span class="text-[11px] font-bold text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-full">${past.length} records</span>
-            </div>
-            ${past.length ? `
-            <div class="space-y-2.5">
-                ${past.map(i => inspReportRow(i)).join('')}
-            </div>` : `
-            <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
-                <p class="text-[13px] text-[#64748B] m-0">No past reports recorded yet</p>
-            </div>`}
-        </div>
-
-        <!-- Footer Photos Link -->
-        <div class="pt-1">
-            <button type="button" data-go="property-photos" data-pid="${propertyId}" class="w-full p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all flex items-center justify-between text-left cursor-pointer group">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center shrink-0">
-                        <i data-lucide="images" class="w-4 h-4"></i>
+    const photosSection = `
+    <div class="space-y-1.5">
+        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Inspection Media</p>
+        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs overflow-hidden">
+            <button type="button" data-go="property-photos" data-pid="${propertyId}" class="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors cursor-pointer group">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                        <i data-lucide="images" class="w-5 h-5"></i>
                     </div>
-                    <div>
-                        <p class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#16A34A] transition-colors m-0">Property & Room Photos</p>
-                        <p class="text-[11px] text-[#64748B] m-0">View all visual inspection archives</p>
+                    <div class="min-w-0">
+                        <div class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate leading-snug">Property & Room Photos</div>
+                        <div class="text-[11.5px] text-[#64748B] truncate mt-0.5">Check-in, checkout & room condition archives</div>
                     </div>
                 </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#16A34A] transition-colors"></i>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">Gallery</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                </div>
             </button>
         </div>
+    </div>`;
+
+    return `
+    <div class="screen-content screen-content-sm prop-hub-page space-y-4 text-left pb-8">
+        ${headerStatusCard}
+        ${upcomingSection}
+        ${pastSection}
+        ${photosSection}
     </div>`;
 }
 
@@ -16009,9 +16896,9 @@ function renderMaintPlaceFilters() {
             <select data-maint-unit-filter class="maint-place-select" aria-label="Filter by unit"${propF == null ? ' disabled' : ''}>
                 <option value="all"${!unitF ? ' selected' : ''}>All units</option>
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : u.name;
-                    return `<option value="${escapeHtml(name)}"${unitF === name ? ' selected' : ''}>${escapeHtml(name)}</option>`;
-                }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : u.name;
+        return `<option value="${escapeHtml(name)}"${unitF === name ? ' selected' : ''}>${escapeHtml(name)}</option>`;
+    }).join('')}
             </select>
             <i data-lucide="chevron-down" class="maint-place-select-icon w-3.5 h-3.5"></i>
         </label>
@@ -16086,10 +16973,10 @@ function screenMaintenanceEnhanced() {
         ${renderMaintPlaceFilters()}
         <div class="maint-source-tabs filter-tabs">
             ${[
-                ['tenant', 'users', 'Tenant reports', sourceCounts.tenant],
-                ['landlord', 'clipboard-list', 'My logs', sourceCounts.landlord],
-                ['all', 'layers', 'All', sourceCounts.all],
-            ].map(([key, icon, label, n]) => `
+            ['tenant', 'users', 'Tenant reports', sourceCounts.tenant],
+            ['landlord', 'clipboard-list', 'My logs', sourceCounts.landlord],
+            ['all', 'layers', 'All', sourceCounts.all],
+        ].map(([key, icon, label, n]) => `
             <button type="button" data-maint-source-filter="${key}" class="filter-chip maint-source-chip ${sourceF === key ? 'active' : ''}">
                 <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
                 <span>${label} (${n})</span>
@@ -16098,10 +16985,10 @@ function screenMaintenanceEnhanced() {
         ${renderMaintStatusFilters(counts, f)}
         <div class="maint-scope-tabs">
             ${[
-                ['all', 'map-pin', 'All locations'],
-                ['unit', 'home', 'Units'],
-                ['communal', 'building-2', 'Communal'],
-            ].map(([key, icon, label]) => `
+            ['all', 'map-pin', 'All locations'],
+            ['unit', 'home', 'Units'],
+            ['communal', 'building-2', 'Communal'],
+        ].map(([key, icon, label]) => `
             <button type="button" data-maint-scope-filter="${key}" class="maint-scope-chip ${scopeF === key ? 'active' : ''}">
                 <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
                 <span>${label}</span>
@@ -16551,7 +17438,7 @@ function renderTenantMaintenanceSection(tenantId) {
     );
     const filtered = f === 'all' ? tenantMaint
         : f === 'open' ? tenantMaint.filter(m => m.status === 'open' || m.status === 'progress')
-        : tenantMaint.filter(m => m.status === 'done');
+            : tenantMaint.filter(m => m.status === 'done');
     const openCount = tenantMaint.filter(m => m.status === 'open' || m.status === 'progress').length;
     const doneCount = tenantMaint.filter(m => m.status === 'done').length;
     return `
@@ -16802,10 +17689,10 @@ function screenGlobalSearch() {
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
         </button>`)}
         ${resultBlock('Tenants', tenants, t => {
-            const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(t) : null;
-            const groupMeta = typeof tenantTenancyMetaLine === 'function' ? tenantTenancyMetaLine(t) : '';
-            const pill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
-            return `
+        const tenancy = typeof getTenancyForTenantListItem === 'function' ? getTenancyForTenantListItem(t) : null;
+        const groupMeta = typeof tenantTenancyMetaLine === 'function' ? tenantTenancyMetaLine(t) : '';
+        const pill = tenancy && typeof tenancyTypePill === 'function' ? tenancyTypePill(tenancy.type) : '';
+        return `
         <button data-go="tenant-detail" data-tid="${t.id}" class="card p-4 flex items-center gap-3 w-full text-left">
             <img src="${t.img}" class="w-12 h-12 rounded-xl object-cover" alt="">
             <div class="flex-1 min-w-0">
@@ -16817,7 +17704,7 @@ function screenGlobalSearch() {
             </div>
             <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1]"></i>
         </button>`;
-        })}
+    })}
         ${resultBlock('Maintenance', maintenance, m => `
         <button data-go="maintenance-detail" data-mid="${m.id}" class="card p-4 flex items-center gap-3 w-full text-left">
             <div class="w-12 h-12 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]"><i data-lucide="wrench" class="w-5 h-5"></i></div>
@@ -16829,7 +17716,7 @@ function screenGlobalSearch() {
 
 /* ─── New Screens ─── */
 function screenComplianceDashboard() {
-    const items = AppStore.reminders.filter(r => REMINDER_TYPES.slice(0, 8).some(t => t[0] === r.type) || ['gas','electrical','epc','smoke','heat','co2'].includes(r.type));
+    const items = AppStore.reminders.filter(r => REMINDER_TYPES.slice(0, 8).some(t => t[0] === r.type) || ['gas', 'electrical', 'epc', 'smoke', 'heat', 'co2'].includes(r.type));
     const overdue = items.filter(r => r.daysLeft <= 7);
     const certRows = Object.entries(AppStore.complianceCerts || {}).map(([key, cert]) => {
         const [pid, cid] = key.split('-').map(Number);
@@ -16845,7 +17732,7 @@ function screenComplianceDashboard() {
     <div class="screen-content screen-enter">
         <div class="dash-stat-grid">
             ${dashStatCard({ go: 'reminders', variant: 'issues', icon: 'alert-triangle', label: 'Due Soon', value: overdue.length, pill: overdue.length ? 'Action' : null })}
-            ${dashStatCard({ go: 'properties', variant: 'compliant', icon: 'shield-check', label: 'Compliant', value: `${PROPERTIES.filter(p=>p.compliance).length}/${PROPERTIES.length}`, pill: null })}
+            ${dashStatCard({ go: 'properties', variant: 'compliant', icon: 'shield-check', label: 'Compliant', value: `${PROPERTIES.filter(p => p.compliance).length}/${PROPERTIES.length}`, pill: null })}
         </div>
         <p class="screen-section-title">Certificate Status</p>
         <div class="stack-sm">
@@ -16864,7 +17751,7 @@ function screenReminders() {
     const filter = STATE.reminderFilter || 'all';
     const propFilter = STATE.reminderPropertyFilter || 'all';
     const allReminders = (AppStore.reminders || []).map(r => recalcReminderMeta({ ...r }));
-    
+
     const propFilteredList = (propFilter !== 'all' && propFilter !== '' && propFilter != null)
         ? allReminders.filter(r => r.propertyId === Number(propFilter))
         : allReminders;
@@ -16917,9 +17804,9 @@ function screenReminders() {
                 <select data-action="filter-reminder-property" class="w-full bg-transparent text-[12px] font-bold text-[#0F172A] border-0 focus:ring-0 p-0 pr-4 truncate cursor-pointer outline-none">
                     <option value="all" ${propFilter === 'all' ? 'selected' : ''}>All Properties (${allReminders.length})</option>
                     ${PROPERTIES.map(p => {
-                        const count = allReminders.filter(r => r.propertyId === p.id).length;
-                        return `<option value="${p.id}" ${propFilter === String(p.id) ? 'selected' : ''}>${esc(p.name)} (${count})</option>`;
-                    }).join('')}
+        const count = allReminders.filter(r => r.propertyId === p.id).length;
+        return `<option value="${p.id}" ${propFilter === String(p.id) ? 'selected' : ''}>${esc(p.name)} (${count})</option>`;
+    }).join('')}
                 </select>
             </div>
             <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#94A3B8] pointer-events-none shrink-0"></i>
@@ -16935,11 +17822,11 @@ function screenReminders() {
         ${list.length ? `
         <div class="space-y-2">
             ${list.map(r => {
-                const p = PROPERTIES[r.propertyId];
-                const rt = reminderTypeMeta(r.type);
-                const badge = reminderStatusBadge(r);
-                const dueLabel = formatReminderDue(r.due);
-                return `
+        const p = PROPERTIES[r.propertyId];
+        const rt = reminderTypeMeta(r.type);
+        const badge = reminderStatusBadge(r);
+        const dueLabel = formatReminderDue(r.due);
+        return `
                 <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 group">
                     <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
                         <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform" style="background:${rt[3]};color:${rt[4]}">
@@ -16961,7 +17848,7 @@ function screenReminders() {
                         </button>` : ''}
                     </div>
                 </div>`;
-            }).join('')}
+    }).join('')}
         </div>` : `
         <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
             <i data-lucide="bell-off" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
@@ -17267,10 +18154,10 @@ function screenConductInspection() {
             <div class="flex flex-wrap gap-2">
                 <button type="button" data-action="select-insp-unit" data-unit="" class="px-3.5 py-1.5 rounded-xl text-[12px] font-bold border transition-all cursor-pointer ${!selectedUnit ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#CBD5E1]'}">Whole Property</button>
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const isSel = selectedUnit === name;
-                    return `<button type="button" data-action="select-insp-unit" data-unit="${escapeHtml(name)}" class="px-3.5 py-1.5 rounded-xl text-[12px] font-bold border transition-all cursor-pointer ${isSel ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#CBD5E1]'}">${escapeHtml(name)}</button>`;
-                }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const isSel = selectedUnit === name;
+        return `<button type="button" data-action="select-insp-unit" data-unit="${escapeHtml(name)}" class="px-3.5 py-1.5 rounded-xl text-[12px] font-bold border transition-all cursor-pointer ${isSel ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#CBD5E1]'}">${escapeHtml(name)}</button>`;
+    }).join('')}
             </div>
             <input type="hidden" data-field="inspUnit" value="${escapeHtml(selectedUnit)}">
         </div>` : `<input type="hidden" data-field="inspUnit" value="">`}
@@ -17327,11 +18214,11 @@ function screenConductInspection() {
 
                 <div class="divide-y divide-[#F1F5F9] text-[13px] pt-1">
                     ${list.map(room => {
-                        const roomName = room.name || 'Room';
-                        const inv = typeof ensureInventoryRoom === 'function' ? ensureInventoryRoom(pid, room.slug) : {};
-                        const sizeSqft = inv?.sizeSqft?.trim();
-                        const currentStatus = checks[roomName] || null; // null by default (Unchecked)
-                        return `
+                const roomName = room.name || 'Room';
+                const inv = typeof ensureInventoryRoom === 'function' ? ensureInventoryRoom(pid, room.slug) : {};
+                const sizeSqft = inv?.sizeSqft?.trim();
+                const currentStatus = checks[roomName] || null; // null by default (Unchecked)
+                return `
                         <div class="py-2.5 flex flex-row items-center justify-between gap-2">
                             <div class="min-w-0 flex-1">
                                 <h4 class="font-bold text-[#0F172A] text-[14px] m-0 leading-tight">${escapeHtml(roomName)}</h4>
@@ -17351,7 +18238,7 @@ function screenConductInspection() {
                                 </button>
                             </div>
                         </div>`;
-                    }).join('')}
+            }).join('')}
                 </div>
             </div>`;
         })()}
@@ -17740,9 +18627,9 @@ function screenPayContractor() {
     return `${topBar('Pay Contractor', { back: true })}
     <div class="screen-content screen-enter">
         ${unpaid.length ? unpaid.map(c => {
-            const job = typeof getContractorJobForMaint === 'function' ? getContractorJobForMaint(c.maintId) : null;
-            const needsApprove = job && job.status === 'waiting_approval';
-            return `
+        const job = typeof getContractorJobForMaint === 'function' ? getContractorJobForMaint(c.maintId) : null;
+        const needsApprove = job && job.status === 'waiting_approval';
+        return `
         <div class="card p-4 mb-2">
             <div class="flex justify-between items-start">
                 <div><p class="text-[14px] font-semibold">${c.contractor}</p><p class="text-[12px] text-[#64748B]">${c.job}</p></div>
@@ -17752,7 +18639,7 @@ function screenPayContractor() {
                 ? `<button type="button" data-action="approve-maint-work" data-mid="${c.maintId}" class="btn-primary w-full py-2.5 text-[13px] mt-3">Approve work first</button>`
                 : `<button type="button" data-action="pay-maint-stripe" data-cid="${c.id}" class="btn-primary w-full py-2.5 text-[13px] mt-3">Pay ${c.amount} with Stripe</button>`}
         </div>`;
-        }).join('') : emptyState('banknote', 'No unpaid invoices', 'All contractor invoices have been paid.', 'View Maintenance', null, 'maintenance')}
+    }).join('') : emptyState('banknote', 'No unpaid invoices', 'All contractor invoices have been paid.', 'View Maintenance', null, 'maintenance')}
     </div>`;
 }
 
@@ -17802,15 +18689,10 @@ function screenRescheduleInspectionEnhanced() {
     }
     const upcoming = typeof getScheduledInspection === 'function' ? getScheduledInspection(STATE.propertyId) : null;
     const draft = STATE.inspScheduleDraft || {};
-    const collectMode = STATE.inspCollectMode
-        || (upcoming?.collectMode === 'tenant-upload' ? 'tenant-upload' : 'visit');
-    const isUpload = collectMode === 'tenant-upload';
-    const title = upcoming
-        ? (isUpload ? 'Edit photo request' : 'Reschedule Inspection')
-        : (isUpload ? 'Ask tenant for photos' : 'Schedule Inspection');
+    const title = upcoming ? 'Reschedule Inspection' : 'Schedule Inspection';
     const currentLine = upcoming
         ? `${upcoming.type || 'Inspection'} · Currently ${typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date}`
-        : (isUpload ? 'Remind the tenant to upload inspection pictures' : 'Pick a date for your next visit');
+        : 'Pick a date and time for your inspection visit';
     const dateVal = draft.date
         || (upcoming && typeof toDateInputValue === 'function' ? toDateInputValue(upcoming.date) : '');
     const types = ['Check-in', 'Mid-term', 'Annual', 'Check-out'];
@@ -17819,54 +18701,23 @@ function screenRescheduleInspectionEnhanced() {
         : (upcoming?.type || 'Mid-term'));
     const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM'];
     const selectedSlot = draft.timeSlot || upcoming?.timeSlot || '10:00 AM';
-    const interval = String(draft.interval || upcoming?.reminderInterval || '30');
-    const remindOn = dateVal ? inspectionTenantRemindDate(dateVal, interval) : '';
-    const remindLabel = remindOn && typeof formatDisplayDate === 'function'
-        ? formatDisplayDate(remindOn)
-        : remindOn;
-    const saveLabel = upcoming
-        ? (isUpload ? 'Save photo request' : 'Confirm reschedule')
-        : (isUpload ? 'Send Smart Reminder' : 'Schedule inspection');
+    const saveLabel = upcoming ? 'Confirm reschedule' : 'Schedule inspection';
+
     return `${topBar(title, { back: true })}
-    <div class="screen-content screen-enter insp-schedule-page">
+    <div class="screen-content screen-enter insp-schedule-page space-y-4">
         <div class="insp-schedule-property">
-            <p class="insp-schedule-property-name">${p.name}</p>
-            <p class="insp-schedule-property-meta">${currentLine}</p>
+            <p class="insp-schedule-property-name">${escapeHtml(p.name)}</p>
+            <p class="insp-schedule-property-meta">${escapeHtml(currentLine)}</p>
         </div>
-        <p class="form-label">How should this inspection happen?</p>
-        <div class="insp-mode-grid">
-            <button type="button" data-action="set-insp-collect-mode" data-mode="visit" class="insp-mode-card${isUpload ? '' : ' is-active'}">
-                <span class="insp-mode-icon"><i data-lucide="calendar-clock" class="w-5 h-5"></i></span>
-                <span class="insp-mode-copy">
-                    <strong>Schedule appointment</strong>
-                    <span>You visit the property on a date and time.</span>
-                </span>
-            </button>
-            <button type="button" data-action="set-insp-collect-mode" data-mode="tenant-upload" class="insp-mode-card${isUpload ? ' is-active' : ''}">
-                <span class="insp-mode-icon"><i data-lucide="camera" class="w-5 h-5"></i></span>
-                <span class="insp-mode-copy">
-                    <strong>Smart Reminder — tenant photos</strong>
-                    <span>Tenant uploads inspection pictures. You pick when to remind them.</span>
-                </span>
-            </button>
-        </div>
-        ${formField(isUpload ? 'Photos due date' : 'Inspection Date', dateVal, 'date', isUpload ? 'When photos should be in' : 'Select inspection date', 'inspDate')}
-        ${isUpload ? `
-        <div>
-            <label class="form-label">Remind tenant</label>
-            <select data-field="inspRemindInterval" class="form-input form-select">
-                ${INSP_TENANT_REMIND_INTERVALS.map(o => `<option value="${o.id}" ${interval === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
-            </select>
-            <p class="form-helper">${remindLabel ? `Smart Reminder will fire on ${remindLabel}.` : 'Choose how many days before the due date to remind the tenant.'}</p>
-        </div>` : formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
+        ${formField('Inspection Date', dateVal, 'date', 'Select inspection date', 'inspDate')}
+        ${formSelect('Time Slot', selectedSlot, timeSlots, 'timeSlot')}
         ${formSelect('Type', selectedType, types, 'inspType')}
-        ${formTextarea(isUpload ? 'Notes for tenant' : 'Access notes', escapeHtml(draft.notes || upcoming?.notes || ''), isUpload ? 'Rooms to photograph, lighting, anything to include...' : 'Parking, keys, tenant availability...', 'inspNotes', '', 'form-input--compact')}
+        ${formTextarea('Access notes', escapeHtml(draft.notes || upcoming?.notes || ''), 'Parking, keys, tenant availability...', 'inspNotes', '', 'form-input--compact')}
         ${renderTenantNotifySection(STATE.propertyId, {
-            compact: true,
-            title: isUpload ? 'Remind these tenants' : 'Notify tenants',
-            hint: isUpload ? 'Selected tenants get a Smart Reminder to upload inspection pictures.' : undefined,
-        })}
-        ${saveBtn(saveLabel, isUpload ? 'Photo request saved' : 'Inspection rescheduled')}
+        compact: true,
+        title: 'Notify tenants',
+    })}
+        ${saveBtn(saveLabel, 'Inspection scheduled')}
     </div>`;
 }
 
@@ -17884,11 +18735,11 @@ function screenAddFlat() {
     <div class="screen-content screen-content-sm screen-enter flat-edit-page">
         ${isDup ? `<p class="text-[12px] text-[#64748B] mb-2">Copied from ${escapeHtml(sourceName)}</p>` : ''}
         ${renderFlatUnitPhotoPicker(pendingPhotos, pendingCover, {
-            placeholder: isDup && sourceName ? getFlatCoverPhoto(STATE.propertyId, sourceName) : IMG.interior[0],
-            hint: isDup && pendingPhotos.length
-                ? `Photos copied from ${sourceName}. Tap ★ to change the cover before saving.`
-                : 'Add multiple photos and tap ★ to choose which shows on the home screen.',
-        })}
+        placeholder: isDup && sourceName ? getFlatCoverPhoto(STATE.propertyId, sourceName) : IMG.interior[0],
+        hint: isDup && pendingPhotos.length
+            ? `Photos copied from ${sourceName}. Tap ★ to change the cover before saving.`
+            : 'Add multiple photos and tap ★ to choose which shows on the home screen.',
+    })}
         <div class="flat-edit-fields stack-sm">
             <div class="form-field"><label class="form-label">${unitWordCap} name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${draft.name.replace(/"/g, '&quot;')}" placeholder="e.g. ${isHmo ? 'Room 2A' : 'Flat 2A'}"></div>
             <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${draft.rent}" min="1" step="1"></div>
@@ -17972,12 +18823,12 @@ function screenEditFlat() {
     return `${topBar(`Edit ${unitWord}`, { back: true, sub: `${p?.name || ''} · ${unitName(u)}` })}
     <div class="screen-content screen-content-sm screen-enter flat-edit-page">
         ${renderFlatUnitPhotoPicker(photos, cover, {
-            coverAction: 'set-flat-cover',
-            removeAction: 'remove-flat-photo',
-            uploadAction: 'upload-flat-photo',
-            uploadLabel: photos.length ? 'Add more photos' : `Add ${unitWord} photos`,
-            hint: 'Tap ★ on any photo to set it as the cover. This shows in Overview and unit lists.',
-        })}
+        coverAction: 'set-flat-cover',
+        removeAction: 'remove-flat-photo',
+        uploadAction: 'upload-flat-photo',
+        uploadLabel: photos.length ? 'Add more photos' : `Add ${unitWord} photos`,
+        hint: 'Tap ★ on any photo to set it as the cover. This shows in Overview and unit lists.',
+    })}
         <div class="flat-edit-status card">
             <div class="flat-edit-status-body">
                 <p class="flat-edit-status-title">Status</p>
@@ -17986,12 +18837,12 @@ function screenEditFlat() {
             <span class="badge shrink-0" style="background:${occ ? '#DCFCE7' : '#FEF3C7'};color:${occ ? '#16A34A' : '#D97706'}">${occ ? 'Occupied' : 'Vacant'}</span>
         </div>
         <div class="flat-edit-fields stack-sm">
-            <div class="form-field"><label class="form-label">${unitWordCap} name</label><input data-field="flatName" type="text" class="form-input" value="${unitName(u).replace(/"/g, '&quot;')}"></div>
+            <div class="form-field"><label class="form-label">${unitWordCap} name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${unitName(u).replace(/"/g, '&quot;')}" placeholder="e.g. ${isHmo ? 'Room 2A' : 'Flat 2A'}"></div>
             <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${rent}" min="1" step="1"></div>
             <div class="grid grid-cols-3 gap-3">
                 <div class="form-field"><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${u.beds != null ? u.beds : ''}" min="0" placeholder="2"></div>
                 <div class="form-field"><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${u.baths != null ? u.baths : ''}" min="0" placeholder="1"></div>
-                <div class="form-field"><label class="form-label">${unitWordCap} size (sq ft)</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
+                <div class="form-field"><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${u.floor != null && u.floor !== '' ? u.floor : ''}" placeholder="0 = ground" min="0"></div>
@@ -18527,84 +19378,88 @@ function screenUtilityDetail() {
     const utilityId = STATE.utilityId || 'electricity';
 
     const gas = getUtilityEntry(meta, 'gas') || {};
-    const elec = getUtilityEntry(meta, 'electricity') || {};
+    const elec = getUtilityEntry(meta, 'electricity') || getUtilityEntry(meta, 'electric') || {};
     const water = getUtilityEntry(meta, 'water') || {};
     const wifi = getUtilityEntry(meta, 'wifi') || {};
+    const council = utils.council || {};
+    const taxBand = info.councilTax ? (info.councilTax.startsWith('Band') ? info.councilTax : `Band ${info.councilTax}`) : 'Band D';
+
     const detailsMap = {
         gas: {
             title: 'Gas',
-            photo: utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
+            photo: gas.meterPicture || utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
             badge: 'CP12 on file',
             rows: [
-                ['Supplier', gas.provider || utils.gasSupplier || (typeof utils.gas === 'object' ? utils.gas?.provider : utils.gas) || 'British Gas'],
-                ['Meter', gas.meterNumber || utils.gasNo || '84920173'],
-                ['Location', gas.meterLocation || utils.gasLoc || 'Front exterior meter box'],
-                ['Shut-off', 'Lever beside meter'],
-                ['Safety', 'CP12 valid to 15 Nov 2026'],
-                ['Helpline', gas.phone || '0333 202 9802'],
-            ],
+                ['Supplier', gas.provider || 'British Gas'],
+                ['MPRN', gas.meterNumber || '489201'],
+                ['Location', gas.meterLocation || 'Cupboard under the stairs'],
+                ['Shut-off', gas.shutOff || 'Lever beside meter'],
+                ['Helpline', gas.phone || '0800 111 999'],
+                ['Tariff / Notes', gas.notes || 'Fixed rate until 2026'],
+            ].filter(([, val]) => val && val !== '—'),
         },
         electricity: {
             title: 'Electricity',
-            photo: utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
+            photo: elec.meterPicture || utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
             badge: 'EICR certified',
             rows: [
-                ['Supplier', elec.provider || utils.electricitySupplier || (typeof utils.electricity === 'object' ? utils.electricity?.provider : utils.electricity) || (typeof utils.electric === 'object' ? utils.electric?.provider : utils.electric) || 'Octopus Energy'],
-                ['Meter', elec.meterNumber || utils.electricityNo || '12093841'],
-                ['Location', elec.meterLocation || utils.electricityLoc || 'Basement intake cupboard'],
-                ['Consumer unit', 'Hallway cupboard · main RCD'],
-                ['Safety', 'EICR valid to Oct 2027'],
+                ['Supplier', elec.provider || 'Octopus Energy'],
+                ['MPAN', elec.meterNumber || '120002948192'],
+                ['Location', elec.meterLocation || 'Basement intake cupboard'],
+                ['Consumer unit', elec.consumerUnit || 'Hallway cupboard · main RCD'],
                 ['Helpline', elec.phone || '0808 164 1088'],
-            ],
+                ['Tariff / Notes', elec.notes || 'Agile eco tariff'],
+            ].filter(([, val]) => val && val !== '—'),
         },
         water: {
             title: 'Water',
-            photo: utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
+            photo: water.meterPicture || utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
             badge: 'Metered',
             rows: [
-                ['Supplier', water.provider || utils.waterSupplier || (typeof utils.water === 'object' ? utils.water?.provider : utils.water) || 'Thames Water'],
-                ['Meter', water.meterNumber || utils.waterNo || 'WTR-99402'],
-                ['Stopcock', water.meterLocation || utils.waterLoc || 'Under kitchen sink'],
-                ['Street valve', 'Pavement outside front boundary'],
+                ['Supplier', water.provider || 'Thames Water'],
+                ['Account / Meter', water.meterNumber || '902184'],
+                ['Stopcock', water.meterLocation || 'Under kitchen sink'],
+                ['Street valve', water.shutOff || 'Pavement outside front boundary'],
                 ['Helpline', water.phone || '0800 316 9800'],
-            ],
+                ['Tariff / Notes', water.notes || 'Unmetered flat rate'],
+            ].filter(([, val]) => val && val !== '—'),
         },
         wifi: {
             title: 'Wi-Fi',
-            photo: utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
-            badge: '900 Mbps',
+            photo: wifi.meterPicture || utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
+            badge: wifi.notes && wifi.notes.includes('Mbps') ? wifi.notes : 'Full Fibre',
             rows: [
-                ['Provider', wifi.provider || utils.broadbandSupplier || (typeof utils.wifi === 'object' ? utils.wifi?.provider : utils.wifi) || (typeof utils.broadband === 'object' ? utils.broadband?.provider : utils.broadband) || 'BT Fibre'],
-                ['Network', utils.wifiSsid || 'BT-Hub-2-ParkLane'],
-                ['Password', utils.wifiPassword || 'London2026!Fast'],
-                ['Speed', 'Full fibre · 900 Mbps'],
-                ['Router', wifi.meterLocation || utils.routerLoc || 'Hallway'],
+                ['Provider', wifi.provider || utils.broadbandSupplier || 'BT Full Fibre 500'],
+                ['Network', utils.wifiSsid || wifi.ssid || 'BT-HQ-Building-5G'],
+                ['Password', utils.wifiPassword || wifi.password || 'FastSecure2025!'],
+                ['Router', wifi.meterLocation || utils.routerLoc || 'Hallway cupboard, ground floor'],
                 ['Support', wifi.phone || '0800 800 150'],
-            ],
+                ['Speed / Notes', wifi.notes || 'Full fibre · 900 Mbps'],
+            ].filter(([, val]) => val && val !== '—'),
         },
         council: {
             title: 'Council',
-            photo: DEMO_UTILITY_PHOTOS.council,
-            badge: info.councilTax ? `Band ${info.councilTax}` : 'Band D',
+            photo: council.photo || council.meterPicture || utils.councilPhoto || DEMO_UTILITY_PHOTOS.council,
+            badge: taxBand,
             rows: [
-                ['Authority', utils.council?.name || (typeof utils.council === 'string' ? utils.council : '') || 'Westminster City Council'],
-                ['Tax band', info.councilTax ? `Band ${info.councilTax}` : 'Band D'],
-                ['Reference', utils.council?.notes && !/^band\s/i.test(utils.council.notes) ? utils.council.notes : 'WES-894012-TX'],
-                ['Bins', 'Waste Tue · Recycling Fri'],
-                ['Contact', '020 7641 6000'],
-            ],
+                ['Authority', council.name || 'Westminster City Council'],
+                ['Tax band', taxBand],
+                ['Reference', council.notes && !/^band\s/i.test(council.notes) ? council.notes : 'WCC-8941029'],
+                ['Contact', council.phone || '020 7641 6000'],
+                ['Bins', council.bins || 'Waste Tue · Recycling Fri'],
+            ].filter(([, val]) => val && val !== '—'),
         },
         parking: {
             title: 'Parking',
-            photo: DEMO_UTILITY_PHOTOS.parking,
-            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : 'Allocated',
+            photo: parking.photo || parking.meterPicture || utils.parkingPhoto || DEMO_UTILITY_PHOTOS.parking,
+            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : (parking.type || 'Allocated'),
             rows: [
-                ['Type', parking.type || 'Off-street bay'],
-                ['Space', parking.details || (parking.spaces ? `${parking.spaces} bay(s)` : 'Bay 12')],
-                ['Permit', parking.permit || 'LB-4421'],
-                ['Access', 'Barrier fob · gate 4492'],
-                ['EV', '7.4kW Type 2 charger'],
-            ],
+                ['Type', parking.type || 'Secure underground'],
+                ['Spaces / Bays', parking.details || (parking.spaces ? `${parking.spaces} bay(s)` : 'Bays 1 to 4')],
+                ['Permit', parking.permit || 'PL-BAY-01 to 04'],
+                ['Allocated count', parking.spaces != null && parking.spaces !== '' ? `${parking.spaces} space(s)` : '4 space(s)'],
+                ['Access / Notes', parking.notes || 'Automated fob gate, EV charge points'],
+            ].filter(([, val]) => val && val !== '—'),
         },
     };
 
@@ -18667,11 +19522,11 @@ function screenAddBuildingService() {
     <div class="screen-content screen-enter">
         <div class="feature-pick-section card p-4">
             ${renderFeaturePickGrid(picks, {
-                isActive: () => false,
-                action: 'pick-building-service',
-                valueKey: 'id',
-                labelKey: 'label',
-            })}
+        isActive: () => false,
+        action: 'pick-building-service',
+        valueKey: 'id',
+        labelKey: 'label',
+    })}
         </div>
     </div>`;
 }
@@ -18717,67 +19572,115 @@ function renderUtilityEditFields(meta, id) {
     if (id === 'council') {
         const council = utils.council || {};
         return `
+            <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="landmark" class="w-4 h-4 text-[#2563EB]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">Council</p></div>
             ${field('Authority', 'util_council_name', council.name, 'placeholder="e.g. Westminster City Council"')}
-            ${formSelectField('Council tax band', 'info_council', COUNCIL_TAX_BAND_OPTIONS, info.councilTax, { blankLabel: 'Select band' })}
-            ${field('Reference', 'util_council_notes', /^band\s/i.test(council.notes || '') ? '' : council.notes, 'placeholder="Account reference"')}
-            ${field('Contact', 'util_council_phone', council.phone, 'placeholder="020 7641 6000" type="tel"')}`;
+            ${formSelectField('Tax band', 'info_council', COUNCIL_TAX_BAND_OPTIONS, info.councilTax, { blankLabel: 'Select band' })}
+            ${field('Reference', 'util_council_notes', /^band\s/i.test(council.notes || '') ? '' : council.notes, 'placeholder="e.g. WCC-8941029"')}
+            ${field('Contact', 'util_council_phone', council.phone, 'placeholder="e.g. 020 7641 6000" type="tel"')}
+            ${area('Bins', 'util_council_bins', council.bins, 'e.g. Waste Tue · Recycling Fri')}
+            <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Council photo', 'util_council_picture', council.photo || council.meterPicture || utils.councilPhoto || '') : ''}</div>`;
     }
     if (id === 'parking') {
         return `
-            ${field('Type', 'park_type', parking.type, 'placeholder="e.g. Off-street"')}
-            ${field('Space', 'park_details', parking.details, 'placeholder="e.g. Bay 12"')}
-            ${field('Permit', 'park_permit', parking.permit, 'placeholder="e.g. LB-4421"')}
-            ${field('Spaces', 'park_spaces', parking.spaces != null ? parking.spaces : '', 'type="number" min="0"')}`;
+            <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="car" class="w-4 h-4 text-[#2563EB]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">Parking</p></div>
+            ${formSelectField('Type', 'park_type', ['Off-street', 'On-street', 'Garage', 'Secure underground', 'Allocated bays', 'None'], parking.type || 'Secure underground', { blankLabel: 'Select type' })}
+            ${field('Spaces / Bays', 'park_details', parking.details, 'placeholder="e.g. Bays 1 to 4"')}
+            ${field('Permit', 'park_permit', parking.permit, 'placeholder="e.g. PL-BAY-01 to 04"')}
+            ${field('Allocated count', 'park_spaces', parking.spaces != null ? parking.spaces : '', 'type="number" min="0" placeholder="e.g. 4 space(s)"')}
+            ${area('Access / Notes', 'park_notes', parking.notes, 'e.g. Automated fob gate, EV charge points')}
+            <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Parking photo', 'park_picture', parking.photo || parking.meterPicture || utils.parkingPhoto || '') : ''}</div>`;
     }
     if (id === 'wifi') {
         return `
-            ${field('Provider', 'util_wifi_provider', entry.provider || utils.broadbandSupplier, 'placeholder="e.g. BT"')}
-            ${field('Network', 'util_wifi_ssid', utils.wifiSsid || entry.ssid, 'placeholder="Network name"')}
-            ${field('Password', 'util_wifi_password', utils.wifiPassword || entry.password, 'placeholder="Wi-Fi password"')}
-            ${field('Router location', 'util_wifi_location', entry.meterLocation || utils.routerLoc, 'placeholder="e.g. Hallway"')}
-            ${field('Support', 'util_wifi_phone', entry.phone, 'placeholder="0800 800 150" type="tel"')}`;
+            <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="wifi" class="w-4 h-4 text-[#2563EB]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">Wi-Fi</p></div>
+            ${field('Provider', 'util_wifi_provider', entry.provider || utils.broadbandSupplier, 'placeholder="e.g. BT Full Fibre 500"')}
+            ${field('Network', 'util_wifi_ssid', utils.wifiSsid || entry.ssid, 'placeholder="e.g. BT-HQ-Building-5G"')}
+            ${field('Password', 'util_wifi_password', utils.wifiPassword || entry.password, 'placeholder="e.g. FastSecure2025!"')}
+            ${field('Router', 'util_wifi_location', entry.meterLocation || utils.routerLoc, 'placeholder="e.g. Hallway cupboard, ground floor"')}
+            ${field('Support', 'util_wifi_phone', entry.phone, 'placeholder="0800 800 150" type="tel"')}
+            ${area('Speed / Notes', 'util_wifi_notes', entry.notes, 'e.g. Full fibre · 900 Mbps')}
+            <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Router photo', 'util_wifi_picture', entry.meterPicture || utils.wifiPhoto || '') : ''}</div>`;
+    }
+    if (id === 'gas') {
+        return `
+            <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="flame" class="w-4 h-4 text-[#EA580C]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">Gas</p></div>
+            ${field('Supplier', 'util_gas_provider', entry.provider, 'placeholder="e.g. British Gas"')}
+            ${field('MPRN', 'util_gas_meter', entry.meterNumber, 'placeholder="e.g. 489201"')}
+            ${field('Location', 'util_gas_location', entry.meterLocation, 'placeholder="e.g. Cupboard under the stairs"')}
+            ${field('Shut-off', 'util_gas_shutoff', entry.shutOff, 'placeholder="e.g. Lever beside meter"')}
+            ${field('Helpline', 'util_gas_phone', entry.phone, 'placeholder="e.g. 0800 111 999" type="tel"')}
+            ${area('Tariff / Notes', 'util_gas_notes', entry.notes, 'e.g. Fixed rate until 2026')}
+            <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Meter photo', 'util_gas_picture', entry.meterPicture || utils.gasPhoto || '') : ''}</div>`;
+    }
+    if (id === 'electricity') {
+        return `
+            <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="zap" class="w-4 h-4 text-[#D97706]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">Electricity</p></div>
+            ${field('Supplier', 'util_electric_provider', entry.provider, 'placeholder="e.g. Octopus Energy"')}
+            ${field('MPAN', 'util_electric_meter', entry.meterNumber, 'placeholder="e.g. 120002948192"')}
+            ${field('Location', 'util_electric_location', entry.meterLocation, 'placeholder="e.g. Basement intake cupboard"')}
+            ${field('Consumer unit', 'util_electric_consumer', entry.consumerUnit, 'placeholder="e.g. Hallway cupboard · main RCD"')}
+            ${field('Helpline', 'util_electric_phone', entry.phone, 'placeholder="e.g. 0808 164 1088" type="tel"')}
+            ${area('Tariff / Notes', 'util_electric_notes', entry.notes, 'e.g. Agile eco tariff')}
+            <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Meter photo', 'util_electric_picture', entry.meterPicture || utils.electricityPhoto || '') : ''}</div>`;
+    }
+    if (id === 'water') {
+        return `
+            <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="droplet" class="w-4 h-4 text-[#0284C7]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">Water</p></div>
+            ${field('Supplier', 'util_water_provider', entry.provider, 'placeholder="e.g. Thames Water"')}
+            ${field('Account / Meter', 'util_water_meter', entry.meterNumber, 'placeholder="e.g. 902184"')}
+            ${field('Stopcock', 'util_water_location', entry.meterLocation, 'placeholder="e.g. Under kitchen sink"')}
+            ${field('Street valve', 'util_water_shutoff', entry.shutOff, 'placeholder="e.g. Pavement outside front boundary"')}
+            ${field('Helpline', 'util_water_phone', entry.phone, 'placeholder="e.g. 0800 316 9800" type="tel"')}
+            ${area('Tariff / Notes', 'util_water_notes', entry.notes, 'e.g. Unmetered flat rate')}
+            <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Stopcock photo', 'util_water_picture', entry.meterPicture || utils.waterPhoto || '') : ''}</div>`;
     }
     if (id === 'custom-new' || String(id).startsWith('custom-')) {
         const idx = id === 'custom-new' ? null : +String(id).replace('custom-', '');
         const s = idx == null ? {} : (customBuildingServices(meta).find(x => x.id === idx) || {});
         return `
+            <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="plug" class="w-4 h-4 text-[#2563EB]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">${escapeHtml(s.name || 'Custom Service')}</p></div>
             ${field('Name', 'util_custom_name', s.name, 'placeholder="e.g. Communal heat"')}
-            ${field('Provider', 'util_custom_provider', s.provider, 'placeholder="Supplier"')}
-            ${field('Account / meter', 'util_custom_meter', s.meterNumber, '')}
-            ${field('Location', 'util_custom_location', s.meterLocation, '')}
-            ${field('Contact', 'util_custom_phone', s.phone, 'type="tel"')}
-            ${area('Notes', 'util_custom_notes', s.notes, '')}`;
+            ${field('Provider', 'util_custom_provider', s.provider, 'placeholder="e.g. Provider name"')}
+            ${field('Account / meter', 'util_custom_meter', s.meterNumber, 'placeholder="e.g. Meter ID or Account"')}
+            ${field('Location', 'util_custom_location', s.meterLocation, 'placeholder="e.g. Plant room, basement"')}
+            ${field('Contact', 'util_custom_phone', s.phone, 'placeholder="e.g. 0800 123 456" type="tel"')}
+            ${area('Notes', 'util_custom_notes', s.notes, 'e.g. Maintenance contract details')}
+            <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Service photo', 'util_custom_picture', s.photo || '') : ''}</div>`;
     }
     const storeKey = id === 'electricity' ? 'electric' : id;
-    const meterLabel = id === 'gas' ? 'MPRN' : id === 'electricity' ? 'MPAN' : 'Meter / account';
-    const locLabel = id === 'water' ? 'Stopcock' : 'Meter location';
+    const meterLabel = id === 'gas' ? 'MPRN' : id === 'electricity' ? 'MPAN' : 'Account / Meter';
+    const locLabel = id === 'water' ? 'Stopcock' : 'Location';
     return `
         ${field('Supplier', `util_${storeKey}_provider`, entry.provider, `placeholder="${utilityProviderPlaceholder(storeKey)}"`)}
         ${field(meterLabel, `util_${storeKey}_meter`, entry.meterNumber, '')}
         ${field(locLabel, `util_${storeKey}_location`, entry.meterLocation, '')}
         ${id === 'gas' ? field('Shut-off', `util_${storeKey}_shutoff`, entry.shutOff, 'placeholder="e.g. Lever beside meter"') : ''}
         ${id === 'electricity' ? field('Consumer unit', `util_${storeKey}_consumer`, entry.consumerUnit, 'placeholder="e.g. Hallway cupboard"') : ''}
+        ${id === 'water' ? field('Street valve', `util_${storeKey}_shutoff`, entry.shutOff, 'placeholder="e.g. Pavement outside front boundary"') : ''}
         ${field('Helpline', `util_${storeKey}_phone`, entry.phone, 'type="tel"')}
-        <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Meter picture', `util_${storeKey}_picture`, entry.meterPicture || '') : ''}</div>`;
+        ${area('Tariff / Notes', `util_${storeKey}_notes`, entry.notes, '')}
+        <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Meter photo', `util_${storeKey}_picture`, entry.meterPicture || '') : ''}</div>`;
 }
 
 function screenPropertyDetailsEdit(section) {
     const meta = AppStore.meta(STATE.propertyId);
     const p = PROPERTIES[STATE.propertyId];
-    const titles = { alarms: 'Alarms', appliances: 'Appliances', utilities: 'Utilities', parking: 'Parking', info: 'Property Information' };
+    const titles = { alarms: 'Alarms', appliances: 'Appliances', utilities: 'Utilities', parking: 'Parking', info: STATE.screen === 'edit-property' ? 'Edit Property' : 'Property Information' };
     let body = '';
     if (section === 'info') {
         const info = meta.info || {};
         const cover = getPropertyCoverPhoto(STATE.propertyId);
         body = `
+        <p class="screen-section-title">Photos</p>
         <div class="card overflow-hidden mb-3">
             <img src="${cover}" alt="" style="height:120px;width:100%;object-fit:cover;display:block">
             <button type="button" data-go="property-photos" data-pid="${STATE.propertyId}" class="btn-secondary w-full rounded-none py-2.5 text-[12px] border-0 border-t border-[#F1F5F9]">Manage property photos</button>
         </div>
-        <div><label class="form-label">Property Name</label><input data-field="info_name" type="text" class="form-input" value="${escapeHtml(p?.name || '')}" placeholder="e.g. 12 Park Lane"></div>
-        <div><label class="form-label">Address</label><input data-field="info_address" type="text" class="form-input" value="${escapeHtml(p?.address || '')}" placeholder="e.g. London, SW1A 1AA"></div>
-        <div><label class="form-label">Postcode</label><input data-field="info_postcode" type="text" class="form-input" value="${escapeHtml(info.postcode || '')}" placeholder="e.g. SW1A 1AA"></div>
-        ${formSelectField('Property Type', 'info_type', PROPERTY_TYPE_OPTIONS, info.type, { blankLabel: 'Select type' })}
+        <p class="screen-section-title">Property details</p>
+        ${labeledInput('Property name', 'info_name', p?.name || '', 'text', 'e.g. 12 Park Lane', true)}
+        ${labeledInput('Street address', 'info_address', p?.address || '', 'text', 'Street and town', true)}
+        ${labeledInput('Postcode', 'info_postcode', info.postcode || '', 'text', 'e.g. SW1A 1AA')}
+        ${formSelectField('Property type', 'info_type', PROPERTY_TYPE_OPTIONS, info.type, { blankLabel: 'Select type (optional)' })}
         <div class="form-group mb-3">
             <label class="flex items-center gap-2.5 cursor-pointer py-1 select-none">
                 <input type="checkbox" data-field="info_isHmo" class="w-4 h-4 rounded border-[#CBD5E1] text-[#0F766E] focus:ring-0"${(info.isHmo || p?.isHmo || meta.isHmo) ? ' checked' : ''}>
@@ -18785,24 +19688,28 @@ function screenPropertyDetailsEdit(section) {
             </label>
             <p class="text-[11px] text-[#64748B] mt-0.5 ml-6.5">Select if this property is let as separate rooms or to multiple households.</p>
         </div>
-        <div><label class="form-label">Year Built</label><input data-field="info_built" type="number" class="form-input" value="${escapeHtml(info.built || '')}" placeholder="e.g. 1985" min="1700" max="2030"></div>
-        <div><label class="form-label">Date Purchased</label><input data-field="info_purchaseDate" type="date" class="form-input" value="${toDateInputValue(info.purchaseDate)}"></div>
         <div class="grid grid-cols-2 gap-3">
-            <div><label class="form-label">Valuation (£)</label><input data-field="info_valuationAmount" type="number" class="form-input" value="${escapeHtml(info.valuationAmount != null && info.valuationAmount !== '' ? info.valuationAmount : '')}" placeholder="e.g. 450000" min="0"></div>
-            <div><label class="form-label">Valuation Date</label><input data-field="info_valuationDate" type="date" class="form-input" value="${toDateInputValue(info.valuationDate)}"></div>
+            ${labeledInput('Year built', 'info_built', info.built || '', 'number', 'e.g. 1985')}
+            ${labeledInput('Date purchased', 'info_purchaseDate', toDateInputValue(info.purchaseDate), 'date', '')}
         </div>
-        <div><label class="form-label">Total building size (sq ft)</label><input data-field="info_totalSqft" type="text" class="form-input" value="${escapeHtml(info.totalSqft || '')}" placeholder="e.g. 2400"></div>
-        ${getPropertyUnits(STATE.propertyId).length <= 1
-            ? formSelectField('Furnished', 'info_furnished', FURNISHED_OPTIONS, info.furnished, { blankLabel: 'Not set' })
-            : `<div class="form-field"><label class="form-label">Furnished</label><p class="form-helper mb-0">Set furnished status on each unit — this building has multiple flats.</p></div>`}
-        <div><label class="form-label">Property Description</label><textarea data-field="info_description" class="form-input min-h-[96px] resize-none" placeholder="Listing or advertisement details…">${escapeHtml(info.description || '')}</textarea></div>
-        <div><label class="form-label">Alarm code</label><input data-field="info_alarmCode" type="text" class="form-input" value="${escapeHtml(info.alarmCode || '')}" placeholder="${getPropertyUnits(STATE.propertyId).length > 1 ? 'Communal / front door' : 'Security code'}" autocomplete="off"></div>
-        ${formSelectField('EPC Rating', 'info_epc', EPC_RATING_OPTIONS, info.epc, { blankLabel: 'Select rating' })}
-        <div><label class="form-label">EPC Expiry Date</label><input data-field="info_epcExpiry" type="date" class="form-input" value="${toDateInputValue(info.epcExpiry)}"></div>
-        <div><label class="form-label">Insurance Renewal</label><input data-field="info_insuranceExpiry" type="date" class="form-input" value="${toDateInputValue(info.insuranceExpiry)}"></div>
-        <div><label class="form-label">Mortgage Renewal</label><input data-field="info_mortgageRenewal" type="date" class="form-input" value="${toDateInputValue(info.mortgageRenewal)}"></div>
-        ${formSelectField('Council Tax Band', 'info_council', COUNCIL_TAX_BAND_OPTIONS, info.councilTax, { blankLabel: 'Select band' })}
-        <div><label class="form-label">Notes</label><textarea data-field="info_notes" class="form-input min-h-[96px] resize-none" placeholder="Access codes, parking notes...">${escapeHtml(info.notes || '')}</textarea></div>`;
+        <div class="grid grid-cols-2 gap-3">
+            ${labeledInput('Valuation (£)', 'info_valuationAmount', info.valuationAmount != null && info.valuationAmount !== '' ? info.valuationAmount : '', 'number', 'e.g. 450000')}
+            ${labeledInput('Valuation date', 'info_valuationDate', toDateInputValue(info.valuationDate), 'date', '')}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            ${formSelectField('EPC Rating', 'info_epc', EPC_RATING_OPTIONS, info.epc, { blankLabel: 'Select rating' })}
+            ${labeledInput('EPC expiry', 'info_epcExpiry', toDateInputValue(info.epcExpiry), 'date', '')}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            ${labeledInput('Insurance renewal', 'info_insuranceExpiry', toDateInputValue(info.insuranceExpiry), 'date', '')}
+            ${formSelectField('Council tax', 'info_council', COUNCIL_TAX_BAND_OPTIONS, info.councilTax, { blankLabel: 'Select band' })}
+        </div>
+        <p class="screen-section-title">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></p>
+        <div class="form-group">
+            <label class="form-label">Building notes</label>
+            <textarea data-field="info_notes" class="form-input min-h-[80px] resize-none" placeholder="Access codes, parking, meter locations...">${escapeHtml(info.notes || '')}</textarea>
+        </div>
+        <button type="button" data-action="delete-property" class="btn-danger w-full mt-4 mb-2 py-3 text-[13px]">Delete Property</button>`;
     } else if (section === 'alarms') {
         const customAlarms = meta.customAlarms || [];
         body = `
@@ -18834,10 +19741,14 @@ function screenPropertyDetailsEdit(section) {
         <button type="button" data-go="property-parking" data-pid="${STATE.propertyId}" class="btn-secondary w-full py-3 text-[13px] mt-3">Edit parking</button>`;
     } else if (section === 'parking') {
         const parking = meta.parking || {};
-        body = `<div><label class="form-label">Spaces</label><input data-field="park_spaces" type="number" class="form-input" value="${parking.spaces != null && parking.spaces !== '' ? parking.spaces : ''}" min="0"></div>
-        <div><label class="form-label">Type</label><select data-field="park_type" class="form-input form-select">${['Off-street','On-street','Garage','None'].map(o => `<option ${o===(parking.type||'')?'selected':''}>${o}</option>`).join('')}</select></div>
-        <div><label class="form-label">Permit Number</label><input data-field="park_permit" class="form-input" value="${escapeHtml(parking.permit || '')}"></div>
-        <div><label class="form-label">Notes</label><textarea data-field="park_notes" class="form-input min-h-[80px]">${escapeHtml(parking.notes || '')}</textarea></div>`;
+        body = `
+        <div class="flex items-center gap-2 mb-3"><span class="feature-pick-chip-icon"><i data-lucide="car" class="w-4 h-4 text-[#2563EB]"></i></span><p class="text-[14px] font-bold mb-0 text-[#0F172A]">Parking</p></div>
+        ${formSelectField('Type', 'park_type', ['Off-street', 'On-street', 'Garage', 'Secure underground', 'Allocated bays', 'None'], parking.type || 'Secure underground', { blankLabel: 'Select type' })}
+        <div class="form-group"><label class="form-label">Spaces / Bays</label><input data-field="park_details" class="form-input" value="${escapeHtml(parking.details || '')}" placeholder="e.g. Bays 1 to 4"></div>
+        <div class="form-group"><label class="form-label">Permit</label><input data-field="park_permit" class="form-input" value="${escapeHtml(parking.permit || '')}" placeholder="e.g. PL-BAY-01 to 04"></div>
+        <div class="form-group"><label class="form-label">Allocated count</label><input data-field="park_spaces" type="number" min="0" class="form-input" value="${parking.spaces != null && parking.spaces !== '' ? parking.spaces : ''}" placeholder="e.g. 4"></div>
+        <div class="form-group"><label class="form-label">Access / Notes</label><textarea data-field="park_notes" class="form-input min-h-[80px]" placeholder="e.g. Automated fob gate, EV charge points">${escapeHtml(parking.notes || '')}</textarea></div>
+        <div class="form-group">${typeof renderFieldPhotoUpload === 'function' ? renderFieldPhotoUpload('Parking photo', 'park_picture', parking.photo || parking.meterPicture || meta.utilities?.parkingPhoto || '') : ''}</div>`;
     }
     return `${topBar(titles[section] || 'Details', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-enter">${body}
@@ -18872,26 +19783,21 @@ function savePropertyMeta(section) {
         meta.isHmo = isHmo;
         meta.info = {
             ...(meta.info || {}),
-            type: fieldVal('info_type'),
+            type: fieldVal('info_type') || '',
             isHmo,
-            built: fieldVal('info_built'),
-            totalSqft: fieldVal('info_totalSqft'),
+            built: fieldVal('info_built') || '',
             postcode,
             purchaseDate: toDateInputValue(fieldVal('info_purchaseDate')),
             valuationAmount,
             valuationDate: toDateInputValue(fieldVal('info_valuationDate')),
-            furnished: getPropertyUnits(STATE.propertyId).length <= 1
-                ? fieldVal('info_furnished')
-                : (meta.info?.furnished || ''),
-            description: fieldVal('info_description'),
-            alarmCode: fieldVal('info_alarmCode'),
             epc: saveEpcValue(fieldVal('info_epc')),
             epcExpiry: toDateInputValue(fieldVal('info_epcExpiry')),
             insuranceExpiry: toDateInputValue(fieldVal('info_insuranceExpiry')),
-            mortgageRenewal: toDateInputValue(fieldVal('info_mortgageRenewal')),
-            councilTax: fieldVal('info_council'),
-            notes: fieldVal('info_notes'),
+            councilTax: fieldVal('info_council') || '',
+            notes: fieldVal('info_notes') || '',
         };
+        if (!meta.building) meta.building = { flatCount: 0, floors: 0, flatsPerFloor: 0, useFloors: false };
+        meta.building.yearBuilt = fieldVal('info_built') || '';
         // Keep band on info only — do not treat it as council authority name
         if (meta.utilities?.council?.name && /^band\s*[a-h]$/i.test(String(meta.utilities.council.name).trim())) {
             meta.utilities.council.name = '';
@@ -18934,40 +19840,121 @@ function savePropertyMeta(section) {
     } else if (section === 'utilities') {
         if (!meta.utilities) meta.utilities = {};
         migrateUtilityKeys(meta);
-        UTILITY_CATALOG.forEach(u => {
-            if (meta.utilities[u.key] == null && !fieldVal(`util_${u.key}_provider`) && !fieldVal(`util_${u.key}_meter`)) return;
-            meta.utilities[u.key] = {
-                provider: fieldVal(`util_${u.key}_provider`),
-                meterNumber: fieldVal(`util_${u.key}_meter`),
-                meterLocation: fieldVal(`util_${u.key}_location`),
-                phone: fieldVal(`util_${u.key}_phone`),
-                meterPicture: fieldVal(`util_${u.key}_picture`),
+        
+        // Gas
+        if (meta.utilities.gas || fieldVal('util_gas_provider') || fieldVal('util_gas_meter')) {
+            meta.utilities.gas = {
+                provider: fieldVal('util_gas_provider'),
+                meterNumber: fieldVal('util_gas_meter'),
+                meterLocation: fieldVal('util_gas_location'),
+                shutOff: fieldVal('util_gas_shutoff'),
+                phone: fieldVal('util_gas_phone'),
+                notes: fieldVal('util_gas_notes'),
+                meterPicture: fieldVal('util_gas_picture'),
             };
-        });
-        meta.utilities.council = {
-            name: fieldVal('util_council_name'),
-            notes: fieldVal('util_council_notes'),
-        };
-        if (fieldVal('parking_type') || fieldVal('parking_details')) {
-            if (!meta.parking) meta.parking = {};
-            meta.parking.type = fieldVal('parking_type') || meta.parking.type || 'Off-street';
-            meta.parking.details = fieldVal('parking_details') || meta.parking.details || '';
-            meta.parking.permit = fieldVal('parking_details') || meta.parking.permit || '';
         }
-        if (meta.info?.councilTax) meta.utilities.councilTax = meta.info.councilTax;
+        // Electricity
+        if (meta.utilities.electric || meta.utilities.electricity || fieldVal('util_electric_provider') || fieldVal('util_electric_meter')) {
+            const elecRec = {
+                provider: fieldVal('util_electric_provider'),
+                meterNumber: fieldVal('util_electric_meter'),
+                meterLocation: fieldVal('util_electric_location'),
+                consumerUnit: fieldVal('util_electric_consumer'),
+                phone: fieldVal('util_electric_phone'),
+                notes: fieldVal('util_electric_notes'),
+                meterPicture: fieldVal('util_electric_picture'),
+            };
+            meta.utilities.electric = elecRec;
+            meta.utilities.electricity = elecRec;
+        }
+        // Water
+        if (meta.utilities.water || fieldVal('util_water_provider') || fieldVal('util_water_meter')) {
+            meta.utilities.water = {
+                provider: fieldVal('util_water_provider'),
+                meterNumber: fieldVal('util_water_meter'),
+                meterLocation: fieldVal('util_water_location'),
+                shutOff: fieldVal('util_water_shutoff'),
+                phone: fieldVal('util_water_phone'),
+                notes: fieldVal('util_water_notes'),
+                meterPicture: fieldVal('util_water_picture'),
+            };
+        }
+        // Wi-Fi
+        if (meta.utilities.wifi || fieldVal('util_wifi_provider') || fieldVal('util_wifi_ssid')) {
+            const wifiRec = {
+                provider: fieldVal('util_wifi_provider'),
+                ssid: fieldVal('util_wifi_ssid'),
+                password: fieldVal('util_wifi_password'),
+                meterLocation: fieldVal('util_wifi_location'),
+                phone: fieldVal('util_wifi_phone'),
+                notes: fieldVal('util_wifi_notes'),
+                meterPicture: fieldVal('util_wifi_picture'),
+            };
+            meta.utilities.wifi = wifiRec;
+            meta.utilities.wifiSsid = wifiRec.ssid;
+            meta.utilities.wifiPassword = wifiRec.password;
+            meta.utilities.routerLoc = wifiRec.meterLocation;
+            meta.utilities.wifiPhoto = wifiRec.meterPicture;
+        }
+        // Council
+        if (meta.utilities.council || fieldVal('util_council_name') || fieldVal('util_council_phone')) {
+            const councilPic = fieldVal('util_council_picture');
+            meta.utilities.council = {
+                name: fieldVal('util_council_name'),
+                notes: fieldVal('util_council_notes'),
+                phone: fieldVal('util_council_phone'),
+                bins: fieldVal('util_council_bins'),
+                photo: councilPic,
+                meterPicture: councilPic,
+            };
+            if (councilPic) meta.utilities.councilPhoto = councilPic;
+            const band = fieldVal('info_council');
+            if (band) {
+                if (!meta.info) meta.info = {};
+                meta.info.councilTax = band;
+            }
+        }
+        // Parking
+        if (meta.parking || meta.utilities.parking || fieldVal('park_type') || fieldVal('park_details') || fieldVal('park_permit') || fieldVal('park_picture')) {
+            if (!meta.parking) meta.parking = {};
+            meta.parking.type = fieldVal('park_type') || meta.parking.type || 'Secure underground';
+            meta.parking.details = fieldVal('park_details') || meta.parking.details || '';
+            meta.parking.permit = fieldVal('park_permit') || meta.parking.permit || '';
+            const spaces = fieldVal('park_spaces');
+            meta.parking.spaces = spaces === '' ? (meta.parking.spaces ?? 0) : (+spaces || 0);
+            meta.parking.notes = fieldVal('park_notes') || meta.parking.notes || '';
+            meta.parking.photo = fieldVal('park_picture') || meta.parking.photo || '';
+            meta.utilities.parkingPhoto = meta.parking.photo;
+            meta.utilities.parking = { provider: meta.parking.type, details: meta.parking.details, permit: meta.parking.permit, spaces: meta.parking.spaces, notes: meta.parking.notes, photo: meta.parking.photo, meterPicture: meta.parking.photo };
+        }
     } else if (section === 'parking') {
+        const spaces = fieldVal('park_spaces');
         meta.parking = {
-            spaces: +fieldVal('park_spaces') || 0,
-            type: fieldVal('park_type') || document.querySelector('[data-field="park_type"]')?.value,
-            permit: fieldVal('park_permit'),
-            details: fieldVal('park_permit') || fieldVal('park_notes') || '',
-            notes: fieldVal('park_notes'),
+            spaces: spaces === '' ? (meta.parking?.spaces ?? 0) : (+spaces || 0),
+            type: fieldVal('park_type') || document.querySelector('[data-field="park_type"]')?.value || 'Secure underground',
+            details: fieldVal('park_details') || '',
+            permit: fieldVal('park_permit') || '',
+            notes: fieldVal('park_notes') || '',
+            photo: fieldVal('park_picture') || meta.parking?.photo || '',
         };
+        if (!meta.utilities) meta.utilities = {};
+        meta.utilities.parkingPhoto = meta.parking.photo;
+        meta.utilities.parking = { provider: meta.parking.type, details: meta.parking.details, permit: meta.parking.permit, spaces: meta.parking.spaces, notes: meta.parking.notes, photo: meta.parking.photo, meterPicture: meta.parking.photo };
     }
     withLoading(() => {
         AppStore.save();
         toast('Saved');
-        go('property-detail', { propertyId: STATE.propertyId, tab: 'info', noHistory: true });
+        if (section === 'alarms') {
+            go('property-alarms', { propertyId: STATE.propertyId, noHistory: true });
+        } else if (section === 'appliances') {
+            go('property-appliances', { propertyId: STATE.propertyId, noHistory: true });
+        } else if (section === 'utilities') {
+            go('property-utilities', { propertyId: STATE.propertyId, noHistory: true });
+        } else if (section === 'parking') {
+            go('property-parking', { propertyId: STATE.propertyId, noHistory: true });
+        } else {
+            go('property-detail', { propertyId: STATE.propertyId, tab: 'info', noHistory: true });
+        }
     });
 }
 
@@ -19154,11 +20141,18 @@ function screenAddPropertyEnhanced() {
             ${labeledInput('Valuation (£)', 'valuationAmount', '', 'number', 'e.g. 450000')}
             ${labeledInput('Valuation date', 'valuationDate', '', 'date', '')}
         </div>
-
+        <div class="grid grid-cols-2 gap-3">
+            ${formSelectField('EPC Rating', 'epc', EPC_RATING_OPTIONS, '', { blankLabel: 'Select rating' })}
+            ${labeledInput('EPC expiry', 'epcExpiry', '', 'date', '')}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            ${labeledInput('Insurance renewal', 'insuranceExpiry', '', 'date', '')}
+            ${formSelectField('Council tax', 'councilTax', COUNCIL_TAX_BAND_OPTIONS, '', { blankLabel: 'Select band' })}
+        </div>
         <p class="screen-section-title">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></p>
         <div class="form-group">
             <label class="form-label">Building notes</label>
-            <textarea data-field="notes" class="form-input min-h-[80px] resize-none" placeholder="Access codes, parking, meter locations…"></textarea>
+            <textarea data-field="notes" class="form-input min-h-[80px] resize-none" placeholder="Access codes, parking, meter locations..."></textarea>
         </div>
         <button type="button" data-action="save" class="btn-primary w-full py-3.5 text-[14px]">Save property</button>
     </div>`;
@@ -19202,6 +20196,12 @@ function saveAddProperty() {
     const valuationAmountRaw = fieldVal('valuationAmount');
     const valuationAmount = valuationAmountRaw === '' ? '' : String(parseRentAmount(valuationAmountRaw) || valuationAmountRaw);
     const valuationDate = toDateInputValue(fieldVal('valuationDate'));
+    const epc = saveEpcValue(fieldVal('epc'));
+    const epcExpiry = toDateInputValue(fieldVal('epcExpiry'));
+    const insuranceExpiry = toDateInputValue(fieldVal('insuranceExpiry'));
+    const councilTax = fieldVal('councilTax') || '';
+    const notes = fieldVal('notes') || '';
+
     meta.info = {
         ...(meta.info || {}),
         type: fieldVal('propertyType') || '',
@@ -19211,9 +20211,11 @@ function saveAddProperty() {
         purchaseDate,
         valuationAmount,
         valuationDate,
-        notes: fieldVal('notes') || '',
-        epc: (meta.info && meta.info.epc && meta.info.epc !== '—') ? meta.info.epc : '',
-        councilTax: (meta.info && meta.info.councilTax && meta.info.councilTax !== '—') ? meta.info.councilTax : '',
+        epc,
+        epcExpiry,
+        insuranceExpiry,
+        councilTax,
+        notes,
     };
     if (!meta.building) meta.building = { flatCount: 0, floors: 0, flatsPerFloor: 0, useFloors: false };
     meta.building.yearBuilt = yearBuilt;
@@ -19226,12 +20228,15 @@ function saveAddProperty() {
     withLoading(() => {
         syncSmartReminders();
         AppStore.save();
-        toast('Saved — open Info to see purchase, valuation & photos');
+        toast('Property added successfully');
         go('property-detail', { propertyId: id, tab: 'info', noHistory: true });
     });
 }
 
 function saveEditProperty() {
+    if (document.querySelector('[data-field="info_name"]')) {
+        return savePropertyMeta('info');
+    }
     const p = PROPERTIES[STATE.propertyId];
     if (!p) return;
     if (!validateFields([
@@ -19274,7 +20279,7 @@ function deleteBroadcast() {
 
 function saveLogMaintenance() {
     clearFormErrors();
-    if (!validateFields([['title','Issue Title',v=>v],['desc','Description',v=>v]])) return;
+    if (!validateFields([['title', 'Issue Title', v => v], ['desc', 'Description', v => v]])) return;
     const isTenant = STATE.userRole === 'tenant';
     const tenant = isTenant ? getActiveTenant() : null;
     const pid = isTenant ? tenant?.propertyId : (+fieldVal('propertyId') || STATE.propertyId);
@@ -19358,7 +20363,7 @@ function saveLogMaintenance() {
 }
 
 function saveCreateInvoice() {
-    if (!validateFields([['amount','Amount',v=>v&&+v>0],['due','Due Date',v=>v]])) return;
+    if (!validateFields([['amount', 'Amount', v => v && +v > 0], ['due', 'Due Date', v => v]])) return;
     const pid = +fieldVal('propertyId');
     const p = PROPERTIES[pid];
     const unit = fieldVal('unit') || '';
@@ -19476,7 +20481,7 @@ function saveTenancy() {
 }
 
 function saveCheckout() {
-    if (!validateFields([['checkoutDate','Check-out Date',v=>v]])) return;
+    if (!validateFields([['checkoutDate', 'Check-out Date', v => v]])) return;
     const t = TENANTS[STATE.tenantId];
     const listItem = TENANT_LIST.find(x => x.id === STATE.tenantId);
     const checkoutDate = fieldVal('checkoutDate');
@@ -20540,7 +21545,8 @@ function pickBuildingService(id) {
 }
 
 function saveUtilityDetail() {
-    const meta = AppStore.meta(STATE.propertyId);
+    const pid = STATE.propertyId ?? 0;
+    const meta = AppStore.meta(pid);
     if (!meta.utilities) meta.utilities = {};
     migrateUtilityKeys(meta);
     let id = STATE.utilityId || 'gas';
@@ -20551,17 +21557,25 @@ function saveUtilityDetail() {
         meta.parking.details = fieldVal('park_details');
         meta.parking.permit = fieldVal('park_permit');
         const spaces = fieldVal('park_spaces');
-        meta.parking.spaces = spaces === '' ? (meta.parking.spaces || 0) : (+spaces || 0);
-        meta.utilities.parking = { provider: meta.parking.type };
+        meta.parking.spaces = spaces === '' ? (meta.parking.spaces ?? 0) : (+spaces || 0);
+        meta.parking.notes = fieldVal('park_notes');
+        meta.parking.photo = fieldVal('park_picture') || meta.parking.photo || '';
+        meta.utilities.parkingPhoto = meta.parking.photo;
+        meta.utilities.parking = { provider: meta.parking.type, details: meta.parking.details, permit: meta.parking.permit, spaces: meta.parking.spaces, notes: meta.parking.notes, photo: meta.parking.photo, meterPicture: meta.parking.photo };
     } else if (id === 'council') {
         if (!meta.info) meta.info = {};
         const band = fieldVal('info_council');
         if (band) meta.info.councilTax = band;
+        const councilPic = fieldVal('util_council_picture');
         meta.utilities.council = {
             name: fieldVal('util_council_name'),
             notes: fieldVal('util_council_notes'),
             phone: fieldVal('util_council_phone'),
+            bins: fieldVal('util_council_bins'),
+            photo: councilPic,
+            meterPicture: councilPic,
         };
+        if (councilPic) meta.utilities.councilPhoto = councilPic;
     } else if (id === 'wifi') {
         const wifi = {
             provider: fieldVal('util_wifi_provider'),
@@ -20569,11 +21583,14 @@ function saveUtilityDetail() {
             password: fieldVal('util_wifi_password'),
             meterLocation: fieldVal('util_wifi_location'),
             phone: fieldVal('util_wifi_phone'),
+            notes: fieldVal('util_wifi_notes'),
+            meterPicture: fieldVal('util_wifi_picture'),
         };
         meta.utilities.wifi = wifi;
         meta.utilities.wifiSsid = wifi.ssid;
         meta.utilities.wifiPassword = wifi.password;
         meta.utilities.routerLoc = wifi.meterLocation;
+        meta.utilities.wifiPhoto = wifi.meterPicture;
     } else if (id === 'custom-new' || String(id).startsWith('custom-')) {
         if (!meta.utilities.customServices) meta.utilities.customServices = [];
         const rec = {
@@ -20583,6 +21600,7 @@ function saveUtilityDetail() {
             meterLocation: fieldVal('util_custom_location'),
             phone: fieldVal('util_custom_phone'),
             notes: fieldVal('util_custom_notes'),
+            photo: fieldVal('util_custom_picture'),
         };
         if (!rec.name && !rec.provider) {
             toast('Add a name or provider');
@@ -20601,21 +21619,25 @@ function saveUtilityDetail() {
         STATE.utilityId = id;
     } else {
         const storeKey = id === 'electricity' ? 'electric' : id;
-        meta.utilities[storeKey] = {
+        const entry = {
             provider: fieldVal(`util_${storeKey}_provider`),
             meterNumber: fieldVal(`util_${storeKey}_meter`),
             meterLocation: fieldVal(`util_${storeKey}_location`),
             phone: fieldVal(`util_${storeKey}_phone`),
+            notes: fieldVal(`util_${storeKey}_notes`),
             meterPicture: fieldVal(`util_${storeKey}_picture`),
             shutOff: fieldVal(`util_${storeKey}_shutoff`),
             consumerUnit: fieldVal(`util_${storeKey}_consumer`),
         };
-        if (id === 'electricity') meta.utilities.electricity = meta.utilities.electric;
+        meta.utilities[storeKey] = entry;
+        if (id === 'gas') meta.utilities.gas = entry;
+        if (id === 'electricity') meta.utilities.electricity = entry;
+        if (id === 'water') meta.utilities.water = entry;
     }
     STATE.utilityNew = false;
     AppStore.save();
     toast('Saved');
-    go('utility-detail', { utilityId: id, propertyId: STATE.propertyId });
+    go('utility-detail', { utilityId: id, propertyId: pid });
 }
 
 function removeBuildingService() {
@@ -21063,6 +22085,7 @@ Object.assign(SCREEN_MAP, {
     'edit-property-utilities': () => screenPropertyDetailsEdit('utilities'),
     'property-parking': () => screenPropertyDetailsEdit('parking'),
     'property-info': () => screenPropertyDetailsEdit('info'),
+    'edit-property': () => screenPropertyDetailsEdit('info'),
     'property-compliance': screenPropertyCompliance,
     'property-doc-vault': screenPropertyDocumentVault,
     'property-flat-documents': screenPropertyFlatDocuments,
@@ -21124,17 +22147,22 @@ const FEATURE_BACK_MAP = {
     'property-photos': 'property-detail',
     'property-floor-plans': 'property-detail',
     'property-alarms': 'property-detail',
+    'edit-property-alarms': 'property-alarms',
     'property-appliances': 'property-detail',
+    'edit-property-appliances': 'property-appliances',
     'property-appliance-records': 'property-detail',
     'property-utilities': 'property-detail',
+    'edit-property-utilities': 'property-utilities',
     'utility-detail': 'property-utilities',
     'add-building-service': 'property-utilities',
     'edit-utility': 'utility-detail',
     'property-parking': 'property-detail',
+    'edit-property-parking': 'property-parking',
     'property-info': 'property-detail',
     'property-flat-documents': 'property-detail',
     'property-inspections': 'property-detail',
     'property-inventory': 'property-detail',
+    'property-house-rules': 'property-detail',
     'edit-tenancy-deposit': 'tenancy-detail',
     'unit-utilities': 'flat-detail',
     'edit-flat': 'flat-detail',
@@ -21738,37 +22766,91 @@ function bindFeatureEvents() {
             }
         };
     });
-    app.querySelectorAll('[data-action="add-custom-house-rule"]').forEach(el => {
-        el.onclick = () => {
-            const input = document.getElementById('newHouseRuleInput');
-            const val = input ? input.value.trim() : '';
-            if (!val) {
-                toast('Please enter a house rule description');
-                if (input) input.focus();
-                return;
+    // House Rules Editor Actions & Smart Typing
+    const hrEditor = document.getElementById('bulkHouseRulesEditor');
+    if (hrEditor) {
+        hrEditor.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const val = hrEditor.value;
+                const selStart = hrEditor.selectionStart;
+                const textBefore = val.substring(0, selStart);
+                const currentLine = textBefore.split('\n').pop();
+                
+                if (currentLine.trim() === '•') {
+                    // Empty bullet: remove it on Enter
+                    e.preventDefault();
+                    const lineStart = selStart - currentLine.length;
+                    hrEditor.value = val.substring(0, lineStart) + val.substring(selStart);
+                    hrEditor.selectionStart = hrEditor.selectionEnd = lineStart;
+                    return;
+                }
+                
+                if (currentLine.startsWith('• ')) {
+                    e.preventDefault();
+                    const insertion = '\n\n• ';
+                    hrEditor.value = val.substring(0, selStart) + insertion + val.substring(selStart);
+                    hrEditor.selectionStart = hrEditor.selectionEnd = selStart + insertion.length;
+                } else if (/^\d+\.\s/.test(currentLine)) {
+                    e.preventDefault();
+                    const match = currentLine.match(/^(\d+)\.\s/);
+                    const nextNum = parseInt(match[1], 10) + 1;
+                    const insertion = `\n\n${nextNum}. `;
+                    hrEditor.value = val.substring(0, selStart) + insertion + val.substring(selStart);
+                    hrEditor.selectionStart = hrEditor.selectionEnd = selStart + insertion.length;
+                }
             }
-            const pid = STATE.propertyId ?? 0;
-            const meta = AppStore.meta(pid);
-            if (!meta.houseRules) meta.houseRules = [...getPropertyHouseRules(pid)];
-            meta.houseRules.push(val);
-            TENANT_HOUSE_RULES[pid] = meta.houseRules;
-            AppStore.save();
-            toast('Custom rule added');
-            render();
+        };
+    }
+    app.querySelectorAll('[data-action="hr-insert-bullet"]').forEach(el => {
+        el.onclick = () => {
+            const ed = document.getElementById('bulkHouseRulesEditor');
+            if (!ed) return;
+            const val = ed.value;
+            const sel = ed.selectionStart || val.length;
+            const prefix = (sel > 0 && !val.substring(0, sel).endsWith('\n') ? '\n\n' : '') + '• ';
+            ed.value = val.substring(0, sel) + prefix + val.substring(sel);
+            ed.focus();
+            ed.selectionStart = ed.selectionEnd = sel + prefix.length;
         };
     });
-    app.querySelectorAll('[data-action="remove-house-rule"]').forEach(el => {
+    app.querySelectorAll('[data-action="hr-insert-number"]').forEach(el => {
         el.onclick = () => {
-            const idx = +el.dataset.ruleIdx;
-            const pid = STATE.propertyId ?? 0;
-            const meta = AppStore.meta(pid);
-            if (!meta.houseRules) meta.houseRules = [...getPropertyHouseRules(pid)];
-            if (meta.houseRules[idx] !== undefined) {
-                meta.houseRules.splice(idx, 1);
-                TENANT_HOUSE_RULES[pid] = meta.houseRules;
-                AppStore.save();
-                toast('Rule removed');
-                render();
+            const ed = document.getElementById('bulkHouseRulesEditor');
+            if (!ed) return;
+            const val = ed.value;
+            const sel = ed.selectionStart || val.length;
+            const lines = val.split('\n').filter(Boolean);
+            const nextNum = lines.length + 1;
+            const prefix = (sel > 0 && !val.substring(0, sel).endsWith('\n') ? '\n\n' : '') + `${nextNum}. `;
+            ed.value = val.substring(0, sel) + prefix + val.substring(sel);
+            ed.focus();
+            ed.selectionStart = ed.selectionEnd = sel + prefix.length;
+        };
+    });
+    app.querySelectorAll('[data-action="hr-insert-template"]').forEach(el => {
+        el.onclick = () => {
+            const ed = document.getElementById('bulkHouseRulesEditor');
+            if (!ed) return;
+            const standardTemplate = [
+                '• No smoking inside the building or communal areas.',
+                '• Quiet hours after 10 PM — keep noise down for neighbours.',
+                '• Guests may not stay more than 14 consecutive nights without written approval.',
+                '• Report maintenance issues through the app so your landlord can respond quickly.',
+                '• Recycling bins are in the rear garden shed — please sort waste correctly.',
+                '• Bicycle storage is in the basement — do not leave bikes in the hallway.',
+            ].join('\n\n');
+            ed.value = standardTemplate;
+            ed.focus();
+            toast('Standard landlord rules loaded');
+        };
+    });
+    app.querySelectorAll('[data-action="hr-clear-editor"]').forEach(el => {
+        el.onclick = () => {
+            const ed = document.getElementById('bulkHouseRulesEditor');
+            if (ed) {
+                ed.value = '• ';
+                ed.focus();
+                toast('Editor cleared');
             }
         };
     });
@@ -21776,17 +22858,26 @@ function bindFeatureEvents() {
         el.onclick = () => {
             const pid = STATE.propertyId ?? 0;
             const meta = AppStore.meta(pid);
-            const inputs = app.querySelectorAll('[data-house-rule-input]');
-            const updated = [];
-            inputs.forEach(inp => {
-                const val = inp.value.trim();
-                if (val) updated.push(val);
-            });
+            let updated = [];
+            const bulkEditor = document.getElementById('bulkHouseRulesEditor');
+            if (bulkEditor) {
+                const text = bulkEditor.value;
+                updated = text
+                    .split('\n')
+                    .map(line => line.replace(/^[-*•\d.]+\s*/, '').trim())
+                    .filter(Boolean);
+            }
+            if (!updated.length) {
+                updated = [
+                    'No smoking inside the building or communal areas.',
+                    'Quiet hours after 10 PM — keep noise down for neighbours.',
+                ];
+            }
             meta.houseRules = updated;
             TENANT_HOUSE_RULES[pid] = updated;
             withLoading(() => {
                 AppStore.save();
-                toast('House rules saved and broadcasted to all tenants');
+                toast('House rules saved & broadcasted to all tenants');
                 go('property-detail', { propertyId: pid, tab: 'records' });
             });
         };
@@ -22071,7 +23162,7 @@ function bindFeatureEvents() {
 }
 
 const _origRender = render;
-render = function() {
+render = function () {
     _origRender();
     const app = document.getElementById('app');
     if (app && !app.querySelector('.app-offline-banner') && offlineBanner()) {
@@ -22087,6 +23178,10 @@ render = function() {
         lucide.createIcons();
         const input = app.querySelector('[data-rename-doc-input]');
         if (input) { input.focus(); input.select(); }
+    }
+    if (app && !app.querySelector('.modal-overlay') && STATE.editDocId != null) {
+        app.insertAdjacentHTML('beforeend', editDocModal());
+        lucide.createIcons();
     }
     if (app && !app.querySelector('.modal-overlay') && STATE.addDocumentOpen) {
         app.insertAdjacentHTML('beforeend', addDocumentModal());
@@ -22136,7 +23231,7 @@ render = function() {
 };
 
 const _origBindEvents = bindEvents;
-bindEvents = function() {
+bindEvents = function () {
     _origBindEvents();
     bindFeatureEvents();
     const app = document.getElementById('app');
@@ -22151,7 +23246,7 @@ bindEvents = function() {
 };
 
 const _origBack = back;
-back = function() {
+back = function () {
     if (STATE.screen === 'invite-tenant' && (STATE.inviteStep || 1) > 1) {
         captureInviteDraft();
         STATE.inviteStep -= 1;
@@ -22321,7 +23416,7 @@ function goFeature(screen, opts = {}) {
     }
 }
 const _origGo = go;
-go = function(screen, opts = {}) {
+go = function (screen, opts = {}) {
     const routed = typeof resolveScreenForRole === 'function' ? resolveScreenForRole(screen, opts) : { screen, opts: opts || {} };
     screen = routed.screen;
     opts = routed.opts || opts || {};
@@ -22372,7 +23467,7 @@ if (!AppStore.contractorJobs?.length) {
     AppStore.save();
 }
 if (AppStore.toggles) Object.assign(STATE.toggles, AppStore.toggles);
-toggleSwitch = function(key) {
+toggleSwitch = function (key) {
     STATE.toggles[key] = !STATE.toggles[key];
     AppStore.save();
     render();

@@ -352,74 +352,85 @@ function screenDocFolderView() {
     const files = q ? allDocs.filter(d => `${d.name} ${d.date}`.toLowerCase().includes(q)) : allDocs;
     const isCertFolder = ['gas', 'eicr', 'epc', 'insurance', 'fire'].includes(folderId);
     const st = folderComplianceTone(propertyId, folderId);
-    const pending = pendingCertRequest(propertyId, folderId);
     const currentDoc = pickCurrentCertDoc(files);
     const historyDocs = currentDoc ? files.filter(d => d.id !== currentDoc.id) : [];
-    const fileRows = (list, { markCurrent } = {}) => list.map(doc => {
+
+    const uploadBtn = `<button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Upload</span>
+    </button>`;
+
+    const statusToneStyles = {
+        ok: 'bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]',
+        warn: 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]',
+        bad: 'bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]',
+        neutral: 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0]'
+    };
+
+    const renderDocCard = (doc, isCurrent = false) => {
         const visual = typeof documentRowVisual === 'function' ? documentRowVisual(doc) : { icon: 'file-text' };
         const label = docDisplayFileName(doc);
-        const isCur = markCurrent && currentDoc && doc.id === currentDoc.id;
-        const subParts = [docFileSizeLabel(doc), doc.date || '—'];
-        if (doc.fromContractor) subParts.push('Filed by contractor');
-        if (!isCur && isCertFolder) subParts.push('Archive');
-        const sub = subParts.join(' · ');
+        const sub = `${docFileSizeLabel(doc)} · ${doc.date || '—'}`;
+        
         return `
-        <button type="button" data-go="document-preview" data-doc="${doc.id}" class="doc-file-row w-full text-left${isCur ? ' doc-file-row--current' : ''}">
-            <span class="doc-file-row-icon" style="background:${folder.bg};color:${folder.color}"><i data-lucide="${visual.icon}" class="w-4 h-4"></i></span>
-            <span class="doc-file-row-body">
-                <span class="doc-file-row-title">
-                    <span class="doc-file-row-name">${escapeHtml(label)}</span>
-                    ${isCur ? '<span class="doc-current-pill">Current</span>' : ''}
-                </span>
-                <span class="doc-file-row-sub">${escapeHtml(sub)}</span>
-            </span>
-            ${isCertFolder ? statusMark(isCur ? 'ok' : 'muted', { label: isCur ? 'Valid' : 'Archive', size: 'sm' }) : ''}
-            <i data-lucide="chevron-right" class="w-4 h-4 doc-file-row-chevron"></i>
+        <button type="button" data-go="document-preview" data-doc="${doc.id}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#93C5FD] transition-all flex items-center justify-between gap-3 w-full text-left cursor-pointer group mb-2.5">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background:${folder.bg || '#EFF6FF'};color:${folder.color || '#2563EB'}">
+                    <i data-lucide="${visual.icon}" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[13.5px] font-bold text-[#0F172A] truncate group-hover:text-[#2563EB] transition-colors">${escapeHtml(label)}</span>
+                        ${isCurrent ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">Current</span>' : ''}
+                    </div>
+                    <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5">${escapeHtml(sub)}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                ${isCurrent ? '<i data-lucide="check-circle-2" class="w-4 h-4 text-[#10B981]"></i>' : ''}
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+            </div>
         </button>`;
-    }).join('');
+    };
+
     return `
     <div class="doc-folder-page screen-enter">
-        ${topBar(folder.label, { back: true })}
-        <div class="screen-content screen-content-sm doc-folder-page-body">
+        ${topBar(folder.label, { back: true, rightBtn: uploadBtn })}
+        <div class="screen-content screen-content-sm space-y-4 text-left pb-6">
             ${isCertFolder ? `
-            <section class="cert-folder-hero card cert-folder-hero--${st.tone}">
-                <div class="cert-folder-hero-top">
-                    ${statusMark(st.tone, { size: 'lg' })}
-                    <div class="cert-folder-hero-copy">
-                        <p class="cert-folder-hero-eyebrow">Status</p>
-                        <h2 class="cert-folder-hero-title">${escapeHtml(st.label)}</h2>
-                        <p class="cert-folder-hero-sub">${currentDoc
-                            ? escapeHtml(docDisplayFileName(currentDoc))
-                            : 'No current certificate on file'}</p>
-                    </div>
+            <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-2.5 h-2.5 rounded-full ${st.tone === 'ok' ? 'bg-[#10B981]' : (st.tone === 'warn' ? 'bg-[#F59E0B]' : 'bg-[#EF4444]')}"></div>
+                    <span class="text-[13px] font-bold text-[#0F172A] truncate">${escapeHtml(st.label)}</span>
                 </div>
-                <div class="cert-folder-actions">
-                    ${renderDocFolderUploadBtn(folderId, propertyId, 'Upload certificate')}
-                </div>
-                <p class="cert-folder-hint">Contractor uploads auto-file here. New files become Current; older ones move to history.</p>
-            </section>` : `
-            ${renderDocFolderUploadBtn(folderId, propertyId)}`}
-            <div class="search-bar doc-folder-search">
-                <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-                <input data-doc-search="${contextKey}" type="text" value="${STATE.docSearch?.[contextKey] || ''}" placeholder="Search files…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
-            </div>
+                <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${statusToneStyles[st.tone] || statusToneStyles.neutral}">
+                    ${st.tone === 'ok' ? 'Compliant' : (st.tone === 'bad' ? 'Action Required' : 'Due Soon')}
+                </span>
+            </div>` : ''}
+
             ${files.length ? `
-            ${isCertFolder && currentDoc ? `
-            <section class="cert-folder-section">
-                <h3 class="cert-folder-section-title">Current certificate</h3>
-                <div class="card doc-file-list">${fileRows([currentDoc], { markCurrent: true })}</div>
-            </section>
-            ${historyDocs.length ? `
-            <section class="cert-folder-section">
-                <h3 class="cert-folder-section-title">Certificate history</h3>
-                <p class="cert-folder-section-sub">Previous years stay on file for audits and renewals.</p>
-                <div class="card doc-file-list">${fileRows(historyDocs)}</div>
-            </section>` : ''}` : `
-            <div class="card doc-file-list">${fileRows(files, { markCurrent: isCertFolder })}</div>`}` : `
-            <div class="records-docs-empty card">
-                <i data-lucide="file-text" class="w-8 h-8 text-[#CBD5E1]"></i>
-                <p class="records-docs-empty-title">No files yet</p>
-                <p class="records-docs-empty-sub">Upload a ${escapeHtml(folder.label.replace(/s$/, '').toLowerCase())} for this property.</p>
+                ${isCertFolder && currentDoc ? `
+                <div>
+                    <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 block mb-2">Current Certificate</span>
+                    ${renderDocCard(currentDoc, true)}
+                </div>
+                ${historyDocs.length ? `
+                <div class="mt-4">
+                    <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 block mb-2">History (${historyDocs.length})</span>
+                    ${historyDocs.map(d => renderDocCard(d, false)).join('')}
+                </div>` : ''}` : `
+                <div>
+                    <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 block mb-2">Documents (${files.length})</span>
+                    ${files.map(d => renderDocCard(d, false)).join('')}
+                </div>`}
+            ` : `
+            <div class="card p-6 text-center text-[13px] text-[#64748B] bg-white rounded-2xl border border-[#E2E8F0] shadow-xs">
+                <i data-lucide="file-text" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
+                <p class="font-bold text-[#0F172A] text-[14px]">No files uploaded</p>
+                <p class="mt-1 text-[12px]">Upload a ${escapeHtml(folder.label.replace(/s$/, '').toLowerCase())} to keep records compliant.</p>
+                <button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="w-full py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] mt-4 hover:bg-[#1D4ED8] transition-all cursor-pointer">
+                    + Upload Certificate
+                </button>
             </div>`}
         </div>
     </div>`;
@@ -684,11 +695,15 @@ function renderTenantDocFolderBrowser(tenantId) {
                 </span>
                 <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5 text-[#94A3B8]"></i>
             </button>
-            ${open ? `<div class="doc-folder-body doc-list">${files.map(f => `
-            <button type="button" data-action="toast" data-msg="Opening ${escapeHtml(f.name)}" class="doc-row w-full text-left">
+            ${open ? `<div class="doc-folder-body doc-list">${files.map((f, fIdx) => {
+                const docMatch = typeof findDocumentByName === 'function' ? findDocumentByName(f.name) : null;
+                const goAttr = docMatch ? `data-go="document-preview" data-doc="${docMatch.id}"` : `data-go="document-preview" data-preview-source="tenant" data-preview-idx="${fIdx}" data-tid="${tenantId}"`;
+                return `
+            <button type="button" ${goAttr} class="doc-row w-full text-left cursor-pointer">
                 <span class="doc-row-icon" style="color:${folder.color};background:${folder.bg}"><i data-lucide="file-text" class="w-4 h-4"></i></span>
                 <span class="doc-row-text min-w-0"><p class="doc-row-name">${escapeHtml(f.name)}</p><p class="doc-row-sub">${escapeHtml(f.date)}</p></span>
-            </button>`).join('')}</div>` : ''}
+            </button>`;
+            }).join('')}</div>` : ''}
         </div>`;
     }).filter(Boolean);
 
@@ -1596,7 +1611,7 @@ function initProductLayer() {
     if (typeof FEATURE_BACK_MAP !== 'undefined') {
         FEATURE_BACK_MAP['certificate-assign'] = 'property-detail';
         FEATURE_BACK_MAP['send-payment-reminder'] = 'financial';
-        FEATURE_BACK_MAP['property-doc-folder'] = 'property-detail';
+        FEATURE_BACK_MAP['property-doc-folder'] = 'property-compliance';
     }
     confirmMarkRentReceived = confirmMarkRentReceivedProduct;
     contractorFilterJobs = contractorFilterJobsProduct;

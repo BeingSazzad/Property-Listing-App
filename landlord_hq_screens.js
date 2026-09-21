@@ -56,10 +56,10 @@ const IMG = {
 };
 
 const PROPERTIES = [
-    { id: 0, name: '12 Park Lane', address: 'London, SW1A 1AA', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£2,450', compliance: true, isHmo: false },
-    { id: 1, name: '45 Queens Road', address: 'London, SW2 3TR', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,850', compliance: true, isHmo: false },
-    { id: 2, name: '88 King Street', address: 'London, EC2V 8BB', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£2,460', compliance: true, isHmo: true },
-    { id: 3, name: '15 Victoria Ave', address: 'London, N1 5EH', status: 'Partial', statusColor: ['#DBEAFE','#2563EB'], rent: '£1,950', compliance: true, isHmo: false },
+    { id: 0, name: '12 Park Lane', address: 'London, SW1A 1AA', status: 'Partial', statusColor: ['#DBEAFE', '#2563EB'], rent: '£2,450', compliance: true, isHmo: false },
+    { id: 1, name: '45 Queens Road', address: 'London, SW2 3TR', status: 'Partial', statusColor: ['#DBEAFE', '#2563EB'], rent: '£1,850', compliance: true, isHmo: false },
+    { id: 2, name: '88 King Street', address: 'London, EC2V 8BB', status: 'Partial', statusColor: ['#DBEAFE', '#2563EB'], rent: '£2,460', compliance: true, isHmo: true },
+    { id: 3, name: '15 Victoria Ave', address: 'London, N1 5EH', status: 'Partial', statusColor: ['#DBEAFE', '#2563EB'], rent: '£1,950', compliance: true, isHmo: false },
 ];
 
 function isPropertyHmo(propertyId) {
@@ -375,7 +375,7 @@ function completeDemoLogin(role) {
     saveAuthSession();
     const name = role === 'landlord' ? LANDLORD_USER.firstName
         : role === 'tenant' ? getActiveTenant()?.firstName || 'Tenant'
-        : (typeof CONTRACTOR_USER !== 'undefined' ? CONTRACTOR_USER.firstName : 'Mike');
+            : (typeof CONTRACTOR_USER !== 'undefined' ? CONTRACTOR_USER.firstName : 'Mike');
     if (!(typeof consumePendingAppRoute === 'function' && consumePendingAppRoute())) {
         go(getRoleHome());
     }
@@ -433,16 +433,16 @@ function pendingInvitesForTenantEmail(email) {
 const makeInviteToken = () => `INV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
 const MAINTENANCE_ITEMS = [
-    { id: 0, issue:'Kitchen sink leaking', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'High', contractor:'Plumber Pro', status:'progress', propertyId: 0, categoryId: 'plumbing', inactiveNudge: true, inactiveHours: 48, photos: [IMG.maint[0], IMG.maint[2]], videos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }], desc:'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2h ago' },
-    { id: 1, issue:'Window latch broken', prop:'88 King Street', unit:'Room 2', time:'1d ago', priority:'Medium', contractor:'—', status:'open', propertyId: 2, categoryId: 'general', photos: [IMG.maint[1]], desc:'Bedroom window latch broken — window cannot be secured. Room 2 currently vacant.', reportedBy:'landlord' },
-    { id: 2, issue:'Damp patch in bedroom', prop:'12 Park Lane', unit:'Flat 2A', time:'2d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[2]], desc:'Damp patch appearing on bedroom wall near window frame. Getting worse after recent rain.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'2d ago' },
-    { id: 3, issue:'Boiler not working', prop:'45 Queens Road', unit:'Flat 1A', time:'3d ago', priority:'High', contractor:'Heating Co.', status:'progress', propertyId: 1, categoryId: 'heating', photos: [IMG.maint[2]], desc:'No hot water or heating. Boiler showing error code E119.', reportedBy:'tenant', tenantName:'David Wilson', reportedAt:'3d ago' },
-    { id: 4, issue:'Radiator not heating', prop:'15 Victoria Ave', unit:'Flat 2A', time:'4d ago', priority:'Medium', contractor:'Heating Co.', status:'progress', propertyId: 3, categoryId: 'heating', photos: [IMG.maint[1]], desc:'Living room radiator cold while others work. Possible air lock or valve issue.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'4d ago' },
-    { id: 5, issue:'Light flickering', prop:'15 Victoria Ave', unit:'Flat 2A', time:'5d ago', priority:'Low', contractor:'Electric Fix', status:'done', propertyId: 3, categoryId: 'electrical', photos: [IMG.maint[2]], desc:'Living room ceiling light flickering — resolved with new fitting.', reportedBy:'tenant', tenantName:'Michael Lee', reportedAt:'5d ago' },
-    { id: 6, issue:'Tap replaced', prop:'45 Queens Road', unit:'Flat 1A', time:'1w ago', priority:'Low', contractor:'Plumber Pro', status:'done', propertyId: 1, categoryId: 'plumbing', photos: [IMG.maint[0]], desc:'Kitchen tap replaced. No further issues reported.', reportedBy:'landlord', tenantName:'David Wilson', scope:'unit', contractorRatings: { landlord: { stars: 5, comment: 'Quick turnaround and tidy finish.', at: 'Mar 1, 2025', by: 'John Smith' } } },
-    { id: 7, issue:'Hallway light out', prop:'12 Park Lane', unit:'Communal', scope:'communal', communalArea:'Hallway', time:'6h ago', priority:'Medium', contractor:'—', status:'open', propertyId: 0, categoryId: 'electrical', photos: [IMG.maint[1]], desc:'Main entrance hallway ceiling light not working. Affects all residents.', reportedBy:'landlord' },
-    { id: 8, issue:'Bathroom basin cracked', prop:'12 Park Lane', unit:'Flat 2A', time:'4h ago', priority:'High', contractor:'—', status:'open', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[0], IMG.maint[1]], videos: [{ name: 'basin-crack.mp4', poster: IMG.maint[1], demo: true }], desc:'Crack in the bathroom basin — water pooling on the vanity. Tenant says it worsened overnight.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'4h ago' },
-    { id: 9, issue:'Paint peeling in hallway', prop:'12 Park Lane', unit:'Flat 2A', time:'1d ago', priority:'Low', contractor:'—', status:'open', propertyId: 0, categoryId: 'painting', photos: [IMG.maint[2]], desc:'Paint peeling along the hallway wall near the front door. Tenant reports it started after recent damp.', reportedBy:'tenant', tenantName:'Sarah Johnson', reportedAt:'1d ago' },
+    { id: 0, issue: 'Kitchen sink leaking', prop: '12 Park Lane', unit: 'Flat 2A', time: '2d ago', priority: 'High', contractor: 'Plumber Pro', status: 'progress', propertyId: 0, categoryId: 'plumbing', inactiveNudge: true, inactiveHours: 48, photos: [IMG.maint[0], IMG.maint[2]], videos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }], desc: 'Water dripping from pipe under kitchen sink. Tenant reports it started this morning.', reportedBy: 'tenant', tenantName: 'Sarah Johnson', reportedAt: '2h ago' },
+    { id: 1, issue: 'Window latch broken', prop: '88 King Street', unit: 'Room 2', time: '1d ago', priority: 'Medium', contractor: '—', status: 'open', propertyId: 2, categoryId: 'general', photos: [IMG.maint[1]], desc: 'Bedroom window latch broken — window cannot be secured. Room 2 currently vacant.', reportedBy: 'landlord' },
+    { id: 2, issue: 'Damp patch in bedroom', prop: '12 Park Lane', unit: 'Flat 2A', time: '2d ago', priority: 'Low', contractor: '—', status: 'open', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[2]], desc: 'Damp patch appearing on bedroom wall near window frame. Getting worse after recent rain.', reportedBy: 'tenant', tenantName: 'Sarah Johnson', reportedAt: '2d ago' },
+    { id: 3, issue: 'Boiler not working', prop: '45 Queens Road', unit: 'Flat 1A', time: '3d ago', priority: 'High', contractor: 'Heating Co.', status: 'progress', propertyId: 1, categoryId: 'heating', photos: [IMG.maint[2]], desc: 'No hot water or heating. Boiler showing error code E119.', reportedBy: 'tenant', tenantName: 'David Wilson', reportedAt: '3d ago' },
+    { id: 4, issue: 'Radiator not heating', prop: '15 Victoria Ave', unit: 'Flat 2A', time: '4d ago', priority: 'Medium', contractor: 'Heating Co.', status: 'progress', propertyId: 3, categoryId: 'heating', photos: [IMG.maint[1]], desc: 'Living room radiator cold while others work. Possible air lock or valve issue.', reportedBy: 'tenant', tenantName: 'Michael Lee', reportedAt: '4d ago' },
+    { id: 5, issue: 'Light flickering', prop: '15 Victoria Ave', unit: 'Flat 2A', time: '5d ago', priority: 'Low', contractor: 'Electric Fix', status: 'done', propertyId: 3, categoryId: 'electrical', photos: [IMG.maint[2]], desc: 'Living room ceiling light flickering — resolved with new fitting.', reportedBy: 'tenant', tenantName: 'Michael Lee', reportedAt: '5d ago' },
+    { id: 6, issue: 'Tap replaced', prop: '45 Queens Road', unit: 'Flat 1A', time: '1w ago', priority: 'Low', contractor: 'Plumber Pro', status: 'done', propertyId: 1, categoryId: 'plumbing', photos: [IMG.maint[0]], desc: 'Kitchen tap replaced. No further issues reported.', reportedBy: 'landlord', tenantName: 'David Wilson', scope: 'unit', contractorRatings: { landlord: { stars: 5, comment: 'Quick turnaround and tidy finish.', at: 'Mar 1, 2025', by: 'John Smith' } } },
+    { id: 7, issue: 'Hallway light out', prop: '12 Park Lane', unit: 'Communal', scope: 'communal', communalArea: 'Hallway', time: '6h ago', priority: 'Medium', contractor: '—', status: 'open', propertyId: 0, categoryId: 'electrical', photos: [IMG.maint[1]], desc: 'Main entrance hallway ceiling light not working. Affects all residents.', reportedBy: 'landlord' },
+    { id: 8, issue: 'Bathroom basin cracked', prop: '12 Park Lane', unit: 'Flat 2A', time: '4h ago', priority: 'High', contractor: '—', status: 'open', propertyId: 0, categoryId: 'plumbing', photos: [IMG.maint[0], IMG.maint[1]], videos: [{ name: 'basin-crack.mp4', poster: IMG.maint[1], demo: true }], desc: 'Crack in the bathroom basin — water pooling on the vanity. Tenant says it worsened overnight.', reportedBy: 'tenant', tenantName: 'Sarah Johnson', reportedAt: '4h ago' },
+    { id: 9, issue: 'Paint peeling in hallway', prop: '12 Park Lane', unit: 'Flat 2A', time: '1d ago', priority: 'Low', contractor: '—', status: 'open', propertyId: 0, categoryId: 'painting', photos: [IMG.maint[2]], desc: 'Paint peeling along the hallway wall near the front door. Tenant reports it started after recent damp.', reportedBy: 'tenant', tenantName: 'Sarah Johnson', reportedAt: '1d ago' },
 ];
 
 const COMMUNAL_AREAS = ['Hallway', 'Stairwell', 'Roof', 'Garden', 'Boiler room', 'Other'];
@@ -705,7 +705,7 @@ const contentPage = (title, updated, body) => `
 const faqList = (items, cat) => {
     const list = cat ? items.filter(f => f.cat === cat) : items;
     return `<div class="card overflow-hidden">
-        ${list.map((f,i) => `
+        ${list.map((f, i) => `
         <button type="button" data-faq-toggle="${f.id}" class="faq-row w-full text-left ${i < list.length - 1 ? 'border-b border-[#F1F5F9]' : ''}">
             <p class="text-[14px] font-semibold text-[#0F172A] leading-snug">${f.q}</p>
             <p class="text-[11px] text-[#64748B] mt-1">${f.cat}</p>
@@ -714,7 +714,7 @@ const faqList = (items, cat) => {
     </div>`;
 };
 
-const TENANT_TABS = ['overview','personal','contact','property','documents','payments','deposit','keys','maintenance','activity'];
+const TENANT_TABS = ['overview', 'personal', 'contact', 'property', 'documents', 'payments', 'deposit', 'keys', 'maintenance', 'activity'];
 
 const TENANT_LIST = [
     { id: 0, propertyId: 0, chatId: 0, name: 'Sarah Johnson', prop: '12 Park Lane', unit: 'Flat 2A', lease: 'Jan 2024 – Jan 2027', leaseEnd: 'Jan 2027', img: IMG.avatar.sarah, status: 'active', rent: '£2,450/mo' },
@@ -729,48 +729,52 @@ const TENANT_LIST = [
 ];
 
 const TENANT_MENU = [
-    { group: 'Tenant', items: [
-        ['user', 'Personal & ID', 'personal'],
-        ['phone', 'Contact', 'contact'],
-        ['building-2', 'Tenancy', 'property'],
-    ]},
-    { group: 'Records', items: [
-        ['folder-open', 'Documents', 'documents'],
-        ['wallet', 'Payments', 'payments'],
-        ['wrench', 'Maintenance', 'maintenance'],
-        ['activity', 'Activity', 'activity'],
-    ]},
+    {
+        group: 'Tenant', items: [
+            ['user', 'Personal & ID', 'personal'],
+            ['phone', 'Contact', 'contact'],
+            ['building-2', 'Tenancy', 'property'],
+        ]
+    },
+    {
+        group: 'Records', items: [
+            ['folder-open', 'Documents', 'documents'],
+            ['wallet', 'Payments', 'payments'],
+            ['wrench', 'Maintenance', 'maintenance'],
+            ['activity', 'Activity', 'activity'],
+        ]
+    },
 ];
 
 const TENANTS = [
-    { id:0, propertyId:0, firstName:'Sarah', lastName:'Johnson', email:'sarah.j@email.com', phone:'+44 7700 900456', prop:'12 Park Lane', unit:'Flat 2A', idNumber:'4859217360', nidProof:'NID Proof.jpg', dob:'1992-04-18', rent:'2450', deposit:'£2,450', advancePaid:'£2,450', moveIn:'2024-01-15', leaseEnd:'2027-01-14', emergency:'James Johnson', emergencyPhone:'+44 7700 900789' },
-    { id:1, propertyId:1, firstName:'David', lastName:'Wilson', email:'david.w@email.com', phone:'+44 7700 900457', prop:'45 Queens Road', unit:'Flat 1A', idNumber:'7391045826', nidProof:'NID Proof.jpg', dob:'1988-11-02', rent:'1850', deposit:'£1,850', advancePaid:'£1,850', moveIn:'2023-06-01', leaseEnd:'2027-05-31', emergency:'Lisa Wilson', emergencyPhone:'+44 7700 900790' },
-    { id:2, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2A', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1950', deposit:'£1,950', advancePaid:'£1,950', moveIn:'2024-03-10', leaseEnd:'2027-03-09', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
-    { id:3, propertyId:2, firstName:'Emma', lastName:'Roberts', email:'emma.r@email.com', phone:'+44 7700 900459', prop:'88 King Street', unit:'Room 1', idNumber:'9183746502', nidProof:'NID Proof.jpg', dob:'1995-01-22', rent:'650', deposit:'£650', advancePaid:'£650', moveIn:'2025-01-01', leaseEnd:'2026-12-31', emergency:'Robert Roberts', emergencyPhone:'+44 7700 900792' },
-    { id:4, propertyId:0, firstName:'Priya', lastName:'Sharma', email:'priya.sh@email.com', phone:'+44 7700 900501', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'3849201756', nidProof:'NID Proof.jpg', dob:'1993-08-14', rent:'2200', deposit:'£2,200', advancePaid:'£2,200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Raj Sharma', emergencyPhone:'+44 7700 900502' },
-    { id:5, propertyId:0, firstName:'James', lastName:'Chen', email:'james.chen@email.com', phone:'+44 7700 900503', prop:'12 Park Lane', unit:'Flat 2B', idNumber:'5928173046', nidProof:'Passport_James_Chen.pdf', dob:'1994-02-03', rent:'2200', deposit:'£2,200', advancePaid:'£2,200', moveIn:'2024-06-01', leaseEnd:'2027-05-31', emergency:'Mei Chen', emergencyPhone:'+44 7700 900793' },
-    { id:6, propertyId:2, firstName:'Mark', lastName:'Davis', email:'mark.d@email.com', phone:'+44 7700 900508', prop:'88 King Street', unit:'Room 3', idNumber:'8492017354', nidProof:'Passport_Mark_Davis.pdf', dob:'1991-09-12', rent:'680', deposit:'£680', advancePaid:'£680', moveIn:'2025-02-01', leaseEnd:'2027-01-31', emergency:'Sarah Davis', emergencyPhone:'+44 7700 900794' },
-    { id:7, propertyId:1, firstName:'David', lastName:'Chen', email:'david.c@email.com', phone:'+44 7700 900512', prop:'45 Queens Road', unit:'Flat 1B', idNumber:'4920183756', nidProof:'Passport_David_Chen.pdf', dob:'1989-05-20', rent:'1750', deposit:'£1,750', advancePaid:'£1,750', moveIn:'2023-11-01', leaseEnd:'2026-10-31', emergency:'Grace Chen', emergencyPhone:'+44 7700 900795' },
-    { id:8, propertyId:3, firstName:'Michael', lastName:'Lee', email:'michael.lee@email.com', phone:'+44 7700 900458', prop:'15 Victoria Ave', unit:'Flat 2B', idNumber:'6028471935', nidProof:'NID Proof.jpg', dob:'1990-07-09', rent:'1850', deposit:'£1,850', advancePaid:'£1,850', moveIn:'2024-05-01', leaseEnd:'2027-04-30', emergency:'Anna Lee', emergencyPhone:'+44 7700 900791' },
+    { id: 0, propertyId: 0, firstName: 'Sarah', lastName: 'Johnson', email: 'sarah.j@email.com', phone: '+44 7700 900456', prop: '12 Park Lane', unit: 'Flat 2A', idNumber: '4859217360', nidProof: 'NID Proof.jpg', dob: '1992-04-18', rent: '2450', deposit: '£2,450', advancePaid: '£2,450', moveIn: '2024-01-15', leaseEnd: '2027-01-14', emergency: 'James Johnson', emergencyPhone: '+44 7700 900789' },
+    { id: 1, propertyId: 1, firstName: 'David', lastName: 'Wilson', email: 'david.w@email.com', phone: '+44 7700 900457', prop: '45 Queens Road', unit: 'Flat 1A', idNumber: '7391045826', nidProof: 'NID Proof.jpg', dob: '1988-11-02', rent: '1850', deposit: '£1,850', advancePaid: '£1,850', moveIn: '2023-06-01', leaseEnd: '2027-05-31', emergency: 'Lisa Wilson', emergencyPhone: '+44 7700 900790' },
+    { id: 2, propertyId: 3, firstName: 'Michael', lastName: 'Lee', email: 'michael.lee@email.com', phone: '+44 7700 900458', prop: '15 Victoria Ave', unit: 'Flat 2A', idNumber: '6028471935', nidProof: 'NID Proof.jpg', dob: '1990-07-09', rent: '1950', deposit: '£1,950', advancePaid: '£1,950', moveIn: '2024-03-10', leaseEnd: '2027-03-09', emergency: 'Anna Lee', emergencyPhone: '+44 7700 900791' },
+    { id: 3, propertyId: 2, firstName: 'Emma', lastName: 'Roberts', email: 'emma.r@email.com', phone: '+44 7700 900459', prop: '88 King Street', unit: 'Room 1', idNumber: '9183746502', nidProof: 'NID Proof.jpg', dob: '1995-01-22', rent: '650', deposit: '£650', advancePaid: '£650', moveIn: '2025-01-01', leaseEnd: '2026-12-31', emergency: 'Robert Roberts', emergencyPhone: '+44 7700 900792' },
+    { id: 4, propertyId: 0, firstName: 'Priya', lastName: 'Sharma', email: 'priya.sh@email.com', phone: '+44 7700 900501', prop: '12 Park Lane', unit: 'Flat 2B', idNumber: '3849201756', nidProof: 'NID Proof.jpg', dob: '1993-08-14', rent: '2200', deposit: '£2,200', advancePaid: '£2,200', moveIn: '2024-06-01', leaseEnd: '2027-05-31', emergency: 'Raj Sharma', emergencyPhone: '+44 7700 900502' },
+    { id: 5, propertyId: 0, firstName: 'James', lastName: 'Chen', email: 'james.chen@email.com', phone: '+44 7700 900503', prop: '12 Park Lane', unit: 'Flat 2B', idNumber: '5928173046', nidProof: 'Passport_James_Chen.pdf', dob: '1994-02-03', rent: '2200', deposit: '£2,200', advancePaid: '£2,200', moveIn: '2024-06-01', leaseEnd: '2027-05-31', emergency: 'Mei Chen', emergencyPhone: '+44 7700 900793' },
+    { id: 6, propertyId: 2, firstName: 'Mark', lastName: 'Davis', email: 'mark.d@email.com', phone: '+44 7700 900508', prop: '88 King Street', unit: 'Room 3', idNumber: '8492017354', nidProof: 'Passport_Mark_Davis.pdf', dob: '1991-09-12', rent: '680', deposit: '£680', advancePaid: '£680', moveIn: '2025-02-01', leaseEnd: '2027-01-31', emergency: 'Sarah Davis', emergencyPhone: '+44 7700 900794' },
+    { id: 7, propertyId: 1, firstName: 'David', lastName: 'Chen', email: 'david.c@email.com', phone: '+44 7700 900512', prop: '45 Queens Road', unit: 'Flat 1B', idNumber: '4920183756', nidProof: 'Passport_David_Chen.pdf', dob: '1989-05-20', rent: '1750', deposit: '£1,750', advancePaid: '£1,750', moveIn: '2023-11-01', leaseEnd: '2026-10-31', emergency: 'Grace Chen', emergencyPhone: '+44 7700 900795' },
+    { id: 8, propertyId: 3, firstName: 'Michael', lastName: 'Lee', email: 'michael.lee@email.com', phone: '+44 7700 900458', prop: '15 Victoria Ave', unit: 'Flat 2B', idNumber: '6028471935', nidProof: 'NID Proof.jpg', dob: '1990-07-09', rent: '1850', deposit: '£1,850', advancePaid: '£1,850', moveIn: '2024-05-01', leaseEnd: '2027-04-30', emergency: 'Anna Lee', emergencyPhone: '+44 7700 900791' },
 ];
 
 const COMPLIANCE_ITEMS = [
-    ['flame','Gas Certificate','Mar 15, 2026'],['zap','Electrical Installation','Aug 15, 2026'],
-    ['bell-ring','Smoke Alarm','Annual check'],['thermometer','Heat Alarm','Annual check'],
-    ['wind','CO Alarm','Annual check'],['shield','Landlord Insurance','Jun 2027'],
-    ['landmark','Mortgage','Active'],['leaf','EPC Certificate','Rating B — Valid'],
-    ['badge-check','Property Licence','Not required'],
+    ['flame', 'Gas Certificate', 'Mar 15, 2026'], ['zap', 'Electrical Installation', 'Aug 15, 2026'],
+    ['bell-ring', 'Smoke Alarm', 'Annual check'], ['thermometer', 'Heat Alarm', 'Annual check'],
+    ['wind', 'CO Alarm', 'Annual check'], ['shield', 'Landlord Insurance', 'Jun 2027'],
+    ['landmark', 'Mortgage', 'Active'], ['leaf', 'EPC Certificate', 'Rating B — Valid'],
+    ['badge-check', 'Property Licence', 'Not required'],
 ];
 
 const PREF_OPTIONS = {
-    language: { title:'Language', options:['English (UK)','English (US)','Welsh'], current:'English (UK)' },
-    currency: { title:'Currency', options:['GBP (£)','EUR (€)','USD ($)'], current:'GBP (£)' },
-    dateFormat: { title:'Date Format', options:['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'], current:'DD/MM/YYYY' },
-    timezone: { title:'Timezone', options:['GMT (London)','GMT (Dublin)','CET (Paris)'], current:'GMT (London)' },
+    language: { title: 'Language', options: ['English (UK)', 'English (US)', 'Welsh'], current: 'English (UK)' },
+    currency: { title: 'Currency', options: ['GBP (£)', 'EUR (€)', 'USD ($)'], current: 'GBP (£)' },
+    dateFormat: { title: 'Date Format', options: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'], current: 'DD/MM/YYYY' },
+    timezone: { title: 'Timezone', options: ['GMT (London)', 'GMT (Dublin)', 'CET (Paris)'], current: 'GMT (London)' },
 };
-const NO_NAV = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','forgot-password','reset-verify-code','reset-password','reset-success','chat','tenant-detail','property-detail','flat-detail','flat-members','tenancy-detail','maintenance-detail','maintenance-history','invoice-detail','inventory-room','document-preview','personal-info','notifications-settings','security','password','delete-account','preferences','payment-methods','subscription','subscription-billing','help-support','faq','faq-detail','privacy','terms','about','property-cross-sell','contractor-org','add-property','log-maintenance','notifications-list','transaction-history','edit-property','edit-flat','add-flat','invite-tenant','tenant-invite-sent','edit-tenant','reschedule-inspection','renew-compliance','edit-inventory-room','add-payment-method','edit-payment-method','edit-preference','tenant-add-note','tenant-edit-note','select-property-invite','select-unit-invite','global-search','broadcast-notices','send-broadcast','broadcast-detail','tenant-building-info','tenant-inventory','tenant-inventory-room','tenant-announcements','tenant-announcement-detail','tenant-house-rules','tenant-edit-profile','tenant-issues','tenant-documents','tenant-referencing','tenant-ref-detail','tenant-active-tenancy','tenant-contact','tenant-reminders','tenant-compliance','tenant-communication','tenant-checkout','property-compliance','property-doc-vault','property-inspections','property-inventory','property-house-rules','property-flat-documents','property-doc-folder','property-photos','property-floor-plans','property-alarms','property-appliances','property-utilities','property-parking','property-info'];
+const NO_NAV = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success', 'chat', 'tenant-detail', 'property-detail', 'flat-detail', 'flat-members', 'tenancy-detail', 'maintenance-detail', 'maintenance-history', 'invoice-detail', 'inventory-room', 'document-preview', 'personal-info', 'notifications-settings', 'security', 'password', 'delete-account', 'preferences', 'payment-methods', 'subscription', 'subscription-billing', 'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about', 'property-cross-sell', 'contractor-org', 'add-property', 'log-maintenance', 'notifications-list', 'transaction-history', 'edit-property', 'edit-flat', 'add-flat', 'invite-tenant', 'tenant-invite-sent', 'edit-tenant', 'reschedule-inspection', 'renew-compliance', 'edit-inventory-room', 'add-payment-method', 'edit-payment-method', 'edit-preference', 'tenant-add-note', 'tenant-edit-note', 'select-property-invite', 'select-unit-invite', 'global-search', 'broadcast-notices', 'send-broadcast', 'broadcast-detail', 'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail', 'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance', 'tenant-communication', 'tenant-checkout', 'property-compliance', 'property-doc-vault', 'property-inspections', 'property-inventory', 'property-house-rules', 'property-flat-documents', 'property-doc-folder', 'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info'];
 
-const PRE_AUTH_SCREENS = ['splash','onboarding','role-select','sign-in','sign-up','sign-up-phone','verify-otp','welcome','contractor-invite','contractor-sign-up','contractor-welcome','tenant-invite','tenant-activate','tenant-welcome','forgot-password','reset-verify-code','reset-password','reset-success'];
+const PRE_AUTH_SCREENS = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'contractor-invite', 'contractor-sign-up', 'contractor-welcome', 'tenant-invite', 'tenant-activate', 'tenant-welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
 
 const NAV_MAIN_TABS = new Set([
@@ -1235,15 +1239,20 @@ const PROPERTY_HUB_BACK_OPTS = {
     'property-inventory': { tab: 'records', recordsView: 'inventory' },
     'property-flat-documents': { tab: 'records', recordsView: 'documents' },
     'property-doc-folder': { tab: 'records', recordsView: 'documents' },
+    'property-house-rules': { tab: 'records' },
     'certificate-assign': { tab: 'records', recordsView: 'compliance' },
     'property-photos': { tab: 'info' },
     'property-floor-plans': { tab: 'info' },
     'property-info': { tab: 'info' },
-    'property-alarms': { tab: 'info' },
+    'property-alarms': { tab: 'records' },
+    'edit-property-alarms': { tab: 'records' },
     'property-appliances': { tab: 'info' },
+    'edit-property-appliances': { tab: 'info' },
     'property-appliance-records': { tab: 'records', recordsView: 'safety' },
     'property-utilities': { tab: 'info' },
+    'edit-property-utilities': { tab: 'info' },
     'property-parking': { tab: 'info' },
+    'edit-property-parking': { tab: 'info' },
     'unit-utilities': { tab: 'units' },
     'inspection-detail': { tab: 'records', recordsView: 'inspections' },
     'inventory-room': { tab: 'records', recordsView: 'inventory' },
@@ -1477,7 +1486,7 @@ function sendTenantInvitation() {
 
 function attachTenantAccountToInvite(account, invite) {
     if (!account || !invite) return false;
-    
+
     // Archive previous active tenancy into history if changing property/unit
     if (account.propertyId != null && account.unit && (account.propertyId !== invite.propertyId || account.unit !== invite.unit)) {
         if (!account.tenancyHistory) account.tenancyHistory = [];
@@ -1817,10 +1826,10 @@ const otpBoxesHtml = (digits) => `
 </div>`;
 
 const otpKeypadHtml = () => {
-    const keys = ['1','2','3','4','5','6','7','8','9','','0','back'];
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back'];
     return `<div class="otp-keypad" style="padding-bottom:calc(var(--safe-bottom) + 12px)">
         ${keys.map(k => k === '' ? '<span class="otp-key otp-key-empty"></span>' :
-            k === 'back' ? `<button type="button" data-action="otp-key" data-key="back" class="otp-key"><i data-lucide="delete" class="w-5 h-5"></i></button>` :
+        k === 'back' ? `<button type="button" data-action="otp-key" data-key="back" class="otp-key"><i data-lucide="delete" class="w-5 h-5"></i></button>` :
             `<button type="button" data-action="otp-key" data-key="${k}" class="otp-key">${k}</button>`).join('')}
     </div>`;
 };
@@ -2402,6 +2411,21 @@ function go(screen, opts = {}) {
     if (screen === 'help-support') STATE.helpReturnScreen = from;
     if (screen === 'faq') STATE.faqReturnScreen = from;
     if (screen === 'document-preview') STATE.docReturnScreen = from;
+    if (screen === 'property-doc-folder') {
+        STATE.docFolderReturn = from;
+        if (opts.folder) STATE.docFolderId = opts.folder;
+    }
+    if (screen === 'reminders') {
+        if (opts.propertyId !== undefined) {
+            STATE.propertyId = opts.propertyId;
+            STATE.reminderPropertyFilter = opts.propertyId;
+            STATE.reminderReturnScreen = from;
+        } else if (from === 'property-detail') {
+            STATE.reminderReturnScreen = 'property-detail';
+        } else if (from !== 'reminders' && from !== 'add-reminder' && from !== 'edit-reminder' && from !== 'reminder-detail') {
+            STATE.reminderReturnScreen = from;
+        }
+    }
     if (['privacy', 'terms'].includes(screen)) STATE.legalReturnScreen = from;
     if (!PUBLIC_SCREENS.includes(screen) && !STATE.isAuthenticated) {
         screen = 'role-select';
@@ -2552,7 +2576,7 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'utility-detail' || screen === 'add-building-service' || screen === 'edit-utility' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'utility-detail' || screen === 'add-building-service' || screen === 'edit-utility' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'property-house-rules' || screen === 'property-doc-folder' || screen === 'property-flat-documents' || screen === 'edit-property-alarms' || screen === 'edit-property-appliances' || screen === 'edit-property-utilities' || screen === 'edit-property-parking' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
     if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
@@ -2619,7 +2643,7 @@ function go(screen, opts = {}) {
     if (screen === 'reminder-detail') {
         if (opts.reminderId != null) STATE.reminderId = opts.reminderId;
         if (!['edit-reminder'].includes(from)) {
-            STATE.reminderListReturn = ['dashboard', 'compliance-dashboard'].includes(from) ? from : 'reminders';
+            STATE.reminderListReturn = ['dashboard', 'compliance-dashboard', 'property-detail'].includes(from) ? from : 'reminders';
         }
     }
     if (screen === 'edit-reminder') {
@@ -2670,7 +2694,7 @@ function navigateBackFallback() {
         'edit-flat': 'flat-detail', 'flat-detail': 'property-detail', 'flat-members': 'flat-detail', 'flat-rent-history': 'flat-detail', 'tenancy-detail': 'flat-detail',
         'edit-tenant': 'tenant-detail', 'reschedule-inspection': 'property-inspections',
         'inspection-detail': 'property-inspections',
-        'renew-compliance': 'property-detail', 'edit-inventory-room': 'inventory-room',
+        'renew-compliance': 'property-compliance', 'edit-inventory-room': 'inventory-room',
         'add-payment-method': 'payment-methods', 'edit-payment-method': 'payment-methods',
         'edit-preference': 'preferences',
         'add-property': 'properties',
@@ -2699,22 +2723,26 @@ function navigateBackFallback() {
         'contractor-sign-up': STATE.contractorInviteContext ? 'contractor-invite' : 'role-select',
         'contractor-notifications': 'contractor-dashboard',
         'compliance-dashboard': 'dashboard',
-        'reminders': 'dashboard', 'add-reminder': 'reminders', 'edit-reminder': 'reminders', 'reminder-detail': 'reminders',
+        'reminders': (STATE.reminderReturnScreen === 'property-detail' || (STATE.propertyId != null && STATE.reminderReturnScreen === 'property-detail')) ? 'property-detail' : (STATE.reminderReturnScreen || 'dashboard'),
+        'add-reminder': 'reminders', 'edit-reminder': 'reminders', 'reminder-detail': 'reminders',
         'create-tenancy': 'property-detail', 'checkout-tenancy': 'tenant-detail',
-        'assign-contractor': 'maintenance-detail', 'conduct-inspection': 'property-detail',
+        'assign-contractor': 'maintenance-detail', 'conduct-inspection': 'property-inspections',
         'create-invoice': 'financial', 'mark-rent-received': STATE.rentReturnScreen || 'financial', 'pay-contractor': 'financial',
         'share-document': 'property-detail',
         'property-photos': 'property-detail',
         'property-floor-plans': 'property-detail',
-        'property-alarms': 'property-detail', 'property-appliances': 'property-detail',
+        'property-alarms': 'property-detail', 'edit-property-alarms': 'property-alarms',
+        'property-appliances': 'property-detail', 'edit-property-appliances': 'property-appliances',
         'property-appliance-records': 'property-detail',
-        'property-utilities': 'property-detail', 'property-parking': 'property-detail',
+        'property-utilities': 'property-detail', 'edit-property-utilities': 'property-utilities',
+        'property-parking': 'property-detail', 'edit-property-parking': 'property-parking',
         'utility-detail': 'property-utilities',
         'add-building-service': 'property-utilities',
         'edit-utility': 'utility-detail',
         'property-info': 'property-detail', 'unit-utilities': 'flat-detail',
         'property-compliance': 'property-detail', 'property-doc-vault': 'property-detail',
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
+        'property-house-rules': 'property-detail',
         'edit-tenancy-deposit': 'tenancy-detail',
         'flat-keys': 'flat-detail',
         'edit-flat-keys': 'flat-keys',
@@ -2744,7 +2772,7 @@ function navigateBackFallback() {
         'tenant-checkout': 'personal-info',
         'broadcast-notices': 'dashboard',
         'send-broadcast': 'broadcast-notices',
-        'property-doc-folder': 'property-detail',
+        'property-doc-folder': STATE.docFolderReturn || 'property-compliance',
         'property-flat-documents': 'property-detail',
         'broadcast-detail': 'broadcast-notices',
     };
@@ -2830,7 +2858,7 @@ function navigateBackFallback() {
         return;
     }
     const hubOpts = PROPERTY_HUB_BACK_OPTS[STATE.screen];
-    if (hubOpts && ['property-detail', 'property-inventory', 'property-inspections'].includes(target)) {
+    if (hubOpts && ['property-detail'].includes(target)) {
         go(target, { propertyId: STATE.propertyId, ...hubOpts, noHistory: true });
         return;
     }
@@ -2844,49 +2872,17 @@ function back() {
             return;
         }
     }
-    if (STATE.screen === 'property-detail') {
-        if (typeof isPropertyRecordsSection === 'function' && isPropertyRecordsSection(STATE.tab)) {
-            setTab('records');
-            return;
-        }
-        if (typeof isPropertyBuildingSection === 'function' && isPropertyBuildingSection(STATE.tab)) {
-            setTab('info');
-            return;
-        }
-        if (STATE.tab !== 'units') {
-            setTab('units');
-            return;
-        }
-        if (restoreFlatDetailNav()) return;
-    } else if (restoreFlatDetailNav()) {
-        return;
-    }
-    if (STATE.screen === 'tenant-detail' && STATE.tenantTab !== 'overview') {
-        setTenantTab('overview');
-        return;
-    }
     if (STATE.screen === 'welcome' || STATE.screen === 'contractor-welcome' || STATE.screen === 'tenant-welcome') {
         go(getRoleHome(), { noHistory: true });
         return;
     }
-    if (STATE.screen === 'reset-success') {
-        go('role-select', { noHistory: true });
-        return;
-    }
-    if (STATE.screen === 'onboarding') {
+    if (STATE.screen === 'reset-success' || STATE.screen === 'onboarding') {
         go('role-select', { noHistory: true });
         return;
     }
     if (STATE.screen === 'role-select') return;
-    if (APP_ROUTE.depth > 0) {
-        history.back();
-        return;
-    }
-    if (['sign-up', 'contractor-sign-up', 'sign-in', 'sign-up-phone', 'verify-otp'].includes(STATE.screen)) {
-        go('role-select', { noHistory: true });
-        return;
-    }
-    if (STATE.screen === 'forgot-password') {
+
+    if (['sign-up', 'contractor-sign-up', 'sign-in', 'sign-up-phone', 'verify-otp', 'forgot-password'].includes(STATE.screen)) {
         go('role-select', { noHistory: true });
         return;
     }
@@ -2898,6 +2894,116 @@ function back() {
         go('reset-verify-code', { noHistory: true });
         return;
     }
+
+    // Document Preview
+    if (STATE.screen === 'document-preview') {
+        if (STATE.userRole === 'tenant') {
+            go(STATE.docReturnScreen || 'tenant-documents', { noHistory: true });
+            return;
+        }
+        if (STATE.docReturnScreen === 'tenant-detail') {
+            go('tenant-detail', { tenantId: STATE.tenantId, tenantTab: STATE.tenantTab || 'lease', noHistory: true });
+        } else if (STATE.docReturnScreen === 'property-doc-folder' || STATE.docFolderId) {
+            go('property-doc-folder', { propertyId: STATE.propertyId ?? 0, folder: STATE.docFolderId || 'gas', noHistory: true });
+        } else if (STATE.docReturnScreen === 'property-compliance') {
+            go('property-compliance', { propertyId: STATE.propertyId ?? 0, noHistory: true });
+        } else if (STATE.docReturnScreen) {
+            go(STATE.docReturnScreen, { propertyId: STATE.propertyId ?? 0, noHistory: true });
+        } else {
+            go('property-compliance', { propertyId: STATE.propertyId ?? 0, noHistory: true });
+        }
+        return;
+    }
+
+    // Document Folder (e.g. Gas, EICR, EPC)
+    if (STATE.screen === 'property-doc-folder') {
+        const ret = STATE.docFolderReturn || 'property-compliance';
+        const pid = STATE.propertyId ?? 0;
+        if (ret === 'property-compliance') {
+            go('property-compliance', { propertyId: pid, noHistory: true });
+        } else if (ret === 'property-detail') {
+            go('property-detail', { propertyId: pid, tab: 'records', noHistory: true });
+        } else {
+            go(ret, { propertyId: pid, noHistory: true });
+        }
+        return;
+    }
+
+    // Certificates & Compliance
+    if (STATE.screen === 'property-compliance') {
+        const ret = STATE.complianceReturn || 'property-detail';
+        const pid = STATE.propertyId ?? 0;
+        if (ret === 'compliance-dashboard') {
+            go('compliance-dashboard', { noHistory: true });
+        } else if (ret === 'dashboard') {
+            go('dashboard', { noHistory: true });
+        } else {
+            go('property-detail', { propertyId: pid, tab: 'records', noHistory: true });
+        }
+        return;
+    }
+
+    // Property Records Sub-screens
+    if (['property-doc-vault', 'property-inspections', 'property-inventory', 'property-flat-documents', 'property-house-rules', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'edit-property-alarms', 'edit-property-appliances', 'edit-property-utilities', 'edit-property-parking'].includes(STATE.screen)) {
+        go('property-detail', { propertyId: STATE.propertyId ?? 0, tab: 'records', noHistory: true });
+        return;
+    }
+
+    // Property Building / Info Sub-screens
+    if (['property-info', 'property-photos', 'property-floor-plans', 'edit-property'].includes(STATE.screen)) {
+        go('property-detail', { propertyId: STATE.propertyId ?? 0, tab: 'info', noHistory: true });
+        return;
+    }
+
+    // Flat Sub-screens
+    if (['flat-detail', 'edit-flat', 'add-flat', 'flat-members'].includes(STATE.screen)) {
+        go('property-detail', { propertyId: STATE.propertyId ?? 0, tab: 'units', noHistory: true });
+        return;
+    }
+
+    // Property Detail screen
+    if (STATE.screen === 'property-detail') {
+        if (typeof isPropertyRecordsSection === 'function' && isPropertyRecordsSection(STATE.tab) && STATE.tab !== 'records') {
+            setTab('records');
+            return;
+        }
+        if (typeof isPropertyBuildingSection === 'function' && isPropertyBuildingSection(STATE.tab) && STATE.tab !== 'info') {
+            setTab('info');
+            return;
+        }
+        go('properties', { noHistory: true });
+        return;
+    }
+
+    // Tenant Detail screen
+    if (STATE.screen === 'tenant-detail') {
+        if (STATE.tenantTab && STATE.tenantTab !== 'overview') {
+            setTenantTab('overview');
+        } else {
+            go('tenants', { noHistory: true });
+        }
+        return;
+    }
+
+    // Tenancy Detail screen
+    if (STATE.screen === 'tenancy-detail') {
+        go('tenants', { noHistory: true });
+        return;
+    }
+
+    // Maintenance Detail
+    if (STATE.screen === 'maintenance-detail') {
+        go(STATE.maintReturnScreen || 'maintenance', { noHistory: true });
+        return;
+    }
+
+    // Tenant role sub-screens
+    if (['tenant-house-rules', 'tenant-building-info', 'tenant-compliance', 'tenant-documents', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-issues', 'tenant-referencing', 'tenant-ref-detail', 'tenant-reminders', 'tenant-communication', 'tenant-checkout'].includes(STATE.screen)) {
+        go('tenant-dashboard', { noHistory: true });
+        return;
+    }
+
+    // Help & FAQ
     if (STATE.screen === 'help-support') {
         STATE.drawerReturnScreen = null;
         go(STATE.helpReturnScreen || helpReturnHome(), { noHistory: true });
@@ -2911,28 +3017,8 @@ function back() {
         go(STATE.faqCameFromFaq ? 'faq' : (STATE.faqReturnScreen || 'help-support'), { noHistory: true });
         return;
     }
-    if (STATE.screen === 'document-preview') {
-        if (STATE.userRole === 'tenant') {
-            go(STATE.docReturnScreen || 'tenant-documents', { noHistory: true });
-            return;
-        }
-        if (STATE.docReturnScreen === 'tenant-detail') {
-            go('tenant-detail', { tenantId: STATE.tenantId, tenantTab: STATE.tenantTab || 'lease', noHistory: true });
-        } else if (STATE.docReturnScreen === 'property-doc-folder') {
-            go('property-doc-folder', { propertyId: STATE.propertyId, folder: STATE.docFolderId, noHistory: true });
-        } else {
-            go('property-detail', { propertyId: STATE.propertyId, tab: 'records', recordsView: 'documents', noHistory: true });
-        }
-        return;
-    }
-    if (STATE.screen === 'property-doc-folder') {
-        go('property-detail', { propertyId: STATE.propertyId, tab: 'records', recordsView: 'documents', noHistory: true });
-        return;
-    }
-    if (STATE.screen === 'privacy' || STATE.screen === 'terms') {
-        go(STATE.legalReturnScreen || legalReturnHome(), { noHistory: true });
-        return;
-    }
+
+    // Transaction history
     if (STATE.screen === 'transaction-history') {
         const ret = STATE.txnReturnScreen || (typeof profileHomeScreen === 'function' ? profileHomeScreen() : 'profile');
         const backOpts = { noHistory: true };
@@ -2943,6 +3029,8 @@ function back() {
         go(ret, backOpts);
         return;
     }
+
+    // Reminders
     if (STATE.screen === 'edit-reminder') {
         navigateBackFromEditReminder();
         return;
@@ -2960,15 +3048,35 @@ function back() {
         return;
     }
     if (STATE.screen === 'reminder-detail') {
-        go(STATE.reminderListReturn || 'reminders', { noHistory: true });
+        go(STATE.reminderListReturn || 'reminders', { noHistory: true, propertyId: STATE.propertyId });
         return;
     }
+    if (STATE.screen === 'reminders' && (STATE.reminderReturnScreen === 'property-detail' || STATE.reminderReturnScreen)) {
+        const ret = STATE.reminderReturnScreen;
+        STATE.reminderReturnScreen = null;
+        if (ret === 'property-detail') {
+            go('property-detail', { propertyId: STATE.propertyId, tab: 'records', noHistory: true });
+            return;
+        }
+        go(ret, { noHistory: true });
+        return;
+    }
+
+    // Privacy & Terms
+    if (STATE.screen === 'privacy' || STATE.screen === 'terms') {
+        go(STATE.legalReturnScreen || legalReturnHome(), { noHistory: true });
+        return;
+    }
+
     if (finishDrawerFlowBackIfNeeded()) return;
+
+    // Nav stack fallback
     const prev = STATE.navStack.pop();
     if (prev) {
         restoreNav(prev);
         return;
     }
+
     if ((STATE.screen === 'flat-keys' || STATE.screen === 'edit-flat-keys') && STATE.keysReturn) {
         const ret = STATE.keysReturn;
         STATE.keysReturn = null;
@@ -2981,6 +3089,12 @@ function back() {
             return;
         }
     }
+
+    if (APP_ROUTE.depth > 0) {
+        history.back();
+        return;
+    }
+
     navigateBackFallback();
 }
 
@@ -3268,39 +3382,55 @@ const dashboardHeader = () => `
 </div>`;
 
 let CONVERSATIONS = [
-    { id: 0, img: IMG.avatar.sarah, name: 'Sarah Johnson', sub: '12 Park Lane', preview: "I'll be home after 1 PM today.", time: '10:28 AM', unread: 1, online: true, messages: [
-        { type: 'in', text: 'Hi, the kitchen sink is leaking again. Could you send someone?', time: '10:15 AM' },
-        { type: 'out', text: "Thanks Sarah — Plumber Pro is booked for today before 2pm.", time: '10:20 AM · Sent' },
-        { type: 'in', text: "Great, I'll be home after 1 PM today.", time: '10:28 AM' },
-    ]},
-    { id: 1, img: IMG.avatar.plumber, name: 'Plumber Pro', sub: 'Regarding job #M-125', preview: 'Please let me know when you are free for access.', time: '9:15 AM', unread: 1, online: true, messages: [
-        { type: 'in', text: 'Please let me know when you are free for access to 12 Park Lane.', time: '9:15 AM' },
-        { type: 'out', text: 'Tenant will be home after 1 PM today.', time: '9:20 AM · Sent' },
-    ]},
-    { id: 2, img: IMG.avatar.david, name: 'David Wilson', sub: '45 Queens Road', preview: 'Thanks for the update.', time: 'Yesterday', unread: 0, online: false, messages: [
-        { type: 'in', text: 'Is the boiler repair still scheduled for this week?', time: 'Yesterday' },
-        { type: 'out', text: 'Yes, Heating Co. will visit Thursday morning.', time: 'Yesterday · Sent' },
-        { type: 'in', text: 'Thanks for the update.', time: 'Yesterday' },
-    ]},
-    { id: 3, img: IMG.avatar.electric, name: 'Electric Fix', sub: 'Job completed — Flat 2A', preview: 'Light fitting replaced at 15 Victoria Ave.', time: 'Yesterday', unread: 0, online: false, messages: [
-        { type: 'in', text: 'The light fitting has been replaced at 15 Victoria Ave, Flat 2A.', time: 'Yesterday' },
-        { type: 'out', text: 'Great, please upload the invoice.', time: 'Yesterday · Sent' },
-    ]},
-    { id: 4, img: IMG.avatar.michael, name: 'Michael Lee', sub: '15 Victoria Ave', preview: 'Can we schedule an inspection?', time: '2d ago', unread: 0, online: false, messages: [
-        { type: 'in', text: 'Can we schedule a mid-term inspection next week?', time: '2d ago' },
-        { type: 'out', text: "I'll send available dates shortly.", time: '2d ago · Sent' },
-    ]},
-    { id: 5, img: IMG.avatar.heating, name: 'Heating Experts', sub: 'Boiler service completed', preview: 'Invoice uploaded.', time: '2d ago', unread: 0, online: false, messages: [
-        { type: 'in', text: 'Boiler service completed. Certificate and invoice uploaded.', time: '2d ago' },
-    ]},
-    { id: 6, img: IMG.avatar.priya, name: 'Priya Sharma', sub: '12 Park Lane · Flat 2B', preview: 'Thanks for confirming the lease details.', time: '3d ago', unread: 0, online: false, messages: [
-        { type: 'in', text: 'Thanks for confirming the group lease details for Flat 2B.', time: '3d ago' },
-        { type: 'out', text: "You're welcome — I'll send James his portal invite shortly.", time: '3d ago · Sent' },
-    ]},
-    { id: 7, img: IMG.avatar.james, name: 'James Chen', sub: '12 Park Lane · Flat 2B', preview: 'Portal invite sent', time: '2d ago', unread: 0, online: false, messages: [
-        { type: 'out', text: 'Hi James — your tenant portal invite for Flat 2B is on its way.', time: '2d ago · Sent' },
-        { type: 'in', text: "Received it, thanks. I'll complete sign-up tonight.", time: '2d ago' },
-    ]},
+    {
+        id: 0, img: IMG.avatar.sarah, name: 'Sarah Johnson', sub: '12 Park Lane', preview: "I'll be home after 1 PM today.", time: '10:28 AM', unread: 1, online: true, messages: [
+            { type: 'in', text: 'Hi, the kitchen sink is leaking again. Could you send someone?', time: '10:15 AM' },
+            { type: 'out', text: "Thanks Sarah — Plumber Pro is booked for today before 2pm.", time: '10:20 AM · Sent' },
+            { type: 'in', text: "Great, I'll be home after 1 PM today.", time: '10:28 AM' },
+        ]
+    },
+    {
+        id: 1, img: IMG.avatar.plumber, name: 'Plumber Pro', sub: 'Regarding job #M-125', preview: 'Please let me know when you are free for access.', time: '9:15 AM', unread: 1, online: true, messages: [
+            { type: 'in', text: 'Please let me know when you are free for access to 12 Park Lane.', time: '9:15 AM' },
+            { type: 'out', text: 'Tenant will be home after 1 PM today.', time: '9:20 AM · Sent' },
+        ]
+    },
+    {
+        id: 2, img: IMG.avatar.david, name: 'David Wilson', sub: '45 Queens Road', preview: 'Thanks for the update.', time: 'Yesterday', unread: 0, online: false, messages: [
+            { type: 'in', text: 'Is the boiler repair still scheduled for this week?', time: 'Yesterday' },
+            { type: 'out', text: 'Yes, Heating Co. will visit Thursday morning.', time: 'Yesterday · Sent' },
+            { type: 'in', text: 'Thanks for the update.', time: 'Yesterday' },
+        ]
+    },
+    {
+        id: 3, img: IMG.avatar.electric, name: 'Electric Fix', sub: 'Job completed — Flat 2A', preview: 'Light fitting replaced at 15 Victoria Ave.', time: 'Yesterday', unread: 0, online: false, messages: [
+            { type: 'in', text: 'The light fitting has been replaced at 15 Victoria Ave, Flat 2A.', time: 'Yesterday' },
+            { type: 'out', text: 'Great, please upload the invoice.', time: 'Yesterday · Sent' },
+        ]
+    },
+    {
+        id: 4, img: IMG.avatar.michael, name: 'Michael Lee', sub: '15 Victoria Ave', preview: 'Can we schedule an inspection?', time: '2d ago', unread: 0, online: false, messages: [
+            { type: 'in', text: 'Can we schedule a mid-term inspection next week?', time: '2d ago' },
+            { type: 'out', text: "I'll send available dates shortly.", time: '2d ago · Sent' },
+        ]
+    },
+    {
+        id: 5, img: IMG.avatar.heating, name: 'Heating Experts', sub: 'Boiler service completed', preview: 'Invoice uploaded.', time: '2d ago', unread: 0, online: false, messages: [
+            { type: 'in', text: 'Boiler service completed. Certificate and invoice uploaded.', time: '2d ago' },
+        ]
+    },
+    {
+        id: 6, img: IMG.avatar.priya, name: 'Priya Sharma', sub: '12 Park Lane · Flat 2B', preview: 'Thanks for confirming the lease details.', time: '3d ago', unread: 0, online: false, messages: [
+            { type: 'in', text: 'Thanks for confirming the group lease details for Flat 2B.', time: '3d ago' },
+            { type: 'out', text: "You're welcome — I'll send James his portal invite shortly.", time: '3d ago · Sent' },
+        ]
+    },
+    {
+        id: 7, img: IMG.avatar.james, name: 'James Chen', sub: '12 Park Lane · Flat 2B', preview: 'Portal invite sent', time: '2d ago', unread: 0, online: false, messages: [
+            { type: 'out', text: 'Hi James — your tenant portal invite for Flat 2B is on its way.', time: '2d ago · Sent' },
+            { type: 'in', text: "Received it, thanks. I'll complete sign-up tonight.", time: '2d ago' },
+        ]
+    },
 ];
 
 const conversation = (id) => CONVERSATIONS.find(c => c.id === id) || CONVERSATIONS[0];
@@ -3390,9 +3520,9 @@ const msgRow = (c) => {
 </button>`;
 };
 
-const MAIN_SCREENS = ['dashboard','properties','messages','profile'];
-const TENANT_NAV_SCREENS = ['tenant-dashboard','tenant-issues','log-maintenance','messages','personal-info'];
-const CONTRACTOR_NAV_SCREENS = ['contractor-dashboard','contractor-jobs','messages','contractor-profile'];
+const MAIN_SCREENS = ['dashboard', 'properties', 'messages', 'profile'];
+const TENANT_NAV_SCREENS = ['tenant-dashboard', 'tenant-issues', 'log-maintenance', 'messages', 'personal-info'];
+const CONTRACTOR_NAV_SCREENS = ['contractor-dashboard', 'contractor-jobs', 'messages', 'contractor-profile'];
 
 function shouldShowBottomNav(screen = STATE.screen) {
     if (PRE_AUTH_SCREENS.includes(screen)) return false;
@@ -3678,8 +3808,8 @@ const saveBtn = (label = 'Save Changes', msg = 'Changes saved') => `
 const menuList = (items) => `
 <div class="card overflow-hidden shadow-sm menu-list-card">
     ${items.map((item, i) => {
-        const [icon, label, target, meta] = item;
-        return `
+    const [icon, label, target, meta] = item;
+    return `
     <button data-go="${target}" class="menu-row menu-row-item ${i < items.length - 1 ? 'border-b border-[#F1F5F9]' : ''}">
         <div class="flex items-center gap-3 min-w-0 flex-1">
             <i data-lucide="${icon}" class="w-5 h-5 text-[#374151] shrink-0"></i>
@@ -3690,13 +3820,13 @@ const menuList = (items) => `
         </div>
         <i data-lucide="chevron-right" class="w-5 h-5 text-[#9CA3AF] shrink-0"></i>
     </button>`;
-    }).join('')}
+}).join('')}
 </div>`;
 
 const bottomNav = () => {
     const nav = STATE.userRole === 'contractor' ? CONTRACTOR_BOTTOM_NAV
         : STATE.userRole === 'tenant' ? TENANT_BOTTOM_NAV
-        : BOTTOM_NAV;
+            : BOTTOM_NAV;
     const parentMap = STATE.userRole === 'contractor' ? {
         'contractor-job-detail': 'contractor-jobs',
         'contractor-schedule': 'contractor-job-detail',
@@ -3799,11 +3929,11 @@ const drawer = () => {
             <i data-lucide="${ic}" class="w-5 h-5"></i><span>${label}</span>
         </button>`).join('')
         : isTenant
-        ? TENANT_DRAWER_NAV.map(([ic, label, sc]) => `
+            ? TENANT_DRAWER_NAV.map(([ic, label, sc]) => `
         <button data-go="${sc}" class="drawer-item ${isActive(sc) ? 'active' : ''}">
             <i data-lucide="${ic}" class="w-5 h-5"></i><span>${label}</span>
         </button>`).join('')
-        : LANDLORD_DRAWER_NAV.map(([ic, label, sc]) => `
+            : LANDLORD_DRAWER_NAV.map(([ic, label, sc]) => `
         <button data-go="${sc}" data-drawer-nav="1" class="drawer-item ${isActive(sc) ? 'active' : ''}">
             <i data-lucide="${ic}" class="w-5 h-5"></i><span>${label}</span>
         </button>`).join('');
@@ -3821,8 +3951,8 @@ const drawer = () => {
         role: 'Landlord',
     };
     return `
-    <div class="drawer-overlay ${STATE.drawer?'open':''}" data-action="drawer-close"></div>
-    <div class="drawer ${STATE.drawer?'open':''}">
+    <div class="drawer-overlay ${STATE.drawer ? 'open' : ''}" data-action="drawer-close"></div>
+    <div class="drawer ${STATE.drawer ? 'open' : ''}">
         <div class="drawer-profile">
             <img src="${profile.img}" class="drawer-avatar" alt="">
             <div class="min-w-0">
@@ -3840,9 +3970,9 @@ const drawer = () => {
 };
 
 const fabMenu = () => `
-<div class="fab-menu ${STATE.fab?'open':''}">
+<div class="fab-menu ${STATE.fab ? 'open' : ''}">
     <div class="card p-2 shadow-xl min-w-[200px]">
-        ${DRAWER_QUICK.map(([ic,l,sc])=>`
+        ${DRAWER_QUICK.map(([ic, l, sc]) => `
         <button data-go="${sc}" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#F8FAFC] text-[13px] font-medium text-[#0F172A]">
             <i data-lucide="${ic}" class="w-4 h-4 text-[#2563EB]"></i>${l}
         </button>`).join('')}
@@ -3990,11 +4120,11 @@ function screenDashboard() {
 
         <div class="dash-quick">
             ${[
-                ['circle-check', 'Record rent', 'mark-rent-received', 'success'],
-                ['megaphone', 'Send announcement', 'broadcast-notices', 'indigo'],
-                ['wrench', 'Maintenance', 'maintenance', 'warning'],
-                ['users', 'Tenants', 'tenants', 'primary'],
-            ].map(([ic, label, go, tone]) => `
+            ['circle-check', 'Record rent', 'mark-rent-received', 'success'],
+            ['megaphone', 'Send announcement', 'broadcast-notices', 'indigo'],
+            ['wrench', 'Maintenance', 'maintenance', 'warning'],
+            ['users', 'Tenants', 'tenants', 'primary'],
+        ].map(([ic, label, go, tone]) => `
             <button data-go="${go}" class="dash-quick-btn">
                 <div class="dash-quick-icon dash-quick-icon--${tone}"><i data-lucide="${ic}" class="w-[22px] h-[22px]"></i></div>
                 <span>${label}</span>
@@ -4444,17 +4574,17 @@ const tenantSectionContent = (tab, t) => {
             return `
             ${typeof renderTenantLivingCard === 'function' ? renderTenantLivingCard(listItem) : ''}
             ${tenancy || fin ? (typeof renderTenantTenancyDetailsCard === 'function'
-                ? renderTenantTenancyDetailsCard(listItem, tenancy, fin, t)
-                : tenantFieldsCard([
-                ['Tenancy', tenancy ? (tenancy.type === 'group' ? 'Group' : 'Solo') : '—'],
-                ['Monthly rent', typeof formatTenantRent === 'function' ? formatTenantRent(t.rent) : listItem.rent],
-                ['Move-in', fin?.moveIn && typeof formatDisplayDate === 'function' ? formatDisplayDate(fin.moveIn) || '—' : '—'],
-                ['Lease ends', leaseEndLabel],
-                ['Deposit held', fin?.deposit || '—'],
-                ...(typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(fin?.deposit, fin?.advancePaid)
-                    ? [['Advance paid', fin.advancePaid]]
-                    : []),
-            ].filter((row) => row[1] !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held'].includes(row[0])))) : ''}
+                    ? renderTenantTenancyDetailsCard(listItem, tenancy, fin, t)
+                    : tenantFieldsCard([
+                        ['Tenancy', tenancy ? (tenancy.type === 'group' ? 'Group' : 'Solo') : '—'],
+                        ['Monthly rent', typeof formatTenantRent === 'function' ? formatTenantRent(t.rent) : listItem.rent],
+                        ['Move-in', fin?.moveIn && typeof formatDisplayDate === 'function' ? formatDisplayDate(fin.moveIn) || '—' : '—'],
+                        ['Lease ends', leaseEndLabel],
+                        ['Deposit held', fin?.deposit || '—'],
+                        ...(typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(fin?.deposit, fin?.advancePaid)
+                            ? [['Advance paid', fin.advancePaid]]
+                            : []),
+                    ].filter((row) => row[1] !== '—' || ['Tenancy', 'Monthly rent', 'Deposit held'].includes(row[0])))) : ''}
             ${checkoutNotes || depositReturn ? `
             <div class="card p-4 note-block-item">
                 ${depositReturn ? `<p class="note-block-label">Deposit return</p><p class="note-block-text">${depositReturn}</p>` : ''}
@@ -4462,18 +4592,18 @@ const tenantSectionContent = (tab, t) => {
                 ${checkoutRec?.date ? `<p class="note-block-meta">${typeof formatDisplayDate === 'function' ? formatDisplayDate(checkoutRec.date) || checkoutRec.date : checkoutRec.date}</p>` : ''}
             </div>` : ''}
             ${typeof getTenantCheckout === 'function' ? (() => {
-                const shared = getTenantCheckout(STATE.tenantId);
-                if (!shared.submitted && !shared.vacateNotice?.sent) return '';
-                const meterOk = typeof checkoutMeterPhotoComplete === 'function' && checkoutMeterPhotoComplete(shared);
-                const missing = typeof checkoutMissingKeys === 'function' ? checkoutMissingKeys(shared).length : 0;
-                return `
+                    const shared = getTenantCheckout(STATE.tenantId);
+                    if (!shared.submitted && !shared.vacateNotice?.sent) return '';
+                    const meterOk = typeof checkoutMeterPhotoComplete === 'function' && checkoutMeterPhotoComplete(shared);
+                    const missing = typeof checkoutMissingKeys === 'function' ? checkoutMissingKeys(shared).length : 0;
+                    return `
             <div class="card p-4 checkout-shared-summary">
                 <p class="note-block-label">Tenant check-out pack</p>
                 <p class="note-block-text mt-1">${shared.submitted ? 'Submitted and shared' : 'In progress'}${shared.vacateNotice?.sent ? ` · Vacating ${typeof formatVacateDateLabel === 'function' ? formatVacateDateLabel(shared.vacateNotice.vacateDate) : shared.vacateNotice.vacateDate}` : ''}</p>
                 <p class="text-[12px] text-[#64748B] mt-1">${meterOk ? 'Meter photos attached' : 'Meter photos incomplete'}${missing ? ` · ${missing} key(s) missing` : ''}</p>
                 <button type="button" data-go="checkout-tenancy" data-tid="${STATE.tenantId}" class="btn-secondary w-full py-2.5 text-[13px] mt-3">View shared check-out</button>
             </div>`;
-            })() : ''}
+                })() : ''}
             <div class="tenant-tenancy-actions">
                 <button type="button" data-go="flat-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" data-flat-tab="overview" class="btn-secondary py-2.5 text-[13px]">View unit</button>
                 ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${listItem.propertyId}" data-unit="${listItem.unit || ''}" class="btn-secondary py-2.5 text-[13px]">View tenancy</button>` : `<button type="button" data-go="property-detail" data-pid="${listItem.propertyId}" class="btn-secondary py-2.5 text-[13px]">View property</button>`}
@@ -4524,8 +4654,8 @@ const tenantSectionContent = (tab, t) => {
                     ${stat('calendar', 'purple', 'Next due', pay?.nextDueAmount || pay?.nextDue, pay?.nextDueDate && pay.nextDueDate !== '—' ? pay.nextDueDate : '')}
                     ${stat('shield', 'amber', 'Deposit held', pay?.deposit || '—')}
                     ${typeof shouldShowAdvancePaid === 'function' && shouldShowAdvancePaid(pay?.deposit, pay?.advancePaid)
-                        ? stat('coins', 'green', 'Advance paid', pay.advancePaid)
-                        : ''}
+                    ? stat('coins', 'green', 'Advance paid', pay.advancePaid)
+                    : ''}
                 </div>
                 <button type="button" data-go="mark-rent-received"${unpaidInv ? ` data-iid="${unpaidInv.id}"` : ''} class="btn-primary tenant-pay-record">
                     <i data-lucide="plus" class="w-4 h-4"></i>
@@ -4594,9 +4724,9 @@ function screenFinancial() {
     const filtered = f === 'all' ? INVOICES : INVOICES.filter(inv => inv.status === statusMap[f]);
     const counts = {
         all: INVOICES.length,
-        pending: INVOICES.filter(i=>i.status==='Pending').length,
-        paid: INVOICES.filter(i=>i.status==='Paid').length,
-        overdue: INVOICES.filter(i=>i.status==='Overdue').length,
+        pending: INVOICES.filter(i => i.status === 'Pending').length,
+        paid: INVOICES.filter(i => i.status === 'Paid').length,
+        overdue: INVOICES.filter(i => i.status === 'Overdue').length,
     };
     const fin = typeof financialStats === 'function' ? financialStats() : null;
     const totalLabel = fin ? `£${fin.total.toLocaleString()}` : '£0';
@@ -4616,8 +4746,8 @@ function screenFinancial() {
         </div>
         <p class="screen-section-title">Invoices</p>
         <div class="filter-tabs">
-            ${[['all','All',counts.all],['pending','Pending',counts.pending],['paid','Paid',counts.paid],['overdue','Overdue',counts.overdue]].map(([k,l,n])=>`
-            <button type="button" data-invoice-filter="${k}" class="filter-chip ${f===k?'active':''}">${l}${k!=='all' ? ` (${n})` : ''}</button>`).join('')}
+            ${[['all', 'All', counts.all], ['pending', 'Pending', counts.pending], ['paid', 'Paid', counts.paid], ['overdue', 'Overdue', counts.overdue]].map(([k, l, n]) => `
+            <button type="button" data-invoice-filter="${k}" class="filter-chip ${f === k ? 'active' : ''}">${l}${k !== 'all' ? ` (${n})` : ''}</button>`).join('')}
         </div>
         <div class="invoice-list card">${filtered.length ? filtered.map(invoiceRow).join('') : `<div class="empty-state"><i data-lucide="file-text" class="empty-state-icon"></i><p class="empty-state-title">No invoices yet</p><p class="empty-state-desc">Create an invoice to track rent and charges.</p></div>`}</div>
         <div class="grid grid-cols-2 gap-3">
@@ -4636,8 +4766,8 @@ function screenMessages() {
     const emptyMsg = STATE.userRole === 'tenant'
         ? 'Your landlord will appear here once your account is activated'
         : STATE.userRole === 'contractor'
-        ? 'Job-related chats with landlords and tenants appear here'
-        : 'Try a different search term';
+            ? 'Job-related chats with landlords and tenants appear here'
+            : 'Try a different search term';
     return `${messagesHeader()}
     <div class="screen-content screen-enter">
         ${convos.length ? `<div class="inbox-list full-bleed">${convos.map(c => msgRow(c)).join('')}</div>` : `
@@ -4735,31 +4865,31 @@ function screenProfile() {
         <div class="profile-section">
             <p class="section-title">Your account</p>
             ${menuList([
-                ['user-round', 'Personal information', 'personal-info'],
-                ['bell', 'Notification settings', 'notifications-settings'],
-                ['key-round', 'Change password', 'password'],
-            ])}
+        ['user-round', 'Personal information', 'personal-info'],
+        ['bell', 'Notification settings', 'notifications-settings'],
+        ['key-round', 'Change password', 'password'],
+    ])}
         </div>
         <div class="profile-section">
             <p class="section-title">Billing</p>
             ${menuList([
-                ['credit-card', 'Subscription & billing', 'subscription', `${plan.name} · ${plan.price ? `£${plan.price}/yr` : 'Free'}`],
-                ['landmark', 'Rent collection accounts', 'payment-methods', 'Where tenants pay rent'],
-            ])}
+        ['credit-card', 'Subscription & billing', 'subscription', `${plan.name} · ${plan.price ? `£${plan.price}/yr` : 'Free'}`],
+        ['landmark', 'Rent collection accounts', 'payment-methods', 'Where tenants pay rent'],
+    ])}
         </div>
         <div class="profile-section">
             <p class="section-title">Records</p>
             ${menuList([
-                ['receipt', 'Transaction history', 'transaction-history', txnCount ? `${txnCount} records` : ''],
-            ])}
+        ['receipt', 'Transaction history', 'transaction-history', txnCount ? `${txnCount} records` : ''],
+    ])}
         </div>
         <div class="profile-section">
             <p class="section-title">Support</p>
             ${menuList([
-                ['help-circle', 'Help & support', 'help-support'],
-                ['shield', 'Privacy policy', 'privacy'],
-                ['file-text', 'Terms & conditions', 'terms'],
-            ])}
+        ['help-circle', 'Help & support', 'help-support'],
+        ['shield', 'Privacy policy', 'privacy'],
+        ['file-text', 'Terms & conditions', 'terms'],
+    ])}
         </div>
         <button data-action="logout" class="profile-logout">Log out</button>
         <button type="button" data-go="delete-account" class="profile-delete-link">Delete account</button>
@@ -5030,8 +5160,8 @@ function screenPreferences() {
 
 function screenPaymentMethods() {
     const cards = typeof getPaymentMethods === 'function' ? getPaymentMethods() : [
-        { id: 0, type:'Visa', last4:'4242', exp:'08/27', name:'John Smith', default:true },
-        { id: 1, type:'Barclays', last4:'8901', exp:'—', name:'Rent Collection', default:false },
+        { id: 0, type: 'Visa', last4: '4242', exp: '08/27', name: 'John Smith', default: true },
+        { id: 1, type: 'Barclays', last4: '8901', exp: '—', name: 'Rent Collection', default: false },
     ];
     return `${topBar('Rent Collection Accounts', { back: true })}
     <div class="screen-content screen-content-sm screen-enter">
@@ -5266,8 +5396,8 @@ function renderHelpFaqAccordion(items, limit) {
     return `
     <div class="help-faq-list">
         ${list.map(f => {
-            const open = STATE.faqOpenId === f.id;
-            return `
+        const open = STATE.faqOpenId === f.id;
+        return `
         <div class="help-faq-item${open ? ' help-faq-item--open' : ''}">
             <button type="button" data-faq-toggle="${f.id}" class="help-faq-trigger" aria-expanded="${open}">
                 <span class="help-faq-q">${f.q}</span>
@@ -5275,7 +5405,7 @@ function renderHelpFaqAccordion(items, limit) {
             </button>
             ${open ? `<div class="help-faq-answer"><p>${f.a}</p><button type="button" data-go="faq-detail" data-fid="${f.id}" class="help-faq-more">Read full answer</button></div>` : ''}
         </div>`;
-        }).join('')}
+    }).join('')}
     </div>`;
 }
 
@@ -5544,7 +5674,7 @@ function screenAbout() {
             ${about.body.map(p => `<p class="text-[14px] text-[#475569] leading-relaxed">${p}</p>`).join('')}
         </div>
         <div class="card divide-y divide-[#F1F5F9] mt-4">
-            ${[['globe','Website','www.landlordhq.com'],['mail','Email','hello@landlordhq.com'],['map-pin','Address','42 Baker Street, London']].map(([ic,l,v])=>`
+            ${[['globe', 'Website', 'www.landlordhq.com'], ['mail', 'Email', 'hello@landlordhq.com'], ['map-pin', 'Address', '42 Baker Street, London']].map(([ic, l, v]) => `
             <div class="px-4 py-3.5 flex items-center gap-3">
                 <i data-lucide="${ic}" class="w-5 h-5 text-[#64748B] shrink-0"></i>
                 <div><p class="text-[11px] text-[#94A3B8]">${l}</p><p class="text-[13px] font-medium text-[#0F172A]">${v}</p></div>
@@ -5552,10 +5682,10 @@ function screenAbout() {
         </div>
         <p class="section-title">Legal</p>
         ${menuList([
-            ['shield','Privacy Policy','privacy'],
-            ['file-text','Terms & Conditions','terms'],
-            ['circle-help','FAQ','faq'],
-        ])}
+        ['shield', 'Privacy Policy', 'privacy'],
+        ['file-text', 'Terms & Conditions', 'terms'],
+        ['circle-help', 'FAQ', 'faq'],
+    ])}
         <p class="text-[12px] text-[#94A3B8] text-center mt-6">© 2025 Landlord HQ Ltd. All rights reserved.</p>
     </div>`;
 }
@@ -5642,9 +5772,9 @@ function screenInvoiceDetail() {
 }
 
 function screenInventoryRoom() {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(STATE.propertyId) : [['Kitchen','4 items','package',0],['Living Room','6 items','sofa',1],['Bedroom','5 items','bed',2],['Bathroom','3 items','bath',3],['Hallway','2 items','door-open',4]];
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(STATE.propertyId) : [['Kitchen', '4 items', 'package', 0], ['Living Room', '6 items', 'sofa', 1], ['Bedroom', '5 items', 'bed', 2], ['Bathroom', '3 items', 'bath', 3], ['Hallway', '2 items', 'door-open', 4]];
     const room = rooms[STATE.roomId] || rooms[0];
-    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob','Fridge Freezer','Washing Machine','Microwave'];
+    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob', 'Fridge Freezer', 'Washing Machine', 'Microwave'];
     const notes = typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '';
     const invKey = typeof inventoryKey === 'function' ? inventoryKey(STATE.propertyId, STATE.roomId) : `${STATE.propertyId}-${STATE.roomId}`;
     const roomPhotos = (typeof AppStore !== 'undefined' && AppStore.inventory?.[invKey]?.photos?.length)
@@ -5682,9 +5812,8 @@ function screenDocumentPreview() {
         <div class="card mt-4 p-4 bg-[#F8FAFC] min-h-[300px] flex items-center justify-center">
             <p class="text-[13px] text-[#94A3B8]">Document preview</p>
         </div>
-        <div class="grid grid-cols-2 gap-3 mt-4">
-            <button data-action="download-doc" class="btn-secondary py-3 text-[13px] flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Download</button>
-            <button data-action="share-doc-preview" class="btn-primary py-3 text-[13px] flex items-center justify-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i>Share</button>
+        <div class="mt-4">
+            <button data-action="download-doc" class="btn-primary w-full py-3.5 text-[14px] flex items-center justify-center gap-2 font-bold"><i data-lucide="download" class="w-4 h-4"></i>Download Document</button>
         </div>
     </div>`;
 }
@@ -5718,6 +5847,9 @@ function screenNotificationsList() {
 }
 
 function screenAddProperty() {
+    if (typeof screenAddPropertyEnhanced === 'function') {
+        return screenAddPropertyEnhanced();
+    }
     const pending = STATE.pendingPropertyPhotos || [];
     const preview = typeof renderPhotoPreviewStrip === 'function'
         ? renderPhotoPreviewStrip(pending, { removable: true, removeAction: 'remove-pending-property-photo' })
@@ -5738,18 +5870,21 @@ function screenAddProperty() {
 }
 
 function screenEditProperty() {
+    if (typeof screenPropertyDetailsEdit === 'function') {
+        return screenPropertyDetailsEdit('info');
+    }
     const p = PROPERTIES[STATE.propertyId];
     const cover = typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(STATE.propertyId) : IMG.props[STATE.propertyId];
     const notes = typeof AppStore !== 'undefined' ? (AppStore.meta(STATE.propertyId).info?.notes || '') : '';
     return `${topBar('Edit Property', { back: true })}
     <div class="screen-content screen-enter">
-        <div class="relative h-[120px] rounded-xl overflow-hidden">
+        <div class="relative h-[120px] rounded-xl overflow-hidden mb-3">
             <img src="${cover}" class="img-cover" alt="">
             <button type="button" data-go="property-photos" data-pid="${STATE.propertyId}" class="absolute bottom-2 right-2 bg-white/90 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-[#2563EB]">Manage Photos</button>
         </div>
-        <div><label class="form-label">Property Name</label><input data-field="name" type="text" class="form-input" value="${p.name.replace(/"/g, '&quot;')}"></div>
-        <div><label class="form-label">Address</label><input data-field="address" type="text" class="form-input" value="${p.address.replace(/"/g, '&quot;')}" placeholder="Full address incl. postcode"></div>
-        <div class="card p-4 flex items-center justify-between gap-3">
+        <div><label class="form-label">Property Name</label><input data-field="name" type="text" class="form-input" value="${p?.name?.replace(/"/g, '&quot;') || ''}"></div>
+        <div><label class="form-label">Address</label><input data-field="address" type="text" class="form-input" value="${p?.address?.replace(/"/g, '&quot;') || ''}" placeholder="Full address incl. postcode"></div>
+        <div class="card p-4 flex items-center justify-between gap-3 mb-3">
             <p class="text-[14px] font-bold text-[#0F172A]">Units</p>
             <button type="button" data-go="property-detail" data-pid="${STATE.propertyId}" data-tab="units" class="header-text-link shrink-0">Manage units</button>
         </div>
@@ -5884,9 +6019,9 @@ function screenRenewCompliance() {
 }
 
 function screenEditInventoryRoom() {
-    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms() : [['Kitchen','4 items','package',0],['Living Room','6 items','sofa',1],['Bedroom','5 items','bed',2],['Bathroom','3 items','bath',3],['Hallway','2 items','door-open',4]];
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms() : [['Kitchen', '4 items', 'package', 0], ['Living Room', '6 items', 'sofa', 1], ['Bedroom', '5 items', 'bed', 2], ['Bathroom', '3 items', 'bath', 3], ['Hallway', '2 items', 'door-open', 4]];
     const room = rooms[STATE.roomId] || rooms[0];
-    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob','Fridge Freezer','Washing Machine','Microwave'];
+    const items = typeof getInventoryItems === 'function' ? getInventoryItems(STATE.propertyId, STATE.roomId) : ['Oven & Hob', 'Fridge Freezer', 'Washing Machine', 'Microwave'];
     return `${topBar('Edit ' + room[0], { back: true })}
     <div class="screen-content screen-enter">
         ${formTextarea('Room Notes', typeof getInventoryNotes === 'function' ? getInventoryNotes(STATE.propertyId, STATE.roomId) : '', 'Notes for this room', 'roomNotes')}
@@ -5917,19 +6052,19 @@ function screenAddPaymentMethod() {
 
 function screenEditPaymentMethod() {
     const cards = typeof getPaymentMethods === 'function' ? getPaymentMethods() : [
-        { id: 0, type:'Visa', last4:'4242', exp:'08/27', name:'John Smith', default:true },
-        { id: 1, type:'Barclays', last4:'8901', exp:'—', name:'Rent Collection', default:false },
+        { id: 0, type: 'Visa', last4: '4242', exp: '08/27', name: 'John Smith', default: true },
+        { id: 1, type: 'Barclays', last4: '8901', exp: '—', name: 'Rent Collection', default: false },
     ];
     const c = cards[STATE.paymentId] || cards[0];
     return `${topBar('Edit Payment', { back: true })}
     <div class="screen-content screen-enter">
         <div class="card p-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center"><i data-lucide="${c.type==='Visa'?'credit-card':'landmark'}" class="w-5 h-5 text-[#2563EB]"></i></div>
+            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center"><i data-lucide="${c.type === 'Visa' ? 'credit-card' : 'landmark'}" class="w-5 h-5 text-[#2563EB]"></i></div>
             <div><p class="text-[14px] font-semibold">${c.type} ···· ${c.last4}</p><p class="text-[12px] text-[#64748B]">${c.default ? 'Default method' : 'Bank account'}</p></div>
         </div>
         ${formField('Account Holder', c.name, 'text', '', 'accountHolder')}
         ${c.type === 'Visa' ? formField('Expiry Date', c.exp, 'text', '', 'expiry') + formField('Billing Postcode', 'SW1A 1AA', 'text', '', 'postcode') : formField('Sort Code', '20-00-00', 'text', '', 'sortCode') + formField('Account Number', '****8901', 'text', '', 'accountNumber')}
-        <label class="flex items-center gap-2 text-[13px] text-[#475569]"><input data-field="isDefault" type="checkbox" ${c.default?'checked':''} class="accent-[#2563EB]"> Default payment method</label>
+        <label class="flex items-center gap-2 text-[13px] text-[#475569]"><input data-field="isDefault" type="checkbox" ${c.default ? 'checked' : ''} class="accent-[#2563EB]"> Default payment method</label>
         ${saveBtn('Save Changes', 'Payment method updated')}
         <button type="button" data-action="remove-payment-method" class="btn-danger-outline">Remove payment method</button>
     </div>`;
@@ -6001,8 +6136,8 @@ function screenLogMaintenance() {
         <div class="form-group"><label class="form-label">Issue title <span class="form-required">*</span></label><input data-field="title" class="form-input" value="${titlePrefill.replace(/"/g, '&quot;')}" placeholder="e.g. Leaking kitchen tap"></div>
         ${typeof renderMaintCategoryPicker === 'function' ? renderMaintCategoryPicker() : ''}
         ${typeof renderLogMaintPriorityPicker === 'function' ? renderLogMaintPriorityPicker() : `<div class="form-group"><label class="form-label">Priority</label>
-        <div class="flex gap-2">${['Low','Medium','High'].map(pr=>`
-        <button data-log-priority="${pr}" class="tab-pill ${STATE.logPriority===pr?'active':''}">${pr}</button>`).join('')}</div></div>`}
+        <div class="flex gap-2">${['Low', 'Medium', 'High'].map(pr => `
+        <button data-log-priority="${pr}" class="tab-pill ${STATE.logPriority === pr ? 'active' : ''}">${pr}</button>`).join('')}</div></div>`}
         <div class="form-group"><label class="form-label">Description <span class="form-required">*</span></label><textarea data-field="desc" class="form-input h-20 resize-none" placeholder="What happened? Where? Any access notes?"></textarea></div>
         ${typeof renderLogMaintMediaSection === 'function' ? renderLogMaintMediaSection() : ''}
         <button data-action="save" data-msg="Issue logged successfully" class="btn-primary w-full py-3.5 text-[14px] flex items-center justify-center gap-2">
@@ -6075,7 +6210,7 @@ function bindImageFallbacks() {
         img.loading = 'lazy';
         img.decoding = 'async';
         img.referrerPolicy = 'no-referrer';
-        img.onerror = function() {
+        img.onerror = function () {
             if (this.src !== IMG.fallback) this.src = IMG.fallback;
         };
     });
@@ -6316,6 +6451,13 @@ function handleDelegatedAction(e, el) {
             if (isModalBackdropMiss(e, el)) return false;
             return run(() => { STATE.renameDocId = null; render(); });
         case 'confirm-rename-doc': return run(() => { if (typeof confirmRenameDoc === 'function') confirmRenameDoc(); });
+        case 'open-edit-doc-modal':
+            return run(() => { if (typeof openEditDocModal === 'function') openEditDocModal(+el.dataset.doc); });
+        case 'close-edit-doc':
+            if (isModalBackdropMiss(e, el)) return false;
+            return run(() => { if (typeof closeEditDocModal === 'function') closeEditDocModal(); });
+        case 'confirm-edit-doc':
+            return run(() => { if (typeof saveEditDocModal === 'function') saveEditDocModal(); });
         case 'open-add-document':
         case 'open-add-document-flow':
             return run(() => {
