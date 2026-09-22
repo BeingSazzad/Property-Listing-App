@@ -261,13 +261,15 @@ const AppStore = {
             { id: 10, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2020', date: 'Aug 2020', shared: true, signed: false },
             { id: 3, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B.pdf', date: 'Jun 2023', shared: true, signed: false },
             { id: 4, propertyId: 0, type: 'Deposit Certificate', name: 'Deposit Protection Flat 2A.pdf', date: 'Jan 2024', shared: true, signed: true },
-            { id: 13, propertyId: 0, type: 'Custom Document', name: 'Fire Risk Assessment 2025', date: 'Jan 2025', shared: true, signed: false },
-            { id: 14, propertyId: 0, type: 'Custom Document', name: 'Smoke Alarm Test Log', date: 'Feb 2025', shared: true, signed: false },
-            { id: 15, propertyId: 0, type: 'Custom Document', name: 'Fire Door Inspection', date: 'Mar 2025', shared: true, signed: false },
-            { id: 16, propertyId: 0, type: 'Custom Document', name: 'Emergency Lighting Check', date: 'Apr 2025', shared: true, signed: false },
-            { id: 17, propertyId: 0, type: 'Custom Document', name: 'Landlord Insurance Policy', date: 'Jan 2025', shared: false, signed: false },
+            { id: 13, propertyId: 0, type: 'Custom Document', name: 'Fire Risk Assessment 2025.pdf', date: 'Jan 2025', shared: true, signed: false },
+            { id: 14, propertyId: 0, type: 'Custom Document', name: 'Smoke Alarm Test Log.pdf', date: 'Feb 2025', shared: true, signed: false },
+            { id: 15, propertyId: 0, type: 'Custom Document', name: 'Fire Door Inspection Report.pdf', date: 'Mar 2025', shared: true, signed: false },
+            { id: 16, propertyId: 0, type: 'Custom Document', name: 'Emergency Lighting Check.pdf', date: 'Apr 2025', shared: true, signed: false },
+            { id: 17, propertyId: 0, type: 'Custom Document', name: 'Landlord Insurance Policy.pdf', date: 'Jan 2025', shared: false, signed: false },
             { id: 18, propertyId: 0, type: 'Property Licence', name: 'Selective Licensing Certificate.pdf', date: 'Sep 2024', shared: true, signed: false },
             { id: 19, propertyId: 0, type: 'Custom Document', name: 'Legionella Risk Assessment.pdf', date: 'Nov 2024', shared: true, signed: false },
+            { id: 37, propertyId: 0, type: 'Custom Document', name: 'Land Registry Title Deed.pdf', date: 'Oct 2023', shared: false, signed: false },
+            { id: 38, propertyId: 0, type: 'Custom Document', name: 'Building Warranty Certificate.pdf', date: 'Dec 2023', shared: true, signed: false },
 
             // Property 1 - 45 Queens Road
             { id: 5, propertyId: 1, type: 'How to Rent Guide', name: 'How to Rent Guide UK.pdf', date: 'Jun 2023', shared: true, signed: false },
@@ -277,6 +279,9 @@ const AppStore = {
             { id: 23, propertyId: 1, type: 'EPC Certificate', name: 'EPC Energy Rating C.pdf', date: 'Sep 2023', shared: true, signed: false },
             { id: 24, propertyId: 1, type: 'Deposit Certificate', name: 'Deposit Protection Certificate.pdf', date: 'Jun 2023', shared: true, signed: true },
             { id: 25, propertyId: 1, type: 'Custom Document', name: 'Buildings & Contents Insurance.pdf', date: 'Oct 2025', shared: false, signed: false },
+            { id: 39, propertyId: 1, type: 'Custom Document', name: 'Fire Risk Assessment 2024.pdf', date: 'Aug 2024', shared: true, signed: false },
+            { id: 40, propertyId: 1, type: 'Custom Document', name: 'Communal Area Cleaning Log.pdf', date: 'Jan 2025', shared: true, signed: false },
+            { id: 41, propertyId: 1, type: 'Custom Document', name: 'Title Register & Floor Plan.pdf', date: 'May 2023', shared: false, signed: false },
 
             // Property 2 - 88 King Street
             { id: 26, propertyId: 2, type: 'EPC Certificate', name: 'EPC Rating A Certificate.pdf', date: 'Apr 2021', shared: true, signed: false },
@@ -284,6 +289,9 @@ const AppStore = {
             { id: 28, propertyId: 2, type: 'Gas Certificate', name: 'Gas Safety CP12 Certificate.pdf', date: 'Jan 2025', shared: true, signed: false },
             { id: 29, propertyId: 2, type: 'Custom Document', name: 'Building Insurance Policy 2026.pdf', date: 'Jan 2025', shared: false, signed: false },
             { id: 30, propertyId: 2, type: 'Property Licence', name: 'HMO Licensing Approval.pdf', date: 'Feb 2024', shared: true, signed: false },
+            { id: 42, propertyId: 2, type: 'Custom Document', name: 'HMO Fire Safety Management Plan.pdf', date: 'Mar 2024', shared: true, signed: false },
+            { id: 43, propertyId: 2, type: 'Custom Document', name: 'Emergency Escape Route Map.pdf', date: 'Feb 2024', shared: true, signed: false },
+            { id: 44, propertyId: 2, type: 'Custom Document', name: 'Commercial Waste Contract.pdf', date: 'Jun 2024', shared: false, signed: false },
 
             // Property 3 - 15 Victoria Ave
             { id: 31, propertyId: 3, type: 'Tenancy Agreement', name: 'Lease Agreement Flat 2A.pdf', date: 'Mar 10, 2024', shared: true, signed: true },
@@ -292,6 +300,8 @@ const AppStore = {
             { id: 34, propertyId: 3, type: 'EPC Certificate', name: 'EPC Rating C Report.pdf', date: 'Mar 2022', shared: true, signed: false },
             { id: 35, propertyId: 3, type: 'Deposit Certificate', name: 'TDS Deposit Certificate.pdf', date: 'Mar 2024', shared: true, signed: true },
             { id: 36, propertyId: 3, type: 'Custom Document', name: 'Landlord Comprehensive Insurance.pdf', date: 'Dec 2024', shared: false, signed: false },
+            { id: 45, propertyId: 3, type: 'Custom Document', name: 'Fire Alarm Annual Service Log.pdf', date: 'Jul 2024', shared: true, signed: false },
+            { id: 46, propertyId: 3, type: 'Custom Document', name: 'Property Management Agreement.pdf', date: 'Feb 2024', shared: false, signed: false },
         ];
         this.tenancies = [
             { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active', leadName: 'Sarah Johnson' },
