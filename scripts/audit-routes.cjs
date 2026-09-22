@@ -175,6 +175,15 @@ let aiMatch;
 while ((aiMatch = actionIncludesRegex.exec(allCode)) !== null) {
   handledActions.add(aiMatch[1]);
 }
+// Also detect direct querySelectorAll/querySelector for data-action in JS files
+const jsCode = ['landlord_hq_screens.js', 'landlord_hq_contractor.js', 'landlord_hq_features.js', 'landlord_hq_product.js']
+  .map(f => fileContents[f] || '').join('\n');
+// Match all [data-action="..."] occurrences across all JS files
+const querySelectorRegex = /\[data-action=["']([a-zA-Z0-9_\-]+)["']\]/g;
+let qsMatch;
+while ((qsMatch = querySelectorRegex.exec(jsCode)) !== null) {
+  handledActions.add(qsMatch[1]);
+}
 
 const unhandledActions = [];
 dataActions.forEach((locs, act) => {
