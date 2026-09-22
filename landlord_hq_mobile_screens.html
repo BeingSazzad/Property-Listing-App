@@ -22193,19 +22193,42 @@
         .modal-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(15, 23, 42, .45);
+            background: rgba(15, 23, 42, .6);
+            backdrop-filter: blur(2px);
             z-index: 200;
             display: flex;
             align-items: flex-end;
             justify-content: center;
+            padding: 20px 20px calc(var(--safe-bottom) + 12px);
+            box-sizing: border-box;
+        }
+
+        .modal-overlay.open {
+            display: flex;
         }
 
         .modal-sheet {
             background: #fff;
-            border-radius: 20px 20px 0 0;
-            padding: 24px var(--gutter) calc(var(--safe-bottom) + 20px);
+            border-radius: 24px;
+            padding: 22px 20px calc(var(--safe-bottom) + 16px);
             width: 100%;
-            max-width: 430px;
+            max-width: 390px;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.35);
+            box-sizing: border-box;
+        }
+
+        .modal-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 20px;
+            width: 100%;
+            max-width: 390px;
+            margin: auto;
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.35);
+            box-sizing: border-box;
+            max-height: 90%;
+            overflow-y: auto;
         }
 
         .modal-title {
@@ -26112,11 +26135,15 @@
 
         .maint-media-preview-modal {
             position: relative;
-            width: min(92vw, 420px);
+            width: 100%;
+            max-width: 390px;
+            margin: auto;
             background: #fff;
-            border-radius: 16px;
+            border-radius: 24px;
             overflow: hidden;
-            padding: 12px;
+            padding: 14px;
+            box-sizing: border-box;
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.35);
         }
 
         .maint-media-preview-close {
@@ -32409,10 +32436,10 @@
 
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=393"></script>
-    <script src="landlord_hq_contractor.js?v=393"></script>
-    <script src="landlord_hq_features.js?v=393"></script>
-    <script src="landlord_hq_product.js?v=393"></script>
+    <script src="landlord_hq_screens.js?v=410"></script>
+    <script src="landlord_hq_contractor.js?v=410"></script>
+    <script src="landlord_hq_features.js?v=410"></script>
+    <script src="landlord_hq_product.js?v=410"></script>
     <script>
             (function () {
                 function showBootError(msg) {

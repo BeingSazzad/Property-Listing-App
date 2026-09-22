@@ -1,18 +1,17 @@
 /* Product UX layer — backend-ready flows (extends existing screens, no API) */
 
 const DOC_FOLDER_DEFS = [
-    { id: 'gas', label: 'Gas Certificates', icon: 'flame', color: '#DC2626', bg: '#FEE2E2', match: d => d.type === 'Gas Certificate' },
-    { id: 'eicr', label: 'Electrical Certificates', icon: 'zap', color: '#2563EB', bg: '#EFF6FF', match: d => d.type === 'Electrical Certificate' },
-    { id: 'epc', label: 'EPC', icon: 'leaf', color: '#16A34A', bg: '#ECFDF5', match: d => d.type === 'EPC Certificate' },
-    { id: 'deposit', label: 'Deposit Certificate', icon: 'shield', color: '#2563EB', bg: '#DBEAFE', match: d => d.type === 'Deposit Certificate' || /deposit protection/i.test(`${d.name || ''} ${d.type || ''}`) },
-    { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#0F766E', bg: '#CCFBF1', match: d => d.type === 'Property Licence' || /property\s*licence|property\s*license|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
-    { id: 'fire', label: 'Fire Safety', icon: 'flame-kindling', color: '#EA580C', bg: '#FFEDD5', match: d => /fire|smoke|alarm/i.test(`${d.name || ''} ${d.type || ''}`) },
-    { id: 'insurance', label: 'Insurance', icon: 'shield-check', color: '#1D4ED8', bg: '#EFF6FF', match: d => /insurance/i.test(d.name || d.type || '') },
-    { id: 'custom', label: 'Other files', icon: 'folder', color: '#64748B', bg: '#F1F5F9', match: () => false },
+    { id: 'gas', label: 'Gas Safety (CP12)', icon: 'flame', color: '#0284C7', bg: '#F0F9FF', match: d => d.type === 'Gas Certificate' || /gas|cp12/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'eicr', label: 'Electrical (EICR)', icon: 'zap', color: '#D97706', bg: '#FFFBEB', match: d => d.type === 'Electrical Certificate' || /electrical|eicr/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'epc', label: 'Energy Performance (EPC)', icon: 'leaf', color: '#059669', bg: '#ECFDF5', match: d => d.type === 'EPC Certificate' || /epc/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'insurance', label: 'Landlord Insurance', icon: 'shield-check', color: '#7C3AED', bg: '#F5F3FF', match: d => /insurance/i.test(d.name || d.type || '') },
+    { id: 'deposit', label: 'Deposit Protection', icon: 'shield', color: '#2563EB', bg: '#EFF6FF', match: d => d.type === 'Deposit Certificate' || /deposit protection/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#475569', bg: '#F1F5F9', match: d => d.type === 'Property Licence' || /property\s*licence|property\s*license|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'custom', label: 'Document Vault & Archive', icon: 'folder-archive', color: '#2563EB', bg: '#EFF6FF', match: () => false },
 ];
 
-const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'deposit', 'licence', 'fire', 'insurance', 'custom'];
-const DOC_FOLDER_RECORDS_IDS = ['fire', 'licence', 'custom'];
+const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'insurance', 'deposit', 'licence', 'custom'];
+const DOC_FOLDER_RECORDS_IDS = ['licence', 'custom'];
 
 const CHARGE_TYPE_OPTIONS = [
     { id: 'utility', label: 'Utility charge', icon: 'zap' },
@@ -474,8 +473,7 @@ function docTypeForFolder(folderId) {
 }
 
 function getRecordsDocumentUploadOptions() {
-    const propertyFolders = DOC_FOLDER_DEFS.filter(f => f.id !== 'deposit');
-    const folderOpts = propertyFolders.map(f => ({
+    return DOC_FOLDER_DEFS.map(f => ({
         type: docTypeForFolder(f.id),
         label: f.label,
         icon: f.icon,
@@ -483,13 +481,6 @@ function getRecordsDocumentUploadOptions() {
         bg: f.bg,
         folderId: f.id,
     }));
-    const seen = new Set();
-    return folderOpts.filter(o => {
-        const key = `${o.type}|${o.folderId || ''}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
 }
 
 function renderRecordsDocUploadCta() {

@@ -1301,7 +1301,7 @@ function screenContractorWelcome() {
                     <span class="welcome-bell-dot">2</span>
                 </button>
             </div>
-            <h1 class="welcome-hero-title">Welcome, ${firstName}! 🔧</h1>
+            <h1 class="welcome-hero-title">Welcome, ${firstName}!</h1>
             <p class="welcome-hero-sub">${CONTRACTOR_USER.company || 'Your contractor workspace'} is active. View jobs, schedule visits, and upload invoices.</p>
             <div class="free-account-pill free-account-pill--on-dark">
                 <i data-lucide="gift" class="w-3.5 h-3.5"></i>
@@ -1458,7 +1458,7 @@ function screenTenantWelcome() {
     return `
     <div class="auth-screen" style="padding-bottom:0">
         <div class="welcome-header">
-            <h1 class="welcome-greeting">Welcome, ${name}! 🏠</h1>
+            <h1 class="welcome-greeting">Welcome, ${name}!</h1>
             <div class="free-account-pill">
                 <i data-lucide="gift" class="w-3.5 h-3.5"></i>
                 <span>Tenant portal · Always free</span>
@@ -2289,9 +2289,9 @@ function screenTenantHouseRules() {
     <div class="screen-content screen-enter space-y-3 text-left pb-8">
         <div class="space-y-2">
             ${rules.map((r, i) => `
-            <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
-                <span class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>
-                <p class="text-[13.5px] font-medium text-[#0F172A] m-0 leading-snug flex-1">${typeof escapeHtml === 'function' ? escapeHtml(r) : r}</p>
+            <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-start gap-3">
+                <span class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold flex items-center justify-center shrink-0 mt-0.5 border border-[#DBEAFE]">${i + 1}</span>
+                <div class="text-[13.5px] font-normal text-[#334155] leading-relaxed flex-1 min-w-0">${typeof formatHouseRuleDisplay === 'function' ? formatHouseRuleDisplay(r) : (typeof escapeHtml === 'function' ? escapeHtml(r) : r)}</div>
             </div>`).join('')}
         </div>
     </div>`;
@@ -3748,8 +3748,9 @@ function renderContractorMultiTradesPicker() {
             ${CONTRACTOR_TRADES.map(t => {
                 const active = selectedTrades.has(t);
                 return `
-                <button type="button" data-action="toggle-contractor-trade" data-trade="${escapeHtml(t)}" class="px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all cursor-pointer ${active ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-white text-[#334155] border border-[#E2E8F0] hover:border-[#CBD5E1]'}">
-                    ${active ? '✓ ' : '+ '}${escapeHtml(t)}
+                <button type="button" data-action="toggle-contractor-trade" data-trade="${escapeHtml(t)}" class="px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${active ? 'bg-[#2563EB] text-white shadow-sm' : 'bg-white text-[#334155] border border-[#E2E8F0] hover:border-[#CBD5E1]'}">
+                    <i data-lucide="${active ? 'check' : 'plus'}" class="w-3.5 h-3.5"></i>
+                    <span>${escapeHtml(t)}</span>
                 </button>`;
             }).join('')}
         </div>

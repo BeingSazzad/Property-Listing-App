@@ -772,7 +772,7 @@ const PREF_OPTIONS = {
     dateFormat: { title: 'Date Format', options: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'], current: 'DD/MM/YYYY' },
     timezone: { title: 'Timezone', options: ['GMT (London)', 'GMT (Dublin)', 'CET (Paris)'], current: 'GMT (London)' },
 };
-const NO_NAV = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success', 'chat', 'tenant-detail', 'property-detail', 'flat-detail', 'flat-members', 'tenancy-detail', 'maintenance-detail', 'maintenance-history', 'invoice-detail', 'inventory-room', 'document-preview', 'personal-info', 'notifications-settings', 'security', 'password', 'delete-account', 'preferences', 'payment-methods', 'subscription', 'subscription-billing', 'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about', 'property-cross-sell', 'contractor-org', 'add-property', 'log-maintenance', 'notifications-list', 'transaction-history', 'edit-property', 'edit-flat', 'add-flat', 'invite-tenant', 'tenant-invite-sent', 'edit-tenant', 'reschedule-inspection', 'renew-compliance', 'edit-inventory-room', 'add-payment-method', 'edit-payment-method', 'edit-preference', 'tenant-add-note', 'tenant-edit-note', 'select-property-invite', 'select-unit-invite', 'global-search', 'broadcast-notices', 'send-broadcast', 'broadcast-detail', 'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail', 'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance', 'tenant-communication', 'tenant-checkout', 'property-compliance', 'property-doc-vault', 'property-inspections', 'property-inventory', 'property-house-rules', 'property-flat-documents', 'property-doc-folder', 'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info'];
+const NO_NAV = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success', 'chat', 'tenant-detail', 'property-detail', 'flat-detail', 'flat-members', 'tenancy-detail', 'maintenance-detail', 'maintenance-history', 'invoice-detail', 'inventory-room', 'document-preview', 'personal-info', 'notifications-settings', 'security', 'password', 'delete-account', 'preferences', 'payment-methods', 'subscription', 'subscription-billing', 'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about', 'property-cross-sell', 'contractor-org', 'add-property', 'log-maintenance', 'notifications-list', 'transaction-history', 'edit-property', 'edit-flat', 'add-flat', 'invite-tenant', 'tenant-invite-sent', 'edit-tenant', 'reschedule-inspection', 'renew-compliance', 'edit-inventory-room', 'add-payment-method', 'edit-payment-method', 'edit-preference', 'tenant-add-note', 'tenant-edit-note', 'select-property-invite', 'select-unit-invite', 'global-search', 'broadcast-notices', 'send-broadcast', 'broadcast-detail', 'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail', 'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance', 'tenant-communication', 'tenant-checkout', 'property-compliance', 'property-doc-vault', 'property-inspections', 'property-inventory', 'property-house-rules', 'edit-property-house-rules', 'property-flat-documents', 'property-doc-folder', 'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info'];
 
 const PRE_AUTH_SCREENS = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'contractor-invite', 'contractor-sign-up', 'contractor-welcome', 'tenant-invite', 'tenant-activate', 'tenant-welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
@@ -1240,6 +1240,7 @@ const PROPERTY_HUB_BACK_OPTS = {
     'property-flat-documents': { tab: 'records', recordsView: 'documents' },
     'property-doc-folder': { tab: 'records', recordsView: 'documents' },
     'property-house-rules': { tab: 'records' },
+    'edit-property-house-rules': { tab: 'records' },
     'certificate-assign': { tab: 'records', recordsView: 'compliance' },
     'property-photos': { tab: 'info' },
     'property-floor-plans': { tab: 'info' },
@@ -2299,7 +2300,7 @@ function screenWelcome() {
                     <span class="welcome-bell-dot">3</span>
                 </button>
             </div>
-            <h1 class="welcome-hero-title">Welcome, ${name}! 👋</h1>
+            <h1 class="welcome-hero-title">Welcome, ${name}!</h1>
             <p class="welcome-hero-sub">You're all set to manage your rental portfolio.</p>
         </div>
         <div class="welcome-body">
@@ -2576,7 +2577,7 @@ function go(screen, opts = {}) {
         STATE.flatDuplicateFrom = opts.duplicateFrom || null;
         STATE.selectedUnit = null;
     }
-    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'utility-detail' || screen === 'add-building-service' || screen === 'edit-utility' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'property-house-rules' || screen === 'property-doc-folder' || screen === 'property-flat-documents' || screen === 'edit-property-alarms' || screen === 'edit-property-appliances' || screen === 'edit-property-utilities' || screen === 'edit-property-parking' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
+    if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'utility-detail' || screen === 'add-building-service' || screen === 'edit-utility' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'property-house-rules' || screen === 'edit-property-house-rules' || screen === 'property-doc-folder' || screen === 'property-flat-documents' || screen === 'edit-property-alarms' || screen === 'edit-property-appliances' || screen === 'edit-property-utilities' || screen === 'edit-property-parking' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
     if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms') {
         if (opts.unit) STATE.selectedUnit = opts.unit;
     }
@@ -2743,6 +2744,7 @@ function navigateBackFallback() {
         'property-compliance': 'property-detail', 'property-doc-vault': 'property-detail',
         'property-inspections': 'property-detail', 'property-inventory': 'property-detail',
         'property-house-rules': 'property-detail',
+        'edit-property-house-rules': 'property-house-rules',
         'edit-tenancy-deposit': 'tenancy-detail',
         'flat-keys': 'flat-detail',
         'edit-flat-keys': 'flat-keys',
@@ -5450,6 +5452,31 @@ function renderHelpContactCard(role, help) {
         </button>
     </div>`;
 }
+
+function openModal(contentHtml) {
+    closeModal();
+    const app = document.getElementById('app') || document.body;
+    const overlay = document.createElement('div');
+    overlay.id = 'global-app-modal';
+    overlay.className = 'modal-overlay open';
+    overlay.style.cssText = 'position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+    overlay.onclick = (e) => {
+        if (e.target === overlay) closeModal();
+    };
+    const wrap = document.createElement('div');
+    wrap.className = 'w-full max-w-[390px] mx-auto box-border';
+    wrap.innerHTML = contentHtml;
+    overlay.appendChild(wrap);
+    app.appendChild(overlay);
+    if (window.lucide) lucide.createIcons();
+}
+
+function closeModal() {
+    const m = document.getElementById('global-app-modal');
+    if (m) m.remove();
+}
+window.openModal = openModal;
+window.closeModal = closeModal;
 
 function openSuggestionModal() {
     openModal(`

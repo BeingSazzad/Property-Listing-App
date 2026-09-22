@@ -2597,7 +2597,7 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
     const removeAction = opts.removeAction || 'remove-pending-flat-photo';
     const uploadAction = opts.uploadAction || 'upload-pending-flat-photo';
     const uploadLabel = opts.uploadLabel || (list.length ? 'Add more photos' : 'Add unit photos (optional)');
-    const hint = opts.hint || 'Add multiple photos and tap ★ to choose which shows on the home screen.';
+    const hint = opts.hint || 'Add multiple photos and tap the star icon to choose which shows on the home screen.';
     const isGallery = opts.variant === 'gallery';
     if (!list.length) {
         return `
@@ -4234,25 +4234,62 @@ function renderInventoryLayoutSection(propertyId) {
 }
 
 function renderPropertyInventoryTab(propertyId) {
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
+    const isMulti = units.length > 1;
+    const activeUnit = STATE.selectedUnit || (isMulti ? (typeof unitName === 'function' ? unitName(units[0]) : units[0].name || 'Flat 1') : '');
     const rooms = getInventoryRooms(propertyId);
+
     return `
-    <div class="screen-content screen-content-sm">
-        ${renderInventoryLayoutSection(propertyId)}
-        <div class="flex items-center justify-between mt-4 mb-2">
-            <p class="screen-section-title m-0">Room Checklists</p>
-            <span class="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2.5 py-0.5 rounded-full">${rooms.length} Rooms Tracked</span>
-        </div>
-        <div class="stack-sm">
-        ${rooms.map(([r, n, icon, idx]) => `
-        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-4 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
-            <div class="flex items-center gap-3.5 min-w-0">
-                <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
-                <div class="min-w-0"><p class="text-[15px] font-bold text-[#0F172A] m-0">${escapeHtml(r)}</p><p class="text-[12px] text-[#64748B] truncate mt-0.5 m-0">${escapeHtml(n)}</p></div>
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-8">
+        ${isMulti ? `
+        <!-- Multi-Unit Selector Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="door-closed" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
+                    <div class="relative flex items-center">
+                        <select data-action="select-inventory-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                            ${units.map(u => {
+                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                                const isSel = activeUnit === name;
+                                const beds = u.beds ? ` · ${u.beds} bed` : '';
+                                return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${beds}</option>`;
+                            }).join('')}
+                            <option value="communal" ${activeUnit === 'communal' ? 'selected' : ''}>Communal Areas</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
+                    </div>
+                </div>
             </div>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+            <span class="text-[11px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0">
+                ${units.length} Flats
+            </span>
+        </div>` : ''}
+
+        ${renderInventoryLayoutSection(propertyId)}
+
+        <div class="flex items-center justify-between px-1 mt-2 mb-1">
+            <p class="text-[13.5px] font-bold text-[#0F172A] m-0">${isMulti ? `${escapeHtml(activeUnit === 'communal' ? 'Communal Area' : activeUnit)} Room Checklists` : 'Room Checklists'}</p>
+            <span class="text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#D1FAE5]">${rooms.length} Rooms Tracked</span>
+        </div>
+
+        <div class="space-y-2">
+        ${rooms.map(([r, n, icon, idx]) => `
+        <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-3.5 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs cursor-pointer group">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
+                <div class="min-w-0">
+                    <p class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(r)}</p>
+                    <p class="text-[11.5px] text-[#64748B] truncate mt-0.5 m-0">${escapeHtml(n)}</p>
+                </div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
         </button>`).join('')}
         </div>
-        <button type="button" data-action="add-inventory-room" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold mt-3 shadow-xs flex items-center justify-center gap-2">
+        <button type="button" data-action="add-inventory-room" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold mt-2 shadow-xs flex items-center justify-center gap-2 cursor-pointer">
             <i data-lucide="plus" class="w-4 h-4 text-[#2563EB]"></i>
             <span>+ Add Room / Area</span>
         </button>
@@ -7640,6 +7677,25 @@ const TENANT_HOUSE_RULES = {
     ],
 };
 
+function formatHouseRuleDisplay(rule) {
+    if (!rule) return '';
+    let text = String(rule).trim();
+    text = text.replace(/^[-*•\d.]+\s*/, '').trim();
+    if (!text) return '';
+    let escaped = typeof escapeHtml === 'function' ? escapeHtml(text) : text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-[#0F172A]">$1</strong>');
+    escaped = escaped.replace(/__(.+?)__/g, '<strong class="font-bold text-[#0F172A]">$1</strong>');
+    escaped = escaped.replace(/\*(.+?)\*/g, '<em class="italic text-[#334155]">$1</em>');
+    escaped = escaped.replace(/_(.+?)_/g, '<em class="italic text-[#334155]">$1</em>');
+    escaped = escaped.replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 rounded bg-[#EFF6FF] text-[#2563EB] font-mono text-[11px] font-bold border border-[#DBEAFE]">$1</code>');
+    escaped = escaped.replace(/\n/g, '<br/>');
+    return escaped;
+}
+
 function getPropertyHouseRules(propertyId) {
     const meta = typeof AppStore !== 'undefined' ? AppStore.meta(propertyId) : null;
     if (meta && Array.isArray(meta.houseRules) && meta.houseRules.length) {
@@ -7649,13 +7705,24 @@ function getPropertyHouseRules(propertyId) {
         return TENANT_HOUSE_RULES[propertyId];
     }
     return [
-        'Quiet hours after 10 PM — keep noise down for neighbours.',
-        'Report maintenance issues through the app so your landlord can respond quickly.',
-        'No smoking inside the building or communal areas.',
-        'Guests may not stay more than 14 consecutive nights without written approval.',
-        'Recycling bins are in the rear garden shed — please sort waste correctly.',
-        'Bicycle storage is in the basement — do not leave bikes in the hallway.',
+        '**Quiet hours:** After 10 PM — please keep noise down for neighbours.',
+        '**Maintenance issues:** Report through the app so your landlord can respond quickly.',
+        '**No smoking:** Strictly no smoking or vaping inside the building or communal areas.',
+        '**Guest policy:** Guests may not stay more than 14 consecutive nights without written approval.',
+        '**Recycling bins:** Located in the rear garden shed — please sort waste correctly.',
+        '**Bicycle storage:** In the basement — do not leave bikes in communal hallways.',
     ];
+}
+
+function getPropertyHouseRulesHtml(propertyId) {
+    const meta = typeof AppStore !== 'undefined' ? AppStore.meta(propertyId) : null;
+    if (meta && meta.houseRulesHtml && meta.houseRulesHtml.trim()) {
+        return meta.houseRulesHtml;
+    }
+    const rules = getPropertyHouseRules(propertyId);
+    return `<ol class="list-decimal pl-5 space-y-2.5">
+        ${rules.map(r => `<li>${formatHouseRuleDisplay(r)}</li>`).join('')}
+    </ol>`;
 }
 
 function houseRulesForTenant(tenant) {
@@ -7666,50 +7733,109 @@ function houseRulesForTenant(tenant) {
 function screenPropertyHouseRules() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
-    const rules = getPropertyHouseRules(propertyId);
-    
-    // Format existing rules with bullet points for clean, readable editing
-    const formattedText = rules.map(r => r.startsWith('•') || /^\d+\./.test(r) ? r : `• ${r}`).join('\n\n');
 
-    const badge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">${rules.length} Rules</span>`;
+    const editBtn = `<button type="button" data-go="edit-property-house-rules" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"><i data-lucide="pencil" class="w-3.5 h-3.5"></i><span>Edit</span></button>`;
 
-    return `${topBar('House Rules & Policies', { back: true, sub: p.name || '', rightBtn: badge })}
-    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-10">
-        <!-- Subtitle -->
-        <p class="text-[12px] text-[#64748B] leading-relaxed">
-            Write or edit rules below. Use bullet points (<code class="text-[#2563EB] font-bold">•</code>) or numbers (<code class="text-[#2563EB] font-bold">1.</code>) for each clause.
-        </p>
+    return `${topBar('House Rules & Policies', { back: true, sub: p.name || '', rightBtn: editBtn })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-10">
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-[14px] text-[#334155] leading-relaxed [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:space-y-2.5 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2.5 [&>p]:mb-2.5">
+            ${getPropertyHouseRulesHtml(propertyId)}
+        </div>
+    </div>`;
+}
 
-        <!-- Quick Formatting Toolbar -->
-        <div class="flex items-center gap-1.5 flex-wrap">
-            <button type="button" data-action="hr-insert-bullet" class="px-2.5 py-1 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#2563EB] hover:text-[#2563EB] text-[11.5px] font-bold text-[#334155] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors">
-                <i data-lucide="list" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                <span>• Add Bullet</span>
-            </button>
-            <button type="button" data-action="hr-insert-number" class="px-2.5 py-1 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#2563EB] hover:text-[#2563EB] text-[11.5px] font-bold text-[#334155] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors">
-                <i data-lucide="list-ordered" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                <span>1. Number</span>
-            </button>
-            <button type="button" data-action="hr-insert-template" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] text-[11.5px] font-bold text-[#2563EB] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                <span>Standard Rules</span>
-            </button>
-            <button type="button" data-action="hr-clear-editor" class="px-2 py-1 rounded-lg text-[#94A3B8] hover:text-[#EF4444] text-[11.5px] font-semibold flex items-center gap-1 ml-auto cursor-pointer transition-colors">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                <span>Clear</span>
-            </button>
+function screenEditPropertyHouseRules() {
+    const propertyId = STATE.propertyId ?? 0;
+    const p = PROPERTIES[propertyId] || PROPERTIES[0];
+
+    return `${topBar('Edit House Rules', { back: true, sub: p.name || '' })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-12">
+        <div class="card rounded-2xl bg-white border border-[#CBD5E1] shadow-xs overflow-hidden">
+            <!-- Rich Text Editor Toolbar (matching 2nd screenshot) -->
+            <div class="p-2.5 bg-[#F8FAFC] border-b border-[#CBD5E1] flex items-center gap-1 flex-wrap select-none">
+                <!-- Undo / Redo -->
+                <button type="button" data-editor-cmd="undo" title="Undo (Ctrl+Z)" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="redo" title="Redo (Ctrl+Y)" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                </button>
+
+                <span class="w-px h-5 bg-[#CBD5E1] mx-1"></span>
+
+                <!-- Bold / Italic / Underline / Strike -->
+                <button type="button" data-editor-cmd="bold" title="Bold (Ctrl+B)" class="w-7 h-7 rounded-lg text-[#0F172A] hover:bg-[#E2E8F0] font-extrabold text-[13.5px] flex items-center justify-center transition-colors cursor-pointer">
+                    B
+                </button>
+                <button type="button" data-editor-cmd="italic" title="Italic (Ctrl+I)" class="w-7 h-7 rounded-lg text-[#0F172A] hover:bg-[#E2E8F0] italic font-serif text-[14px] flex items-center justify-center transition-colors cursor-pointer">
+                    I
+                </button>
+                <button type="button" data-editor-cmd="underline" title="Underline (Ctrl+U)" class="w-7 h-7 rounded-lg text-[#0F172A] hover:bg-[#E2E8F0] underline font-bold text-[13px] flex items-center justify-center transition-colors cursor-pointer">
+                    U
+                </button>
+                <button type="button" data-editor-cmd="strikeThrough" title="Strikethrough" class="w-7 h-7 rounded-lg text-[#0F172A] hover:bg-[#E2E8F0] line-through font-bold text-[13px] flex items-center justify-center transition-colors cursor-pointer">
+                    S
+                </button>
+
+                <span class="w-px h-5 bg-[#CBD5E1] mx-1"></span>
+
+                <!-- Color chips -->
+                <button type="button" data-editor-color="#2563EB" title="Blue text" class="w-5 h-5 rounded-md bg-[#2563EB] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
+                <button type="button" data-editor-color="#16A34A" title="Green text" class="w-5 h-5 rounded-md bg-[#16A34A] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
+                <button type="button" data-editor-color="#DC2626" title="Red text" class="w-5 h-5 rounded-md bg-[#DC2626] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
+                <button type="button" data-editor-color="#0F172A" title="Dark text" class="w-5 h-5 rounded-md bg-[#0F172A] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
+
+                <span class="w-px h-5 bg-[#CBD5E1] mx-1"></span>
+
+                <!-- Alignments -->
+                <button type="button" data-editor-cmd="justifyLeft" title="Align Left" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="align-left" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="justifyCenter" title="Align Center" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="align-center" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="justifyRight" title="Align Right" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="align-right" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="justifyFull" title="Justify" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="align-justify" class="w-4 h-4"></i>
+                </button>
+
+                <span class="w-px h-5 bg-[#CBD5E1] mx-1"></span>
+
+                <!-- Lists & Formats -->
+                <button type="button" data-editor-cmd="insertOrderedList" title="Numbered List" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="list-ordered" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="insertUnorderedList" title="Bullet List" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="list" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="indent" title="Indent" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="indent" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="outdent" title="Outdent" class="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0] transition-colors cursor-pointer">
+                    <i data-lucide="outdent" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-editor-cmd="removeFormat" title="Clear Formatting" class="p-1.5 rounded-lg text-[#475569] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors cursor-pointer ml-auto">
+                    <i data-lucide="eraser" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Contenteditable Document Area -->
+            <div id="richHouseRulesEditor" contenteditable="true" class="w-full min-h-[300px] max-h-[520px] overflow-y-auto p-5 bg-white text-[14px] text-[#0F172A] leading-relaxed outline-none [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:space-y-2 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2 [&>p]:mb-2">
+                ${getPropertyHouseRulesHtml(propertyId)}
+            </div>
         </div>
 
-        <!-- Rich Textarea -->
-        <div class="relative">
-            <textarea id="bulkHouseRulesEditor" rows="13" class="w-full p-4 rounded-2xl bg-white border border-[#CBD5E1] text-[13.5px] font-medium text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 leading-relaxed shadow-xs resize-none" placeholder="• No smoking inside the building...&#10;• Quiet hours after 10 PM...&#10;• Guests max 14 consecutive nights...">${escapeHtml(formattedText)}</textarea>
+        <div class="space-y-2 pt-1">
+            <button type="button" data-action="save-house-rules" class="w-full py-3.5 text-[13.5px] font-bold rounded-2xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Save & Publish Rules</span>
+            </button>
+            <button type="button" data-go="property-house-rules" class="w-full py-2.5 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A] transition-colors cursor-pointer text-center">
+                Cancel
+            </button>
         </div>
-
-        <!-- Save Button -->
-        <button type="button" data-action="save-house-rules" class="w-full py-3.5 text-[13.5px] font-bold rounded-2xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] transition-all shadow-xs cursor-pointer mt-2 flex items-center justify-center gap-2">
-            <i data-lucide="check" class="w-4 h-4"></i>
-            <span>Save & Publish Rules</span>
-        </button>
     </div>`;
 }
 
@@ -9509,18 +9635,14 @@ function renderBuildingCertTiles(propertyId) {
         { folderId: 'epc', cid: 7, label: 'Energy Performance (EPC)', defaultSub: 'Energy efficiency rating', icon: 'leaf', iconColor: 'text-[#059669] bg-[#ECFDF5]' },
         { folderId: 'insurance', cid: 5, label: 'Landlord Insurance', defaultSub: 'Buildings & liability cover', icon: 'shield-check', iconColor: 'text-[#7C3AED] bg-[#F5F3FF]' },
         { folderId: 'deposit', label: 'Deposit Protection', defaultSub: 'DPS / TDS scheme records', icon: 'shield', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', folderOnly: true },
-        { folderId: 'license', label: 'Property Licence', defaultSub: 'Council licensing registration', icon: 'badge-check', iconColor: 'text-[#475569] bg-[#F1F5F9]', folderOnly: true, optional: true },
-        { folderId: 'custom', label: 'Document Vault & Archive', defaultSub: `${otherCount} stored files & certificates`, icon: 'folder-archive', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
+        { folderId: 'licence', label: 'Property Licence', defaultSub: 'Council licensing registration', icon: 'badge-check', iconColor: 'text-[#475569] bg-[#F1F5F9]', folderOnly: true, optional: true },
+        { folderId: 'custom', label: 'Other Documents', defaultSub: `${otherCount} files on record`, icon: 'files', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
     ];
     
     return `
-    <div class="space-y-2.5">
+    <div class="space-y-2">
         <div class="flex items-center justify-between px-1">
-            <span class="text-[12px] font-bold text-[#334155] flex items-center gap-1.5">
-                <i data-lucide="files" class="w-4 h-4 text-[#2563EB]"></i>
-                <span>All Documents & Records (${allDefs.length})</span>
-            </span>
-            <span class="text-[11px] font-semibold text-[#64748B]">Tap to view / upload</span>
+            <span class="text-[12px] font-bold text-[#64748B] uppercase tracking-wider">Required Records & Certificates</span>
         </div>
         <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
             ${allDefs.map(def => {
@@ -9639,19 +9761,8 @@ function renderRecordsHubNavRow(icon, label, attrs, meta = '') {
 }
 
 function renderRecordsHubInspectionRow(propertyId) {
-    const upcoming = getScheduledInspection(propertyId);
     const past = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
-    let meta = 'Not scheduled';
-    if (upcoming) {
-        const nextDateLabel = typeof formatDisplayDate === 'function'
-            ? formatDisplayDate(upcoming.date) || upcoming.date
-            : upcoming.date;
-        meta = isTenantUploadInspection(upcoming)
-            ? `${(upcoming.tenantPhotoUrls || []).length ? 'Photos in' : 'Photos due'} · ${nextDateLabel}`
-            : `Next · ${nextDateLabel}`;
-    } else if (past.length) {
-        meta = `${past.length} past report${past.length === 1 ? '' : 's'}`;
-    }
+    const meta = past.length ? `${past.length} past report${past.length === 1 ? '' : 's'}` : 'No records yet';
     return renderRecordsHubNavRow('clipboard-list', 'Inspections', `data-go="property-inspections" data-pid="${propertyId}"`, meta);
 }
 
@@ -9686,44 +9797,7 @@ function screenPropertyCompliance() {
     </button>`;
 
     return `${topBar('Certificates & Compliance', { back: true, sub, rightBtn: uploadBtn })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
-        <!-- Hero Health Banner (Distinct, Dark Gradient Card) -->
-        <div class="p-4 rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#334155] text-white shadow-md border border-slate-700/60 relative overflow-hidden">
-            <!-- Decorative Subtle Accent Glow -->
-            <div class="absolute -right-8 -bottom-8 w-28 h-28 bg-[#2563EB]/20 rounded-full blur-2xl pointer-events-none"></div>
-            
-            <div class="flex items-start justify-between gap-3 relative z-10">
-                <div class="flex items-center gap-3">
-                    <div class="w-11 h-11 rounded-xl ${certIssues.length ? 'bg-[#EF4444]/20 border border-[#EF4444]/40 text-[#F87171]' : 'bg-[#10B981]/20 border border-[#10B981]/40 text-[#34D399]'} flex items-center justify-center shrink-0 shadow-inner">
-                        <i data-lucide="${certIssues.length ? 'shield-alert' : 'shield-check'}" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Compliance Overview</span>
-                        <h3 class="text-[15px] font-bold text-white m-0 mt-0.5">
-                            ${certIssues.length ? `${certIssues.length} Renewal${certIssues.length > 1 ? 's' : ''} Needed` : 'All Documents Up to Date'}
-                        </h3>
-                        <p class="text-[11.5px] font-medium text-slate-300 m-0 mt-0.5">
-                            ${validCount} of ${totalCount} property records active & verified
-                        </p>
-                    </div>
-                </div>
-                <div class="text-right shrink-0">
-                    <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold ${certIssues.length ? 'bg-[#EF4444]/20 text-[#FCA5A5] border border-[#EF4444]/30' : 'bg-[#10B981]/20 text-[#6EE7B7] border border-[#10B981]/30'}">
-                        ${healthPercent}% Ready
-                    </span>
-                </div>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="mt-3.5 pt-3 border-t border-slate-700/60 flex items-center gap-2.5">
-                <div class="flex-1 h-2 rounded-full bg-slate-800/80 overflow-hidden p-0.5">
-                    <div class="h-full rounded-full ${certIssues.length ? 'bg-gradient-to-r from-[#F59E0B] to-[#EF4444]' : 'bg-gradient-to-r from-[#10B981] to-[#059669]'}" style="width: ${healthPercent}%"></div>
-                </div>
-                <span class="text-[11px] font-bold text-slate-400 shrink-0">${validCount}/${totalCount} OK</span>
-            </div>
-        </div>
-
-        <!-- Unified Document List -->
+    <div class="screen-content screen-content-sm space-y-3 text-left pb-8">
         ${renderBuildingCertTiles(propertyId)}
     </div>`;
 }
@@ -9732,59 +9806,126 @@ function screenPropertyDocumentVault() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
     const sub = p?.name?.split(',')[0] || '';
-    const fireCount = propertyFolderFileCount(propertyId, 'fire');
-    const otherCount = propertyFolderFileCount(propertyId, 'custom');
-    const flatDocCount = propertyFlatDocumentCount(propertyId);
+    const allDocs = AppStore.docsForProperty(propertyId);
 
-    const vaultFolders = [
-        {
-            title: 'Flat Documents',
-            sub: 'Tenancy leases & unit files',
-            icon: 'home',
-            iconColor: 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]',
-            route: `data-go="property-flat-documents" data-pid="${propertyId}"`,
-            badge: flatDocCount ? `${flatDocCount} Files` : 'By Unit',
-        },
-        {
-            title: 'Fire Safety Archive',
-            sub: 'FRA, alarms & logs',
-            icon: 'flame-kindling',
-            iconColor: 'text-[#EA580C] bg-[#FFF7ED] border-[#FFEDD5]',
-            route: `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`,
-            badge: fireCount ? `${fireCount} Files` : '0 Files',
-        },
-        {
-            title: 'General Building Files',
-            sub: 'Deeds, warranties & custom docs',
-            icon: 'folder-archive',
-            iconColor: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]',
-            route: `data-go="property-doc-folder" data-folder="custom" data-pid="${propertyId}"`,
-            badge: otherCount ? `${otherCount} Files` : '0 Files',
-        },
+    const filter = STATE.otherDocFilter || 'all';
+    const query = (STATE.otherDocSearch || '').trim().toLowerCase();
+
+    // Categorize or filter documents
+    const filteredDocs = allDocs.filter(doc => {
+        const matchesQuery = !query ||
+            (doc.name && doc.name.toLowerCase().includes(query)) ||
+            (doc.type && doc.type.toLowerCase().includes(query)) ||
+            (doc.date && doc.date.toLowerCase().includes(query));
+        if (!matchesQuery) return false;
+
+        if (filter === 'building') {
+            return ['insurance', 'Property Licence', 'Custom Document', 'Mortgage', 'Leasehold', 'Deed'].some(k =>
+                (doc.type && doc.type.toLowerCase().includes(k.toLowerCase())) ||
+                (doc.name && doc.name.toLowerCase().includes(k.toLowerCase()))
+            ) || (!doc.type?.includes('Tenancy') && !doc.type?.includes('Deposit') && !doc.type?.includes('Gas') && !doc.type?.includes('Electrical') && !doc.type?.includes('EPC'));
+        }
+        if (filter === 'tenancy') {
+            return (doc.type && (doc.type.includes('Tenancy') || doc.type.includes('Deposit') || doc.type.includes('Rent'))) ||
+                   (doc.name && (doc.name.toLowerCase().includes('lease') || doc.name.toLowerCase().includes('deposit') || doc.name.toLowerCase().includes('tenancy')));
+        }
+        if (filter === 'safety') {
+            return (doc.type && (doc.type.includes('Gas') || doc.type.includes('Electrical') || doc.type.includes('EPC') || doc.type.includes('Fire') || doc.type.includes('Alarm'))) ||
+                   (doc.name && (doc.name.toLowerCase().includes('fire') || doc.name.toLowerCase().includes('smoke') || doc.name.toLowerCase().includes('eicr') || doc.name.toLowerCase().includes('gas') || doc.name.toLowerCase().includes('epc') || doc.name.toLowerCase().includes('legionella')));
+        }
+        return true;
+    });
+
+    const uploadBtn = `<button type="button" data-action="open-add-document-flow" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Upload</span>
+    </button>`;
+
+    const filterTabs = [
+        ['all', 'All Files'],
+        ['building', 'Building & Deeds'],
+        ['tenancy', 'Tenancy & Leases'],
+        ['safety', 'Safety & Reports'],
     ];
 
-    return `${topBar('Document Vault', { back: true, sub })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
-        <div class="space-y-3">
-            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Vault Storage</span>
-            <div class="space-y-2.5">
-                ${vaultFolders.map(f => `
-                <button type="button" ${f.route} class="w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#2563EB]/40 active:bg-[#F8FAFC] transition-all text-left flex items-center justify-between gap-3 cursor-pointer group">
-                    <div class="flex items-center gap-3.5 min-w-0">
-                        <div class="w-11 h-11 rounded-xl ${f.iconColor} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-                            <i data-lucide="${f.icon}" class="w-5 h-5"></i>
+    const getDocIconAndColor = (d) => {
+        const name = (d.name || d.type || '').toLowerCase();
+        if (name.includes('fire') || name.includes('smoke') || name.includes('alarm')) {
+            return { icon: 'flame-kindling', color: 'text-[#EA580C] bg-[#FFF7ED] border-[#FFEDD5]' };
+        }
+        if (name.includes('insurance') || name.includes('licence') || name.includes('deed')) {
+            return { icon: 'shield', color: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]' };
+        }
+        if (name.includes('lease') || name.includes('tenancy') || name.includes('deposit')) {
+            return { icon: 'file-text', color: 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]' };
+        }
+        if (name.includes('gas') || name.includes('electrical') || name.includes('epc')) {
+            return { icon: 'check-circle-2', color: 'text-[#059669] bg-[#ECFDF5] border-[#A7F3D0]' };
+        }
+        return { icon: 'file', color: 'text-[#64748B] bg-[#F1F5F9] border-[#E2E8F0]' };
+    };
+
+    return `${topBar('Other Documents', { back: true, sub, rightBtn: uploadBtn })}
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
+        <!-- Top Search Bar -->
+        <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input id="otherDocSearchInput" type="text" placeholder="Search documents..." value="${escapeHtml(STATE.otherDocSearch || '')}" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 placeholder:text-[#94A3B8] shadow-2xs">
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            ${filterTabs.map(([key, label]) => `
+            <button type="button" data-other-doc-filter="${key}" class="px-3 py-1.5 rounded-xl text-[12px] font-semibold shrink-0 transition-all cursor-pointer ${filter === key ? 'bg-[#2563EB] text-white shadow-2xs' : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC]'}">
+                ${label}
+            </button>`).join('')}
+        </div>
+
+        <!-- Direct Document List -->
+        <div class="space-y-2.5">
+            ${filteredDocs.length ? filteredDocs.map(doc => {
+                const style = getDocIconAndColor(doc);
+                const isShared = doc.shared;
+                const docText = `${doc.name || ''} ${doc.type || ''} ${doc.date || ''}`.toLowerCase();
+                return `
+                <div data-doc-row="true" data-doc-text="${escapeHtml(docText)}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3 hover:border-[#CBD5E1] transition-all group">
+                    <button type="button" data-go="document-preview" data-doc="${doc.id}" class="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer">
+                        <div class="w-10 h-10 rounded-xl ${style.color} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                            <i data-lucide="${style.icon}" class="w-5 h-5"></i>
                         </div>
-                        <div class="min-w-0">
-                            <h4 class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${f.title}</h4>
-                            <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${f.sub}</p>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${escapeHtml(doc.name || doc.type || 'Document')}</h4>
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5 text-[11px] text-[#64748B]">
+                                <span>${doc.date || 'Jan 2025'}</span>
+                                <span>•</span>
+                                <span class="capitalize">${escapeHtml(doc.type || 'PDF')}</span>
+                                ${isShared ? '<span class="text-[#2563EB] font-semibold bg-[#EFF6FF] px-1.5 py-0.2 rounded border border-[#DBEAFE] text-[10px]">Shared</span>' : ''}
+                            </div>
                         </div>
+                    </button>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button type="button" data-action="share-doc" data-doc="${doc.id}" title="Share document" class="p-2 rounded-lg text-[#94A3B8] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-colors cursor-pointer">
+                            <i data-lucide="share-2" class="w-4 h-4"></i>
+                        </button>
+                        <button type="button" data-action="delete-document" data-doc="${doc.id}" title="Delete document" class="p-2 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] transition-colors cursor-pointer">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">${f.badge}</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
-                    </div>
-                </button>`).join('')}
-            </div>
+                </div>`;
+            }).join('') : `
+            <div class="p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-center space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#2563EB] mx-auto flex items-center justify-center">
+                    <i data-lucide="files" class="w-6 h-6"></i>
+                </div>
+                <h4 class="text-[14px] font-bold text-[#0F172A]">No files found</h4>
+                <p class="text-[12px] text-[#64748B] max-w-[240px] mx-auto">Upload deeds, warranties, fire logs, or tenancy files directly here.</p>
+                <button type="button" data-action="open-add-document-flow" data-pid="${propertyId}" class="btn-primary px-4 py-2 text-[12.5px] font-bold rounded-xl mt-2 inline-flex items-center gap-1.5 cursor-pointer shadow-xs">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                    <span>Upload Document</span>
+                </button>
+            </div>`}
         </div>
     </div>`;
 }
@@ -9793,8 +9934,12 @@ function screenPropertyInspections() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId];
     const sub = p?.name?.split(',')[0] || '';
-    return `${topBar('Inspections', { back: true, sub })}
-    ${renderPropertyInspectionTab(propertyId)}`;
+    const logBtn = `<button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Log</span>
+    </button>`;
+    return `${topBar('Inspections', { back: true, sub, rightBtn: logBtn })}
+    ${renderPropertyInspectionTab(propertyId, { hideHeaderCard: true })}`;
 }
 
 function screenPropertyInventory() {
@@ -9931,8 +10076,8 @@ function openAddApplianceModal(propertyId) {
     let uploadedAppliancePhoto = '';
 
     const modalHtml = `
-    <div id="add-appliance-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
+    <div id="add-appliance-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('add-appliance-modal')?.remove()">
+        <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -9985,7 +10130,8 @@ function openAddApplianceModal(propertyId) {
         </div>
     </div>`;
 
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const app = document.getElementById('app') || document.body;
+    app.insertAdjacentHTML('beforeend', modalHtml);
     if (window.lucide) lucide.createIcons();
 
     const fileInput = document.getElementById('new-appliance-photo-input');
@@ -10042,8 +10188,8 @@ function openAddAlarmModal(propertyId) {
     let uploadedAlarmPhoto = '';
 
     const modalHtml = `
-    <div id="add-alarm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
+    <div id="add-alarm-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('add-alarm-modal')?.remove()">
+        <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -10092,7 +10238,8 @@ function openAddAlarmModal(propertyId) {
         </div>
     </div>`;
 
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const app = document.getElementById('app') || document.body;
+    app.insertAdjacentHTML('beforeend', modalHtml);
     if (window.lucide) lucide.createIcons();
 
     const fileInput = document.getElementById('new-alarm-photo-input');
@@ -10272,8 +10419,8 @@ function openApplianceItemModal(applianceId) {
                </div>`;
 
         const html = `
-        <div id="appliance-item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-            <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
+        <div id="appliance-item-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('appliance-item-modal')?.remove()">
+            <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -10294,7 +10441,8 @@ function openApplianceItemModal(applianceId) {
             </div>
         </div>`;
 
-        document.body.insertAdjacentHTML('beforeend', html);
+        const app = document.getElementById('app') || document.body;
+        app.insertAdjacentHTML('beforeend', html);
         if (window.lucide) lucide.createIcons();
 
         document.getElementById('appl-close-btn').onclick = () => document.getElementById('appliance-item-modal').remove();
@@ -10448,8 +10596,8 @@ function openAlarmItemModal(alarmId) {
                </div>`;
 
         const html = `
-        <div id="alarm-item-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-            <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-left border border-slate-100 animate-scaleUp max-h-[90vh] overflow-y-auto">
+        <div id="alarm-item-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('alarm-item-modal')?.remove()">
+            <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -10470,7 +10618,8 @@ function openAlarmItemModal(alarmId) {
             </div>
         </div>`;
 
-        document.body.insertAdjacentHTML('beforeend', html);
+        const app = document.getElementById('app') || document.body;
+        app.insertAdjacentHTML('beforeend', html);
         if (window.lucide) lucide.createIcons();
 
         document.getElementById('alarm-close-btn').onclick = () => document.getElementById('alarm-item-modal').remove();
@@ -10532,17 +10681,23 @@ function screenPropertyAppliances() {
     const p = PROPERTIES[propertyId];
     const meta = AppStore.meta(propertyId);
     const appliances = meta.appliances || [];
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
+    const isMulti = units.length > 1;
+    const activeUnit = STATE.appliancesFilterUnit || (STATE.selectedUnit && units.some(u => unitName(u) === STATE.selectedUnit) ? STATE.selectedUnit : 'all');
 
     const defaultAppliances = [
-        { id: 'boiler', name: 'Boiler', brand: 'Worcester Bosch', type: 'Gas Combi Boiler 30kW', warranty: 'Parts & labour', photo: DEMO_APPLIANCE_PHOTOS.boiler, icon: 'flame', tag: 'Recorded' },
-        { id: 'oven', name: 'Oven', brand: 'Bosch', type: 'Electric Built-in Oven', warranty: 'Manufacturer warranty', photo: DEMO_APPLIANCE_PHOTOS.oven, icon: 'microwave', tag: 'Recorded' },
-        { id: 'fridge', name: 'Fridge Freezer', brand: 'Samsung', type: 'Frost Free 70/30', warranty: 'Standard warranty', photo: DEMO_APPLIANCE_PHOTOS.fridge, icon: 'refrigerator', tag: 'Recorded' },
-        { id: 'washing', name: 'Washing machine', brand: 'Bosch', type: 'EcoSilence 9kg', warranty: 'On record', photo: DEMO_APPLIANCE_PHOTOS.washing, icon: 'disc', tag: 'Recorded' },
-        { id: 'freezer', name: 'Freezer', brand: 'Beko', type: 'Under-counter 4 Drawer', warranty: 'On record', photo: DEMO_APPLIANCE_PHOTOS.freezer, icon: 'refrigerator', tag: 'Recorded' },
-        { id: 'dishwasher', name: 'Dishwasher', brand: 'Miele', type: 'Integrated Slimline', warranty: 'On record', photo: DEMO_APPLIANCE_PHOTOS.dishwasher, icon: 'disc', tag: 'Recorded' },
+        { id: 'boiler', name: 'Boiler', brand: 'Worcester Bosch', type: 'Gas Combi Boiler 30kW', warranty: 'Parts & labour', photo: DEMO_APPLIANCE_PHOTOS.boiler, icon: 'flame', tag: 'Recorded', unit: 'Flat 1' },
+        { id: 'oven', name: 'Oven', brand: 'Bosch', type: 'Electric Built-in Oven', warranty: 'Manufacturer warranty', photo: DEMO_APPLIANCE_PHOTOS.oven, icon: 'microwave', tag: 'Recorded', unit: 'Flat 1' },
+        { id: 'fridge', name: 'Fridge Freezer', brand: 'Samsung', type: 'Frost Free 70/30', warranty: 'Standard warranty', photo: DEMO_APPLIANCE_PHOTOS.fridge, icon: 'refrigerator', tag: 'Recorded', unit: 'Flat 2' },
+        { id: 'washing', name: 'Washing machine', brand: 'Bosch', type: 'EcoSilence 9kg', warranty: 'On record', photo: DEMO_APPLIANCE_PHOTOS.washing, icon: 'disc', tag: 'Recorded', unit: 'Flat 2' },
+        { id: 'freezer', name: 'Freezer', brand: 'Beko', type: 'Under-counter 4 Drawer', warranty: 'On record', photo: DEMO_APPLIANCE_PHOTOS.freezer, icon: 'refrigerator', tag: 'Recorded', unit: 'Flat 3' },
+        { id: 'dishwasher', name: 'Dishwasher', brand: 'Miele', type: 'Integrated Slimline', warranty: 'On record', photo: DEMO_APPLIANCE_PHOTOS.dishwasher, icon: 'disc', tag: 'Recorded', unit: 'Flat 4' },
     ];
 
-    const displayAppliances = appliances.length ? appliances : defaultAppliances;
+    const allAppliances = appliances.length ? appliances : defaultAppliances;
+    const displayAppliances = isMulti && activeUnit !== 'all'
+        ? allAppliances.filter(a => (a.unit || 'Flat 1') === activeUnit)
+        : allAppliances;
 
     const addBtn = `<button type="button" data-action="open-add-appliance-modal" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -10550,39 +10705,64 @@ function screenPropertyAppliances() {
     </button>`;
 
     return `${topBar('Appliances', { back: true, sub: p?.name || '', rightBtn: addBtn })}
-    <div class="screen-content screen-enter space-y-4 text-left pb-6">
+    <div class="screen-content screen-enter space-y-3.5 text-left pb-6">
+        ${isMulti ? `
+        <!-- Multi-Unit Selector Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="door-closed" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
+                    <div class="relative flex items-center">
+                        <select data-action="select-appliance-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                            <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units (${allAppliances.length})</option>
+                            ${units.map(u => {
+                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                                const count = allAppliances.filter(a => (a.unit || 'Flat 1') === name).length;
+                                const beds = u.beds ? ` · ${u.beds} bed` : '';
+                                return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${beds}${count ? ` (${count})` : ''}</option>`;
+                            }).join('')}
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
+                    </div>
+                </div>
+            </div>
+            ${activeUnit !== 'all' ? `
+            <button type="button" data-action="filter-appliance-unit" data-unit="all" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
+                Show All
+            </button>` : ''}
+        </div>` : ''}
+
         <div class="space-y-2.5">
             <div class="flex items-center justify-between px-1">
-                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Appliances (${displayAppliances.length})</span>
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${isMulti && activeUnit !== 'all' ? `${escapeHtml(activeUnit)} Appliances` : 'Appliances'} (${displayAppliances.length})</span>
             </div>
             <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAppliances.map(a => {
-        const photoSrc = a.photo || getDemoAppliancePhoto(a.name, a.id);
-        return `
-                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left">
-                        <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer">
+                    const photoSrc = a.photo || getDemoAppliancePhoto(a.name, a.id);
+                    return `
+                    <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left cursor-pointer">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
                             <img src="${photoSrc}" alt="" class="w-11 h-11 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
                             <div class="min-w-0">
-                                <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(a.name || 'Appliance')}</h4>
+                                <div class="flex items-center gap-1.5">
+                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(a.name || 'Appliance')}</h4>
+                                    ${isMulti && a.unit ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">${escapeHtml(a.unit)}</span>` : ''}
+                                </div>
                                 <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(a.brand || 'Recorded')}</p>
                             </div>
-                        </button>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
+                        </div>
+                        <div class="flex items-center gap-2.5 shrink-0">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
                                 ${escapeHtml(a.warranty || a.type || 'On record')}
                             </span>
-                            <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold hover:bg-[#DBEAFE] transition-colors flex items-center gap-1 cursor-pointer">
-                                <i data-lucide="pencil" class="w-3 h-3"></i>
-                                <span>Edit</span>
-                            </button>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                         </div>
-                    </div>`;
-    }).join('')}
+                    </button>`;
+                }).join('')}
             </div>
-            <button type="button" data-action="open-add-appliance-modal" data-pid="${propertyId}" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:bg-[#1D4ED8] transition-all shadow-xs cursor-pointer mt-3">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>+ Add New Appliance</span>
-            </button>
         </div>
     </div>`;
 }
@@ -10592,14 +10772,21 @@ function screenPropertyAlarms() {
     const p = PROPERTIES[propertyId];
     const meta = AppStore.meta(propertyId);
     const alarms = meta.alarms || [];
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
+    const isMulti = units.length > 1;
+    const activeUnit = STATE.alarmsFilterUnit || (STATE.selectedUnit && units.some(u => unitName(u) === STATE.selectedUnit) ? STATE.selectedUnit : 'all');
 
     const defaultAlarms = [
-        { id: 'smoke', name: 'Smoke Alarm', location: 'Hallway / Landing', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', photo: DEMO_ALARM_PHOTOS.smoke, icon: 'bell-ring' },
-        { id: 'heat', name: 'Heat Alarm', location: 'Kitchen Ceiling', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', photo: DEMO_ALARM_PHOTOS.heat, icon: 'thermometer' },
-        { id: 'co', name: 'CO Alarm', location: 'Boiler Room / Bedroom', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', photo: DEMO_ALARM_PHOTOS.co, icon: 'shield-alert' },
+        { id: 'smoke', name: 'Smoke Alarm', location: 'Hallway / Landing', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', photo: DEMO_ALARM_PHOTOS.smoke, icon: 'bell-ring', unit: 'Flat 1' },
+        { id: 'heat', name: 'Heat Alarm', location: 'Kitchen Ceiling', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', photo: DEMO_ALARM_PHOTOS.heat, icon: 'thermometer', unit: 'Flat 1' },
+        { id: 'co', name: 'CO Alarm', location: 'Boiler Room / Bedroom', expiry: 'Exp: 15 Jan 2026', status: 'Tested OK', photo: DEMO_ALARM_PHOTOS.co, icon: 'shield-alert', unit: 'Flat 2' },
+        { id: 'fire-panel', name: 'Main Fire Alarm Panel', location: 'Ground Floor Lobby', expiry: 'Inspected 2026', status: 'Tested OK', photo: DEMO_ALARM_PHOTOS.smoke, icon: 'flame', unit: 'Communal' },
     ];
 
-    const displayAlarms = alarms.length ? alarms : defaultAlarms;
+    const allAlarms = alarms.length ? alarms : defaultAlarms;
+    const displayAlarms = isMulti && activeUnit !== 'all'
+        ? allAlarms.filter(a => (a.unit || 'Flat 1') === activeUnit)
+        : allAlarms;
 
     const addBtn = `<button type="button" data-action="open-add-alarm-modal" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -10607,34 +10794,62 @@ function screenPropertyAlarms() {
     </button>`;
 
     return `${topBar('Safety & Smoke Alarms', { back: true, sub: p?.name || '', rightBtn: addBtn })}
-    <div class="screen-content screen-enter space-y-4 text-left pb-6">
+    <div class="screen-content screen-enter space-y-3.5 text-left pb-6">
+        ${isMulti ? `
+        <!-- Multi-Unit Selector Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="door-closed" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Location</span>
+                    <div class="relative flex items-center">
+                        <select data-action="select-alarm-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                            <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Locations (${allAlarms.length})</option>
+                            ${units.map(u => {
+                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                                const count = allAlarms.filter(a => (a.unit || 'Flat 1') === name).length;
+                                return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${count ? ` · ${count}` : ''}</option>`;
+                            }).join('')}
+                            <option value="Communal" ${activeUnit === 'Communal' ? 'selected' : ''}>Communal Areas</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
+                    </div>
+                </div>
+            </div>
+            ${activeUnit !== 'all' ? `
+            <button type="button" data-action="filter-alarm-unit" data-unit="all" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
+                Show All
+            </button>` : ''}
+        </div>` : ''}
+
         <div class="space-y-2.5">
             <div class="flex items-center justify-between px-1">
-                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Installed Alarms (${displayAlarms.length})</span>
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${isMulti && activeUnit !== 'all' ? `${escapeHtml(activeUnit)} Alarms` : 'Installed Alarms'} (${displayAlarms.length})</span>
             </div>
             <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAlarms.map(al => {
-        const photoSrc = al.photo || getDemoAlarmPhoto(al.name, al.id);
-        return `
-                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left">
-                        <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer">
+                    const photoSrc = al.photo || getDemoAlarmPhoto(al.name, al.id);
+                    return `
+                    <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left cursor-pointer">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
                             <img src="${photoSrc}" alt="" class="w-11 h-11 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
                             <div class="min-w-0">
-                                <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(al.name || 'Alarm')}</h4>
+                                <div class="flex items-center gap-1.5">
+                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(al.name || 'Alarm')}</h4>
+                                    ${isMulti && al.unit ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">${escapeHtml(al.unit)}</span>` : ''}
+                                </div>
                                 <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(al.location || 'Installed')}</p>
                             </div>
-                        </button>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
+                        </div>
+                        <div class="flex items-center gap-2.5 shrink-0">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
                                 ${escapeHtml(al.expiry || '2026')}
                             </span>
-                            <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold hover:bg-[#DBEAFE] transition-colors flex items-center gap-1 cursor-pointer">
-                                <i data-lucide="pencil" class="w-3 h-3"></i>
-                                <span>Edit</span>
-                            </button>
                         </div>
-                    </div>`;
-    }).join('')}
+                    </button>`;
+                }).join('')}
             </div>
         </div>
     </div>`;
@@ -10693,14 +10908,6 @@ function renderRecordsHubSmartRemindersSection(propertyId) {
 }
 
 function renderPropertyRecordsHub(propertyId) {
-    const certIssues = propertyCertTileIssues(propertyId);
-    const pastInspections = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
-    const meta = AppStore.meta(propertyId);
-    const alarmCount = meta?.alarms ? (Array.isArray(meta.alarms) ? meta.alarms.length : Object.keys(meta.alarms).length) : 3;
-    const rooms = getInventoryRooms(propertyId) || [];
-    const houseRules = getPropertyHouseRules(propertyId) || [];
-    const totalDocs = AppStore.docsForProperty(propertyId).length || 6;
-
     const cards = [
         {
             route: 'property-compliance',
@@ -10708,9 +10915,6 @@ function renderPropertyRecordsHub(propertyId) {
             sub: 'CP12, EICR & EPC',
             icon: 'shield-check',
             iconColor: 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]',
-            badge: certIssues.length
-                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2]"><span class="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span>${certIssues.length} Attention</span>`
-                : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Valid</span>`,
         },
         {
             route: 'property-alarms',
@@ -10718,7 +10922,20 @@ function renderPropertyRecordsHub(propertyId) {
             sub: 'Smoke, Heat & CO',
             icon: 'bell-ring',
             iconColor: 'text-[#D97706] bg-[#FFFBEB] border-[#FDE68A]',
-            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]"><span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>${alarmCount} Active</span>`,
+        },
+        {
+            route: 'property-appliances',
+            title: 'Appliances',
+            sub: 'Boiler & White Goods',
+            icon: 'flame',
+            iconColor: 'text-[#EA580C] bg-[#FFF7ED] border-[#FFEDD5]',
+        },
+        {
+            route: 'property-utilities',
+            title: 'Utilities & Meters',
+            sub: 'Gas, Electric & Stopcock',
+            icon: 'zap',
+            iconColor: 'text-[#0284C7] bg-[#F0F9FF] border-[#BAE6FD]',
         },
         {
             route: 'property-inspections',
@@ -10726,7 +10943,6 @@ function renderPropertyRecordsHub(propertyId) {
             sub: 'Visits & Audits',
             icon: 'clipboard-list',
             iconColor: 'text-[#7C3AED] bg-[#F5F3FF] border-[#DDD6FE]',
-            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F5F3FF] text-[#7C3AED] border border-[#DDD6FE]"><span class="w-1.5 h-1.5 rounded-full bg-[#7C3AED]"></span>${pastInspections.length} Reports</span>`,
         },
         {
             route: 'property-inventory',
@@ -10734,7 +10950,6 @@ function renderPropertyRecordsHub(propertyId) {
             sub: 'Room Schedules',
             icon: 'boxes',
             iconColor: 'text-[#059669] bg-[#ECFDF5] border-[#A7F3D0]',
-            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>${rooms.length || 5} Rooms</span>`,
         },
         {
             route: 'property-house-rules',
@@ -10742,37 +10957,30 @@ function renderPropertyRecordsHub(propertyId) {
             sub: 'Tenant Policies',
             icon: 'book-open',
             iconColor: 'text-[#0891B2] bg-[#ECFEFF] border-[#A5F3FC]',
-            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFEFF] text-[#0891B2] border border-[#A5F3FC]"><span class="w-1.5 h-1.5 rounded-full bg-[#0891B2]"></span>${houseRules.length} Rules</span>`,
         },
         {
             route: 'property-doc-vault',
-            title: 'Document Vault',
-            sub: 'Secure Storage',
-            icon: 'folder-archive',
+            title: 'Other Documents',
+            sub: 'Building & General Files',
+            icon: 'files',
             iconColor: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]',
-            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE]"><span class="w-1.5 h-1.5 rounded-full bg-[#4F46E5]"></span>${totalDocs} Files</span>`,
         },
     ];
 
     return `
     <div class="screen-content screen-content-sm prop-records-page prop-records-unified space-y-3 text-left pb-8">
-        <!-- Records Bento Grid (2 Columns) -->
+        <!-- Records Bento Grid (2 Columns - Complete 8-Card Power Hub) -->
         <div class="grid grid-cols-2 gap-3">
             ${cards.map(c => `
-            <button type="button" data-go="${c.route}" data-pid="${propertyId}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#2563EB]/40 active:bg-[#F8FAFC] transition-all text-left flex flex-col justify-between h-[132px] cursor-pointer group relative overflow-hidden">
-                <div class="flex items-start justify-between gap-1 w-full">
-                    <div class="w-10 h-10 rounded-xl ${c.iconColor} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <button type="button" data-go="${c.route}" data-pid="${propertyId}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#2563EB]/40 active:scale-[0.98] transition-all text-left flex flex-col justify-between h-[116px] cursor-pointer group relative">
+                <div class="flex items-center justify-between w-full">
+                    <div class="w-10 h-10 rounded-xl ${c.iconColor} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                         <i data-lucide="${c.icon}" class="w-5 h-5"></i>
                     </div>
-                    <div class="shrink-0 max-w-[55%]">
-                        ${c.badge}
-                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                 </div>
                 <div class="w-full mt-2">
-                    <div class="flex items-center justify-between gap-1">
-                        <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0 leading-tight">${c.title}</h4>
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
-                    </div>
+                    <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0 leading-tight">${c.title}</h4>
                     <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${c.sub}</p>
                 </div>
             </button>`).join('')}
@@ -11658,6 +11866,9 @@ function renderFlatDetailRecordsTab(propertyId, unit, p) {
     <div class="flat-dt-tab-panel flat-dt-tab-panel--records">
         ${renderFlatUnitDocumentsSection(propertyId, unit, { full: true })}
         <section class="card flat-records-nav-list">
+            ${navRow('boxes', 'Unit Inventory & Schedule', `data-go="property-inventory" data-pid="${propertyId}" data-unit="${unit}"`, invMeta)}
+            ${navRow('flame', 'Unit Appliances & Boiler', `data-go="property-appliances" data-pid="${propertyId}" data-unit="${unit}"`, 'Warranties & manuals')}
+            ${navRow('bell-ring', 'Unit Safety Alarms', `data-go="property-alarms" data-pid="${propertyId}" data-unit="${unit}"`, 'Smoke, heat & CO')}
             ${navRow('zap', 'Unit Utilities & Meters', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters & bills')}
             ${navRow('key-round', 'Unit Keys & Fobs', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register sets')}
             ${navRow('images', 'Unit Photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
@@ -16452,10 +16663,7 @@ function inspReportRow(report) {
                 </p>
             </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">View Report</span>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
-        </div>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
     </button>`;
 }
 
@@ -16520,67 +16728,83 @@ function screenInspectionDetail() {
     </div>`;
 }
 
-function renderPropertyInspectionTab(propertyId) {
-    const upcoming = getScheduledInspection(propertyId);
+function renderPropertyInspectionTab(propertyId, opts = {}) {
     const past = AppStore.inspections.filter(i => i.propertyId === propertyId && !i.scheduled);
-    const nextDateLabel = upcoming
-        ? (typeof formatDisplayDate === 'function' ? formatDisplayDate(upcoming.date) || upcoming.date : upcoming.date)
-        : null;
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
+    const activeUnitFilter = STATE.inspectionFilterUnit || 'all';
 
-    const headerStatusCard = `
-    <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
+    const filteredPast = past.filter(i => {
+        if (activeUnitFilter === 'all') return true;
+        if (activeUnitFilter === 'communal') return !i.unit || i.unit === 'Whole Property' || i.unit === 'Communal';
+        return i.unit === activeUnitFilter;
+    });
+
+    const headerStatusCard = (!opts.hideHeaderCard && !past.length) ? `
+    <div class="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-xl ${upcoming ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-[#ECFDF5] text-[#059669]'} flex items-center justify-center shrink-0">
-                <i data-lucide="${upcoming ? 'calendar-clock' : 'shield-check'}" class="w-4 h-4"></i>
+            <div class="w-10 h-10 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0">
+                <i data-lucide="clipboard-check" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Audit Status</span>
-                <p class="text-[13.5px] font-bold text-[#0F172A] mt-0.5 m-0 truncate">
-                    ${upcoming ? `Next: ${nextDateLabel}` : (past.length ? `${past.length} Records · All Up to Date` : 'Up to date')}
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Audit Records</span>
+                <p class="text-[14px] font-bold text-[#0F172A] mt-0.5 m-0 truncate">
+                    ${past.length ? `${past.length} Completed Inspection${past.length === 1 ? '' : 's'}` : 'No records yet'}
                 </p>
             </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors flex items-center gap-1.5 cursor-pointer">
-                <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                <span>Conduct</span>
-            </button>
-            <button type="button" data-go="reschedule-inspection" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] text-[12px] font-bold hover:bg-[#F1F5F9] transition-colors flex items-center gap-1.5 cursor-pointer">
-                <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                <span>Schedule</span>
-            </button>
-        </div>
-    </div>`;
-
-    const upcomingSection = upcoming ? `
-    <div class="space-y-1.5">
-        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Upcoming Inspection</p>
-        <div class="card p-4 rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-white border border-[#BFDBFE] shadow-xs space-y-3">
-            <div class="flex items-center justify-between">
-                <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#2563EB] text-white">${isTenantUploadInspection(upcoming) ? 'Tenant Photos Due' : 'Scheduled Visit'}</span>
-                <span class="text-[11.5px] font-bold text-[#2563EB]">${nextDateLabel}${upcoming.timeSlot ? ` · ${upcoming.timeSlot}` : ''}</span>
-            </div>
-            <div>
-                <h4 class="text-[15px] font-bold text-[#0F172A] m-0">${escapeHtml(upcoming.type || 'Property Inspection')}</h4>
-                ${upcoming.notes?.trim() ? `<p class="text-[12px] text-[#64748B] mt-1 m-0 leading-relaxed">${escapeHtml(truncateNote(upcoming.notes, 90))}</p>` : ''}
-            </div>
-            <div class="pt-1 flex items-center justify-end gap-2">
-                ${renderScheduledInspectionActions(upcoming, propertyId)}
-            </div>
-        </div>
+        <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3.5 py-2 rounded-xl bg-[#2563EB] text-white text-[12.5px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Log Inspection</span>
+        </button>
     </div>` : '';
 
     const pastSection = `
-    <div class="space-y-1.5">
-        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Inspection History (${past.length})</p>
-        ${past.length ? `
+    <div class="space-y-2.5">
+        <div class="flex items-center justify-between px-1">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Inspection History (${past.length})</p>
+        </div>
+        ${units.length > 1 ? `
+        <!-- Multi-Unit Scope Selector Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="door-closed" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
+                    <div class="relative flex items-center">
+                        <select data-action="select-insp-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                            <option value="all" ${activeUnitFilter === 'all' ? 'selected' : ''}>All Units (${past.length})</option>
+                            <option value="communal" ${activeUnitFilter === 'communal' ? 'selected' : ''}>Communal Areas</option>
+                            ${units.map(u => {
+                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                                const count = past.filter(i => i.unit === name).length;
+                                const beds = u.beds ? ` · ${u.beds} bed` : '';
+                                return `<option value="${escapeHtml(name)}" ${activeUnitFilter === name ? 'selected' : ''}>${escapeHtml(name)}${beds}${count ? ` (${count})` : ''}</option>`;
+                            }).join('')}
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
+                    </div>
+                </div>
+            </div>
+            ${activeUnitFilter !== 'all' ? `
+            <button type="button" data-action="filter-insp-unit" data-unit="all" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
+                Show All
+            </button>` : ''}
+        </div>` : ''}
+
+        ${filteredPast.length ? `
         <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
-            ${past.map(i => inspReportRow(i)).join('')}
+            ${filteredPast.map(i => inspReportRow(i)).join('')}
         </div>` : `
         <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
             <i data-lucide="clipboard-list" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
-            <p class="text-[13px] font-semibold text-[#0F172A] m-0">No past reports recorded yet</p>
-            <p class="text-[11.5px] text-[#64748B] mt-1 m-0">Conduct an on-site check or schedule a visit above.</p>
+            <p class="text-[13px] font-semibold text-[#0F172A] m-0">No past reports recorded for this selection</p>
+            <p class="text-[11.5px] text-[#64748B] mt-1 m-0">${activeUnitFilter !== 'all' ? `No inspection found for ${activeUnitFilter}.` : 'Conduct an on-site check to log an inspection record.'}</p>
+            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-[12.5px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors inline-flex items-center gap-1.5 cursor-pointer mt-3">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Log Inspection</span>
+            </button>
         </div>`}
     </div>`;
 
@@ -16598,10 +16822,7 @@ function renderPropertyInspectionTab(propertyId) {
                         <div class="text-[11.5px] text-[#64748B] truncate mt-0.5">Check-in, checkout & room condition archives</div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">Gallery</span>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
-                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
             </button>
         </div>
     </div>`;
@@ -16609,7 +16830,6 @@ function renderPropertyInspectionTab(propertyId) {
     return `
     <div class="screen-content screen-content-sm prop-hub-page space-y-4 text-left pb-8">
         ${headerStatusCard}
-        ${upcomingSection}
         ${pastSection}
         ${photosSection}
     </div>`;
@@ -18263,12 +18483,6 @@ function screenConductInspection() {
             ${formTextarea('Notes', upcoming?.notes || '', 'Record any defects, maintenance items, or tenant feedback...', 'inspNotes')}
         </div>
 
-        <!-- Notify Tenants -->
-        ${renderTenantNotifySection(pid, {
-            title: 'Notify Tenants',
-            hint: 'Send a summary copy and confirmation to tenants automatically.',
-        })}
-
         <!-- Action Button -->
         <button type="button" data-action="save-inspection" class="w-full py-4 rounded-2xl bg-[#2563EB] text-white font-bold text-[14px] shadow-md hover:bg-[#1D4ED8] transition-all flex items-center justify-center gap-2 cursor-pointer">
             <i data-lucide="check-circle" class="w-5 h-5"></i>
@@ -18737,8 +18951,8 @@ function screenAddFlat() {
         ${renderFlatUnitPhotoPicker(pendingPhotos, pendingCover, {
         placeholder: isDup && sourceName ? getFlatCoverPhoto(STATE.propertyId, sourceName) : IMG.interior[0],
         hint: isDup && pendingPhotos.length
-            ? `Photos copied from ${sourceName}. Tap ★ to change the cover before saving.`
-            : 'Add multiple photos and tap ★ to choose which shows on the home screen.',
+            ? `Photos copied from ${sourceName}. Tap the star icon to change the cover before saving.`
+            : 'Add multiple photos and tap the star icon to choose which shows on the home screen.',
     })}
         <div class="flat-edit-fields stack-sm">
             <div class="form-field"><label class="form-label">${unitWordCap} name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${draft.name.replace(/"/g, '&quot;')}" placeholder="e.g. ${isHmo ? 'Room 2A' : 'Flat 2A'}"></div>
@@ -18827,7 +19041,7 @@ function screenEditFlat() {
         removeAction: 'remove-flat-photo',
         uploadAction: 'upload-flat-photo',
         uploadLabel: photos.length ? 'Add more photos' : `Add ${unitWord} photos`,
-        hint: 'Tap ★ on any photo to set it as the cover. This shows in Overview and unit lists.',
+        hint: 'Tap the star icon on any photo to set it as the cover. This shows in Overview and unit lists.',
     })}
         <div class="flat-edit-status card">
             <div class="flat-edit-status-body">
@@ -19028,7 +19242,7 @@ function renderPropertyPhotosTab(propertyId) {
 function screenPropertyPhotos() {
     const meta = AppStore.meta(STATE.propertyId);
     const photos = meta.photos?.length ? meta.photos : [IMG.props[STATE.propertyId]];
-    return `${topBar('Property Photos', { back: true, sub: 'Select a cover photo. The first photo is your property\'s cover image.' })}
+    return `${topBar('Property Photos', { back: true, sub: 'Property & room gallery' })}
     <div class="screen-content screen-enter photo-gallery-page">
         <div class="photo-gallery-grid">
             ${photos.map((src, i) => `
@@ -19045,7 +19259,7 @@ function screenPropertyPhotos() {
                 <i data-lucide="plus" class="w-5 h-5"></i>
                 <span>Add photos</span>
             </button>
-            <p class="photo-gallery-hint">You can select multiple photos at once</p>
+            <p class="photo-gallery-hint">Select multiple images to upload</p>
         </div>
     </div>`;
 }
@@ -19053,7 +19267,7 @@ function screenPropertyPhotos() {
 function screenPropertyFloorPlans() {
     const meta = AppStore.meta(STATE.propertyId);
     const plans = meta.floorPlans || [];
-    return `${topBar('Floor Plans', { back: true, sub: 'Upload floor plan images for this property.' })}
+    return `${topBar('Floor Plans', { back: true, sub: 'Layout & architectural plans' })}
     <div class="screen-content screen-enter photo-gallery-page">
         ${plans.length ? `<div class="photo-gallery-grid">
             ${plans.map((src, i) => `
@@ -19074,36 +19288,382 @@ function screenPropertyFloorPlans() {
     </div>`;
 }
 
+function getUnitKeyStats(propertyId, unitName) {
+    const keys = getUnitKeys(propertyId, unitName);
+    const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+        t.propertyId === propertyId && t.unit === unitName
+    );
+    const occupantNames = new Set(occupants.map(t => normKeyName(t.name)));
+    const roster = typeof getFlatMemberRoster === 'function'
+        ? (getFlatMemberRoster(propertyId, unitName).members || [])
+        : [];
+    roster.forEach(m => { if (m.name) occupantNames.add(normKeyName(m.name)); });
+
+    let totalPhysicalKeys = 0;
+    let withTenants = 0;
+    let inSafe = 0;
+    let missing = 0;
+    const holders = new Set();
+
+    keys.forEach(k => {
+        const qty = Math.max(1, parseInt(k.qty, 10) || 1);
+        totalPhysicalKeys += qty;
+        const h = normKeyName(k.holder);
+        if (k.missing || h === 'missing' || h === 'lost') {
+            missing += qty;
+        } else if (occupantNames.has(h) || isGenericTenantHolder(k.holder) || (/tenant/i.test(k.holder || '') && !/safe|office|landlord/i.test(k.holder || ''))) {
+            withTenants += qty;
+            if (k.holder) holders.add(k.holder);
+        } else {
+            inSafe += qty;
+            if (k.holder) holders.add(k.holder);
+        }
+    });
+
+    return {
+        totalSets: keys.length,
+        totalPhysicalKeys,
+        withTenants,
+        inSafe,
+        missing,
+        holders: [...holders],
+    };
+}
+
+function getPropertyKeyStats(propertyId) {
+    const meta = AppStore.meta(propertyId);
+    const unitKeys = meta.unitKeys || {};
+    let totalSets = 0;
+    let totalPhysicalKeys = 0;
+    let withTenants = 0;
+    let inSafe = 0;
+    let missing = 0;
+    const unitStats = {};
+
+    Object.keys(unitKeys).forEach(u => {
+        const stats = getUnitKeyStats(propertyId, u);
+        unitStats[u] = stats;
+        totalSets += stats.totalSets;
+        totalPhysicalKeys += stats.totalPhysicalKeys;
+        withTenants += stats.withTenants;
+        inSafe += stats.inSafe;
+        missing += stats.missing;
+    });
+
+    return {
+        totalSets,
+        totalPhysicalKeys,
+        withTenants,
+        inSafe,
+        missing,
+        unitStats,
+    };
+}
+
+function resolveKeyCustody(k, propertyId, unitName) {
+    const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+        t.propertyId === propertyId && t.unit === unitName
+    );
+    const occupantNames = new Set(occupants.map(t => normKeyName(t.name)));
+    const roster = typeof getFlatMemberRoster === 'function'
+        ? (getFlatMemberRoster(propertyId, unitName).members || [])
+        : [];
+    roster.forEach(m => { if (m.name) occupantNames.add(normKeyName(m.name)); });
+
+    const h = normKeyName(k.holder);
+    if (k.missing || h === 'missing' || h === 'lost') {
+        return {
+            status: 'missing',
+            label: 'Missing / Lost',
+            holderDisplay: 'Unaccounted',
+            badgeClass: 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]',
+            dotClass: 'bg-[#DC2626]',
+            icon: 'alert-triangle',
+            isTenant: false,
+        };
+    }
+    if (occupantNames.has(h) || isGenericTenantHolder(k.holder) || (/tenant/i.test(k.holder || '') && !/safe|office|landlord/i.test(k.holder || ''))) {
+        const holderDisplay = k.holder || (occupants[0]?.name || 'Active Tenant');
+        return {
+            status: 'tenant',
+            label: `With Tenant (${holderDisplay})`,
+            holderDisplay,
+            badgeClass: 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]',
+            dotClass: 'bg-[#059669]',
+            icon: 'user-check',
+            isTenant: true,
+        };
+    }
+    const holderDisplay = k.holder || 'Key Safe (Office)';
+    return {
+        status: 'safe',
+        label: `In Safe (${holderDisplay})`,
+        holderDisplay,
+        badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
+        dotClass: 'bg-[#2563EB]',
+        icon: 'shield',
+        isTenant: false,
+    };
+}
+
 function initFlatKeysEdit() {
     const unit = STATE.selectedUnit || '';
     STATE.flatKeysEdit = getUnitKeys(STATE.propertyId, unit).map(k => ({ ...k }));
-    if (!STATE.flatKeysEdit.length) STATE.flatKeysEdit = [{ label: 'Front door', qty: '1', location: '', holder: '' }];
+    if (!STATE.flatKeysEdit.length) STATE.flatKeysEdit = [{ label: 'Front entrance key', qty: '1', location: 'Flat entrance', holder: 'Key Safe (Office)' }];
 }
 
 function screenFlatKeys() {
-    const unit = STATE.selectedUnit || '';
-    const p = PROPERTIES[STATE.propertyId];
-    const keys = getUnitKeys(STATE.propertyId, unit);
-    const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
-    const editBtn = `<button type="button" data-go="edit-flat-keys" data-pid="${STATE.propertyId}" data-unit="${escapeHtml(unit)}" class="header-text-link">Edit</button>`;
-    return `${topBar('Keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}`, rightBtn: editBtn })}
-    <div class="screen-content screen-content-sm screen-enter">
-        ${keys.length ? `
-        <div class="stack-sm">
-            ${keys.map(k => `
-            <div class="card flat-key-view">
-                <p class="flat-key-view-title">${escapeHtml(k.label || 'Key')}</p>
-                <div class="flat-key-view-facts">
-                    <div class="flat-key-view-fact"><span>Quantity</span><span>×${escapeHtml(String(k.qty || '1'))}</span></div>
-                    <div class="flat-key-view-fact"><span>Location</span><span>${escapeHtml(k.location || '—')}</span></div>
-                    <div class="flat-key-view-fact"><span>Held by</span><span>${escapeHtml(k.holder || 'Unassigned')}</span></div>
+    const propertyId = STATE.propertyId ?? 0;
+    const p = PROPERTIES[propertyId];
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
+
+    let activeUnit = STATE.selectedUnit;
+    if (!activeUnit) {
+        activeUnit = units.length > 1 ? 'all' : (units[0] ? (typeof unitName === 'function' ? unitName(units[0]) : (units[0].name || String(units[0]))) : '');
+        STATE.selectedUnit = activeUnit;
+    }
+
+    const propStats = getPropertyKeyStats(propertyId);
+    const unitStats = activeUnit !== 'all' ? getUnitKeyStats(propertyId, activeUnit) : null;
+    const displayStats = activeUnit === 'all' ? propStats : unitStats;
+
+    const displayUnit = activeUnit === 'all'
+        ? 'Building Key Audit'
+        : (typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(activeUnit, propertyId) : activeUnit);
+
+    const rightBtn = activeUnit !== 'all'
+        ? `<button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Add Key</span>
+        </button>`
+        : '';
+
+    const filterCustody = STATE.keysCustodyFilter || 'all';
+
+    // Multi-Unit Scope Selector Card
+    const scopeCard = units.length > 1 ? `
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+            <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                <i data-lucide="door-closed" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit Scope</span>
+                <div class="relative flex items-center">
+                    <select data-action="select-keys-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                        <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units Audit (${propStats.totalPhysicalKeys} keys)</option>
+                        ${units.map(u => {
+                            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                            const uStats = getUnitKeyStats(propertyId, name);
+                            return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)} (${uStats.totalPhysicalKeys} keys · ${uStats.withTenants} with tenant)</option>`;
+                        }).join('')}
+                    </select>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
                 </div>
-            </div>`).join('')}
-        </div>` : `
-        <div class="card p-6 text-center">
-            <p class="text-[13px] text-[#64748B]">No key sets registered for this unit.</p>
-        </div>`}
-        <button type="button" data-go="edit-flat-keys" data-pid="${STATE.propertyId}" data-unit="${escapeHtml(unit)}" class="btn-secondary w-full py-3 text-[13px] mt-3">${keys.length ? 'Edit keys' : '+ Add key set'}</button>
+            </div>
+        </div>
+        ${activeUnit !== 'all' ? `
+        <button type="button" data-action="filter-keys-unit" data-unit="all" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
+            All Units
+        </button>` : ''}
+    </div>` : '';
+
+    // KPI Summary Header Grid
+    const kpiHeader = `
+    <div class="grid grid-cols-3 gap-2.5">
+        <!-- Total Keys -->
+        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Total Keys</span>
+                <div class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
+                    <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                </div>
+            </div>
+            <p class="text-[20px] font-black text-[#0F172A] m-0 leading-none">${displayStats.totalPhysicalKeys}</p>
+            <span class="text-[10.5px] text-[#64748B] font-medium block mt-1.5">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'} on file</span>
+        </div>
+
+        <!-- With Tenants -->
+        <div class="p-3.5 rounded-2xl bg-[#ECFDF5]/60 border border-[#A7F3D0] shadow-xs">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10.5px] font-bold text-[#059669] uppercase tracking-wider">With Tenant</span>
+                <div class="w-6 h-6 rounded-lg bg-[#ECFDF5] text-[#059669] flex items-center justify-center">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                </div>
+            </div>
+            <p class="text-[20px] font-black text-[#059669] m-0 leading-none">${displayStats.withTenants}</p>
+            <span class="text-[10.5px] text-[#059669]/80 font-medium block mt-1.5">In circulation</span>
+        </div>
+
+        <!-- In Safe / Spares -->
+        <div class="p-3.5 rounded-2xl bg-[#EFF6FF]/60 border border-[#DBEAFE] shadow-xs">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10.5px] font-bold text-[#2563EB] uppercase tracking-wider">In Safe</span>
+                <div class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
+                    <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                </div>
+            </div>
+            <p class="text-[20px] font-black text-[#2563EB] m-0 leading-none">${displayStats.inSafe}</p>
+            <span class="text-[10.5px] text-[#2563EB]/80 font-medium block mt-1.5">Office spares</span>
+        </div>
+    </div>`;
+
+    // Missing Alert Banner (if any)
+    const missingBanner = displayStats.missing > 0 ? `
+    <div class="p-3.5 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-white text-[#DC2626] flex items-center justify-center shrink-0 shadow-2xs">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+            <p class="text-[13px] font-bold text-[#991B1B] m-0">${displayStats.missing} key${displayStats.missing === 1 ? '' : 's'} reported missing</p>
+            <p class="text-[11.5px] text-[#B91C1C] m-0 mt-0.5">Replacement lock or key charge required from deposit.</p>
+        </div>
+    </div>` : '';
+
+    let contentBody = '';
+    if (activeUnit === 'all') {
+        contentBody = `
+        <div class="space-y-3">
+            <div class="flex items-center justify-between px-1">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Unit Key Registers (${units.length} Units)</p>
+            </div>
+            <div class="space-y-3">
+                ${units.map(u => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    const uStats = getUnitKeyStats(propertyId, name);
+                    const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+                        t.propertyId === propertyId && t.unit === name
+                    );
+                    const tenantName = occupants[0]?.name || 'Vacant / Ready';
+                    return `
+                    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                                    <i data-lucide="door-closed" class="w-5 h-5"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight">${escapeHtml(name)}</h4>
+                                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(tenantName)}</p>
+                                </div>
+                            </div>
+                            <button type="button" data-action="filter-keys-unit" data-unit="${escapeHtml(name)}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[12px] font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0">
+                                <span>Manage</span>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-[#F1F5F9] text-center">
+                            <div class="p-2 rounded-xl bg-[#F8FAFC]">
+                                <span class="block text-[10px] font-bold text-[#64748B] uppercase">Total</span>
+                                <span class="block text-[14px] font-bold text-[#0F172A] mt-0.5">${uStats.totalPhysicalKeys}</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-[#ECFDF5]">
+                                <span class="block text-[10px] font-bold text-[#059669] uppercase">Tenant</span>
+                                <span class="block text-[14px] font-bold text-[#059669] mt-0.5">${uStats.withTenants}</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-[#EFF6FF]">
+                                <span class="block text-[10px] font-bold text-[#2563EB] uppercase">Safe</span>
+                                <span class="block text-[14px] font-bold text-[#2563EB] mt-0.5">${uStats.inSafe}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    } else {
+        const rawKeys = getUnitKeys(propertyId, activeUnit);
+        const filteredKeys = rawKeys.filter(k => {
+            if (filterCustody === 'all') return true;
+            const custody = resolveKeyCustody(k, propertyId, activeUnit);
+            if (filterCustody === 'tenant') return custody.isTenant;
+            if (filterCustody === 'safe') return !custody.isTenant;
+            return true;
+        });
+
+        contentBody = `
+        <div class="space-y-3">
+            <!-- Filter Chips -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <button type="button" data-action="filter-keys-custody" data-filter="all" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'all' ? 'bg-[#0F172A] text-white shadow-xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
+                    All Sets (${rawKeys.length})
+                </button>
+                <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'tenant' ? 'bg-[#059669] text-white shadow-xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
+                    With Tenant (${unitStats.withTenants})
+                </button>
+                <button type="button" data-action="filter-keys-custody" data-filter="safe" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'safe' ? 'bg-[#2563EB] text-white shadow-xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
+                    In Safe / Office (${unitStats.inSafe})
+                </button>
+            </div>
+
+            <!-- Key Sets List -->
+            ${filteredKeys.length ? `
+            <div class="space-y-2.5">
+                ${filteredKeys.map((k, i) => {
+                    const custody = resolveKeyCustody(k, propertyId, activeUnit);
+                    const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
+                    return `
+                    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <div class="w-10 h-10 rounded-xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0 shadow-2xs">
+                                    <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-5 h-5"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-snug">${escapeHtml(k.label || 'Key Set')}</h4>
+                                        <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
+                                    </div>
+                                    <p class="text-[11.5px] text-[#64748B] m-0 mt-1 flex items-center gap-1.5 truncate">
+                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 shrink-0 text-[#94A3B8]"></i>
+                                        <span class="truncate">${escapeHtml(k.location || 'Location on file')}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 flex items-center gap-1.5 ${custody.badgeClass}">
+                                <span class="w-1.5 h-1.5 rounded-full ${custody.dotClass}"></span>
+                                <span class="truncate max-w-[130px]">${custody.label}</span>
+                            </span>
+                        </div>
+
+                        <!-- 1-Tap Quick Actions Bar -->
+                        <div class="pt-2.5 border-t border-[#F1F5F9] flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5">
+                                ${custody.isTenant ? `
+                                <button type="button" data-action="quick-return-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[11.5px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
+                                    <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i>
+                                    <span>Return to Safe</span>
+                                </button>` : `
+                                <button type="button" data-action="quick-assign-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1.5 rounded-xl bg-[#ECFDF5] text-[#059669] hover:bg-[#D1FAE5] text-[11.5px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
+                                    <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                                    <span>Hand over to Tenant</span>
+                                </button>`}
+                            </div>
+                            <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-2.5 py-1.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] text-[11.5px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                <span>Edit Set</span>
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>` : `
+            <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
+                <i data-lucide="key-round" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
+                <p class="text-[13px] font-semibold text-[#0F172A] m-0">No key sets found for this filter</p>
+                <p class="text-[11.5px] text-[#64748B] mt-1 m-0">Add front door, postbox, or fob records for this unit.</p>
+                <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-[12.5px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors inline-flex items-center gap-1.5 cursor-pointer mt-3">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>+ Add key set</span>
+                </button>
+            </div>`}
+        </div>`;
+    }
+
+    return `${topBar('Keys & Access', { back: true, sub: `${p?.name || ''} · ${displayUnit}`, rightBtn })}
+    <div class="screen-content screen-content-sm prop-hub-page space-y-3.5 text-left pb-8">
+        ${scopeCard}
+        ${kpiHeader}
+        ${missingBanner}
+        ${contentBody}
     </div>`;
 }
 
@@ -19113,35 +19673,76 @@ function screenEditFlatKeys() {
     if (!STATE.flatKeysEdit) initFlatKeysEdit();
     const keys = STATE.flatKeysEdit;
     const { members } = getFlatMemberRoster(STATE.propertyId, unit);
-    const holderOptions = [...members.map(m => m.name), ...landlordKeyHolderNames()].filter(Boolean)
-        .filter((n, i, arr) => arr.findIndex(x => normKeyName(x) === normKeyName(n)) === i);
+    const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+        t.propertyId === STATE.propertyId && t.unit === unit
+    );
+    const holderOptions = [
+        ...members.map(m => m.name),
+        ...occupants.map(t => t.name),
+        'Key Safe (Office)',
+        'Key Safe #1 (Hallway)',
+        'Landlord Office',
+        'Spare Key',
+        ...landlordKeyHolderNames()
+    ].filter(Boolean).filter((n, i, arr) => arr.findIndex(x => normKeyName(x) === normKeyName(n)) === i);
+
     const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
-    return `${topBar('Edit keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
-    <div class="screen-content screen-content-sm screen-enter">
-        <div class="stack-sm">
+
+    return `${topBar('Edit Keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
+    <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
+        <!-- Quick Preset Chips -->
+        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Fast Presets (+ Add One-Click)</span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <button type="button" data-action="add-key-preset" data-preset-label="Front entrance key" data-preset-location="Flat entrance" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Front Door</button>
+                <button type="button" data-action="add-key-preset" data-preset-label="Building electronic fob" data-preset-location="Lobby & gate" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Building Fob</button>
+                <button type="button" data-action="add-key-preset" data-preset-label="Mailbox key" data-preset-location="Ground floor post room" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Mailbox</button>
+                <button type="button" data-action="add-key-preset" data-preset-label="Bedroom door key" data-preset-location="Bedroom entrance" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Bedroom</button>
+                <button type="button" data-action="add-key-preset" data-preset-label="Window lock key" data-preset-location="Window handles" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Window Key</button>
+                <button type="button" data-action="add-key-preset" data-preset-label="Master key (Landlord)" data-preset-location="Office safe" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Master Key</button>
+            </div>
+        </div>
+
+        <div class="space-y-3">
         ${keys.map((k, i) => `
-        <div class="card p-4 flat-key-card" data-flat-key-row>
-            <div class="form-field"><label class="form-label">Key type</label><input data-flat-key-label class="form-input" value="${escapeHtml(k.label || '')}" placeholder="e.g. Front door"></div>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="form-field"><label class="form-label">Quantity</label><input data-flat-key-qty class="form-input" value="${escapeHtml(String(k.qty || '1'))}" placeholder="1"></div>
-                <div class="form-field"><label class="form-label">Location</label><input data-flat-key-location class="form-input" value="${escapeHtml(k.location || '')}" placeholder="e.g. Key safe"></div>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3" data-flat-key-row>
+            <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider">Key Set #${i + 1}</span>
+                ${keys.length > 1 ? `<button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="text-[11.5px] font-bold text-[#DC2626] hover:text-[#B91C1C] cursor-pointer">Remove</button>` : ''}
             </div>
             <div class="form-field">
-                <label class="form-label">Held by</label>
-                <input data-flat-key-holder class="form-input" list="flat-key-holders-${i}" value="${escapeHtml(k.holder || '')}" placeholder="Tenant or landlord">
+                <label class="form-label">Key Type / Description</label>
+                <input data-flat-key-label class="form-input" value="${escapeHtml(k.label || '')}" placeholder="e.g. Front entrance key, Building fob">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="form-field">
+                    <label class="form-label">Quantity</label>
+                    <input data-flat-key-qty type="number" min="1" class="form-input" value="${escapeHtml(String(k.qty || '1'))}" placeholder="1">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Location / Tag</label>
+                    <input data-flat-key-location class="form-input" value="${escapeHtml(k.location || '')}" placeholder="e.g. Key safe #1, Flat entrance">
+                </div>
+            </div>
+            <div class="form-field">
+                <label class="form-label">Held By (Custody)</label>
+                <input data-flat-key-holder class="form-input" list="flat-key-holders-${i}" value="${escapeHtml(k.holder || '')}" placeholder="Select tenant or Key Safe">
                 ${holderOptions.length ? `<datalist id="flat-key-holders-${i}">${holderOptions.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>` : ''}
             </div>
-            ${keys.length > 1 ? `<button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="btn-danger-outline w-full py-2 text-[12px] mt-2">Remove key set</button>` : ''}
         </div>`).join('')}
         </div>
-        <button type="button" data-action="add-flat-key" class="btn-secondary w-full py-3 text-[13px] mt-2">+ Add key set</button>
-        <button data-action="save" class="btn-primary w-full mt-4">Save keys</button>
+
+        <button type="button" data-action="add-flat-key" class="btn-secondary w-full py-3 text-[13px] flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Add Custom Key Set</span>
+        </button>
+        <button data-action="save" class="btn-primary w-full mt-4">Save Key Register</button>
     </div>`;
 }
 
 function saveFlatKeys() {
     const unit = STATE.selectedUnit || '';
-    if (!unit) { toast('Unit not selected'); return; }
+    if (!unit || unit === 'all') { toast('Please select a specific unit to save'); return; }
     const rows = [...document.querySelectorAll('[data-flat-key-row]')];
     const keys = rows.map(row => ({
         label: row.querySelector('[data-flat-key-label]')?.value?.trim() || 'Key',
@@ -19325,27 +19926,391 @@ function buildingServiceHubCard(meta, def) {
     return { id: def.id, title: def.label, icon: def.icon, photo, ...extra };
 }
 
+function getFlatServiceData(pid, flatName) {
+    const flatNum = (flatName || 'Flat 1').replace(/\D/g, '') || '1';
+    const flatIdx = Math.max(0, parseInt(flatNum, 10) - 1);
+
+    const electricProviders = ['Octopus Energy', 'British Gas', 'E.ON Next', 'OVO Energy', 'EDF Energy'];
+    const gasProviders = ['British Gas', 'Octopus Energy', 'E.ON Next', 'British Gas', 'Shell Energy'];
+    const wifiProviders = ['BT Full Fibre 500', 'Virgin Media M350', 'Hyperoptic 1Gb', 'Sky Broadband Superfast'];
+    const councilBands = ['Band D', 'Band C', 'Band B', 'Band C', 'Band E'];
+    const stopcocks = ['Under kitchen sink', 'Under kitchen sink', 'Utility cupboard', 'Under kitchen sink'];
+    const boilers = ['Worcester Bosch 30kW', 'Ideal Logic Combi 24kW', 'Vaillant ecoTEC 28kW', 'Baxi 600 Combi 30kW'];
+
+    const pIdx = flatIdx % electricProviders.length;
+    const bayNum = ((flatIdx) % 4) + 1;
+
+    return {
+        unit: flatName,
+        electricity: {
+            provider: electricProviders[pIdx],
+            mpan: `12000294819${flatNum}`,
+            meterNumber: `12000294819${flatNum}`,
+            location: `Basement intake cupboard #${flatNum}`,
+            consumerUnit: `${flatName} hallway cupboard · main RCD`,
+            phone: '0808 164 1088',
+            notes: 'Domestic flat tariff',
+            badge: 'EICR Verified',
+            photo: DEMO_UTILITY_PHOTOS.electricity,
+        },
+        gas: {
+            provider: gasProviders[pIdx],
+            mprn: `48920${flatNum}`,
+            meterNumber: `48920${flatNum}`,
+            location: `Internal cupboard in ${flatName}`,
+            boiler: boilers[pIdx],
+            shutOff: `Lever beside ${flatName} meter`,
+            phone: '0800 111 999',
+            notes: boilers[pIdx],
+            badge: 'CP12 On File',
+            photo: DEMO_UTILITY_PHOTOS.gas,
+        },
+        water: {
+            provider: 'Thames Water',
+            meterNumber: `902184-${flatNum}`,
+            location: stopcocks[pIdx],
+            stopcock: stopcocks[pIdx],
+            shutOff: `Stopcock under ${flatName} kitchen sink`,
+            phone: '0800 316 9800',
+            notes: 'Sub-metered unit',
+            badge: 'Stopcock Active',
+            photo: DEMO_UTILITY_PHOTOS.water,
+        },
+        wifi: {
+            provider: wifiProviders[pIdx],
+            network: `Flat${flatNum}-Private-5G`,
+            password: `SecureFlat${flatNum}!`,
+            location: `${flatName} living room`,
+            phone: '0800 800 150',
+            notes: 'Private unit broadband · 500 Mbps',
+            badge: 'Broadband Live',
+            photo: DEMO_UTILITY_PHOTOS.wifi,
+        },
+        council: {
+            name: 'Westminster City Council',
+            taxBand: councilBands[pIdx],
+            reference: `WCC-894102${flatNum}`,
+            phone: '020 7641 6000',
+            bins: 'Waste Tue · Recycling Fri',
+            badge: councilBands[pIdx],
+            photo: DEMO_UTILITY_PHOTOS.council,
+        },
+        parking: {
+            type: 'Allocated underground bay',
+            bay: `Bay 0${bayNum}`,
+            permit: `PL-BAY-0${bayNum}`,
+            details: `Bay 0${bayNum} (Allocated to ${flatName})`,
+            spaces: '1 space',
+            notes: `Dedicated bay for ${flatName} residents`,
+            badge: `Bay 0${bayNum}`,
+            photo: DEMO_UTILITY_PHOTOS.parking,
+        }
+    };
+}
+
+function renderUtilityFlatBreakdown(pid, utilityId, units) {
+    if (!units || units.length <= 1) return '';
+
+    if (utilityId === 'electricity') {
+        return `
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 mt-3 text-left">
+            <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-[#0F172A] flex items-center gap-1.5">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Electricity Meters (${units.length} Flats)
+                </span>
+                <span class="text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full">Separate MPANs</span>
+            </div>
+            <div class="divide-y divide-[#F1F5F9] text-[12px]">
+                ${units.map(u => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    const fd = getFlatServiceData(pid, name).electricity;
+                    return `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                                ${escapeHtml(name)}
+                                <span class="text-[10px] font-semibold text-[#64748B] bg-[#F1F5F9] px-1.5 py-0.5 rounded">${escapeHtml(fd.provider)}</span>
+                            </p>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">MPAN: <span class="font-mono text-[#0F172A] font-semibold">${escapeHtml(fd.mpan)}</span> · ${escapeHtml(fd.location)}</p>
+                        </div>
+                        <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">EICR OK</span>
+                    </div>`;
+                }).join('')}
+                <div class="py-2.5 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                            Landlord / Communal
+                            <span class="text-[10px] font-semibold text-[#64748B] bg-[#F1F5F9] px-1.5 py-0.5 rounded">EDF Energy</span>
+                        </p>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">MPAN: <span class="font-mono text-[#0F172A] font-semibold">120002948190</span> · Hallway lighting & gates</p>
+                    </div>
+                    <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">Active</span>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    if (utilityId === 'gas') {
+        return `
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 mt-3 text-left">
+            <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-[#0F172A] flex items-center gap-1.5">
+                    <i data-lucide="flame" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Gas Meters & Boilers (${units.length} Flats)
+                </span>
+                <span class="text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full">Individual Supply</span>
+            </div>
+            <div class="divide-y divide-[#F1F5F9] text-[12px]">
+                ${units.map(u => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    const fd = getFlatServiceData(pid, name).gas;
+                    return `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                                ${escapeHtml(name)}
+                                <span class="text-[10px] font-semibold text-[#64748B] bg-[#F1F5F9] px-1.5 py-0.5 rounded">${escapeHtml(fd.provider)}</span>
+                            </p>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">MPRN: <span class="font-mono text-[#0F172A] font-semibold">${escapeHtml(fd.mprn)}</span> · Boiler: ${escapeHtml(fd.boiler)}</p>
+                        </div>
+                        <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">CP12 Valid</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    if (utilityId === 'council') {
+        return `
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 mt-3 text-left">
+            <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-[#0F172A] flex items-center gap-1.5">
+                    <i data-lucide="landmark" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Council Tax Bands (${units.length} Flats)
+                </span>
+                <span class="text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full">Per Dwelling</span>
+            </div>
+            <div class="divide-y divide-[#F1F5F9] text-[12px]">
+                ${units.map(u => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    const fd = getFlatServiceData(pid, name).council;
+                    return `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-bold text-[#0F172A] m-0">${escapeHtml(name)}</p>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Council Ref: <span class="font-mono text-[#0F172A] font-semibold">${escapeHtml(fd.reference)}</span></p>
+                        </div>
+                        <span class="text-[11px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-0.5 rounded-full shrink-0">${escapeHtml(fd.taxBand)}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    if (utilityId === 'water') {
+        return `
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 mt-3 text-left">
+            <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-[#0F172A] flex items-center gap-1.5">
+                    <i data-lucide="droplets" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Water & Stopcocks (${units.length} Flats)
+                </span>
+                <span class="text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full">Sub-metered</span>
+            </div>
+            <div class="divide-y divide-[#F1F5F9] text-[12px]">
+                ${units.map(u => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    const fd = getFlatServiceData(pid, name).water;
+                    return `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-bold text-[#0F172A] m-0">${escapeHtml(name)}</p>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Stopcock: <span class="text-[#0F172A] font-semibold">${escapeHtml(fd.stopcock)}</span> · Sub-meter: ${escapeHtml(fd.meterNumber)}</p>
+                        </div>
+                        <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">Accessible</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    if (utilityId === 'wifi') {
+        return `
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 mt-3 text-left">
+            <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-[#0F172A] flex items-center gap-1.5">
+                    <i data-lucide="wifi" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Wi-Fi Networks (${units.length} Flats)
+                </span>
+                <span class="text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full">Private Routers</span>
+            </div>
+            <div class="divide-y divide-[#F1F5F9] text-[12px]">
+                ${units.map(u => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    const fd = getFlatServiceData(pid, name).wifi;
+                    return `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                                ${escapeHtml(name)}
+                                <span class="text-[10px] font-semibold text-[#64748B] bg-[#F1F5F9] px-1.5 py-0.5 rounded">${escapeHtml(fd.provider)}</span>
+                            </p>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">SSID: <span class="font-mono text-[#0F172A] font-semibold">${escapeHtml(fd.network)}</span></p>
+                        </div>
+                        <span class="text-[10.5px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full shrink-0">Private</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    if (utilityId === 'parking') {
+        return `
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 mt-3 text-left">
+            <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-[#0F172A] flex items-center gap-1.5">
+                    <i data-lucide="car" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Parking Allocations (4 Bays)
+                </span>
+                <span class="text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full">Allocated</span>
+            </div>
+            <div class="divide-y divide-[#F1F5F9] text-[12px]">
+                ${units.map((u, idx) => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    const bayNum = idx + 1;
+                    const vehicles = ['Toyota RAV4 (AB21 XYZ)', 'BMW 3 Series (CD68 LMN)', 'Nissan Leaf (EV Charger 7kW)', 'Visitor / Flat Bay'];
+                    return `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                                Bay 0${bayNum}
+                                <span class="text-[10px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-1.5 py-0.5 rounded">Assigned to ${escapeHtml(name)}</span>
+                            </p>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${vehicles[idx % vehicles.length]}</p>
+                        </div>
+                        <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">Permit 0${bayNum}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    return '';
+}
+
 function screenPropertyUtilitiesView() {
     const pid = STATE.propertyId ?? 0;
     const p = PROPERTIES[pid];
     const meta = AppStore.meta(pid);
     migrateUtilityKeys(meta);
-    const gridCards = BUILDING_SERVICES
-        .filter(def => isBuildingServiceOn(meta, def.id))
-        .map(def => buildingServiceHubCard(meta, def));
-    customBuildingServices(meta).forEach(s => {
-        gridCards.push({
-            id: `custom-${s.id}`,
-            title: s.name || 'Other',
-            icon: 'plug',
-            photo: s.photo || DEMO_UTILITY_PHOTOS.water,
-            sub: [s.provider, s.meterNumber].filter(Boolean).join(' · ') || 'Custom service',
-            badge: 'Other',
-        });
-    });
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
+    const isMulti = units.length > 1;
+    const activeScope = STATE.utilitiesScope || 'building';
 
-    return `${topBar('Building Services & Meters', { back: true, sub: `${p?.name || ''} · Whole building` })}
+    let gridCards = [];
+    if (isMulti && activeScope !== 'building') {
+        const fd = getFlatServiceData(pid, activeScope);
+        gridCards = [
+            {
+                id: 'gas',
+                title: 'Gas',
+                icon: 'flame',
+                photo: fd.gas.photo,
+                sub: `${fd.gas.provider} · MPRN ${fd.gas.mprn}`,
+                badge: fd.gas.badge,
+            },
+            {
+                id: 'electricity',
+                title: 'Electricity',
+                icon: 'zap',
+                photo: fd.electricity.photo,
+                sub: `${fd.electricity.provider} · MPAN ${fd.electricity.mpan}`,
+                badge: fd.electricity.badge,
+            },
+            {
+                id: 'water',
+                title: 'Water',
+                icon: 'droplets',
+                photo: fd.water.photo,
+                sub: `${fd.water.provider} · ${fd.water.location}`,
+                badge: fd.water.badge,
+            },
+            {
+                id: 'wifi',
+                title: 'Wi-Fi',
+                icon: 'wifi',
+                photo: fd.wifi.photo,
+                sub: `${fd.wifi.provider} · ${fd.wifi.network}`,
+                badge: fd.wifi.badge,
+            },
+            {
+                id: 'council',
+                title: 'Council',
+                icon: 'landmark',
+                photo: fd.council.photo,
+                sub: `${fd.council.taxBand} · ${fd.council.name}`,
+                badge: `Tax ${fd.council.taxBand}`,
+            },
+            {
+                id: 'parking',
+                title: 'Parking',
+                icon: 'car',
+                photo: fd.parking.photo,
+                sub: `${fd.parking.details} · Secure`,
+                badge: fd.parking.badge,
+            },
+        ];
+    } else {
+        gridCards = BUILDING_SERVICES
+            .filter(def => isBuildingServiceOn(meta, def.id))
+            .map(def => buildingServiceHubCard(meta, def));
+        customBuildingServices(meta).forEach(s => {
+            gridCards.push({
+                id: `custom-${s.id}`,
+                title: s.name || 'Other',
+                icon: 'plug',
+                photo: s.photo || DEMO_UTILITY_PHOTOS.water,
+                sub: [s.provider, s.meterNumber].filter(Boolean).join(' · ') || 'Custom service',
+                badge: 'Other',
+            });
+        });
+    }
+
+    const subTitle = isMulti
+        ? (activeScope === 'building' ? `${p?.name || ''} · Whole building & communal` : `${p?.name || ''} · ${activeScope} Services`)
+        : `${p?.name || ''} · Property services`;
+
+    return `${topBar('Building Services & Meters', { back: true, sub: subTitle })}
     <div class="screen-content screen-enter building-svc-page text-left">
+        ${isMulti ? `
+        <!-- Scope Selector Dropdown Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="${activeScope === 'building' ? 'building-2' : 'door-closed'}" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Scope</span>
+                    <div class="relative flex items-center">
+                        <select data-action="select-utilities-scope-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                            <option value="building" ${activeScope === 'building' ? 'selected' : ''}>Whole Building & Communal</option>
+                            ${units.map(u => {
+                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                                const beds = u.beds ? ` · ${u.beds} bed` : '';
+                                return `<option value="${escapeHtml(name)}" ${activeScope === name ? 'selected' : ''}>${escapeHtml(name)}${beds}</option>`;
+                            }).join('')}
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
+                    </div>
+                </div>
+            </div>
+            ${activeScope !== 'building' ? `
+            <button type="button" data-action="reset-utilities-scope" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
+                Whole Building
+            </button>` : ''}
+        </div>` : ''}
+
         <div class="building-svc-grid">
             ${gridCards.map(c => `
             <button type="button" data-go="utility-detail" data-utility-id="${c.id}" data-pid="${pid}" class="card building-svc-card">
@@ -19360,10 +20325,11 @@ function screenPropertyUtilitiesView() {
                 </div>
                 <span class="building-svc-sub">${escapeHtml(c.sub)}</span>
             </button>`).join('')}
+            ${activeScope === 'building' ? `
             <button type="button" data-go="add-building-service" data-pid="${pid}" class="card building-svc-card building-svc-card--add">
                 <span class="building-svc-add-icon"><i data-lucide="plus" class="w-5 h-5"></i></span>
                 <span class="building-svc-title">Add service</span>
-            </button>
+            </button>` : ''}
         </div>
     </div>`;
 }
@@ -19376,6 +20342,9 @@ function screenUtilityDetail() {
     const parking = meta.parking || {};
     const info = meta.info || {};
     const utilityId = STATE.utilityId || 'electricity';
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
+    const isMulti = units.length > 1;
+    const activeScope = STATE.utilitiesScope || 'building';
 
     const gas = getUtilityEntry(meta, 'gas') || {};
     const elec = getUtilityEntry(meta, 'electricity') || getUtilityEntry(meta, 'electric') || {};
@@ -19384,12 +20353,22 @@ function screenUtilityDetail() {
     const council = utils.council || {};
     const taxBand = info.councilTax ? (info.councilTax.startsWith('Band') ? info.councilTax : `Band ${info.councilTax}`) : 'Band D';
 
+    // If viewing a specific flat, load flat-specific data
+    const flatData = isMulti && activeScope !== 'building' ? getFlatServiceData(pid, activeScope) : null;
+
     const detailsMap = {
         gas: {
             title: 'Gas',
-            photo: gas.meterPicture || utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas,
-            badge: 'CP12 on file',
-            rows: [
+            photo: flatData ? flatData.gas.photo : (gas.meterPicture || utils.gasPhoto || DEMO_UTILITY_PHOTOS.gas),
+            badge: flatData ? flatData.gas.badge : 'CP12 on file',
+            rows: flatData ? [
+                ['Supplier', flatData.gas.provider],
+                ['MPRN', flatData.gas.mprn],
+                ['Location', flatData.gas.location],
+                ['Boiler', flatData.gas.boiler],
+                ['Shut-off', flatData.gas.shutOff],
+                ['Helpline', flatData.gas.phone],
+            ] : [
                 ['Supplier', gas.provider || 'British Gas'],
                 ['MPRN', gas.meterNumber || '489201'],
                 ['Location', gas.meterLocation || 'Cupboard under the stairs'],
@@ -19400,9 +20379,16 @@ function screenUtilityDetail() {
         },
         electricity: {
             title: 'Electricity',
-            photo: elec.meterPicture || utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity,
-            badge: 'EICR certified',
-            rows: [
+            photo: flatData ? flatData.electricity.photo : (elec.meterPicture || utils.electricityPhoto || DEMO_UTILITY_PHOTOS.electricity),
+            badge: flatData ? flatData.electricity.badge : 'EICR certified',
+            rows: flatData ? [
+                ['Supplier', flatData.electricity.provider],
+                ['MPAN', flatData.electricity.mpan],
+                ['Location', flatData.electricity.location],
+                ['Consumer unit', flatData.electricity.consumerUnit],
+                ['Helpline', flatData.electricity.phone],
+                ['Tariff / Notes', flatData.electricity.notes],
+            ] : [
                 ['Supplier', elec.provider || 'Octopus Energy'],
                 ['MPAN', elec.meterNumber || '120002948192'],
                 ['Location', elec.meterLocation || 'Basement intake cupboard'],
@@ -19413,9 +20399,15 @@ function screenUtilityDetail() {
         },
         water: {
             title: 'Water',
-            photo: water.meterPicture || utils.waterPhoto || DEMO_UTILITY_PHOTOS.water,
-            badge: 'Metered',
-            rows: [
+            photo: flatData ? flatData.water.photo : (water.meterPicture || utils.waterPhoto || DEMO_UTILITY_PHOTOS.water),
+            badge: flatData ? flatData.water.badge : 'Metered',
+            rows: flatData ? [
+                ['Supplier', flatData.water.provider],
+                ['Sub-meter', flatData.water.meterNumber],
+                ['Stopcock', flatData.water.location],
+                ['Shut-off', flatData.water.shutOff],
+                ['Helpline', flatData.water.phone],
+            ] : [
                 ['Supplier', water.provider || 'Thames Water'],
                 ['Account / Meter', water.meterNumber || '902184'],
                 ['Stopcock', water.meterLocation || 'Under kitchen sink'],
@@ -19426,9 +20418,15 @@ function screenUtilityDetail() {
         },
         wifi: {
             title: 'Wi-Fi',
-            photo: wifi.meterPicture || utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi,
-            badge: wifi.notes && wifi.notes.includes('Mbps') ? wifi.notes : 'Full Fibre',
-            rows: [
+            photo: flatData ? flatData.wifi.photo : (wifi.meterPicture || utils.wifiPhoto || DEMO_UTILITY_PHOTOS.wifi),
+            badge: flatData ? flatData.wifi.badge : (wifi.notes && wifi.notes.includes('Mbps') ? wifi.notes : 'Full Fibre'),
+            rows: flatData ? [
+                ['Provider', flatData.wifi.provider],
+                ['Network SSID', flatData.wifi.network],
+                ['Password', flatData.wifi.password],
+                ['Router Location', flatData.wifi.location],
+                ['Speed / Notes', flatData.wifi.notes],
+            ] : [
                 ['Provider', wifi.provider || utils.broadbandSupplier || 'BT Full Fibre 500'],
                 ['Network', utils.wifiSsid || wifi.ssid || 'BT-HQ-Building-5G'],
                 ['Password', utils.wifiPassword || wifi.password || 'FastSecure2025!'],
@@ -19439,9 +20437,15 @@ function screenUtilityDetail() {
         },
         council: {
             title: 'Council',
-            photo: council.photo || council.meterPicture || utils.councilPhoto || DEMO_UTILITY_PHOTOS.council,
-            badge: taxBand,
-            rows: [
+            photo: flatData ? flatData.council.photo : (council.photo || council.meterPicture || utils.councilPhoto || DEMO_UTILITY_PHOTOS.council),
+            badge: flatData ? `Tax ${flatData.council.taxBand}` : taxBand,
+            rows: flatData ? [
+                ['Authority', flatData.council.name],
+                ['Tax band', flatData.council.taxBand],
+                ['Council Reference', flatData.council.reference],
+                ['Contact', flatData.council.phone],
+                ['Bins', flatData.council.bins],
+            ] : [
                 ['Authority', council.name || 'Westminster City Council'],
                 ['Tax band', taxBand],
                 ['Reference', council.notes && !/^band\s/i.test(council.notes) ? council.notes : 'WCC-8941029'],
@@ -19451,9 +20455,15 @@ function screenUtilityDetail() {
         },
         parking: {
             title: 'Parking',
-            photo: parking.photo || parking.meterPicture || utils.parkingPhoto || DEMO_UTILITY_PHOTOS.parking,
-            badge: parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : (parking.type || 'Allocated'),
-            rows: [
+            photo: flatData ? flatData.parking.photo : (parking.photo || parking.meterPicture || utils.parkingPhoto || DEMO_UTILITY_PHOTOS.parking),
+            badge: flatData ? flatData.parking.badge : (parking.permit ? (parking.permit.toLowerCase().startsWith('permit') ? parking.permit : `Permit ${parking.permit}`) : (parking.type || 'Allocated')),
+            rows: flatData ? [
+                ['Allocated Bay', flatData.parking.bay],
+                ['Permit', flatData.parking.permit],
+                ['Type', flatData.parking.type],
+                ['Details', flatData.parking.details],
+                ['Notes', flatData.parking.notes],
+            ] : [
                 ['Type', parking.type || 'Secure underground'],
                 ['Spaces / Bays', parking.details || (parking.spaces ? `${parking.spaces} bay(s)` : 'Bays 1 to 4')],
                 ['Permit', parking.permit || 'PL-BAY-01 to 04'],
@@ -19469,8 +20479,27 @@ function screenUtilityDetail() {
         <span>Edit</span>
     </button>`;
 
-    return `${topBar(d.title, { back: true, sub: p?.name || '', rightBtn: editBtn })}
-    <div class="screen-content screen-content-sm screen-enter util-detail-page">
+    const subText = isMulti ? `${p?.name || ''} · ${activeScope === 'building' ? 'Whole building' : activeScope}` : (p?.name || '');
+
+    return `${topBar(d.title, { back: true, sub: subText, rightBtn: editBtn })}
+    <div class="screen-content screen-content-sm screen-enter util-detail-page text-left">
+        ${isMulti ? `
+        <!-- Scope Switcher in Detail -->
+        <div class="card p-2.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+                <i data-lucide="${activeScope === 'building' ? 'building-2' : 'door-closed'}" class="w-4 h-4 text-[#2563EB] shrink-0"></i>
+                <span class="text-[11px] font-bold text-[#64748B] shrink-0">Scope:</span>
+                <select data-action="select-utility-detail-scope" class="w-full text-[12.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer truncate">
+                    <option value="building" ${activeScope === 'building' ? 'selected' : ''}>Whole Building & Communal</option>
+                    ${units.map(u => {
+                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                        return `<option value="${escapeHtml(name)}" ${activeScope === name ? 'selected' : ''}>${escapeHtml(name)}</option>`;
+                    }).join('')}
+                </select>
+            </div>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#64748B] shrink-0 pointer-events-none"></i>
+        </div>` : ''}
+
         <div class="card util-detail-hero">
             <img src="${d.photo}" alt="">
             <span class="util-detail-badge">${escapeHtml(d.badge)}</span>
@@ -19482,6 +20511,9 @@ function screenUtilityDetail() {
                 <span class="util-detail-value">${escapeHtml(val)}</span>
             </div>`).join('')}
         </div>
+
+        <!-- Multi-Unit Flat-by-Flat Breakdown -->
+        ${renderUtilityFlatBreakdown(pid, utilityId, units)}
     </div>`;
 }
 
@@ -20115,7 +21147,7 @@ function screenAddPropertyEnhanced() {
         uploadAction: 'upload-photo',
         uploadLabel: 'Add property photos',
         moreLabel: 'Add more photos',
-        hint: 'You can add several photos. Tap ★ on a thumbnail to set the cover.',
+        hint: 'You can add several photos. Tap the star icon on a thumbnail to set the cover.',
     });
     return `${topBar('Add Property', { back: true })}
     <div class="screen-content screen-enter add-property-page">
@@ -22048,7 +23080,7 @@ const FEATURE_SCREENS = [
     'broadcast-notices', 'send-broadcast', 'broadcast-detail',
     'create-tenancy', 'checkout-tenancy', 'assign-contractor', 'conduct-inspection',
     'create-invoice', 'mark-rent-received', 'pay-contractor', 'share-document',
-    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-appliance-records', 'property-utilities', 'utility-detail', 'add-building-service', 'edit-utility', 'property-parking', 'property-info', 'property-compliance', 'property-doc-vault', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'edit-flat-keys', 'tenancy-detail', 'edit-tenancy-deposit',
+    'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-appliance-records', 'property-utilities', 'utility-detail', 'add-building-service', 'edit-utility', 'property-parking', 'property-info', 'property-compliance', 'property-doc-vault', 'property-flat-documents', 'property-inspections', 'property-inventory', 'unit-utilities', 'edit-flat', 'add-flat', 'flat-detail', 'flat-members', 'flat-rent-history', 'flat-keys', 'edit-flat-keys', 'tenancy-detail', 'edit-tenancy-deposit', 'edit-property-house-rules',
     'tenant-add-note', 'tenant-edit-note', 'maintenance-history', 'select-property-invite', 'select-unit-invite', 'global-search', 'contractors', 'invite-contractor', 'contractor-invite-sent', 'inspection-detail',
 ];
 
@@ -22092,6 +23124,7 @@ Object.assign(SCREEN_MAP, {
     'property-inspections': screenPropertyInspections,
     'property-inventory': screenPropertyInventory,
     'property-house-rules': screenPropertyHouseRules,
+    'edit-property-house-rules': screenEditPropertyHouseRules,
     'edit-tenancy-deposit': screenEditTenancyDeposit,
     'unit-utilities': screenUnitUtilities,
     'edit-flat': screenEditFlat,
@@ -22163,6 +23196,7 @@ const FEATURE_BACK_MAP = {
     'property-inspections': 'property-detail',
     'property-inventory': 'property-detail',
     'property-house-rules': 'property-detail',
+    'edit-property-house-rules': 'property-house-rules',
     'edit-tenancy-deposit': 'tenancy-detail',
     'unit-utilities': 'flat-detail',
     'edit-flat': 'flat-detail',
@@ -22766,120 +23800,60 @@ function bindFeatureEvents() {
             }
         };
     });
-    // House Rules Editor Actions & Smart Typing
-    const hrEditor = document.getElementById('bulkHouseRulesEditor');
-    if (hrEditor) {
-        hrEditor.onkeydown = (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                const val = hrEditor.value;
-                const selStart = hrEditor.selectionStart;
-                const textBefore = val.substring(0, selStart);
-                const currentLine = textBefore.split('\n').pop();
-                
-                if (currentLine.trim() === '•') {
-                    // Empty bullet: remove it on Enter
-                    e.preventDefault();
-                    const lineStart = selStart - currentLine.length;
-                    hrEditor.value = val.substring(0, lineStart) + val.substring(selStart);
-                    hrEditor.selectionStart = hrEditor.selectionEnd = lineStart;
-                    return;
-                }
-                
-                if (currentLine.startsWith('• ')) {
-                    e.preventDefault();
-                    const insertion = '\n\n• ';
-                    hrEditor.value = val.substring(0, selStart) + insertion + val.substring(selStart);
-                    hrEditor.selectionStart = hrEditor.selectionEnd = selStart + insertion.length;
-                } else if (/^\d+\.\s/.test(currentLine)) {
-                    e.preventDefault();
-                    const match = currentLine.match(/^(\d+)\.\s/);
-                    const nextNum = parseInt(match[1], 10) + 1;
-                    const insertion = `\n\n${nextNum}. `;
-                    hrEditor.value = val.substring(0, selStart) + insertion + val.substring(selStart);
-                    hrEditor.selectionStart = hrEditor.selectionEnd = selStart + insertion.length;
-                }
-            }
-        };
-    }
-    app.querySelectorAll('[data-action="hr-insert-bullet"]').forEach(el => {
-        el.onclick = () => {
-            const ed = document.getElementById('bulkHouseRulesEditor');
-            if (!ed) return;
-            const val = ed.value;
-            const sel = ed.selectionStart || val.length;
-            const prefix = (sel > 0 && !val.substring(0, sel).endsWith('\n') ? '\n\n' : '') + '• ';
-            ed.value = val.substring(0, sel) + prefix + val.substring(sel);
-            ed.focus();
-            ed.selectionStart = ed.selectionEnd = sel + prefix.length;
+    // Rich Text WYSIWYG Editor Controls (House Rules)
+    app.querySelectorAll('[data-editor-cmd]').forEach(btn => {
+        btn.onmousedown = (e) => {
+            e.preventDefault(); // Prevents contenteditable from losing selection focus
+            const cmd = btn.dataset.editorCmd;
+            const val = btn.dataset.editorVal || null;
+            document.execCommand(cmd, false, val);
+            const ed = document.getElementById('richHouseRulesEditor');
+            if (ed) ed.focus();
         };
     });
-    app.querySelectorAll('[data-action="hr-insert-number"]').forEach(el => {
-        el.onclick = () => {
-            const ed = document.getElementById('bulkHouseRulesEditor');
-            if (!ed) return;
-            const val = ed.value;
-            const sel = ed.selectionStart || val.length;
-            const lines = val.split('\n').filter(Boolean);
-            const nextNum = lines.length + 1;
-            const prefix = (sel > 0 && !val.substring(0, sel).endsWith('\n') ? '\n\n' : '') + `${nextNum}. `;
-            ed.value = val.substring(0, sel) + prefix + val.substring(sel);
-            ed.focus();
-            ed.selectionStart = ed.selectionEnd = sel + prefix.length;
+
+    app.querySelectorAll('[data-editor-color]').forEach(btn => {
+        btn.onmousedown = (e) => {
+            e.preventDefault();
+            const color = btn.dataset.editorColor;
+            document.execCommand('foreColor', false, color);
+            const ed = document.getElementById('richHouseRulesEditor');
+            if (ed) ed.focus();
         };
     });
-    app.querySelectorAll('[data-action="hr-insert-template"]').forEach(el => {
-        el.onclick = () => {
-            const ed = document.getElementById('bulkHouseRulesEditor');
-            if (!ed) return;
-            const standardTemplate = [
-                '• No smoking inside the building or communal areas.',
-                '• Quiet hours after 10 PM — keep noise down for neighbours.',
-                '• Guests may not stay more than 14 consecutive nights without written approval.',
-                '• Report maintenance issues through the app so your landlord can respond quickly.',
-                '• Recycling bins are in the rear garden shed — please sort waste correctly.',
-                '• Bicycle storage is in the basement — do not leave bikes in the hallway.',
-            ].join('\n\n');
-            ed.value = standardTemplate;
-            ed.focus();
-            toast('Standard landlord rules loaded');
-        };
-    });
-    app.querySelectorAll('[data-action="hr-clear-editor"]').forEach(el => {
-        el.onclick = () => {
-            const ed = document.getElementById('bulkHouseRulesEditor');
-            if (ed) {
-                ed.value = '• ';
-                ed.focus();
-                toast('Editor cleared');
-            }
-        };
-    });
+
     app.querySelectorAll('[data-action="save-house-rules"]').forEach(el => {
         el.onclick = () => {
+            const ed = document.getElementById('richHouseRulesEditor');
             const pid = STATE.propertyId ?? 0;
             const meta = AppStore.meta(pid);
-            let updated = [];
-            const bulkEditor = document.getElementById('bulkHouseRulesEditor');
-            if (bulkEditor) {
-                const text = bulkEditor.value;
-                updated = text
-                    .split('\n')
-                    .map(line => line.replace(/^[-*•\d.]+\s*/, '').trim())
-                    .filter(Boolean);
+            if (ed) {
+                const html = ed.innerHTML.trim();
+                meta.houseRulesHtml = html;
+
+                // Extract text items for fallback / tenant views
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const items = [];
+                const listItems = tempDiv.querySelectorAll('li');
+                if (listItems.length > 0) {
+                    listItems.forEach(li => {
+                        const txt = li.innerText.trim();
+                        if (txt) items.push(txt);
+                    });
+                } else {
+                    const lines = tempDiv.innerText.split('\n').map(s => s.trim()).filter(Boolean);
+                    if (lines.length) items.push(...lines);
+                }
+                meta.houseRules = items.length ? items : [tempDiv.innerText.trim() || 'Building house rules'];
+                TENANT_HOUSE_RULES[pid] = meta.houseRules;
+
+                withLoading(() => {
+                    AppStore.save();
+                    toast('House rules saved & published to all tenants');
+                    go('property-house-rules', { propertyId: pid });
+                });
             }
-            if (!updated.length) {
-                updated = [
-                    'No smoking inside the building or communal areas.',
-                    'Quiet hours after 10 PM — keep noise down for neighbours.',
-                ];
-            }
-            meta.houseRules = updated;
-            TENANT_HOUSE_RULES[pid] = updated;
-            withLoading(() => {
-                AppStore.save();
-                toast('House rules saved & broadcasted to all tenants');
-                go('property-detail', { propertyId: pid, tab: 'records' });
-            });
         };
     });
     app.querySelectorAll('[data-action="delete-property"]').forEach(el => { el.onclick = deleteProperty; });
@@ -22896,6 +23870,25 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="delete-document"]').forEach(el => {
         el.onclick = () => deleteDocumentAction(+el.dataset.doc);
     });
+    app.querySelectorAll('[data-other-doc-filter]').forEach(el => {
+        el.onclick = () => {
+            STATE.otherDocFilter = el.dataset.otherDocFilter;
+            render();
+        };
+    });
+    const odSearch = document.getElementById('otherDocSearchInput');
+    if (odSearch) {
+        odSearch.oninput = (e) => {
+            STATE.otherDocSearch = e.target.value;
+            const q = e.target.value.toLowerCase().trim();
+            const items = app.querySelectorAll('[data-doc-row]');
+            items.forEach(it => {
+                const text = (it.dataset.docText || '').toLowerCase();
+                const show = !q || text.includes(q);
+                it.style.display = show ? '' : 'none';
+            });
+        };
+    }
     app.querySelectorAll('[data-reminder-filter]').forEach(el => {
         el.onclick = () => { STATE.reminderFilter = el.dataset.reminderFilter; render(); };
     });
@@ -22999,6 +23992,66 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="open-add-appliance-modal"], [data-action="add-appliance"]').forEach(el => {
         el.onclick = () => openAddApplianceModal(el.dataset.pid ? +el.dataset.pid : STATE.propertyId);
+    });
+    app.querySelectorAll('[data-action="filter-insp-unit"]').forEach(el => {
+        el.onclick = () => {
+            STATE.inspectionFilterUnit = el.dataset.unit;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="filter-appliance-unit"]').forEach(el => {
+        el.onclick = () => {
+            STATE.appliancesFilterUnit = el.dataset.unit;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="filter-alarm-unit"]').forEach(el => {
+        el.onclick = () => {
+            STATE.alarmsFilterUnit = el.dataset.unit;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-insp-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.inspectionFilterUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-inventory-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.selectedUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-appliance-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.appliancesFilterUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-alarm-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.alarmsFilterUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-utilities-scope-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.utilitiesScope = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-utility-detail-scope"]').forEach(el => {
+        el.onchange = () => {
+            STATE.utilitiesScope = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="reset-utilities-scope"]').forEach(el => {
+        el.onclick = () => {
+            STATE.utilitiesScope = 'building';
+            render();
+        };
     });
     app.querySelectorAll('[data-action="open-add-alarm-modal"], [data-action="add-custom-alarm"]').forEach(el => {
         el.onclick = () => openAddAlarmModal(el.dataset.pid ? +el.dataset.pid : STATE.propertyId);
