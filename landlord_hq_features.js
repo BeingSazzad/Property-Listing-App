@@ -4261,7 +4261,7 @@ function renderPropertyInventoryTab(propertyId) {
                 <div class="min-w-0 flex-1">
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
                     <div class="relative flex items-center">
-                        <select data-action="select-inventory-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                        <select data-action="select-inventory-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
                             ${units.map(u => {
                                 const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
                                 const isSel = activeUnit === name;
@@ -10756,7 +10756,7 @@ function screenPropertyAppliances() {
                 <div class="min-w-0 flex-1">
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
                     <div class="relative flex items-center">
-                        <select data-action="select-appliance-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                        <select data-action="select-appliance-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
                             <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units (${allAppliances.length})</option>
                             ${units.map(u => {
                                 const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
@@ -10845,7 +10845,7 @@ function screenPropertyAlarms() {
                 <div class="min-w-0 flex-1">
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Location</span>
                     <div class="relative flex items-center">
-                        <select data-action="select-alarm-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                        <select data-action="select-alarm-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
                             <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Locations (${allAlarms.length})</option>
                             ${units.map(u => {
                                 const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
@@ -16785,7 +16785,7 @@ function renderPropertyInspectionTab(propertyId, opts = {}) {
                 <div class="min-w-0 flex-1">
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
                     <div class="relative flex items-center">
-                        <select data-action="select-insp-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                        <select data-action="select-insp-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
                             <option value="all" ${activeUnitFilter === 'all' ? 'selected' : ''}>All Units (${past.length})</option>
                             <option value="communal" ${activeUnitFilter === 'communal' ? 'selected' : ''}>Communal Areas</option>
                             ${units.map(u => {
@@ -19461,7 +19461,7 @@ function screenFlatKeys() {
             <div class="min-w-0 flex-1">
                 <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit Scope</span>
                 <div class="relative flex items-center">
-                    <select data-action="select-keys-unit-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                    <select data-action="select-keys-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
                         <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units Audit (${propStats.totalPhysicalKeys} keys)</option>
                         ${units.map(u => {
                             const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
@@ -20304,7 +20304,7 @@ function screenPropertyUtilitiesView() {
                 <div class="min-w-0 flex-1">
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Scope</span>
                     <div class="relative flex items-center">
-                        <select data-action="select-utilities-scope-dropdown" class="w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
+                        <select data-action="select-utilities-scope-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
                             <option value="building" ${activeScope === 'building' ? 'selected' : ''}>Whole Building & Communal</option>
                             ${units.map(u => {
                                 const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));

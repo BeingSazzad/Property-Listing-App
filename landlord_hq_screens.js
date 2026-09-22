@@ -6335,7 +6335,7 @@ function _renderApp() {
 /** Replace native <select> popups with HTML menus that stay open on blur (Figma capture). */
 function enhanceFormSelectsForFigma(root) {
     if (!root) return;
-    root.querySelectorAll('select.form-select').forEach(sel => {
+    root.querySelectorAll('select.form-select, select.figma-hold-select').forEach(sel => {
         if (sel.dataset.holdEnhanced === '1' || sel.multiple) return;
         const sizeAttr = Number(sel.getAttribute('size') || 0);
         if (sizeAttr > 1) return;
@@ -6343,7 +6343,8 @@ function enhanceFormSelectsForFigma(root) {
         sel.dataset.holdEnhanced = '1';
 
         const wrap = document.createElement('div');
-        wrap.className = 'hold-select';
+        const compact = sel.classList.contains('figma-hold-select');
+        wrap.className = 'hold-select' + (compact ? ' hold-select--compact' : '');
         sel.parentNode.insertBefore(wrap, sel);
         wrap.appendChild(sel);
         sel.classList.add('hold-select-native');
@@ -6352,7 +6353,7 @@ function enhanceFormSelectsForFigma(root) {
 
         const trigger = document.createElement('button');
         trigger.type = 'button';
-        trigger.className = 'hold-select-trigger form-input';
+        trigger.className = compact ? 'hold-select-trigger hold-select-trigger--compact' : 'hold-select-trigger form-input';
         trigger.setAttribute('aria-haspopup', 'listbox');
         trigger.setAttribute('aria-expanded', 'false');
         if (sel.disabled) trigger.disabled = true;

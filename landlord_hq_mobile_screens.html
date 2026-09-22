@@ -10573,6 +10573,33 @@
             z-index: 90;
         }
 
+        .hold-select-trigger--compact {
+            min-height: 28px;
+            padding: 4px 26px 4px 0;
+            border: 0;
+            background: transparent;
+            color: #0F172A;
+            font: inherit;
+            font-size: 13.5px;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .hold-select-trigger--compact::after {
+            right: 0;
+        }
+
+        .hold-select--compact + i[data-lucide="chevron-down"],
+        .hold-select--compact + svg[data-lucide="chevron-down"],
+        .hold-select--compact .hold-select-hint {
+            display: none !important;
+        }
+
+        .hold-select--compact.is-open .hold-select-trigger {
+            border-color: transparent;
+            box-shadow: none;
+        }
+
         .hold-select.is-open .hold-select-menu {
             display: block;
         }
@@ -32498,10 +32525,10 @@
 
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=419"></script>
-    <script src="landlord_hq_contractor.js?v=419"></script>
-    <script src="landlord_hq_features.js?v=419"></script>
-    <script src="landlord_hq_product.js?v=419"></script>
+    <script src="landlord_hq_screens.js?v=420"></script>
+    <script src="landlord_hq_contractor.js?v=420"></script>
+    <script src="landlord_hq_features.js?v=420"></script>
+    <script src="landlord_hq_product.js?v=420"></script>
     <script>
             (function () {
                 function showBootError(msg) {
