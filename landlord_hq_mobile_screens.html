@@ -22794,7 +22794,15 @@
             align-items: center;
             justify-content: space-around;
             padding: 14px 12px;
-            margin-bottom: 2px;
+        }
+
+        .tenant-property-summary-card {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .tenant-property-summary-card.has-location .prop-overview-strip {
+            border-top: 1px solid #E2E8F0;
         }
 
         .prop-overview-stat {
@@ -23171,8 +23179,55 @@
         }
 
         .tenant-home-location {
+            display: block;
             padding: 14px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
             cursor: pointer;
+        }
+
+        .tenant-home-location:active {
+            background: #F8FAFC;
+        }
+
+        .flat-edit-tenancy-rent {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            color: #64748B;
+        }
+
+        .flat-edit-tenancy-rent span,
+        .flat-edit-tenancy-rent strong,
+        .flat-edit-tenancy-rent small {
+            display: block;
+        }
+
+        .flat-edit-tenancy-rent strong {
+            color: #0F172A;
+            font-size: 13px;
+        }
+
+        .flat-edit-tenancy-rent small {
+            margin-top: 2px;
+            color: #64748B;
+            font-size: 11px;
+        }
+
+        .flat-records-group-title {
+            margin: 0 4px 8px;
+            color: #64748B;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .flat-records-group-title--building {
+            margin-top: 18px;
         }
 
         .tenant-home-location-main {
@@ -32443,10 +32498,10 @@
 
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=411"></script>
-    <script src="landlord_hq_contractor.js?v=411"></script>
-    <script src="landlord_hq_features.js?v=411"></script>
-    <script src="landlord_hq_product.js?v=411"></script>
+    <script src="landlord_hq_screens.js?v=419"></script>
+    <script src="landlord_hq_contractor.js?v=419"></script>
+    <script src="landlord_hq_features.js?v=419"></script>
+    <script src="landlord_hq_product.js?v=419"></script>
     <script>
             (function () {
                 function showBootError(msg) {

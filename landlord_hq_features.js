@@ -2606,7 +2606,7 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
     const coverAction = opts.coverAction || 'set-pending-flat-cover';
     const removeAction = opts.removeAction || 'remove-pending-flat-photo';
     const uploadAction = opts.uploadAction || 'upload-pending-flat-photo';
-    const uploadLabel = opts.uploadLabel || (list.length ? 'Add more photos' : 'Add unit photos (optional)');
+    const uploadLabel = opts.uploadLabel || (list.length ? 'Add more photos' : 'Add flat photos (optional)');
     const hint = opts.hint || 'Add multiple photos and tap the star icon to choose which shows on the home screen.';
     const isGallery = opts.variant === 'gallery';
     if (!list.length) {
@@ -2614,7 +2614,7 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
         <div class="flat-unit-photo-picker card flat-unit-photo-picker--empty${isGallery ? ' flat-unit-photo-picker--gallery' : ''}">
             ${isGallery ? `
             <div class="flat-unit-photo-card-head">
-                <h3 class="flat-unit-photo-card-title">Unit photos</h3>
+                <h3 class="flat-unit-photo-card-title">Flat photos</h3>
                 <span class="flat-unit-photo-card-count">0</span>
             </div>` : ''}
             <button type="button" data-action="${uploadAction}" class="flat-unit-photo-empty-btn">
@@ -2629,7 +2629,7 @@ function renderFlatUnitPhotoPicker(photos, coverIdx, opts = {}) {
     <div class="flat-unit-photo-picker card overflow-hidden${isGallery ? ' flat-unit-photo-picker--gallery' : ''}">
         ${isGallery ? `
         <div class="flat-unit-photo-card-head">
-            <h3 class="flat-unit-photo-card-title">Unit photos</h3>
+            <h3 class="flat-unit-photo-card-title">Flat photos</h3>
             <span class="flat-unit-photo-card-count">${list.length} photo${list.length === 1 ? '' : 's'}</span>
         </div>` : ''}
         <div class="flat-unit-photo-hero">
@@ -4283,7 +4283,13 @@ function renderPropertyInventoryTab(propertyId) {
 
         <div class="flex items-center justify-between px-1 mt-2 mb-1">
             <p class="text-[13.5px] font-bold text-[#0F172A] m-0">${isMulti ? `${escapeHtml(activeUnit === 'communal' ? 'Communal Area' : activeUnit)} Room Checklists` : 'Room Checklists'}</p>
-            <span class="text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#D1FAE5]">${rooms.length} Rooms Tracked</span>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#D1FAE5]">${rooms.length} Rooms</span>
+                <button type="button" data-action="open-add-room-modal" class="text-[12px] font-bold text-[#2563EB] hover:text-[#1D4ED8] flex items-center gap-1 cursor-pointer bg-[#EFF6FF] px-2.5 py-1 rounded-lg transition-colors">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Add Room</span>
+                </button>
+            </div>
         </div>
 
         <div class="space-y-2">
@@ -4299,9 +4305,9 @@ function renderPropertyInventoryTab(propertyId) {
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
         </button>`).join('')}
         </div>
-        <button type="button" data-action="add-inventory-room" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold mt-2 shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+        <button type="button" data-action="open-add-room-modal" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold mt-2 shadow-xs flex items-center justify-center gap-2 cursor-pointer">
             <i data-lucide="plus" class="w-4 h-4 text-[#2563EB]"></i>
-            <span>+ Add Room / Area</span>
+            <span>Add Room / Area</span>
         </button>
     </div>`;
 }
@@ -4404,7 +4410,7 @@ function unitKeyRegisterBtn(propertyId, unitName, asPage) {
     if (propertyId == null || !unitName) return '';
     const from = STATE.screen === 'tenant-detail' ? 'tenant' : STATE.screen === 'tenancy-detail' ? 'tenancy' : '';
     const ret = from ? ` data-keys-return="${from}"` : '';
-    return `<button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(unitName)}"${ret} class="${asPage ? 'btn-secondary w-full py-3 text-[13px] mt-3' : 'header-text-link'}">${asPage ? 'View unit keys' : 'Unit keys'}</button>`;
+    return `<button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(unitName)}"${ret} class="${asPage ? 'btn-secondary w-full py-3 text-[13px] mt-3' : 'header-text-link'}">${asPage ? 'View flat keys' : 'Flat keys'}</button>`;
 }
 
 function renderTenantIssuedKeys(tenantId) {
@@ -6098,7 +6104,7 @@ function renderTenantPropertyLocationCard(propertyId) {
         ? getFlatCoverPhoto(propertyId, listItem.unit)
         : (typeof getPropertyCoverPhoto === 'function' ? getPropertyCoverPhoto(propertyId) : '');
     return `
-    <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${listItem.unit}" data-flat-tab="overview" class="card tenant-home-location mb-3 w-full text-left">
+    <button type="button" data-go="flat-detail" data-pid="${propertyId}" data-unit="${listItem.unit}" data-flat-tab="overview" class="tenant-home-location w-full text-left">
         <div class="tenant-home-location-main">
             ${cover ? `<img src="${escapeHtml(cover)}" alt="" class="tenant-home-location-thumb">` : ''}
             <div class="min-w-0">
@@ -6166,6 +6172,9 @@ function renderPropertyOverviewDetails(propertyId) {
     const b = getPropertyBuilding(propertyId);
     const floors = b.useFloors && b.floors > 1 ? b.floors : Math.max(1, new Set(units.map(u => u.floor || 1)).size);
     const vacant = units.length - occupied;
+    const tenantLocation = typeof renderTenantPropertyLocationCard === 'function'
+        ? renderTenantPropertyLocationCard(propertyId)
+        : '';
     const renderInfoRows = (rows) => rows.map(([icon, label, value]) => `
                     <div class="building-info-row${label === 'Address' ? ' building-info-row--address' : ''}${value && value !== '—' ? ' building-info-row--filled' : ''}">
                         <div class="building-info-row-left">
@@ -6178,15 +6187,17 @@ function renderPropertyOverviewDetails(propertyId) {
     return `
     <div class="screen-content screen-content-sm building-info-page building-info-page--v2">
         ${justSaved ? `<p class="text-[12px] font-semibold text-[#16A34A] mb-3" id="property-saved-output">Property saved</p>` : ''}
-        ${typeof renderTenantPropertyLocationCard === 'function' ? renderTenantPropertyLocationCard(propertyId) : ''}
-        <div class="prop-overview-strip card mb-3">
-            <div class="prop-overview-stat"><strong>${occupied}</strong><span>Occupied</span></div>
-            <div class="prop-overview-divider"></div>
-            <div class="prop-overview-stat"><strong>${vacant}</strong><span>Vacant</span></div>
-            <div class="prop-overview-divider"></div>
-            <div class="prop-overview-stat"><strong>${units.length}</strong><span>${isHmo ? 'Rooms' : 'Units'}</span></div>
-            <div class="prop-overview-divider"></div>
-            <div class="prop-overview-stat"><strong>${floors}</strong><span>Floors</span></div>
+        <div class="tenant-property-summary-card card mb-3${tenantLocation ? ' has-location' : ''}">
+            ${tenantLocation}
+            <div class="prop-overview-strip">
+                <div class="prop-overview-stat"><strong>${occupied}</strong><span>Occupied</span></div>
+                <div class="prop-overview-divider"></div>
+                <div class="prop-overview-stat"><strong>${vacant}</strong><span>Vacant</span></div>
+                <div class="prop-overview-divider"></div>
+                <div class="prop-overview-stat"><strong>${units.length}</strong><span>${isHmo ? 'Rooms' : 'Units'}</span></div>
+                <div class="prop-overview-divider"></div>
+                <div class="prop-overview-stat"><strong>${floors}</strong><span>Floors</span></div>
+            </div>
         </div>
 
         <div class="${buildingSectionCardClass()} mb-3">
@@ -9635,7 +9646,8 @@ function certTileSummary(row) {
 
 function renderBuildingCertTiles(propertyId) {
     const rows = propertyComplianceCertRows(propertyId);
-    const allDocs = AppStore.docsForProperty(propertyId);
+    // Building documents live here; flat-tagged files stay in that flat's Records tab.
+    const allDocs = AppStore.docsForProperty(propertyId).filter(doc => !doc.unit);
     const folderCount = (folderId) => (typeof docsForFolder === 'function' ? docsForFolder(allDocs, folderId).length : 0);
     const otherCount = (typeof propertyFolderFileCount === 'function' ? propertyFolderFileCount(propertyId, 'custom') + propertyFolderFileCount(propertyId, 'fire') : 0);
     
@@ -9646,7 +9658,7 @@ function renderBuildingCertTiles(propertyId) {
         { folderId: 'insurance', cid: 5, label: 'Landlord Insurance', defaultSub: 'Buildings & liability cover', icon: 'shield-check', iconColor: 'text-[#7C3AED] bg-[#F5F3FF]' },
         { folderId: 'deposit', label: 'Deposit Protection', defaultSub: 'DPS / TDS scheme records', icon: 'shield', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', folderOnly: true },
         { folderId: 'licence', label: 'Property Licence', defaultSub: 'Council licensing registration', icon: 'badge-check', iconColor: 'text-[#475569] bg-[#F1F5F9]', folderOnly: true, optional: true },
-        { folderId: 'custom', label: 'Other Documents', defaultSub: `${otherCount} files on record`, icon: 'files', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
+        { folderId: 'custom', label: 'Building Documents', defaultSub: `${otherCount} files on record`, icon: 'files', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
     ];
     
     return `
@@ -9827,36 +9839,13 @@ function screenPropertyDocumentVault() {
             (doc.name && doc.name.toLowerCase().includes(query)) ||
             (doc.type && doc.type.toLowerCase().includes(query)) ||
             (doc.date && doc.date.toLowerCase().includes(query));
-        if (!matchesQuery) return false;
-
-        if (filter === 'building') {
-            return ['insurance', 'Property Licence', 'Custom Document', 'Mortgage', 'Leasehold', 'Deed'].some(k =>
-                (doc.type && doc.type.toLowerCase().includes(k.toLowerCase())) ||
-                (doc.name && doc.name.toLowerCase().includes(k.toLowerCase()))
-            ) || (!doc.type?.includes('Tenancy') && !doc.type?.includes('Deposit') && !doc.type?.includes('Gas') && !doc.type?.includes('Electrical') && !doc.type?.includes('EPC'));
-        }
-        if (filter === 'tenancy') {
-            return (doc.type && (doc.type.includes('Tenancy') || doc.type.includes('Deposit') || doc.type.includes('Rent'))) ||
-                   (doc.name && (doc.name.toLowerCase().includes('lease') || doc.name.toLowerCase().includes('deposit') || doc.name.toLowerCase().includes('tenancy')));
-        }
-        if (filter === 'safety') {
-            return (doc.type && (doc.type.includes('Gas') || doc.type.includes('Electrical') || doc.type.includes('EPC') || doc.type.includes('Fire') || doc.type.includes('Alarm'))) ||
-                   (doc.name && (doc.name.toLowerCase().includes('fire') || doc.name.toLowerCase().includes('smoke') || doc.name.toLowerCase().includes('eicr') || doc.name.toLowerCase().includes('gas') || doc.name.toLowerCase().includes('epc') || doc.name.toLowerCase().includes('legionella')));
-        }
-        return true;
+        return matchesQuery;
     });
 
     const uploadBtn = `<button type="button" data-action="open-add-document-flow" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
         <span>Upload</span>
     </button>`;
-
-    const filterTabs = [
-        ['all', 'All Files'],
-        ['building', 'Building & Deeds'],
-        ['tenancy', 'Tenancy & Leases'],
-        ['safety', 'Safety & Reports'],
-    ];
 
     const getDocIconAndColor = (d) => {
         const name = (d.name || d.type || '').toLowerCase();
@@ -9875,20 +9864,12 @@ function screenPropertyDocumentVault() {
         return { icon: 'file', color: 'text-[#64748B] bg-[#F1F5F9] border-[#E2E8F0]' };
     };
 
-    return `${topBar('Other Documents', { back: true, sub, rightBtn: uploadBtn })}
+    return `${topBar('Building Documents', { back: true, sub, rightBtn: uploadBtn })}
     <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
         <!-- Top Search Bar -->
         <div class="relative">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
             <input id="otherDocSearchInput" type="text" placeholder="Search documents..." value="${escapeHtml(STATE.otherDocSearch || '')}" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 placeholder:text-[#94A3B8] shadow-2xs">
-        </div>
-
-        <!-- Filter Chips -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            ${filterTabs.map(([key, label]) => `
-            <button type="button" data-other-doc-filter="${key}" class="px-3 py-1.5 rounded-xl text-[12px] font-semibold shrink-0 transition-all cursor-pointer ${filter === key ? 'bg-[#2563EB] text-white shadow-2xs' : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC]'}">
-                ${label}
-            </button>`).join('')}
         </div>
 
         <!-- Direct Document List -->
@@ -9956,8 +9937,57 @@ function screenPropertyInventory() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId];
     const sub = p?.name?.split(',')[0] || '';
-    return `${topBar('Inventory', { back: true, sub })}
-    ${renderPropertyInventoryTab(propertyId)}`;
+    const addRoomBtn = `<button type="button" data-action="open-add-room-modal" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Add Room</span>
+    </button>`;
+    return `${topBar('Inventory', { back: true, sub, rightBtn: addRoomBtn })}
+    ${renderPropertyInventoryTab(propertyId)}
+    ${renderAddRoomModal(propertyId)}`;
+}
+
+function renderAddRoomModal(propertyId) {
+    if (!STATE.showAddRoomModal) return '';
+    return `
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+        <div class="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                <div>
+                    <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Add Room / Area</h3>
+                    <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5">Add a new room or area to the inventory schedule</p>
+                </div>
+                <button type="button" data-action="close-add-room-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] flex items-center justify-center hover:bg-[#E2E8F0] cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Quick Presets -->
+            <div>
+                <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Fast Presets</label>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" data-action="select-room-preset" data-preset="Balcony" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Balcony</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Garden / Patio" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Garden / Patio</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Dining Room" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Dining Room</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Ensuite Bathroom" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Ensuite</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Utility Room" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Utility Room</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Study / Office" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Study</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Storage / Loft" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Loft</button>
+                </div>
+            </div>
+
+            <!-- Custom Name Input -->
+            <div class="form-field">
+                <label class="form-label">Or Custom Room Name</label>
+                <input id="newRoomNameInput" type="text" class="form-input" placeholder="e.g. Master Bedroom, Garage, Gym" value="${escapeHtml(STATE.newRoomDraftName || '')}">
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 pt-2">
+                <button type="button" data-action="close-add-room-modal" class="btn-secondary flex-1 py-2.5 text-[13px] font-bold cursor-pointer">Cancel</button>
+                <button type="button" data-action="confirm-add-room" class="btn-primary flex-1 py-2.5 text-[13px] font-bold cursor-pointer">Add Room</button>
+            </div>
+        </div>
+    </div>`;
 }
 
 function screenPropertyFlatDocuments() {
@@ -10857,6 +10887,7 @@ function screenPropertyAlarms() {
                             <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">
                                 ${escapeHtml(al.expiry || '2026')}
                             </span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                         </div>
                     </button>`;
                 }).join('')}
@@ -10921,7 +10952,7 @@ function renderPropertyRecordsHub(propertyId) {
     const cards = [
         {
             route: 'property-compliance',
-            title: 'Statutory Certs',
+            title: 'Compliance',
             sub: 'CP12, EICR & EPC',
             icon: 'shield-check',
             iconColor: 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]',
@@ -10942,8 +10973,8 @@ function renderPropertyRecordsHub(propertyId) {
         },
         {
             route: 'property-utilities',
-            title: 'Utilities & Meters',
-            sub: 'Gas, Electric & Stopcock',
+            title: 'Building Services',
+            sub: 'Shared Utilities & Meters',
             icon: 'zap',
             iconColor: 'text-[#0284C7] bg-[#F0F9FF] border-[#BAE6FD]',
         },
@@ -10956,8 +10987,8 @@ function renderPropertyRecordsHub(propertyId) {
         },
         {
             route: 'property-inventory',
-            title: 'Inventories',
-            sub: 'Room Schedules',
+            title: 'Inventory',
+            sub: 'Building & Room Schedules',
             icon: 'boxes',
             iconColor: 'text-[#059669] bg-[#ECFDF5] border-[#A7F3D0]',
         },
@@ -10970,8 +11001,8 @@ function renderPropertyRecordsHub(propertyId) {
         },
         {
             route: 'property-doc-vault',
-            title: 'Other Documents',
-            sub: 'Building & General Files',
+            title: 'Building Documents',
+            sub: 'Deeds, Insurance & Files',
             icon: 'files',
             iconColor: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]',
         },
@@ -11676,7 +11707,7 @@ function renderFlatRecordsSubnav() {
         <button type="button" data-ftab="overview" class="flat-dt-records-back">
             <i data-lucide="chevron-left" class="w-4 h-4"></i>Overview
         </button>
-        <span class="flat-dt-records-subnav-title">Unit records</span>
+        <span class="flat-dt-records-subnav-title">Flat records</span>
     </div>`;
 }
 
@@ -11750,8 +11781,8 @@ function renderFlatDetailOverviewRecent(propertyId, unit) {
     return `
         <section class="card flat-dt-activity flat-dt-activity--compact">
             <div class="flat-dt-activity-head">
-                <h3 class="flat-dt-block-title">Unit activity</h3>
-                <button type="button" data-ftab="records" class="flat-dt-activity-link">Unit records</button>
+                <h3 class="flat-dt-block-title">Flat activity</h3>
+                <button type="button" data-ftab="records" class="flat-dt-activity-link">Flat records</button>
             </div>
             ${listHtml}
         </section>`;
@@ -11760,30 +11791,10 @@ function renderFlatDetailOverviewRecent(propertyId, unit) {
 function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
     const roster = getFlatMemberRoster(propertyId, unit);
     const peopleCtx = { occ: u.status === 'occupied', tenancy, members: roster.members, count: roster.count, pendingInvite: pendingInvitesForProperty(propertyId).find(i => i.unit === unit) };
-    const keyCount = typeof getUnitKeys === 'function' ? getUnitKeys(propertyId, unit).length : 0;
-    const keyMeta = keyCount ? `${keyCount} set${keyCount === 1 ? '' : 's'} · who holds them` : 'Register key sets';
     return `
     <div class="flat-dt-tab-panel flat-dt-tab-panel--overview space-y-4">
         ${renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
         ${renderFlatOverviewTenantsList(propertyId, unit, peopleCtx)}
-        <section class="card flat-records-nav-list">
-            <button type="button" data-go="flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(unit)}" class="flat-records-nav-row w-full text-left">
-                <span class="flat-records-nav-icon"><i data-lucide="key-round" class="w-4 h-4"></i></span>
-                <span class="flat-records-nav-body">
-                    <span class="flat-records-nav-label">Keys & Fobs</span>
-                    <span class="flat-records-nav-meta">${keyMeta}</span>
-                </span>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-            </button>
-            <button type="button" data-ftab="records" class="flat-records-nav-row w-full text-left">
-                <span class="flat-records-nav-icon"><i data-lucide="folder-open" class="w-4 h-4"></i></span>
-                <span class="flat-records-nav-body">
-                    <span class="flat-records-nav-label">Unit records</span>
-                    <span class="flat-records-nav-meta">Meters & files</span>
-                </span>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-            </button>
-        </section>
     </div>`;
 }
 
@@ -11825,7 +11836,7 @@ function renderFlatUnitDocumentsSection(propertyId, unit, opts = {}) {
     return `
     <section class="card flat-dt-docs${compact ? ' flat-dt-docs--compact' : ''}">
         <div class="flat-dt-section-head">
-            <h3 class="flat-dt-section-title">Documents</h3>
+            <h3 class="flat-dt-section-title">Flat Documents</h3>
             <button type="button" data-action="open-flat-document-upload" data-pid="${propertyId}" data-unit="${unit}" class="flat-dt-section-link">Upload</button>
         </div>
         ${list.length ? `
@@ -11844,25 +11855,12 @@ function renderFlatUnitDocumentsSection(propertyId, unit, opts = {}) {
 function renderFlatDetailRecordsTab(propertyId, unit, p) {
     const issues = propertyComplianceCertRows(propertyId).filter(r => r.st.tone !== 'ok').length;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(propertyId).length : 0;
-    const roomSizes = typeof inventoryRoomSizeRows === 'function'
-        ? inventoryRoomSizeRows(propertyId).filter(r => r.sizeSqft).length
-        : 0;
     const utilDocs = unitUtilitySummary(propertyId, unit).billCount;
     const photoCount = flatDetailPhotoList(propertyId, unit).length;
-    const inspUpcoming = typeof getScheduledInspection === 'function' ? getScheduledInspection(propertyId) : null;
-    const inspPast = (AppStore.inspections || []).filter(i => i.propertyId === propertyId && !i.scheduled).length;
-    let inspMeta = 'Schedule or request photos';
-    if (inspUpcoming) {
-        const d = typeof formatDisplayDate === 'function' ? formatDisplayDate(inspUpcoming.date) || inspUpcoming.date : inspUpcoming.date;
-        inspMeta = typeof isTenantUploadInspection === 'function' && isTenantUploadInspection(inspUpcoming)
-            ? `Photos due · ${d}`
-            : `Next · ${d}`;
-    } else if (inspPast) {
-        inspMeta = `${inspPast} past report${inspPast === 1 ? '' : 's'}`;
-    }
-    const invMeta = rooms
-        ? `${rooms} room${rooms === 1 ? '' : 's'}${roomSizes ? ` · ${roomSizes} sized` : ''}`
-        : 'Add room inventory';
+    const buildingDocCount = AppStore.docsForProperty(propertyId).filter(d => !d.unit).length;
+    const buildingMeta = issues
+        ? `${issues} compliance item${issues === 1 ? '' : 's'} need attention`
+        : `${buildingDocCount} file${buildingDocCount === 1 ? '' : 's'}${rooms ? ` · ${rooms} inventory room${rooms === 1 ? '' : 's'}` : ''}`;
     const navRow = (icon, label, attrs, meta = '') => `
         <button type="button" ${attrs} class="flat-records-nav-row w-full text-left">
             <span class="flat-records-nav-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
@@ -11874,14 +11872,17 @@ function renderFlatDetailRecordsTab(propertyId, unit, p) {
         </button>`;
     return `
     <div class="flat-dt-tab-panel flat-dt-tab-panel--records">
+        <p class="flat-records-group-title">Flat records</p>
         ${renderFlatUnitDocumentsSection(propertyId, unit, { full: true })}
         <section class="card flat-records-nav-list">
-            ${navRow('boxes', 'Unit Inventory & Schedule', `data-go="property-inventory" data-pid="${propertyId}" data-unit="${unit}"`, invMeta)}
-            ${navRow('flame', 'Unit Appliances & Boiler', `data-go="property-appliances" data-pid="${propertyId}" data-unit="${unit}"`, 'Warranties & manuals')}
-            ${navRow('bell-ring', 'Unit Safety Alarms', `data-go="property-alarms" data-pid="${propertyId}" data-unit="${unit}"`, 'Smoke, heat & CO')}
-            ${navRow('zap', 'Unit Utilities & Meters', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Meters & bills')}
-            ${navRow('key-round', 'Unit Keys & Fobs', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register sets')}
-            ${navRow('images', 'Unit Photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
+            ${navRow('zap', 'Flat Utilities & Bills', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Responsibility, meters & bills')}
+            ${navRow('key-round', 'Flat Keys & Fobs', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register key sets')}
+            ${navRow('images', 'Flat Photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
+        </section>
+
+        <p class="flat-records-group-title flat-records-group-title--building">Building records</p>
+        <section class="card flat-records-nav-list">
+            ${navRow('building-2', 'View Building Records', `data-go="property-detail" data-pid="${propertyId}" data-tab="records"`, buildingMeta)}
         </section>
     </div>`;
 }
@@ -12018,7 +12019,7 @@ function renderFlatDetailGalleryTab(propertyId, unit) {
         coverAction: 'set-flat-cover',
         removeAction: 'remove-flat-photo',
         uploadAction: 'upload-flat-photo',
-        uploadLabel: photos.length ? 'Add more photos' : 'Add unit photos',
+        uploadLabel: photos.length ? 'Add more photos' : 'Add flat photos',
         hint: 'Tap the star on a thumbnail to set the cover for Overview and unit lists.',
     })}
         ${renderFlatBuildingPhotosSection(propertyId)}
@@ -14098,22 +14099,16 @@ function flatEffectiveRentAmount(u, tenancy) {
 }
 
 function flatUnitExtraFieldsHtml(unitOrDraft, propertyId) {
-    const info = AppStore.meta(propertyId).info || {};
     const unitType = unitOrDraft.unitType || '';
     const furnished = unitOrDraft.furnished || '';
-    const yearBuilt = unitOrDraft.yearBuilt || '';
-    const builtPlaceholder = info.built ? `Building default: ${info.built}` : 'e.g. 2020';
     return `
         ${formSelectField('Unit type', 'flatUnitType', PROPERTY_TYPE_OPTIONS, unitType, { blankLabel: 'Same as building' })}
-        ${formSelectField('Furnished', 'flatFurnished', FURNISHED_OPTIONS, furnished, { blankLabel: 'Not set' })}
-        <div class="form-field"><label class="form-label">Year built</label><input data-field="flatYearBuilt" type="number" class="form-input" value="${escapeHtml(String(yearBuilt || ''))}" placeholder="${escapeHtml(builtPlaceholder)}" min="1700" max="2030"></div>`;
+        ${formSelectField('Furnished', 'flatFurnished', FURNISHED_OPTIONS, furnished, { blankLabel: 'Not set' })}`;
 }
 
 function applyFlatUnitExtraFields(unit) {
     unit.unitType = fieldVal('flatUnitType') || '';
     unit.furnished = fieldVal('flatFurnished') || '';
-    const yb = fieldVal('flatYearBuilt');
-    unit.yearBuilt = yb ? String(yb) : '';
 }
 
 function syncUnitRentAcrossRecords(propertyId, unitName, rentFormatted) {
@@ -15990,6 +15985,13 @@ function invoiceBelongsToTenant(inv, tenantId) {
     const listItem = TENANT_LIST[tenantId];
     if (!inv || !listItem) return false;
     if (listItem.unit && inv.unit && inv.unit !== listItem.unit) return false;
+    if (listItem.propertyId != null && inv.propertyId != null && listItem.propertyId !== inv.propertyId) return false;
+    if (listItem.propertyId != null && listItem.unit && typeof getFlatMemberRoster === 'function') {
+        const { tenancy, members } = getFlatMemberRoster(listItem.propertyId, listItem.unit);
+        if (tenancy?.type === 'group' && members.some(m => m.listId === tenantId || m.tenantId === tenantId)) {
+            if (!inv.type || inv.type === 'rent') return true;
+        }
+    }
     if (inv.tenant && inv.tenant !== listItem.name && inv.tenantId !== tenantId) return false;
     if (inv.tenant === listItem.name) return true;
     if (inv.tenantId === tenantId && (!inv.unit || inv.unit === listItem.unit)) return true;
@@ -19001,7 +19003,6 @@ function saveAddFlat() {
         floorNote: fieldVal('floorNote') || '',
         unitType: fieldVal('flatUnitType') || '',
         furnished: fieldVal('flatFurnished') || '',
-        yearBuilt: fieldVal('flatYearBuilt') ? String(fieldVal('flatYearBuilt')) : '',
     });
     const wasDup = !!STATE.flatDuplicateFrom;
     const dupSource = STATE.flatDuplicateFrom;
@@ -19041,7 +19042,7 @@ function screenEditFlat() {
     const photos = gal?.photos?.length ? gal.photos : [getFlatCoverPhoto(STATE.propertyId, unit)];
     const cover = gal?.cover ?? 0;
     const { tenancy } = getFlatMemberRoster(STATE.propertyId, unit);
-    const rentAmt = flatEffectiveRentAmount(u, tenancy) || parseRentAmount(u.rent);
+    const rentAmt = parseRentAmount(u.rent);
     const rent = rentAmt || '';
     const occ = u.status === 'occupied';
     return `${topBar(`Edit ${unitWord}`, { back: true, sub: `${p?.name || ''} · ${unitName(u)}` })}
@@ -19062,7 +19063,8 @@ function screenEditFlat() {
         </div>
         <div class="flat-edit-fields stack-sm">
             <div class="form-field"><label class="form-label">${unitWordCap} name <span class="form-required">*</span></label><input data-field="flatName" type="text" class="form-input" value="${unitName(u).replace(/"/g, '&quot;')}" placeholder="e.g. ${isHmo ? 'Room 2A' : 'Flat 2A'}"></div>
-            <div class="form-field"><label class="form-label">Rent per month (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${rent}" min="1" step="1"></div>
+            <div class="form-field"><label class="form-label">Default rent for next tenancy (£) <span class="form-required">*</span></label><input data-field="flatRent" type="number" class="form-input" value="${rent}" min="1" step="1"></div>
+            ${tenancy ? `<button type="button" data-go="tenancy-detail" data-pid="${STATE.propertyId}" data-unit="${escapeHtml(unit)}" class="flat-edit-tenancy-rent card w-full text-left"><span><strong>Current tenancy rent</strong><small>${escapeHtml(tenancy.rent || 'Not set')} per month</small></span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>` : ''}
             <div class="grid grid-cols-3 gap-3">
                 <div class="form-field"><label class="form-label">Beds</label><input data-field="flatBeds" type="number" class="form-input" value="${u.beds != null ? u.beds : ''}" min="0" placeholder="2"></div>
                 <div class="form-field"><label class="form-label">Baths</label><input data-field="flatBaths" type="number" class="form-input" value="${u.baths != null ? u.baths : ''}" min="0" placeholder="1"></div>
@@ -19113,7 +19115,6 @@ function saveFlatDetails() {
     if (newName !== oldName) {
         renameUnitReferences(STATE.propertyId, oldName, newName);
     }
-    syncUnitRentAcrossRecords(STATE.propertyId, newName, rentFormatted);
     STATE.selectedUnit = newName;
     syncPropertyStatus(STATE.propertyId);
     withLoading(() => { AppStore.save(); toast('Unit updated'); go('flat-detail', { propertyId: STATE.propertyId, unit: newName }); });
@@ -20739,13 +20740,10 @@ function screenPropertyDetailsEdit(section) {
             ${labeledInput('Valuation date', 'info_valuationDate', toDateInputValue(info.valuationDate), 'date', '')}
         </div>
         <div class="grid grid-cols-2 gap-3">
-            ${formSelectField('EPC Rating', 'info_epc', EPC_RATING_OPTIONS, info.epc, { blankLabel: 'Select rating' })}
-            ${labeledInput('EPC expiry', 'info_epcExpiry', toDateInputValue(info.epcExpiry), 'date', '')}
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-            ${labeledInput('Insurance renewal', 'info_insuranceExpiry', toDateInputValue(info.insuranceExpiry), 'date', '')}
+            ${labeledInput('Total floors', 'info_floors', meta.building?.floors || '', 'number', 'e.g. 3')}
             ${formSelectField('Council tax', 'info_council', COUNCIL_TAX_BAND_OPTIONS, info.councilTax, { blankLabel: 'Select band' })}
         </div>
+        <button type="button" data-go="property-compliance" data-pid="${STATE.propertyId}" class="flat-edit-tenancy-rent card w-full text-left mb-3"><span><strong>Certificates & renewals</strong><small>EPC, insurance and statutory records</small></span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
         <p class="screen-section-title">Notes <span class="text-[#94A3B8] font-normal">(optional)</span></p>
         <div class="form-group">
             <label class="form-label">Building notes</label>
@@ -20832,14 +20830,14 @@ function savePropertyMeta(section) {
             purchaseDate: toDateInputValue(fieldVal('info_purchaseDate')),
             valuationAmount,
             valuationDate: toDateInputValue(fieldVal('info_valuationDate')),
-            epc: saveEpcValue(fieldVal('info_epc')),
-            epcExpiry: toDateInputValue(fieldVal('info_epcExpiry')),
-            insuranceExpiry: toDateInputValue(fieldVal('info_insuranceExpiry')),
             councilTax: fieldVal('info_council') || '',
             notes: fieldVal('info_notes') || '',
         };
         if (!meta.building) meta.building = { flatCount: 0, floors: 0, flatsPerFloor: 0, useFloors: false };
         meta.building.yearBuilt = fieldVal('info_built') || '';
+        const totalFloors = Math.max(1, Number(fieldVal('info_floors')) || 1);
+        meta.building.floors = totalFloors;
+        meta.building.useFloors = totalFloors > 1;
         // Keep band on info only — do not treat it as council authority name
         if (meta.utilities?.council?.name && /^band\s*[a-h]$/i.test(String(meta.utilities.council.name).trim())) {
             meta.utilities.council.name = '';
@@ -22297,7 +22295,7 @@ function saveUnitUtilities() {
         water: fieldVal('meter_water') || '',
     };
     AppStore.save();
-    toast('Unit utilities saved');
+    toast('Flat utilities saved');
     back();
 }
 
@@ -23775,20 +23773,42 @@ function bindFeatureEvents() {
             }
         };
     });
-    app.querySelectorAll('[data-action="add-inventory-room"]').forEach(el => {
+    app.querySelectorAll('[data-action="open-add-room-modal"], [data-action="add-inventory-room"]').forEach(el => {
         el.onclick = () => {
-            const name = prompt('Enter new room or area name (e.g. Balcony, Garden, Dining Room, Ensuite 2):');
-            if (!name || !name.trim()) return;
+            STATE.showAddRoomModal = true;
+            STATE.newRoomDraftName = '';
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="close-add-room-modal"]').forEach(el => {
+        el.onclick = () => {
+            STATE.showAddRoomModal = false;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-room-preset"]').forEach(el => {
+        el.onclick = () => {
+            const input = document.getElementById('newRoomNameInput');
+            if (input) input.value = el.dataset.preset || '';
+            STATE.newRoomDraftName = el.dataset.preset || '';
+        };
+    });
+    app.querySelectorAll('[data-action="confirm-add-room"]').forEach(el => {
+        el.onclick = () => {
+            const input = document.getElementById('newRoomNameInput');
+            const name = (input?.value || STATE.newRoomDraftName || '').trim();
+            if (!name) { toast('Please enter a room name'); return; }
             const pid = STATE.propertyId ?? 0;
             const layout = getPropertyInventoryLayout(pid);
-            const norm = name.trim().toLowerCase();
+            const norm = name.toLowerCase();
             if (norm.includes('bed')) layout.bedrooms = (layout.bedrooms || 1) + 1;
             else if (norm.includes('bath') || norm.includes('ensuite') || norm.includes('toilet')) layout.bathrooms = (layout.bathrooms || 1) + 1;
             else if (norm.includes('kitchen')) layout.kitchens = (layout.kitchens || 1) + 1;
             else layout.reception = (layout.reception || 1) + 1;
             AppStore.meta(pid).inventoryLayout = layout;
             AppStore.save();
-            toast(`Room "${name.trim()}" added to inventory`);
+            STATE.showAddRoomModal = false;
+            toast(`Room "${name}" added to inventory`);
             render();
         };
     });
@@ -24102,6 +24122,51 @@ function bindFeatureEvents() {
             if (!STATE.flatKeysEdit) return;
             STATE.flatKeysEdit.splice(+el.dataset.keyIdx, 1);
             if (!STATE.flatKeysEdit.length) STATE.flatKeysEdit = [{ label: 'Front door', qty: '1', location: '', holder: '' }];
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-keys-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.keysFilterUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="quick-return-key"]').forEach(el => {
+        el.onclick = () => {
+            const unit = el.dataset.unit;
+            const idx = +el.dataset.keyIdx;
+            const pid = STATE.propertyId ?? 0;
+            const keys = typeof getUnitFlatKeys === 'function' ? getUnitFlatKeys(pid, unit) : null;
+            if (keys && keys[idx]) {
+                keys[idx].holder = 'Landlord (Office)';
+                if (typeof AppStore !== 'undefined') AppStore.save();
+                toast(`Key "${keys[idx].label || 'Key'}" marked as returned`);
+                render();
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="quick-assign-key"]').forEach(el => {
+        el.onclick = () => {
+            const unit = el.dataset.unit;
+            const idx = +el.dataset.keyIdx;
+            const pid = STATE.propertyId ?? 0;
+            const keys = typeof getUnitFlatKeys === 'function' ? getUnitFlatKeys(pid, unit) : null;
+            const { members } = typeof getFlatMemberRoster === 'function' ? getFlatMemberRoster(pid, unit) : { members: [] };
+            const tenantName = members[0]?.name || 'Tenant';
+            if (keys && keys[idx]) {
+                keys[idx].holder = tenantName;
+                if (typeof AppStore !== 'undefined') AppStore.save();
+                toast(`Key "${keys[idx].label || 'Key'}" assigned to ${tenantName}`);
+                render();
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="add-key-preset"]').forEach(el => {
+        el.onclick = () => {
+            if (!STATE.flatKeysEdit) initFlatKeysEdit();
+            const label = el.dataset.presetLabel || 'Key';
+            const location = el.dataset.presetLocation || '';
+            STATE.flatKeysEdit.push({ label, qty: '1', location, holder: 'Landlord (Office)' });
             render();
         };
     });

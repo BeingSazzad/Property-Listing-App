@@ -2888,6 +2888,27 @@ function back() {
         go('role-select', { noHistory: true });
         return;
     }
+
+    // Deep property/record pages should return to the screen that opened them.
+    // This preserves Flat Records -> Building Records -> certificate flows instead
+    // of forcing every back action through the Property Records hub.
+    const contextualBackScreens = new Set([
+        'property-compliance', 'property-doc-folder', 'property-doc-vault',
+        'property-inspections', 'inspection-detail', 'property-inventory', 'inventory-room',
+        'property-house-rules', 'edit-property-house-rules',
+        'property-alarms', 'edit-property-alarms',
+        'property-appliances', 'edit-property-appliances', 'property-appliance-records',
+        'property-utilities', 'utility-detail', 'add-building-service', 'edit-utility',
+        'property-parking', 'edit-property-parking',
+        'property-photos', 'property-floor-plans', 'property-info',
+        'flat-detail', 'edit-flat', 'flat-members', 'flat-keys',
+        'edit-flat-keys', 'unit-utilities', 'tenancy-detail',
+    ]);
+    if (contextualBackScreens.has(STATE.screen) && STATE.navStack.length) {
+        const prev = STATE.navStack.pop();
+        restoreNav(prev);
+        return;
+    }
     if (STATE.screen === 'reset-verify-code') {
         go('forgot-password', { noHistory: true });
         return;
@@ -2899,6 +2920,11 @@ function back() {
 
     // Document Preview
     if (STATE.screen === 'document-preview') {
+        if (STATE.navStack.length) {
+            const prev = STATE.navStack.pop();
+            restoreNav(prev);
+            return;
+        }
         if (STATE.userRole === 'tenant') {
             go(STATE.docReturnScreen || 'tenant-documents', { noHistory: true });
             return;
@@ -2971,6 +2997,11 @@ function back() {
         }
         if (typeof isPropertyBuildingSection === 'function' && isPropertyBuildingSection(STATE.tab) && STATE.tab !== 'info') {
             setTab('info');
+            return;
+        }
+        if (STATE.navStack.length) {
+            const prev = STATE.navStack.pop();
+            restoreNav(prev);
             return;
         }
         go('properties', { noHistory: true });
@@ -3295,6 +3326,12 @@ const homeIndicator = () => `<div class="home-indicator"></div>`;
 
 const topBar = (title, opts = {}) => {
     const showBack = !!opts.back && !isMainNavScreen();
+    const showHomeExit = STATE.isAuthenticated && opts.home !== false && [
+        'property-compliance', 'property-doc-folder', 'property-doc-vault',
+        'property-inspections', 'inspection-detail', 'property-inventory', 'inventory-room',
+        'property-house-rules', 'property-alarms', 'property-appliances',
+        'property-utilities', 'utility-detail', 'property-parking',
+    ].includes(STATE.screen);
     if (showBack) {
         return `
 <div class="screen-header">
@@ -3307,7 +3344,10 @@ const topBar = (title, opts = {}) => {
                 <h1 class="sub-header-title">${title}</h1>
             </div>
         </div>
-        ${opts.rightBtn ? opts.rightBtn : ''}
+        <div class="flex items-center gap-2 shrink-0">
+            ${opts.rightBtn ? opts.rightBtn : ''}
+            ${showHomeExit ? `<button type="button" data-go="${getRoleHome()}" class="top-icon-btn shrink-0 w-10 h-10 rounded-full border border-[#E2E8F0] bg-white" aria-label="Home" title="Home"><i data-lucide="house" class="w-[18px] h-[18px]"></i></button>` : ''}
+        </div>
         ${opts.search ? `<button data-focus-search="${opts.searchKey || 'main'}" class="top-icon-btn shrink-0 w-10 h-10 rounded-full border border-[#E2E8F0] bg-white"><i data-lucide="search" class="w-[18px] h-[18px]"></i></button>` : ''}
         ${opts.more ? `<button data-go="edit-property" data-pid="${opts.pid != null ? opts.pid : STATE.propertyId}" class="top-icon-btn shrink-0 w-10 h-10 rounded-full border border-[#E2E8F0] bg-white" title="Property options"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>` : ''}
     </div>
