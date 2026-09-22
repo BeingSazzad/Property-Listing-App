@@ -261,13 +261,15 @@ const AppStore = {
             { id: 10, propertyId: 0, type: 'Electrical Certificate', name: 'EICR Report 2020', date: 'Aug 2020', shared: true, signed: false },
             { id: 3, propertyId: 0, type: 'EPC Certificate', name: 'EPC Rating B.pdf', date: 'Jun 2023', shared: true, signed: false },
             { id: 4, propertyId: 0, type: 'Deposit Certificate', name: 'Deposit Protection Flat 2A.pdf', date: 'Jan 2024', shared: true, signed: true },
-            { id: 13, propertyId: 0, type: 'Custom Document', name: 'Fire Risk Assessment 2025', date: 'Jan 2025', shared: true, signed: false },
-            { id: 14, propertyId: 0, type: 'Custom Document', name: 'Smoke Alarm Test Log', date: 'Feb 2025', shared: true, signed: false },
-            { id: 15, propertyId: 0, type: 'Custom Document', name: 'Fire Door Inspection', date: 'Mar 2025', shared: true, signed: false },
-            { id: 16, propertyId: 0, type: 'Custom Document', name: 'Emergency Lighting Check', date: 'Apr 2025', shared: true, signed: false },
-            { id: 17, propertyId: 0, type: 'Custom Document', name: 'Landlord Insurance Policy', date: 'Jan 2025', shared: false, signed: false },
+            { id: 13, propertyId: 0, type: 'Custom Document', name: 'Fire Risk Assessment 2025.pdf', date: 'Jan 2025', shared: true, signed: false },
+            { id: 14, propertyId: 0, type: 'Custom Document', name: 'Smoke Alarm Test Log.pdf', date: 'Feb 2025', shared: true, signed: false },
+            { id: 15, propertyId: 0, type: 'Custom Document', name: 'Fire Door Inspection Report.pdf', date: 'Mar 2025', shared: true, signed: false },
+            { id: 16, propertyId: 0, type: 'Custom Document', name: 'Emergency Lighting Check.pdf', date: 'Apr 2025', shared: true, signed: false },
+            { id: 17, propertyId: 0, type: 'Custom Document', name: 'Landlord Insurance Policy.pdf', date: 'Jan 2025', shared: false, signed: false },
             { id: 18, propertyId: 0, type: 'Property Licence', name: 'Selective Licensing Certificate.pdf', date: 'Sep 2024', shared: true, signed: false },
             { id: 19, propertyId: 0, type: 'Custom Document', name: 'Legionella Risk Assessment.pdf', date: 'Nov 2024', shared: true, signed: false },
+            { id: 37, propertyId: 0, type: 'Custom Document', name: 'Land Registry Title Deed.pdf', date: 'Oct 2023', shared: false, signed: false },
+            { id: 38, propertyId: 0, type: 'Custom Document', name: 'Building Warranty Certificate.pdf', date: 'Dec 2023', shared: true, signed: false },
 
             // Property 1 - 45 Queens Road
             { id: 5, propertyId: 1, type: 'How to Rent Guide', name: 'How to Rent Guide UK.pdf', date: 'Jun 2023', shared: true, signed: false },
@@ -277,6 +279,9 @@ const AppStore = {
             { id: 23, propertyId: 1, type: 'EPC Certificate', name: 'EPC Energy Rating C.pdf', date: 'Sep 2023', shared: true, signed: false },
             { id: 24, propertyId: 1, type: 'Deposit Certificate', name: 'Deposit Protection Certificate.pdf', date: 'Jun 2023', shared: true, signed: true },
             { id: 25, propertyId: 1, type: 'Custom Document', name: 'Buildings & Contents Insurance.pdf', date: 'Oct 2025', shared: false, signed: false },
+            { id: 39, propertyId: 1, type: 'Custom Document', name: 'Fire Risk Assessment 2024.pdf', date: 'Aug 2024', shared: true, signed: false },
+            { id: 40, propertyId: 1, type: 'Custom Document', name: 'Communal Area Cleaning Log.pdf', date: 'Jan 2025', shared: true, signed: false },
+            { id: 41, propertyId: 1, type: 'Custom Document', name: 'Title Register & Floor Plan.pdf', date: 'May 2023', shared: false, signed: false },
 
             // Property 2 - 88 King Street
             { id: 26, propertyId: 2, type: 'EPC Certificate', name: 'EPC Rating A Certificate.pdf', date: 'Apr 2021', shared: true, signed: false },
@@ -284,6 +289,9 @@ const AppStore = {
             { id: 28, propertyId: 2, type: 'Gas Certificate', name: 'Gas Safety CP12 Certificate.pdf', date: 'Jan 2025', shared: true, signed: false },
             { id: 29, propertyId: 2, type: 'Custom Document', name: 'Building Insurance Policy 2026.pdf', date: 'Jan 2025', shared: false, signed: false },
             { id: 30, propertyId: 2, type: 'Property Licence', name: 'HMO Licensing Approval.pdf', date: 'Feb 2024', shared: true, signed: false },
+            { id: 42, propertyId: 2, type: 'Custom Document', name: 'HMO Fire Safety Management Plan.pdf', date: 'Mar 2024', shared: true, signed: false },
+            { id: 43, propertyId: 2, type: 'Custom Document', name: 'Emergency Escape Route Map.pdf', date: 'Feb 2024', shared: true, signed: false },
+            { id: 44, propertyId: 2, type: 'Custom Document', name: 'Commercial Waste Contract.pdf', date: 'Jun 2024', shared: false, signed: false },
 
             // Property 3 - 15 Victoria Ave
             { id: 31, propertyId: 3, type: 'Tenancy Agreement', name: 'Lease Agreement Flat 2A.pdf', date: 'Mar 10, 2024', shared: true, signed: true },
@@ -292,6 +300,8 @@ const AppStore = {
             { id: 34, propertyId: 3, type: 'EPC Certificate', name: 'EPC Rating C Report.pdf', date: 'Mar 2022', shared: true, signed: false },
             { id: 35, propertyId: 3, type: 'Deposit Certificate', name: 'TDS Deposit Certificate.pdf', date: 'Mar 2024', shared: true, signed: true },
             { id: 36, propertyId: 3, type: 'Custom Document', name: 'Landlord Comprehensive Insurance.pdf', date: 'Dec 2024', shared: false, signed: false },
+            { id: 45, propertyId: 3, type: 'Custom Document', name: 'Fire Alarm Annual Service Log.pdf', date: 'Jul 2024', shared: true, signed: false },
+            { id: 46, propertyId: 3, type: 'Custom Document', name: 'Property Management Agreement.pdf', date: 'Feb 2024', shared: false, signed: false },
         ];
         this.tenancies = [
             { id: 0, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 2A', rent: '£2,450', start: '2024-01-15', end: '2027-01-14', status: 'active', leadName: 'Sarah Johnson' },
@@ -9510,7 +9520,7 @@ function renderBuildingCertTiles(propertyId) {
         { folderId: 'insurance', cid: 5, label: 'Landlord Insurance', defaultSub: 'Buildings & liability cover', icon: 'shield-check', iconColor: 'text-[#7C3AED] bg-[#F5F3FF]' },
         { folderId: 'deposit', label: 'Deposit Protection', defaultSub: 'DPS / TDS scheme records', icon: 'shield', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', folderOnly: true },
         { folderId: 'license', label: 'Property Licence', defaultSub: 'Council licensing registration', icon: 'badge-check', iconColor: 'text-[#475569] bg-[#F1F5F9]', folderOnly: true, optional: true },
-        { folderId: 'custom', label: 'Document Vault & Archive', defaultSub: `${otherCount} stored files & certificates`, icon: 'folder-archive', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
+        { folderId: 'custom', label: 'Others', defaultSub: `${otherCount} stored files & certificates`, icon: 'files', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
     ];
     
     return `
@@ -9732,59 +9742,101 @@ function screenPropertyDocumentVault() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
     const sub = p?.name?.split(',')[0] || '';
-    const fireCount = propertyFolderFileCount(propertyId, 'fire');
-    const otherCount = propertyFolderFileCount(propertyId, 'custom');
-    const flatDocCount = propertyFlatDocumentCount(propertyId);
+    
+    // Get all general, custom, and additional documents for this property without category folders
+    let allPropertyDocs = AppStore.docsForProperty(propertyId);
+    let docs = allPropertyDocs.filter(d => {
+        return d.folderId === 'custom' || d.folderId === 'fire' || d.type === 'Custom Document' || 
+               d.type === 'Property Licence' || d.type === 'How to Rent Guide' || d.type === 'Tenancy Agreement' || 
+               d.type === 'Deposit Certificate' || !['Gas Certificate', 'Electrical Certificate', 'EPC Certificate'].includes(d.type);
+    });
 
-    const vaultFolders = [
-        {
-            title: 'Flat Documents',
-            sub: 'Tenancy leases & unit files',
-            icon: 'home',
-            iconColor: 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]',
-            route: `data-go="property-flat-documents" data-pid="${propertyId}"`,
-            badge: flatDocCount ? `${flatDocCount} Files` : 'By Unit',
-        },
-        {
-            title: 'Fire Safety Archive',
-            sub: 'FRA, alarms & logs',
-            icon: 'flame-kindling',
-            iconColor: 'text-[#EA580C] bg-[#FFF7ED] border-[#FFEDD5]',
-            route: `data-go="property-doc-folder" data-folder="fire" data-pid="${propertyId}"`,
-            badge: fireCount ? `${fireCount} Files` : '0 Files',
-        },
-        {
-            title: 'General Building Files',
-            sub: 'Deeds, warranties & custom docs',
-            icon: 'folder-archive',
-            iconColor: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]',
-            route: `data-go="property-doc-folder" data-folder="custom" data-pid="${propertyId}"`,
-            badge: otherCount ? `${otherCount} Files` : '0 Files',
-        },
-    ];
+    if (!docs.length) {
+        docs = allPropertyDocs;
+    }
 
-    return `${topBar('Document Vault', { back: true, sub })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
-        <div class="space-y-3">
-            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Vault Storage</span>
-            <div class="space-y-2.5">
-                ${vaultFolders.map(f => `
-                <button type="button" ${f.route} class="w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#2563EB]/40 active:bg-[#F8FAFC] transition-all text-left flex items-center justify-between gap-3 cursor-pointer group">
-                    <div class="flex items-center gap-3.5 min-w-0">
-                        <div class="w-11 h-11 rounded-xl ${f.iconColor} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-                            <i data-lucide="${f.icon}" class="w-5 h-5"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <h4 class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${f.title}</h4>
-                            <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${f.sub}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0]">${f.badge}</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
-                    </div>
-                </button>`).join('')}
+    const contextKey = `others-docs-${propertyId}`;
+    const q = (STATE.docSearch?.[contextKey] || '').toLowerCase().trim();
+    const filteredDocs = q ? docs.filter(d => (d.name || '').toLowerCase().includes(q) || (d.type || '').toLowerCase().includes(q)) : docs;
+
+    const uploadBtn = `<button type="button" data-action="open-add-document-flow" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Upload</span>
+    </button>`;
+
+    return `${topBar('Others', { back: true, sub, rightBtn: uploadBtn })}
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-8">
+        <!-- Search and Quick Upload Header -->
+        <div class="flex items-center gap-2">
+            <div class="flex-1 flex items-center gap-2 px-3.5 py-2.5 bg-white border border-[#E2E8F0] rounded-xl shadow-2xs">
+                <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+                <input type="text" data-doc-search="${contextKey}" value="${escapeHtml(q)}" placeholder="Search other documents..." class="w-full text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder-[#94A3B8]">
             </div>
+            <button type="button" data-action="open-add-document-flow" class="p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-[#2563EB] hover:bg-[#EFF6FF] transition-colors shrink-0 shadow-2xs cursor-pointer" title="Upload Document">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Direct Document List (No Categories) -->
+        <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <span class="text-[11.5px] font-bold text-[#64748B] uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="files" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>All Documents (${filteredDocs.length})</span>
+                </span>
+                <span class="text-[11px] font-medium text-[#94A3B8]">Tap to view / preview</span>
+            </div>
+
+            ${filteredDocs.length ? filteredDocs.map((doc) => {
+                const isPdf = !doc.fileUrl || /\.pdf$/i.test(doc.name || '') || !/\.(jpg|jpeg|png|webp)$/i.test(doc.name || '');
+                const icon = isPdf ? 'file-text' : 'file-image';
+                const iconColor = isPdf ? 'text-[#DC2626] bg-[#FEF2F2] border-[#FEE2E2]' : 'text-[#2563EB] bg-[#EFF6FF] border-[#DBEAFE]';
+                const size = typeof docFileSizeLabel === 'function' ? docFileSizeLabel(doc) : '1.2 MB';
+                const dateLabel = doc.date || 'Recent';
+                const typeLabel = doc.type || 'Document';
+                const isShared = doc.shared !== false;
+
+                return `
+                <div class="w-full p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#93C5FD] transition-all flex items-center justify-between gap-3 group">
+                    <button type="button" data-go="document-preview" data-doc="${doc.id}" class="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer bg-transparent border-none p-0">
+                        <div class="w-10 h-10 rounded-xl ${iconColor} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                            <i data-lucide="${icon}" class="w-5 h-5"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0 leading-tight">${escapeHtml(doc.name || 'Document')}</h4>
+                            </div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[11px] font-medium text-[#64748B]">${escapeHtml(typeLabel)}</span>
+                                <span class="w-1 h-1 rounded-full bg-[#CBD5E1]"></span>
+                                <span class="text-[11px] font-medium text-[#64748B]">${escapeHtml(size)}</span>
+                                <span class="w-1 h-1 rounded-full bg-[#CBD5E1]"></span>
+                                <span class="text-[11px] font-medium text-[#64748B]">${escapeHtml(dateLabel)}</span>
+                            </div>
+                        </div>
+                    </button>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${isShared ? 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]' : 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]'}">
+                            <span class="w-1.5 h-1.5 rounded-full ${isShared ? 'bg-[#059669]' : 'bg-[#94A3B8]'}"></span>
+                            ${isShared ? 'Shared' : 'Private'}
+                        </span>
+                        <button type="button" data-go="document-preview" data-doc="${doc.id}" class="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-colors cursor-pointer" title="Preview">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('') : `
+            <div class="p-8 rounded-2xl bg-white border border-[#E2E8F0] text-center shadow-xs">
+                <div class="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto mb-3 shadow-xs">
+                    <i data-lucide="folder-open" class="w-6 h-6"></i>
+                </div>
+                <h4 class="text-[14px] font-bold text-[#0F172A] m-0">No documents found</h4>
+                <p class="text-[12px] text-[#64748B] m-0 mt-1">Upload deeds, building insurance, notices or custom files.</p>
+                <button type="button" data-action="open-add-document-flow" class="mt-4 px-4 py-2.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold hover:bg-[#1D4ED8] transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Add New Document</span>
+                </button>
+            </div>`}
         </div>
     </div>`;
 }
@@ -10700,6 +10752,11 @@ function renderPropertyRecordsHub(propertyId) {
     const rooms = getInventoryRooms(propertyId) || [];
     const houseRules = getPropertyHouseRules(propertyId) || [];
     const totalDocs = AppStore.docsForProperty(propertyId).length || 6;
+    const otherDocsCount = AppStore.docsForProperty(propertyId).filter(d => 
+        d.folderId === 'custom' || d.folderId === 'fire' || d.type === 'Custom Document' || 
+        d.type === 'Property Licence' || d.type === 'How to Rent Guide' || d.type === 'Tenancy Agreement' || 
+        d.type === 'Deposit Certificate' || !['Gas Certificate', 'Electrical Certificate', 'EPC Certificate'].includes(d.type)
+    ).length || totalDocs;
 
     const cards = [
         {
@@ -10746,11 +10803,11 @@ function renderPropertyRecordsHub(propertyId) {
         },
         {
             route: 'property-doc-vault',
-            title: 'Document Vault',
-            sub: 'Secure Storage',
-            icon: 'folder-archive',
+            title: 'Others',
+            sub: 'Additional Documents',
+            icon: 'files',
             iconColor: 'text-[#4F46E5] bg-[#EEF2FF] border-[#C7D2FE]',
-            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE]"><span class="w-1.5 h-1.5 rounded-full bg-[#4F46E5]"></span>${totalDocs} Files</span>`,
+            badge: `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE]"><span class="w-1.5 h-1.5 rounded-full bg-[#4F46E5]"></span>${otherDocsCount} Files</span>`,
         },
     ];
 
