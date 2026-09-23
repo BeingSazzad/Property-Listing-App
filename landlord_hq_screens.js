@@ -2535,7 +2535,21 @@ function go(screen, opts = {}) {
     if (screen === 'tenant-invite-sent') {
         if (opts.token) STATE.tenantInviteToken = opts.token;
     }
-    if (screen === 'conduct-inspection') STATE.inspectionPhotos = [];
+    if (screen === 'conduct-inspection') {
+        STATE.inspectionPhotos = [];
+        const targetUnit = opts.unit || (STATE.inspectionFilterUnit && STATE.inspectionFilterUnit !== 'all' ? STATE.inspectionFilterUnit : null);
+        if (targetUnit) {
+            if (targetUnit.toLowerCase() === 'communal') {
+                STATE.inspectionScope = 'communal';
+                STATE.selectedUnit = 'Communal';
+                STATE.selectedInspType = 'Building Safety Audit';
+            } else {
+                STATE.inspectionScope = 'unit';
+                STATE.selectedUnit = targetUnit;
+                STATE.selectedInspType = 'Routine Health Check';
+            }
+        }
+    }
     if (screen === 'log-maintenance') STATE.selectedUnit = opts.unit ?? STATE.selectedUnit;
     if (screen === 'tenant-ref-detail') STATE.tenantRefKey = opts.refKey ?? STATE.tenantRefKey ?? 'passport';
     if (screen === 'invite-tenant' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'flat-detail' || screen === 'flat-members') {
@@ -2578,8 +2592,11 @@ function go(screen, opts = {}) {
         STATE.selectedUnit = null;
     }
     if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'utility-detail' || screen === 'add-building-service' || screen === 'edit-utility' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'property-house-rules' || screen === 'edit-property-house-rules' || screen === 'property-doc-folder' || screen === 'property-flat-documents' || screen === 'edit-property-alarms' || screen === 'edit-property-appliances' || screen === 'edit-property-utilities' || screen === 'edit-property-parking' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
-    if (screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms') {
-        if (opts.unit) STATE.selectedUnit = opts.unit;
+    if (screen === 'conduct-inspection' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms' || screen === 'property-inspections') {
+        if (opts.unit) {
+            STATE.selectedUnit = opts.unit;
+            STATE.inspectionFilterUnit = opts.unit;
+        }
     }
     if (screen === 'flat-keys' || screen === 'edit-flat-keys') {
         if (opts.keysReturn) {
@@ -3326,9 +3343,9 @@ const homeIndicator = () => `<div class="home-indicator"></div>`;
 
 const topBar = (title, opts = {}) => {
     const showBack = !!opts.back && !isMainNavScreen();
-    const showHomeExit = STATE.isAuthenticated && opts.home !== false && [
+    const showHomeExit = !opts.rightBtn && STATE.isAuthenticated && opts.home !== false && [
         'property-compliance', 'property-doc-folder', 'property-doc-vault',
-        'property-inspections', 'inspection-detail', 'property-inventory', 'inventory-room',
+        'property-inventory', 'inventory-room',
         'property-house-rules', 'property-alarms', 'property-appliances',
         'property-utilities', 'utility-detail', 'property-parking',
     ].includes(STATE.screen);
@@ -5578,7 +5595,7 @@ function openContactAdminModal() {
         <p class="text-[12px] text-[#64748B] m-0">Submit a support ticket to message app administrators regarding your account or issues.</p>
         <div>
             <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Subject</label>
-            <input type="text" id="ticket-subject" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none" placeholder="e.g. Question about billing or property sync">
+            <input type="text" id="ticket-subject" class="w-full p-2.5 rounded-xl border border-[#CBD5E1] text-[13px] outline-none" placeholder="e.g. Billing inquiry">
         </div>
         <div>
             <label class="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Priority</label>
@@ -7030,13 +7047,27 @@ function bindEvents() {
     });
     app.querySelectorAll('[data-action="mark-all-rooms-good"]').forEach(el => {
         el.onclick = () => {
-            const catalog = typeof getInventoryRoomCatalog === 'function' ? getInventoryRoomCatalog(STATE.propertyId) : [];
-            const list = catalog.length ? catalog : [
-                { name: 'Living Room' }, { name: 'Kitchen' }, { name: 'Bedroom' }, { name: 'Bathroom' }, { name: 'Hallway & Alarms' }
+            const currentScope = STATE.inspectionScope || 'unit';
+            const pid = STATE.propertyId ?? 0;
+            const unitCatalog = typeof getInventoryRoomCatalog === 'function' ? getInventoryRoomCatalog(pid) : [];
+            const unitRooms = unitCatalog.length ? unitCatalog.map(r => ({ name: r.name })) : [
+                { name: 'Living Room' },
+                { name: 'Kitchen & Appliances' },
+                { name: 'Master Bedroom' },
+                { name: 'Bathroom & Plumbing' },
+                { name: 'Hallway & Smoke Alarms' }
             ];
+            const communalAreas = [
+                { name: 'Main Entrance & Intercom' },
+                { name: 'Communal Hallway & Stairs' },
+                { name: 'Fire Doors & Emergency Lighting' },
+                { name: 'Exterior, Roof & Gutters' },
+                { name: 'Bin Storage & Meter Cupboards' }
+            ];
+            const list = currentScope === 'communal' ? communalAreas : unitRooms;
             STATE.inspectionRoomChecks = {};
             list.forEach(r => {
-                STATE.inspectionRoomChecks[r.name || 'Room'] = 'good';
+                STATE.inspectionRoomChecks[r.name] = 'good';
             });
             render();
         };

@@ -323,13 +323,19 @@ const AppStore = {
             { id: 10, propertyId: 2, tenantId: 0, type: 'solo', unit: 'Room 3', rent: '£680', start: '2025-02-01', end: '2027-01-31', status: 'active', leadName: 'Mark Davis' },
         ];
         this.inspections = [
-            { id: 0, propertyId: 0, type: 'Check-in', date: '2024-01-15', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(0, 3), notes: 'Property in excellent condition at move-in. Minor scuff on hallway skirting noted.', report: 'Check-in report.pdf' },
-            { id: 1, propertyId: 0, type: 'Annual', date: '2025-01-10', rating: '4.7', photos: 8, photoUrls: IMG.interior.slice(1, 3), notes: 'Annual check complete. Kitchen extractor filter replaced. Smoke alarms tested OK.', report: 'Annual Inspection 2025.pdf' },
-            { id: 2, propertyId: 1, type: 'Mid-term', date: '2026-08-15', rating: null, photos: 0, report: null, scheduled: true, notes: 'Tenant requested afternoon slot. Parking on street.' },
-            { id: 3, propertyId: 1, type: 'Check-in', date: '2023-06-01', rating: '4.9', photos: 7, photoUrls: IMG.interior.slice(0, 2), notes: 'Move-in inspection complete. All appliances clean and tested.', report: 'Check-in 45 Queens Rd.pdf' },
-            { id: 4, propertyId: 2, type: 'Pre-tenancy', date: '2025-02-10', rating: '5.0', photos: 6, photoUrls: IMG.interior.slice(1, 3), notes: 'Brand new luxury build condition. All fittings immaculate and certified.', report: 'Pre-tenancy 88 King St.pdf' },
-            { id: 5, propertyId: 3, type: 'Check-in', date: '2024-03-10', rating: '4.6', photos: 5, photoUrls: IMG.interior.slice(0, 2), notes: 'Move-in report signed. Keys handed over with signed inventory schedule.', report: 'Check-in 15 Victoria Ave.pdf' },
-            { id: 6, propertyId: 3, type: 'Annual', date: '2025-03-05', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(2, 3), notes: 'Routine check complete. Radiators bled, no signs of damp or leaks.', report: 'Annual Report 2025.pdf' },
+            { id: 0, propertyId: 0, unit: 'Flat 2A', type: 'Routine Property Inspection', date: '2024-01-15', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(0, 3), notes: 'Flat in excellent condition. Smoke alarms and boiler pressure verified.', report: 'Routine Inspection Report.pdf', status: 'Passed' },
+            { id: 1, propertyId: 0, unit: 'Flat 1', type: 'Move-in Tenancy Check', date: '2023-09-01', rating: '4.7', photos: 8, photoUrls: IMG.interior.slice(1, 3), notes: 'Move-in check complete. Inventory verified and keys handed over.', report: 'Move-in Report Flat 1.pdf', status: 'Passed' },
+            { id: 7, propertyId: 0, unit: 'Flat 2B', type: 'Routine Property Inspection', date: '2024-06-01', rating: '4.9', photos: 5, photoUrls: IMG.interior.slice(0, 2), notes: 'Group tenancy walkthrough. All rooms clean and functional.', report: 'Inspection Flat 2B.pdf', status: 'Passed' },
+            { id: 8, propertyId: 0, unit: 'Flat 3', type: 'Routine Property Inspection', date: '2024-02-01', rating: '4.6', photos: 4, photoUrls: IMG.interior.slice(1, 3), notes: 'Routine check complete. Radiators bled and working well.', report: 'Inspection Flat 3.pdf', status: 'Passed' },
+            { id: 9, propertyId: 0, unit: 'Communal', type: 'Building Safety Audit', date: '2025-01-10', rating: '4.9', photos: 4, photoUrls: IMG.interior.slice(0, 2), notes: 'Fire doors, emergency lighting, and communal stairways tested OK.', report: 'Building Safety Audit.pdf', status: 'Passed' },
+
+            { id: 2, propertyId: 1, unit: 'Flat 1A', type: 'Routine Property Inspection', date: '2026-08-15', rating: null, photos: 0, report: null, scheduled: true, notes: 'Tenant requested afternoon slot. Parking on street.' },
+            { id: 3, propertyId: 1, unit: 'Flat 1A', type: 'Move-in Tenancy Check', date: '2023-06-01', rating: '4.9', photos: 7, photoUrls: IMG.interior.slice(0, 2), notes: 'Move-in inspection complete. All appliances clean and tested.', report: 'Check-in 45 Queens Rd.pdf', status: 'Passed' },
+            { id: 10, propertyId: 1, unit: 'Flat 1B', type: 'Routine Property Inspection', date: '2023-11-01', rating: '4.8', photos: 5, photoUrls: IMG.interior.slice(1, 3), notes: 'Routine safety check passed.', report: 'Inspection Flat 1B.pdf', status: 'Passed' },
+
+            { id: 4, propertyId: 2, unit: 'Room 1', type: 'Pre-tenancy Check', date: '2025-02-10', rating: '5.0', photos: 6, photoUrls: IMG.interior.slice(1, 3), notes: 'Brand new build condition. All fittings certified.', report: 'Pre-tenancy 88 King St.pdf', status: 'Passed' },
+            { id: 5, propertyId: 3, unit: 'Flat 2A', type: 'Move-in Tenancy Check', date: '2024-03-10', rating: '4.6', photos: 5, photoUrls: IMG.interior.slice(0, 2), notes: 'Move-in report signed. Keys handed over with signed inventory.', report: 'Check-in 15 Victoria Ave.pdf', status: 'Passed' },
+            { id: 6, propertyId: 3, unit: 'Communal', type: 'Building Safety Audit', date: '2025-03-05', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(2, 3), notes: 'Routine check complete. Radiators bled, no signs of damp.', report: 'Annual Report 2025.pdf', status: 'Passed' },
         ];
         this.complianceCerts = {
             '0-0': { certNumber: 'GS-2026-001', issueDate: '2025-03-15', expiryDate: '2026-03-15', issuedBy: 'SafeGas Ltd', notes: 'All 4 boilers passed safety inspection' },
@@ -359,37 +365,37 @@ const AppStore = {
             // Property 0 - 12 Park Lane
             '0-kitchen-0': {
                 sizeSqft: '120',
-                notes: 'Modern integrated kitchen. Minor wear on worktop near sink. All appliances clean.',
+                notes: '',
                 items: ['Oven & induction hob', 'Integrated fridge freezer', 'Dishwasher', 'Microwave', 'Extractor hood', 'Solid oak worktops'],
                 photos: IMG.interior.slice(0, 2),
             },
             '0-reception-0': {
                 sizeSqft: '180',
-                notes: 'Spacious reception with hardwood flooring. 3-seater sofa and coffee table in great condition.',
+                notes: '',
                 items: ['3-Seater fabric sofa', 'Solid wood coffee table', 'Smart TV stand', 'Floor-to-ceiling curtains', 'Hardwood flooring', 'Double radiator'],
                 photos: [IMG.interior[2]],
             },
             '0-bedroom-0': {
                 sizeSqft: '140',
-                notes: 'Master bedroom. Carpet professionally cleaned Jan 2024. Bed frame and mattress in very good condition.',
+                notes: '',
                 items: ['King size bed & mattress', 'Built-in double wardrobe', 'Bedside tables (x2)', 'Blackout blinds', 'Radiator'],
                 photos: IMG.interior.slice(0, 2),
             },
             '0-bedroom-1': {
                 sizeSqft: '110',
-                notes: 'Second bedroom currently styled as study / guest bedroom. Freshly painted walls.',
+                notes: '',
                 items: ['Double bed frame', 'Orthopaedic mattress', 'Fitted wardrobe', 'Desk & ergonomic chair', 'Radiator'],
                 photos: [IMG.interior[1]],
             },
             '0-bathroom-0': {
                 sizeSqft: '55',
-                notes: 'Ceramic tiles throughout. Thermostatic rainfall shower, heated towel rail, and vanity mirror cabinet.',
+                notes: '',
                 items: ['Bathtub with glass shower screen', 'Rainfall shower mixer', 'Toilet & soft-close seat', 'Basin with vanity unit', 'Heated chrome towel rail', 'Extractor fan'],
                 photos: [IMG.interior[0]],
             },
             '0-hallway-0': {
                 sizeSqft: '40',
-                notes: 'Entrance hallway with video intercom entry, mains interlinked smoke & CO alarms tested Jan 2025.',
+                notes: '',
                 items: ['Intercom handset', 'Mains smoke alarm', 'CO alarm', 'Coat rack', 'Engineered wood flooring'],
                 photos: [],
             },
@@ -397,25 +403,25 @@ const AppStore = {
             // Property 1 - 45 Queens Road
             '1-kitchen-0': {
                 sizeSqft: '115',
-                notes: 'Period kitchen with bespoke cabinets. Worcester combi boiler in dedicated cupboard.',
+                notes: '',
                 items: ['Gas hob & fan oven', 'Bosch washing machine', 'Beko fridge freezer', 'Granite worktops', 'Extractor fan'],
                 photos: [IMG.interior[1]],
             },
             '1-reception-0': {
                 sizeSqft: '165',
-                notes: 'Bright living room with bay window and original Victorian cornicing. Excellent natural light.',
+                notes: '',
                 items: ['Corner sofa', 'Dining table & 4 chairs', 'Curtains & poles', 'Carpet', 'Victorian fireplace (decorative)'],
                 photos: [IMG.interior[0]],
             },
             '1-bedroom-0': {
                 sizeSqft: '135',
-                notes: 'Quiet rear-facing bedroom overlooking the garden. Neutral decor throughout.',
+                notes: '',
                 items: ['Double bed & pocket sprung mattress', 'Freestanding wardrobe', 'Chest of 4 drawers', 'Roller blinds'],
                 photos: [IMG.interior[2]],
             },
             '1-bathroom-0': {
                 sizeSqft: '48',
-                notes: 'Contemporary white suite. Shower enclosure, pedestal sink, and tiled floor.',
+                notes: '',
                 items: ['Walk-in shower enclosure', 'Basin & chrome mixer tap', 'WC', 'Mirrored cabinet', 'Extractor fan'],
                 photos: [],
             },
@@ -423,25 +429,25 @@ const AppStore = {
             // Property 2 - 88 King Street
             '2-kitchen-0': {
                 sizeSqft: '140',
-                notes: 'Open-plan designer kitchen with quartz countertops and integrated Siemens appliances.',
+                notes: '',
                 items: ['Siemens induction hob & oven', 'Integrated dishwasher', 'Wine cooler', 'Breakfast bar with 2 stools', 'LED under-cabinet lighting'],
                 photos: [IMG.interior[2]],
             },
             '2-reception-0': {
                 sizeSqft: '210',
-                notes: 'Floor-to-ceiling windows with panoramic city views. Designer engineered flooring.',
+                notes: '',
                 items: ['Leather designer sofa', 'Media console unit', 'Glass coffee table', 'Floor lamp', 'Motorised blinds'],
                 photos: [IMG.interior[1]],
             },
             '2-bedroom-0': {
                 sizeSqft: '150',
-                notes: 'Master suite with en-suite access. Custom fitted wardrobes with integrated LED strips.',
+                notes: '',
                 items: ['Super king bed & mattress', 'Fitted floor-to-ceiling wardrobe', 'Bedside tables (x2)', 'Smart thermostat'],
                 photos: [IMG.interior[0]],
             },
             '2-bathroom-0': {
                 sizeSqft: '60',
-                notes: 'Marble tile finish with underfloor heating, walk-in rainfall shower, and touch-lit mirror.',
+                notes: '',
                 items: ['Walk-in rainfall shower', 'Floating vanity sink', 'Wall-hung toilet', 'Illuminated LED mirror', 'Underfloor heating controller'],
                 photos: [],
             },
@@ -449,25 +455,25 @@ const AppStore = {
             // Property 3 - 15 Victoria Ave
             '3-kitchen-0': {
                 sizeSqft: '100',
-                notes: 'Fitted kitchen with laminate worktops. Stainless steel sink with mixer tap.',
+                notes: '',
                 items: ['Electric hob & oven', 'Under-counter fridge', 'Washing machine', 'Tiled splashback', 'Cooker hood'],
                 photos: [IMG.interior[0]],
             },
             '3-reception-0': {
                 sizeSqft: '150',
-                notes: 'Spacious lounge with high ceilings, feature wall, and large sash windows.',
+                notes: '',
                 items: ['2-Seater fabric sofa', 'Armchair', 'Coffee table', 'Sash window curtains', 'Radiator'],
                 photos: [IMG.interior[2]],
             },
             '3-bedroom-0': {
                 sizeSqft: '125',
-                notes: 'Well-proportioned bedroom with fitted carpet and built-in wardrobe.',
+                notes: '',
                 items: ['Double bed & mattress', '2-Door wardrobe', 'Bedside cabinet', 'Blackout blinds', 'Radiator'],
                 photos: [IMG.interior[1]],
             },
             '3-bathroom-0': {
                 sizeSqft: '45',
-                notes: 'White bathroom suite with electric shower over bath.',
+                notes: '',
                 items: ['Bath with electric shower', 'Wash basin', 'WC', 'Medicine cabinet', 'Towel rail'],
                 photos: [],
             },
@@ -3883,6 +3889,13 @@ const INVENTORY_ROOM_TEMPLATES = {
     Bedroom: ['Bed frame', 'Mattress', 'Wardrobe', 'Curtains / blinds', 'Radiator'],
     Bathroom: ['Bath / shower', 'Toilet', 'Basin', 'Tiles / grouting', 'Extractor fan'],
     Hallway: ['Smoke alarm', 'CO alarm', 'Flooring', 'Doors', 'Lighting'],
+    Balcony: ['Decking / Tiles', 'Railing / Balustrade', 'Outdoor Lighting', 'Drainage'],
+    'Garden / Patio': ['Lawn / Paving', 'Fencing / Gate', 'Outdoor Tap', 'Garden Furniture'],
+    'Dining Room': ['Dining Table', 'Chairs', 'Lighting', 'Flooring', 'Radiator'],
+    'Ensuite Bathroom': ['Shower Enclosure', 'Toilet', 'Basin / Vanity', 'Mirror', 'Extractor Fan'],
+    'Utility Room': ['Washing Machine', 'Tumble Dryer', 'Sink / Taps', 'Storage Units', 'Boiler / Controls'],
+    'Study / Office': ['Desk', 'Office Chair', 'Shelving / Bookcase', 'Power Sockets', 'Lighting'],
+    'Storage / Loft': ['Boarding / Flooring', 'Loft Ladder', 'Lighting', 'Insulation'],
 };
 
 /** Keep exactly one lead role on each tenancy record. */
@@ -4002,13 +4015,37 @@ function hasUnitSpecCount(v) {
     return v != null && v !== '';
 }
 
+function getActiveInventoryUnit(propertyId) {
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
+    if (units.length <= 1) return '';
+    return STATE.selectedInventoryUnit || STATE.selectedUnit || (typeof unitName === 'function' ? unitName(units[0]) : (units[0]?.name || 'Flat 1'));
+}
+
 function getInventoryRoomCatalog(propertyId) {
-    const layout = getPropertyInventoryLayout(propertyId);
+    const activeUnit = getActiveInventoryUnit(propertyId);
+    let layout = getPropertyInventoryLayout(propertyId);
+    
+    // If a specific unit is selected in a multi-unit property
+    if (activeUnit && activeUnit !== 'communal') {
+        const u = typeof getUnitByName === 'function' ? getUnitByName(propertyId, activeUnit) : null;
+        if (u) {
+            layout = {
+                bedrooms: Math.max(1, +u.beds || 1),
+                bathrooms: Math.max(1, +u.baths || 1),
+                kitchens: 1,
+                reception: 1,
+            };
+        }
+    } else if (activeUnit === 'communal') {
+        layout = { bedrooms: 0, bathrooms: 0, kitchens: 0, reception: 0 };
+    }
+
     const catalog = [];
-    const kitchens = Math.max(1, +layout.kitchens || 1);
-    const reception = Math.max(1, +layout.reception || 1);
-    const bedrooms = Math.max(1, +layout.bedrooms || 1);
-    const bathrooms = Math.max(1, +layout.bathrooms || 1);
+    const kitchens = Math.max(0, +layout.kitchens || 0);
+    const reception = Math.max(0, +layout.reception || 0);
+    const bedrooms = Math.max(0, +layout.bedrooms || 0);
+    const bathrooms = Math.max(0, +layout.bathrooms || 0);
+    
     for (let i = 0; i < kitchens; i++) {
         catalog.push({
             slug: `kitchen-${i}`,
@@ -4041,8 +4078,40 @@ function getInventoryRoomCatalog(propertyId) {
             icon: 'bath',
         });
     }
-    catalog.push({ slug: 'hallway-0', name: 'Hallway', template: 'Hallway', icon: 'door-open' });
-    return catalog;
+    if (activeUnit !== 'communal' && (kitchens || reception || bedrooms || bathrooms)) {
+        catalog.push({ slug: 'hallway-0', name: 'Hallway', template: 'Hallway', icon: 'door-open' });
+    } else if (activeUnit === 'communal') {
+        catalog.push({ slug: 'entrance-lobby-0', name: 'Entrance & Lobby', template: 'Hallway', icon: 'door-open' });
+        catalog.push({ slug: 'stairwell-0', name: 'Stairwell & Corridors', template: 'Hallway', icon: 'layers' });
+        catalog.push({ slug: 'bin-store-0', name: 'Bin Store & Meters', template: 'Storage / Loft', icon: 'trash' });
+    }
+
+    // Custom rooms added by user (scoped to active unit if multi-unit)
+    const meta = AppStore.meta(propertyId);
+    const unitKey = activeUnit || 'global';
+    const custom = (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey]) 
+        ? meta.customRoomsByUnit[unitKey] 
+        : (meta.customRooms || []);
+        
+    custom.forEach((r, idx) => {
+        catalog.push({
+            slug: r.slug || `custom-${idx}`,
+            name: r.name || 'Custom Room',
+            template: r.template || r.name || 'Custom Room',
+            icon: r.icon || getRoomIcon(r.name),
+            isCustom: true,
+        });
+    });
+
+    // Custom renames
+    const renames = (meta.roomRenamesByUnit && meta.roomRenamesByUnit[unitKey]) || meta.roomRenames || {};
+    catalog.forEach(item => {
+        if (renames[item.slug]) item.name = renames[item.slug];
+    });
+
+    // Exclude removed rooms
+    const removed = (meta.removedRoomsByUnit && meta.removedRoomsByUnit[unitKey]) || meta.removedRooms || [];
+    return catalog.filter(r => !removed.includes(r.slug));
 }
 
 function resolveInventoryRoomSlug(propertyId, roomRef) {
@@ -4053,7 +4122,9 @@ function resolveInventoryRoomSlug(propertyId, roomRef) {
 }
 
 function inventoryKey(pid, roomRef) {
-    return `${pid}-${resolveInventoryRoomSlug(pid, roomRef ?? 0)}`;
+    const unit = getActiveInventoryUnit(pid);
+    const slug = resolveInventoryRoomSlug(pid, roomRef ?? 0);
+    return unit ? `${pid}-${unit}-${slug}` : `${pid}-${slug}`;
 }
 
 function inventoryRoomMeta(propertyId, roomRef) {
@@ -4061,25 +4132,56 @@ function inventoryRoomMeta(propertyId, roomRef) {
     const idx = typeof roomRef === 'number' || (typeof roomRef === 'string' && /^\d+$/.test(roomRef))
         ? (+roomRef || 0)
         : catalog.findIndex(r => r.slug === roomRef);
-    return catalog[idx >= 0 ? idx : 0] || catalog[0];
+    const room = catalog[idx >= 0 ? idx : 0] || catalog[0];
+    const activeUnit = typeof getActiveInventoryUnit === 'function' ? getActiveInventoryUnit(propertyId) : '';
+    const unitKey = activeUnit || 'global';
+    const meta = AppStore.meta(propertyId);
+    const catOverride = meta.roomCategoriesByUnit?.[unitKey]?.[room.slug];
+    if (catOverride) {
+        return { ...room, template: catOverride };
+    }
+    return room;
 }
 
 function inventoryRoomName(propertyId, roomRef) {
     return inventoryRoomMeta(propertyId, roomRef).name;
 }
 
+function inventoryItemObject(item) {
+    if (!item) return { name: 'Item', condition: 'Good', photos: [] };
+    if (typeof item === 'string') return { name: item, condition: 'Good', photos: [] };
+    if (typeof item === 'object') {
+        const name = item.name || item.item || item.title || item.label || 'Item';
+        const condition = item.condition || 'Good';
+        let photos = [];
+        if (Array.isArray(item.photos)) photos = item.photos;
+        else if (item.photo) photos = [item.photo];
+        return { name, condition, photos };
+    }
+    return { name: String(item), condition: 'Good', photos: [] };
+}
+
 function inventoryItemName(item) {
     if (!item) return '';
     if (typeof item === 'string') return item;
-    if (Array.isArray(item)) return inventoryItemName(item[0]);
-    if (typeof item === 'object') {
-        return item.name || item.item || item.title || item.label || item.text || item.description || Object.values(item).find(v => typeof v === 'string' && v.trim()) || 'Fixture';
-    }
+    if (typeof item === 'object') return item.name || item.item || item.title || item.label || 'Item';
     return String(item);
 }
 
 function getDefaultItemsForRoom(roomName) {
-    return INVENTORY_ROOM_TEMPLATES[roomName] || ['General fixture'];
+    if (!roomName) return ['General fixtures', 'Lighting', 'Walls & Ceiling', 'Flooring'];
+    if (INVENTORY_ROOM_TEMPLATES[roomName]) return INVENTORY_ROOM_TEMPLATES[roomName];
+    const norm = roomName.toLowerCase();
+    if (norm.includes('bed')) return INVENTORY_ROOM_TEMPLATES.Bedroom;
+    if (norm.includes('bath') || norm.includes('ensuite') || norm.includes('toilet') || norm.includes('wc')) return INVENTORY_ROOM_TEMPLATES.Bathroom;
+    if (norm.includes('kitchen')) return INVENTORY_ROOM_TEMPLATES.Kitchen;
+    if (norm.includes('living') || norm.includes('lounge') || norm.includes('reception')) return INVENTORY_ROOM_TEMPLATES['Living room'];
+    if (norm.includes('dining')) return INVENTORY_ROOM_TEMPLATES['Dining Room'] || INVENTORY_ROOM_TEMPLATES['Living room'];
+    if (norm.includes('balcony') || norm.includes('terrace') || norm.includes('patio') || norm.includes('garden')) return INVENTORY_ROOM_TEMPLATES.Balcony || ['Decking / Tiles', 'Railing / Balustrade', 'Outdoor Lighting'];
+    if (norm.includes('study') || norm.includes('office') || norm.includes('desk')) return INVENTORY_ROOM_TEMPLATES['Study / Office'] || ['Desk', 'Office Chair', 'Power Sockets'];
+    if (norm.includes('utility') || norm.includes('laundry')) return INVENTORY_ROOM_TEMPLATES['Utility Room'] || ['Washing Machine', 'Sink', 'Storage'];
+    if (norm.includes('loft') || norm.includes('attic') || norm.includes('storage') || norm.includes('garage') || norm.includes('gym')) return INVENTORY_ROOM_TEMPLATES['Storage / Loft'] || ['Lighting', 'Flooring', 'Power Sockets'];
+    return ['General fixtures', 'Lighting', 'Walls & Ceiling', 'Flooring'];
 }
 
 function ensureInventoryRoom(pid, roomRef) {
@@ -4088,18 +4190,28 @@ function ensureInventoryRoom(pid, roomRef) {
     if (!AppStore.inventory[key]) {
         AppStore.inventory[key] = {
             notes: '',
-            items: getDefaultItemsForRoom(meta.template),
+            items: getDefaultItemsForRoom(meta.template).map(name => ({ name, condition: 'Good' })),
             photos: [],
+            sizeSqft: '',
         };
     } else {
-        if (AppStore.inventory[key].items?.length) {
-            AppStore.inventory[key].items = AppStore.inventory[key].items.map(inventoryItemName);
+        if (!AppStore.inventory[key].items || !AppStore.inventory[key].items.length) {
+            AppStore.inventory[key].items = getDefaultItemsForRoom(meta.template).map(name => ({ name, condition: 'Good' }));
         } else {
-            AppStore.inventory[key].items = getDefaultItemsForRoom(meta.template);
+            AppStore.inventory[key].items = AppStore.inventory[key].items.map(item => inventoryItemObject(item));
         }
-        delete AppStore.inventory[key].condition;
     }
     return AppStore.inventory[key];
+}
+
+function getInventoryRoomConditionSummary(propertyId, slug) {
+    const inv = ensureInventoryRoom(propertyId, slug);
+    const items = (inv.items || []).map(inventoryItemObject);
+    const damaged = items.filter(i => i.condition === 'Damaged' || i.condition === 'Missing').length;
+    const fair = items.filter(i => i.condition === 'Fair').length;
+    if (damaged > 0) return { label: `${damaged} Damaged`, class: 'bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]' };
+    if (fair > 0) return { label: `${fair} Fair`, class: 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]' };
+    return { label: 'All Good', class: 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]' };
 }
 
 function getPropertyInventoryLayout(propertyId) {
@@ -4192,14 +4304,16 @@ function renderFlatRoomSizesSection(propertyId, unitName) {
 function getInventoryRooms(propertyId = STATE.propertyId) {
     return getInventoryRoomCatalog(propertyId).map((room, i) => {
         const inv = ensureInventoryRoom(propertyId, room.slug);
-        const photoCount = inv.photos?.length || 0;
         const itemCount = inv.items?.length || 0;
-        const sizeLine = inv.sizeSqft ? `${inv.sizeSqft} sq ft` : '';
-        const notes = inv.notes?.trim();
-        const sub = notes
-            ? truncateNote(notes, 52)
-            : [sizeLine, `${itemCount} item${itemCount === 1 ? '' : 's'}`, photoCount ? `${photoCount} photo${photoCount === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ') || 'No details yet';
-        return [room.name, sub, room.icon, i];
+        const sizeSqft = inv.sizeSqft?.trim();
+        const photoCount = inv.photos?.length || 0;
+        const parts = [];
+        if (sizeSqft) parts.push(`${sizeSqft} sq ft`);
+        parts.push(itemCount > 0 ? `${itemCount} item${itemCount === 1 ? '' : 's'}` : '0 items');
+        if (photoCount > 0) parts.push(`${photoCount} photo${photoCount === 1 ? '' : 's'}`);
+        const sub = parts.join(' · ');
+        const condSum = getInventoryRoomConditionSummary(propertyId, room.slug);
+        return [room.name, sub, room.icon, i, condSum];
     });
 }
 
@@ -4207,40 +4321,6 @@ function inventoryHubLabel(propertyId) {
     const layout = getPropertyInventoryLayout(propertyId);
     const rooms = getInventoryRoomCatalog(propertyId);
     return `${inventoryLayoutSummaryLine(layout)} · ${rooms.length} room${rooms.length === 1 ? '' : 's'}`;
-}
-
-function renderInventoryLayoutSection(propertyId) {
-    const layout = getPropertyInventoryLayout(propertyId);
-    const editing = STATE.editingInventoryLayout;
-    if (editing) {
-        return `
-        <div class="card p-4 inventory-layout-card">
-            <p class="form-section-title">Property layout</p>
-            <p class="form-helper mb-3">Beds, baths and rooms for check-in / check-out inventory.</p>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="form-field"><label class="form-label">Bedrooms</label><input data-field="invBedrooms" type="number" min="0" class="form-input" value="${layout.bedrooms}"></div>
-                <div class="form-field"><label class="form-label">Bathrooms</label><input data-field="invBathrooms" type="number" min="0" class="form-input" value="${layout.bathrooms}"></div>
-                <div class="form-field"><label class="form-label">Kitchens</label><input data-field="invKitchens" type="number" min="0" class="form-input" value="${layout.kitchens}"></div>
-                <div class="form-field"><label class="form-label">Reception rooms</label><input data-field="invReception" type="number" min="0" class="form-input" value="${layout.reception}"></div>
-            </div>
-            <div class="flex gap-2 mt-3">
-                <button type="button" data-action="save-inventory-layout" class="btn-primary flex-1 py-2.5 text-[13px]">Save layout</button>
-                <button type="button" data-action="sync-inventory-layout-units" class="btn-secondary flex-1 py-2.5 text-[13px]">Pull from units</button>
-            </div>
-            <button type="button" data-action="toggle-inventory-layout-edit" class="btn-secondary w-full py-2.5 text-[13px] mt-2">Cancel</button>
-        </div>`;
-    }
-    return `
-    <div class="card p-4 inventory-layout-card">
-        <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-                <p class="form-section-title">Property layout</p>
-                <p class="inventory-layout-line">${inventoryLayoutSummaryLine(layout)}</p>
-                ${layout.multiUnit ? `<p class="form-helper mt-1">Typical unit layout · ${getPropertyUnits(propertyId).length} units in building</p>` : ''}
-            </div>
-            <button type="button" data-action="toggle-inventory-layout-edit" class="header-text-link shrink-0">Edit</button>
-        </div>
-    </div>`;
 }
 
 function renderPropertyInventoryTab(propertyId) {
@@ -4252,34 +4332,28 @@ function renderPropertyInventoryTab(propertyId) {
     return `
     <div class="screen-content screen-content-sm space-y-3.5 text-left pb-8">
         ${isMulti ? `
-        <!-- Multi-Unit Selector Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                    <i data-lucide="door-closed" class="w-4 h-4"></i>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
-                    <div class="relative flex items-center">
-                        <select data-action="select-inventory-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
-                            ${units.map(u => {
-                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                                const isSel = activeUnit === name;
-                                const beds = u.beds ? ` · ${u.beds} bed` : '';
-                                return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${beds}</option>`;
-                            }).join('')}
-                            <option value="communal" ${activeUnit === 'communal' ? 'selected' : ''}>Communal Areas</option>
-                        </select>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
-                    </div>
-                </div>
+        <!-- Flat / Unit Selector Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2">
+            <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                    <i data-lucide="door-closed" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>Select Flat / Area</span>
+                </span>
+                <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Choose Unit</span>
+            </label>
+            <div class="relative">
+                <select data-action="select-inventory-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                    ${units.map(u => {
+                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                        const isSel = activeUnit === name;
+                        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
+                        const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.beds ? ` · ${u.beds} bed` : (u.status === 'vacant' ? ' · Vacant' : ''));
+                        return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}</option>`;
+                    }).join('')}
+                    <option value="communal" ${activeUnit === 'communal' ? 'selected' : ''}>🏢 Communal Areas &amp; Building Common Parts</option>
+                </select>
             </div>
-            <span class="text-[11px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0">
-                ${units.length} Flats
-            </span>
         </div>` : ''}
-
-        ${renderInventoryLayoutSection(propertyId)}
 
         <div class="flex items-center justify-between px-1 mt-2 mb-1">
             <p class="text-[13.5px] font-bold text-[#0F172A] m-0">${isMulti ? `${escapeHtml(activeUnit === 'communal' ? 'Communal Area' : activeUnit)} Room Checklists` : 'Room Checklists'}</p>
@@ -4293,7 +4367,7 @@ function renderPropertyInventoryTab(propertyId) {
         </div>
 
         <div class="space-y-2">
-        ${rooms.map(([r, n, icon, idx]) => `
+        ${rooms.map(([r, n, icon, idx, condSum]) => `
         <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-3.5 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs cursor-pointer group">
             <div class="flex items-center gap-3.5 min-w-0">
                 <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
@@ -4302,7 +4376,10 @@ function renderPropertyInventoryTab(propertyId) {
                     <p class="text-[11.5px] text-[#64748B] truncate mt-0.5 m-0">${escapeHtml(n)}</p>
                 </div>
             </div>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
+            <div class="flex items-center gap-2 shrink-0">
+                ${condSum ? `<span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full ${condSum.class}">${condSum.label}</span>` : ''}
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
+            </div>
         </button>`).join('')}
         </div>
         <button type="button" data-action="open-add-room-modal" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold mt-2 shadow-xs flex items-center justify-center gap-2 cursor-pointer">
@@ -4585,97 +4662,190 @@ function screenInventoryRoomEnhanced() {
         : '';
 
     return `${topBar(roomName, { back: true, sub: p?.name || '' })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-10">
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
         <!-- Room Overview Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <div class="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
                 <div>
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Schedule</span>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Details</span>
                     <h3 class="text-[17px] font-bold text-[#0F172A] m-0 mt-0.5">${escapeHtml(roomName)}</h3>
                 </div>
-                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs">
+                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                    <span>Edit Schedule</span>
+                    <span>Edit Room</span>
                 </button>
             </div>
-            <div class="flex flex-wrap items-center gap-2 pt-3">
-                ${roomSize ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-bold text-[#475569]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i> ${escapeHtml(roomSize)} sq ft</span>` : ''}
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-bold text-[#475569]"><i data-lucide="package" class="w-3.5 h-3.5 text-[#64748B]"></i> ${items.length} Fixtures</span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#ECFDF5] border border-[#D1FAE5] text-[11px] font-bold text-[#059669]"><i data-lucide="check" class="w-3.5 h-3.5 text-[#059669]"></i> Condition OK</span>
+            <div class="flex flex-wrap items-center gap-2 pt-2.5">
+                ${roomSize ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-medium text-[#475569]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i> ${escapeHtml(roomSize)} sq ft</span>` : ''}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[11.5px] font-semibold text-[#2563EB]"><i data-lucide="package" class="w-3.5 h-3.5"></i> ${items.length} ${items.length === 1 ? 'item' : 'items'}</span>
+                ${roomPhotos.length ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ECFDF5] text-[11.5px] font-semibold text-[#059669]"><i data-lucide="camera" class="w-3.5 h-3.5"></i> ${roomPhotos.length} ${roomPhotos.length === 1 ? 'photo' : 'photos'}</span>` : ''}
             </div>
         </div>
 
         <!-- Room Photos Section -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
             <div class="flex items-center justify-between">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Room Photos (${roomPhotos.length})</span>
-                <span class="text-[11px] text-[#64748B]">Timestamped</span>
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Room Photos (${roomPhotos.length})</span>
+                    <span class="text-[10.5px] text-[#94A3B8]">Document fixtures and condition</span>
+                </div>
+                <span class="text-[11px] text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-md font-medium">Timestamped</span>
             </div>
             ${photoPreview}
-            <button type="button" data-action="upload-photo" class="w-full py-3 rounded-xl bg-white border border-[#E2E8F0] text-[#0F172A] font-bold text-[13px] shadow-xs hover:bg-[#F8FAFC] transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <input type="file" id="inventoryRoomPhotoInput" accept="image/*" class="hidden">
+            <button type="button" data-action="trigger-room-photo-upload" class="w-full py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-bold text-[12.5px] shadow-2xs hover:bg-[#F8FAFC] transition-all flex items-center justify-center gap-2 cursor-pointer">
                 <i data-lucide="camera" class="w-4 h-4 text-[#2563EB]"></i>
-                <span>Add Room Photos</span>
+                <span>${roomPhotos.length ? 'Add Another Photo' : 'Add Room Photos'}</span>
             </button>
         </div>
 
         <!-- Fixtures & Items List -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <div class="flex items-center justify-between mb-3">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Items &amp; Fixtures (${items.length})</span>
-                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="text-[12px] font-bold text-[#2563EB] hover:underline cursor-pointer">+ Add item</button>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Items &amp; Fixtures (${items.length})</span>
+                    <p class="text-[10.5px] text-[#94A3B8] m-0 mt-0.5">Attach item photos &amp; tap badge to cycle condition</p>
+                </div>
+                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="text-[11.5px] font-bold text-[#2563EB] hover:underline cursor-pointer">Manage items</button>
             </div>
             ${items.length ? `
             <div class="divide-y divide-[#F1F5F9]">
                 ${items.map((item, idx) => {
-        const itemName = inventoryItemName(item);
-        const icon = getInventoryFixtureIcon(itemName);
+        const itemObj = inventoryItemObject(item);
+        const itemName = itemObj.name || 'Fixture';
+        const cond = itemObj.condition || 'Good';
+        const itemPhotos = itemObj.photos || [];
+        const badgeClass = inventoryConditionBadgeClass(cond);
         return `
-                    <div class="py-3 flex items-center justify-between gap-3 group">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-xs">
-                                <i data-lucide="${icon}" class="w-4 h-4"></i>
+                    <div class="py-2.5 space-y-2">
+                        <div class="flex items-center justify-between gap-2.5">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] shrink-0"></span>
+                                <span class="text-[13px] font-bold text-[#0F172A] truncate">${escapeHtml(itemName)}</span>
                             </div>
-                            <div class="min-w-0">
-                                <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${escapeHtml(itemName)}</p>
-                                <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Item #${idx + 1} · Verified</p>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" data-action="trigger-item-photo-upload" data-item-idx="${idx}" class="px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs ${itemPhotos.length ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] hover:bg-[#DBEAFE]' : 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] hover:bg-[#F1F5F9]'}" title="Attach photo to ${escapeHtml(itemName)}">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 ${itemPhotos.length ? 'text-[#2563EB]' : 'text-[#64748B]'}"></i>
+                                    <span>${itemPhotos.length ? `${itemPhotos.length}` : '+ Photo'}</span>
+                                </button>
+                                <button type="button" data-action="toggle-inventory-item-condition" data-item-idx="${idx}" class="text-[11px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-colors shadow-2xs ${badgeClass}" title="Tap to change condition">
+                                    ${escapeHtml(cond)}
+                                </button>
+                                <button type="button" data-action="inline-remove-inventory-item" data-item-idx="${idx}" class="w-7 h-7 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer shrink-0" aria-label="Delete item">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">
-                                <i data-lucide="check" class="w-3 h-3"></i> Good
-                            </span>
-                            <button type="button" data-action="inline-remove-inventory-item" data-item-idx="${idx}" class="w-7 h-7 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer" aria-label="Delete item">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                            </button>
-                        </div>
+                        ${itemPhotos.length ? `
+                        <!-- Item Photos Strip -->
+                        <div class="flex items-center gap-2 pl-3.5 overflow-x-auto py-1">
+                            ${itemPhotos.map((pUrl, pIdx) => `
+                            <div class="relative group/photo shrink-0">
+                                <img src="${escapeHtml(pUrl)}" alt="${escapeHtml(itemName)}" class="w-12 h-12 object-cover rounded-xl border border-[#E2E8F0] shadow-2xs">
+                                <button type="button" data-action="remove-item-photo" data-item-idx="${idx}" data-photo-idx="${pIdx}" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EF4444] text-white flex items-center justify-center text-[9px] font-bold shadow-xs hover:bg-[#DC2626] cursor-pointer" title="Remove photo">
+                                    <i data-lucide="x" class="w-2.5 h-2.5"></i>
+                                </button>
+                            </div>`).join('')}
+                        </div>` : ''}
                     </div>`;
     }).join('')}
             </div>` : `
-            <div class="text-center py-6">
-                <p class="text-[13px] text-[#94A3B8] m-0">No items recorded for this room.</p>
-                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="mt-2 text-[12px] font-bold text-[#2563EB]">Add fixtures now</button>
+            <div class="text-center py-4">
+                <p class="text-[13px] text-[#94A3B8] m-0">No items added to this room yet.</p>
             </div>`}
 
+            <input type="file" id="inventoryItemPhotoInput" accept="image/*" class="hidden">
+
             <!-- Inline Quick Add Bar -->
-            <div class="mt-3 pt-3 border-t border-[#F1F5F9] flex items-center gap-2">
-                <input type="text" id="inlineInvItemInput" class="form-input text-[13px] flex-1 py-2" placeholder="Quick add item (e.g. Microwave, Mirror…)">
-                <button type="button" data-action="inline-add-inventory-item" class="btn-primary py-2 px-4 text-[12px] font-bold rounded-xl shrink-0">Add</button>
+            <div class="pt-2 border-t border-[#F1F5F9] flex items-center gap-2">
+                <input type="text" id="inlineInvItemInput" class="form-input text-[13px] flex-1 py-2 rounded-xl" placeholder="Quick add item (e.g. Microwave, Mirror…)">
+                <button type="button" data-action="inline-add-inventory-item" class="btn-primary py-2 px-3.5 text-[12px] font-bold rounded-xl shrink-0 cursor-pointer">Add</button>
             </div>
         </div>
 
-        <!-- Room Condition Notes -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Condition Notes &amp; Observations</span>
-                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="text-[11px] font-bold text-[#2563EB]">Edit notes</button>
+        <!-- Room Notes Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Notes &amp; Observations</span>
+                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="text-[11.5px] font-bold text-[#2563EB] hover:underline cursor-pointer">${notes ? 'Edit notes' : '+ Add note'}</button>
             </div>
             ${notes ? `
-            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                <p class="text-[13px] text-[#334155] leading-relaxed m-0">${escapeHtml(notes)}</p>
-            </div>` : `
-            <p class="text-[13px] text-[#94A3B8] m-0">No specific defects or notes logged.</p>`}
+            <p class="text-[13px] text-[#334155] leading-relaxed m-0 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">${escapeHtml(notes)}</p>` : `
+            <p class="text-[12.5px] text-[#94A3B8] m-0 italic">No notes recorded for this room.</p>`}
         </div>
     </div>`;
+}
+
+function getRoomContextPresets(roomName = '', template = '') {
+    const norm = `${roomName} ${template}`.toLowerCase();
+    if (norm.includes('kitchen')) {
+        return ['Oven & Induction Hob', 'Integrated Fridge Freezer', 'Dishwasher', 'Microwave', 'Washing Machine', 'Extractor Hood', 'Sink & Mixer Tap', 'Fitted Cabinets', 'Worktop'];
+    }
+    if (norm.includes('bed')) {
+        return ['Double Bed & Mattress', 'King Bed & Mattress', 'Fitted Wardrobe', 'Bedside Tables', 'Chest of Drawers', 'Blackout Blinds', 'Radiator', 'Desk & Chair'];
+    }
+    if (norm.includes('bath') || norm.includes('ensuite') || norm.includes('toilet') || norm.includes('wc')) {
+        return ['Rainfall Shower Mixer', 'Bathtub & Screen', 'Toilet & Soft-Close Seat', 'Vanity Unit & Basin', 'Heated Towel Rail', 'Mirrored Cabinet', 'Extractor Fan'];
+    }
+    if (norm.includes('living') || norm.includes('lounge') || norm.includes('reception')) {
+        return ['3-Seater Fabric Sofa', 'Coffee Table', 'Dining Table & Chairs', 'Smart TV Stand', 'Floor-to-Ceiling Curtains', 'Hardwood Flooring', 'Radiator'];
+    }
+    if (norm.includes('dining')) {
+        return ['Dining Table & 6 Chairs', 'Sideboard Cabinet', 'Pendant Lighting', 'Curtains & Poles', 'Radiator'];
+    }
+    if (norm.includes('balcony') || norm.includes('terrace') || norm.includes('patio') || norm.includes('garden')) {
+        return ['Decking / Patio Tiles', 'Railing / Balustrade', 'Outdoor Lighting', 'Patio Furniture Set', 'External Power Socket'];
+    }
+    if (norm.includes('hall') || norm.includes('corridor') || norm.includes('entrance') || norm.includes('lobby')) {
+        return ['Intercom Handset', 'Mains Smoke Alarm', 'CO Alarm', 'Coat Rack & Shoe Storage', 'Engineered Wood Flooring'];
+    }
+    if (norm.includes('utility') || norm.includes('laundry')) {
+        return ['Washing Machine', 'Tumble Dryer', 'Utility Sink', 'Storage Cupboards', 'Ironing Station'];
+    }
+    if (norm.includes('study') || norm.includes('office')) {
+        return ['Office Desk', 'Ergonomic Chair', 'Bookcase / Shelving', 'Desk Lamp', 'Power Sockets', 'Blinds'];
+    }
+    if (norm.includes('garage') || norm.includes('storage') || norm.includes('loft') || norm.includes('attic') || norm.includes('basement') || norm.includes('gym')) {
+        return ['Heavy Duty Shelving', 'Ceiling Lighting', 'Power Sockets', 'Concrete / Rubber Flooring', 'Ventilation'];
+    }
+    return ['General Fixtures', 'Ceiling Lighting', 'Power Sockets', 'Radiator', 'Window Blinds', 'Hardwood / Carpet Flooring'];
+}
+
+const INVENTORY_ROOM_CATEGORIES = [
+    'Kitchen',
+    'Bedroom',
+    'Bathroom',
+    'Living Room',
+    'Dining Room',
+    'Balcony / Terrace',
+    'Hallway / Entrance',
+    'Utility / Laundry',
+    'Study / Home Office',
+    'Storage / Garage',
+    'Communal Area',
+    'Custom / Other'
+];
+
+function initInventoryEditItems() {
+    const pid = STATE.propertyId ?? 0;
+    const rid = STATE.roomId ?? 0;
+    const roomMeta = inventoryRoomMeta(pid, rid);
+    const key = inventoryKey(pid, rid);
+    const existing = AppStore.inventory[key]?.items || getDefaultItemsForRoom(roomMeta.template || roomMeta.name);
+    STATE.inventoryEditItems = existing.map(item => inventoryItemObject(item));
+}
+
+function collectInventoryEditItemsFromDom() {
+    const rows = document.querySelectorAll('[data-inventory-item-row]');
+    if (!rows.length) return (STATE.inventoryEditItems || []).map(inventoryItemObject);
+    const items = [];
+    rows.forEach(row => {
+        const inp = row.querySelector('[data-inventory-item-name]');
+        const val = inp ? inp.value.trim() : '';
+        const cond = row.dataset.itemCondition || 'Good';
+        if (val) items.push({ name: val, condition: cond });
+    });
+    return items;
 }
 
 function screenEditInventoryRoomEnhanced() {
@@ -4687,56 +4857,66 @@ function screenEditInventoryRoomEnhanced() {
     if (!STATE.inventoryEditItems) initInventoryEditItems();
     const items = STATE.inventoryEditItems;
 
-    const fixturePresets = [
-        'Oven & Induction Hob', 'Integrated Fridge Freezer', 'Dishwasher', 'Washing Machine',
-        'Microwave', 'Extractor Hood', 'King Size Bed & Mattress', 'Double Wardrobe',
-        '3-Seater Sofa', 'Coffee Table', 'Dining Table & Chairs', 'Smart TV Stand',
-        'Rainfall Shower Mixer', 'Vanity Mirror Cabinet', 'Mains Smoke & CO Alarm'
-    ];
-
     return `${topBar('Edit ' + roomName, { back: true })}
-    <div class="screen-content screen-enter space-y-4 text-left pb-10">
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+    <div class="screen-content screen-enter space-y-4 text-left pb-12">
+        <!-- Room Details Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3.5">
             <div class="form-field">
-                <label class="form-label text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room size (sq ft)</label>
-                <input data-field="roomSizeSqft" type="text" class="form-input" value="${escapeHtml(getInventoryRoomSize(STATE.propertyId, rid))}" placeholder="e.g. 120">
+                <label class="form-label text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Name</label>
+                <input data-field="editRoomName" type="text" class="form-input font-bold text-[14px] rounded-xl" value="${escapeHtml(roomName)}" placeholder="e.g. Living room, Master Bedroom">
             </div>
-            ${formTextarea('Room condition notes', getInventoryNotes(STATE.propertyId, rid), 'Scratches, stains, missing keys, clean status…', 'roomNotes')}
-        </div>
-
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Fixtures &amp; Inventory Items (${items.length})</p>
-                <button type="button" data-action="add-inventory-item" class="text-[12px] font-bold text-[#2563EB] cursor-pointer">+ New line</button>
-            </div>
-
-            <!-- Preset Quick Add Chips -->
-            <div>
-                <p class="text-[11px] text-[#64748B] mb-2 font-medium">Quick Add Common Items:</p>
-                <div class="flex flex-wrap gap-1.5 max-h-[110px] overflow-y-auto pr-1">
-                    ${fixturePresets.map(preset => `
-                    <button type="button" data-action="add-preset-inventory-item" data-preset="${escapeHtml(preset)}" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] transition-colors cursor-pointer flex items-center gap-1">
-                        <i data-lucide="plus" class="w-3 h-3 text-[#2563EB]"></i>
-                        <span>${escapeHtml(preset)}</span>
-                    </button>`).join('')}
+            <div class="form-field">
+                <label class="form-label text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Size (Optional)</label>
+                <div class="relative">
+                    <input data-field="roomSizeSqft" type="text" class="form-input text-[13px] rounded-xl pr-14" value="${escapeHtml(getInventoryRoomSize(STATE.propertyId, rid))}" placeholder="e.g. 150">
+                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-[#94A3B8] pointer-events-none">sq ft</span>
                 </div>
             </div>
-
-            <div class="stack-sm pt-2 border-t border-[#F1F5F9]">
-            ${items.map((item, i) => `
-            <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-2 inventory-item-row" data-inventory-item-row>
-                <span class="text-[12px] font-bold text-[#94A3B8] w-5 text-center">${i + 1}</span>
-                <input type="text" data-inventory-item-name class="form-input flex-1 text-[13px] py-2 bg-white" value="${escapeHtml(item)}" placeholder="Item or fixture name">
-                <button type="button" data-action="remove-inventory-item" data-item-idx="${i}" class="w-8 h-8 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer" aria-label="Remove item">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>`).join('')}
+            <div class="form-field">
+                <label class="form-label text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Notes &amp; Observations</label>
+                <textarea data-field="roomNotes" class="form-input text-[13px] rounded-xl min-h-[64px] resize-y leading-relaxed" placeholder="Add optional condition notes or remarks...">${escapeHtml(getInventoryNotes(STATE.propertyId, rid))}</textarea>
             </div>
-
-            <button type="button" data-action="add-inventory-item" class="btn-secondary w-full py-2.5 text-[13px] font-bold rounded-xl mt-2">+ Add custom item</button>
         </div>
 
-        <button data-action="save" class="btn-primary w-full py-3.5 text-[14px] font-bold rounded-2xl shadow-sm">Save room inventory</button>
+        <!-- Fixtures & Items Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+            <div class="flex items-center justify-between pb-1 border-b border-[#F1F5F9]">
+                <span class="text-[12px] font-bold text-[#0F172A] tracking-tight">Items &amp; Fixtures (${items.length})</span>
+                <span class="text-[11px] text-[#94A3B8]">Tap to edit name</span>
+            </div>
+
+            <!-- Items List -->
+            <div class="space-y-2">
+            ${items.length ? items.map((item, i) => {
+        const itemObj = inventoryItemObject(item);
+        return `
+            <div class="p-1.5 pl-3 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors flex items-center gap-2.5 shadow-2xs" data-inventory-item-row data-item-condition="${escapeHtml(itemObj.condition)}">
+                <span class="text-[11px] font-bold text-[#94A3B8] w-4 text-center shrink-0">${i + 1}</span>
+                <input type="text" data-inventory-item-name class="form-input flex-1 text-[13px] py-1.5 px-2 border-0 bg-transparent focus:bg-[#F8FAFC] rounded-lg font-medium text-[#0F172A]" value="${escapeHtml(itemObj.name)}" placeholder="Item or fixture name">
+                <button type="button" data-action="remove-inventory-item" data-item-idx="${i}" class="w-8 h-8 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer shrink-0" aria-label="Remove item">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>`;
+    }).join('') : `
+            <div class="text-center py-5 bg-[#F8FAFC] rounded-xl border border-dashed border-[#CBD5E1]">
+                <p class="text-[12.5px] text-[#94A3B8] m-0">No items listed. Tap "+ Add Item" below.</p>
+            </div>`}
+            </div>
+
+            <button type="button" data-action="add-inventory-item" class="w-full py-2.5 rounded-xl border border-dashed border-[#CBD5E1] text-[#2563EB] font-bold text-[12.5px] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:border-[#93C5FD] transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Add Item</span>
+            </button>
+        </div>
+
+        <button data-action="save" class="btn-primary w-full py-3.5 text-[14px] font-bold rounded-2xl shadow-xs cursor-pointer">Save Changes</button>
+        
+        <div class="text-center pt-1">
+            <button type="button" data-action="delete-inventory-room" data-room-slug="${roomMeta.slug}" class="text-[12.5px] font-bold text-[#EF4444] hover:underline cursor-pointer inline-flex items-center gap-1.5 py-1 px-3 rounded-lg hover:bg-[#FEF2F2] transition-colors">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Delete this room</span>
+            </button>
+        </div>
     </div>`;
 }
 
@@ -9925,11 +10105,11 @@ function screenPropertyInspections() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId];
     const sub = p?.name?.split(',')[0] || '';
-    const logBtn = `<button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+    const conductBtn = `<button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-        <span>Log</span>
+        <span>Conduct</span>
     </button>`;
-    return `${topBar('Inspections', { back: true, sub, rightBtn: logBtn })}
+    return `${topBar('Inspections', { back: true, sub, rightBtn: conductBtn, home: false })}
     ${renderPropertyInspectionTab(propertyId, { hideHeaderCard: true })}`;
 }
 
@@ -9954,7 +10134,7 @@ function renderAddRoomModal(propertyId) {
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div>
                     <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Add Room / Area</h3>
-                    <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5">Add a new room or area to the inventory schedule</p>
+                    <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5">Add a new room to the inventory checklist</p>
                 </div>
                 <button type="button" data-action="close-add-room-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] flex items-center justify-center hover:bg-[#E2E8F0] cursor-pointer">
                     <i data-lucide="x" class="w-4 h-4"></i>
@@ -9964,27 +10144,36 @@ function renderAddRoomModal(propertyId) {
             <!-- Quick Presets -->
             <div>
                 <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Fast Presets</label>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button type="button" data-action="select-room-preset" data-preset="Balcony" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Balcony</button>
-                    <button type="button" data-action="select-room-preset" data-preset="Garden / Patio" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Garden / Patio</button>
-                    <button type="button" data-action="select-room-preset" data-preset="Dining Room" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Dining Room</button>
-                    <button type="button" data-action="select-room-preset" data-preset="Ensuite Bathroom" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Ensuite</button>
-                    <button type="button" data-action="select-room-preset" data-preset="Utility Room" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Utility Room</button>
-                    <button type="button" data-action="select-room-preset" data-preset="Study / Office" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Study</button>
-                    <button type="button" data-action="select-room-preset" data-preset="Storage / Loft" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Loft</button>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button type="button" data-action="select-room-preset" data-preset="Master Bedroom" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Master Bedroom</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Ensuite Bathroom" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Ensuite</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Dining Room" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Dining Room</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Balcony" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Balcony</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Study / Office" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Study</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Utility Room" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Utility Room</button>
+                    <button type="button" data-action="select-room-preset" data-preset="Storage / Loft" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Loft</button>
                 </div>
             </div>
 
-            <!-- Custom Name Input -->
-            <div class="form-field">
-                <label class="form-label">Or Custom Room Name</label>
-                <input id="newRoomNameInput" type="text" class="form-input" placeholder="e.g. Master Bedroom, Garage, Gym" value="${escapeHtml(STATE.newRoomDraftName || '')}">
+            <!-- Custom Name & Size Input -->
+            <div class="space-y-3">
+                <div class="form-field">
+                    <label class="form-label text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Name</label>
+                    <input id="newRoomNameInput" type="text" class="form-input font-bold text-[13.5px] rounded-xl" placeholder="e.g. Master Bedroom, Balcony, Garage" value="${escapeHtml(STATE.newRoomDraftName || '')}">
+                </div>
+                <div class="form-field">
+                    <label class="form-label text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Size (Optional)</label>
+                    <div class="relative">
+                        <input id="newRoomSizeInput" type="text" class="form-input text-[13px] rounded-xl pr-14" placeholder="e.g. 140" value="${escapeHtml(STATE.newRoomDraftSize || '')}">
+                        <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-semibold text-[#94A3B8] pointer-events-none">sq ft</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Actions -->
             <div class="flex items-center gap-2 pt-2">
-                <button type="button" data-action="close-add-room-modal" class="btn-secondary flex-1 py-2.5 text-[13px] font-bold cursor-pointer">Cancel</button>
-                <button type="button" data-action="confirm-add-room" class="btn-primary flex-1 py-2.5 text-[13px] font-bold cursor-pointer">Add Room</button>
+                <button type="button" data-action="close-add-room-modal" class="btn-secondary flex-1 py-2.5 text-[13px] font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="button" data-action="confirm-add-room" class="btn-primary flex-1 py-2.5 text-[13px] font-bold rounded-xl cursor-pointer">Add Room</button>
             </div>
         </div>
     </div>`;
@@ -10748,31 +10937,26 @@ function screenPropertyAppliances() {
     <div class="screen-content screen-enter space-y-3.5 text-left pb-6">
         ${isMulti ? `
         <!-- Multi-Unit Selector Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                    <i data-lucide="door-closed" class="w-4 h-4"></i>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
-                    <div class="relative flex items-center">
-                        <select data-action="select-appliance-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
-                            <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units (${allAppliances.length})</option>
-                            ${units.map(u => {
-                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                                const count = allAppliances.filter(a => (a.unit || 'Flat 1') === name).length;
-                                const beds = u.beds ? ` · ${u.beds} bed` : '';
-                                return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${beds}${count ? ` (${count})` : ''}</option>`;
-                            }).join('')}
-                        </select>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
-                    </div>
-                </div>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2">
+            <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                    <i data-lucide="door-closed" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>Select Flat / Location</span>
+                </span>
+                <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Filter Unit</span>
+            </label>
+            <div class="relative">
+                <select data-action="select-appliance-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                    <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units (${allAppliances.length})</option>
+                    ${units.map(u => {
+                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                        const count = allAppliances.filter(a => (a.unit || 'Flat 1') === name).length;
+                        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
+                        const sub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.beds ? ` · ${u.beds} bed` : '');
+                        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${sub}${count ? ` (${count})` : ''}</option>`;
+                    }).join('')}
+                </select>
             </div>
-            ${activeUnit !== 'all' ? `
-            <button type="button" data-action="filter-appliance-unit" data-unit="all" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
-                Show All
-            </button>` : ''}
         </div>` : ''}
 
         <div class="space-y-2.5">
@@ -10837,31 +11021,25 @@ function screenPropertyAlarms() {
     <div class="screen-content screen-enter space-y-3.5 text-left pb-6">
         ${isMulti ? `
         <!-- Multi-Unit Selector Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                    <i data-lucide="door-closed" class="w-4 h-4"></i>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Location</span>
-                    <div class="relative flex items-center">
-                        <select data-action="select-alarm-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
-                            <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Locations (${allAlarms.length})</option>
-                            ${units.map(u => {
-                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                                const count = allAlarms.filter(a => (a.unit || 'Flat 1') === name).length;
-                                return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${count ? ` · ${count}` : ''}</option>`;
-                            }).join('')}
-                            <option value="Communal" ${activeUnit === 'Communal' ? 'selected' : ''}>Communal Areas</option>
-                        </select>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
-                    </div>
-                </div>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2">
+            <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                    <i data-lucide="door-closed" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>Select Location / Unit</span>
+                </span>
+                <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Filter Unit</span>
+            </label>
+            <div class="relative">
+                <select data-action="select-alarm-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                    <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Locations (${allAlarms.length})</option>
+                    ${units.map(u => {
+                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                        const count = allAlarms.filter(a => (a.unit || 'Flat 1') === name).length;
+                        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${count ? ` · ${count}` : ''}</option>`;
+                    }).join('')}
+                    <option value="Communal" ${activeUnit === 'Communal' ? 'selected' : ''}>🏢 Communal Areas</option>
+                </select>
             </div>
-            ${activeUnit !== 'all' ? `
-            <button type="button" data-action="filter-alarm-unit" data-unit="all" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
-                Show All
-            </button>` : ''}
         </div>` : ''}
 
         <div class="space-y-2.5">
@@ -11509,8 +11687,7 @@ function flatDetailBuildingMeta(propertyId, u) {
     const parts = [];
     if (u.unitType) parts.push(u.unitType);
     if (u.yearBuilt) parts.push(`Built ${u.yearBuilt}`);
-    if (u.furnished) parts.push(u.furnished);
-    else if (info.furnished && getPropertyUnits(propertyId).length === 1) parts.push(info.furnished);
+    if (!u.furnished && info.furnished && getPropertyUnits(propertyId).length === 1) parts.push(info.furnished);
     if (!parts.length) return '';
     return parts.map(p => escapeHtml(p)).join(' · ');
 }
@@ -11762,15 +11939,160 @@ function renderFlatOverviewTenantsList(propertyId, unit, ctx) {
 }
 
 function renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor) {
+    const rentAmt = flatEffectiveRentAmount(u, tenancy);
+    const rentLabel = rentAmt ? formatRentAmount(rentAmt) : '—';
+    const occ = u.status === 'occupied';
+
+    // Deposit calculation
+    const depositAmt = tenancy?.deposit || (rentAmt ? formatRentAmount(Math.round(rentAmt * 1.15)) : '—');
+
+    // Tenancy Term & remaining
+    let tenancyTerm = 'Vacant / Available';
+    let tenancySub = 'Ready for marketing';
+    if (occ && tenancy) {
+        if (tenancy.start && tenancy.end) {
+            const startD = typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.start) : tenancy.start;
+            const endD = typeof formatDisplayDate === 'function' ? formatDisplayDate(tenancy.end) : tenancy.end;
+            tenancyTerm = `${startD} – ${endD}`;
+            tenancySub = tenancy.type === 'group' ? 'Joint AST Lease' : 'Fixed-term AST';
+        } else {
+            tenancyTerm = 'Rolling Periodic AST';
+            tenancySub = 'Active Tenancy';
+        }
+    }
+
+    // EPC rating
+    const epcCert = AppStore.complianceCerts?.[`${propertyId}-7`] || AppStore.complianceCerts?.[`${propertyId}-0`];
+    const epcRating = epcCert?.notes?.match(/Rating\s+([A-G])/i)?.[1] || 'B';
+
     return `
-    <div class="card flat-dt-overview-card flat-dt-overview-card--hero">
-        <button type="button" data-ftab="gallery" class="flat-dt-overview-photo w-full text-left" aria-label="Open gallery">
-            <img src="${coverPhoto}" alt="" class="flat-dt-overview-photo-img">
-            ${photoCount > 1 ? `<span class="flat-dt-carousel-badge">${photoCount} photos</span>` : ''}
-        </button>
-        <div class="flat-dt-overview-body">
-            ${flatDetailSpecSection(propertyId, u)}
-            ${flatDetailFinanceRow(u, tenancy)}
+    <div class="card flat-dt-overview-card flat-dt-overview-card--hero overflow-hidden rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+        <div class="relative w-full">
+            <button type="button" data-ftab="gallery" class="flat-dt-overview-photo w-full block text-left relative" aria-label="Open gallery">
+                <img src="${coverPhoto}" alt="${escapeHtml(unitName(u))}" class="flat-dt-overview-photo-img w-full h-[180px] object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none"></div>
+                <div class="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-[11.5px] font-bold text-[#0F172A] shadow-xs">
+                    ${escapeHtml(p?.name?.split(',')[0] || 'Building')}
+                </div>
+                <div class="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-xs flex items-center gap-1.5" style="background:${statusBg};color:${statusColor}">
+                    <span class="w-1.5 h-1.5 rounded-full" style="background:${statusColor}"></span>
+                    <span>${statusLabel}</span>
+                </div>
+                ${photoCount > 1 ? `
+                <div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                    <i data-lucide="images" class="w-3.5 h-3.5"></i>
+                    <span>${photoCount} photos</span>
+                </div>` : ''}
+            </button>
+        </div>
+
+        <div class="p-4 space-y-3.5">
+            <!-- Unit Specs Line -->
+            <div>
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <h2 class="text-[17px] font-bold text-[#0F172A] m-0">${escapeHtml(unitName(u))}</h2>
+                    <span class="text-[11.5px] font-semibold text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-md">${flatFloorLine(u) || '1st Floor'}</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5 text-[12px] text-[#475569] font-medium">
+                    ${hasUnitSpecCount(u.beds) ? `<span class="inline-flex items-center gap-1 bg-[#F8FAFC] border border-[#E2E8F0] px-2.5 py-1 rounded-lg font-semibold text-[#0F172A]"><i data-lucide="bed-double" class="w-3.5 h-3.5 text-[#2563EB]"></i>${u.beds} Bed${u.beds === 1 ? '' : 's'}</span>` : ''}
+                    ${hasUnitSpecCount(u.baths) ? `<span class="inline-flex items-center gap-1 bg-[#F8FAFC] border border-[#E2E8F0] px-2.5 py-1 rounded-lg font-semibold text-[#0F172A]"><i data-lucide="bath" class="w-3.5 h-3.5 text-[#2563EB]"></i>${u.baths} Bath${u.baths === 1 ? '' : 's'}</span>` : ''}
+                    ${u.sqft ? `<span class="inline-flex items-center gap-1 bg-[#F8FAFC] border border-[#E2E8F0] px-2.5 py-1 rounded-lg font-semibold text-[#0F172A]"><i data-lucide="ruler" class="w-3.5 h-3.5 text-[#2563EB]"></i>${u.sqft} sq ft</span>` : ''}
+                    ${u.furnished ? `<span class="inline-flex items-center gap-1 bg-[#F8FAFC] border border-[#E2E8F0] px-2.5 py-1 rounded-lg font-semibold text-[#0F172A]"><i data-lucide="sofa" class="w-3.5 h-3.5 text-[#2563EB]"></i>${escapeHtml(u.furnished)}</span>` : ''}
+                    <span class="inline-flex items-center gap-1 bg-[#ECFDF5] border border-[#A7F3D0] text-[#047857] px-2 py-1 rounded-lg font-bold text-[11px]"><i data-lucide="zap" class="w-3 h-3"></i>EPC ${epcRating}</span>
+                </div>
+            </div>
+
+            <!-- Financials & Tenancy Summary Bar -->
+            <div class="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                <div class="min-w-0">
+                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Monthly Rent</span>
+                    <span class="block text-[17px] font-extrabold text-[#2563EB] mt-0.5 leading-tight">${escapeHtml(rentLabel)}</span>
+                    <span class="block text-[11px] text-[#64748B] mt-0.5">Due 1st of month</span>
+                </div>
+                <div class="min-w-0">
+                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Deposit Held</span>
+                    <span class="block text-[15px] font-bold text-[#0F172A] mt-0.5 leading-tight">${depositAmt}</span>
+                    <span class="block text-[11px] text-[#059669] font-medium mt-0.5 flex items-center gap-1">
+                        <i data-lucide="shield-check" class="w-3 h-3"></i> TDS Protected
+                    </span>
+                </div>
+                <div class="col-span-2 pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-[11.5px]">
+                    <span class="text-[#64748B] flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5 text-[#64748B]"></i> ${tenancyTerm}</span>
+                    <span class="font-bold text-[#0F172A]">${tenancySub}</span>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderFlatDetailVitalsGrid(propertyId, unit) {
+    const keyCount = typeof getUnitKeys === 'function' ? getUnitKeys(propertyId, unit).length : 2;
+    const { setupCount, billCount } = unitUtilitySummary(propertyId, unit);
+    const inspSub = flatInspectionSubline(propertyId);
+
+    const vitals = [
+        {
+            icon: 'clipboard-list',
+            iconBg: '#EFF6FF',
+            iconColor: '#2563EB',
+            title: 'Room Inventory',
+            value: '5 Rooms · 18 Items',
+            sub: 'Fixtures & Schedule',
+            go: 'property-inventory',
+            attrs: `data-pid="${propertyId}" data-unit="${unit}"`,
+        },
+        {
+            icon: 'key-round',
+            iconBg: '#FEF3C7',
+            iconColor: '#D97706',
+            title: 'Key Handover',
+            value: keyCount ? `${keyCount} Key Sets` : '2 Key Sets',
+            sub: 'Master & Tenant keys',
+            go: 'flat-keys',
+            attrs: `data-pid="${propertyId}" data-unit="${unit}"`,
+        },
+        {
+            icon: 'zap',
+            iconBg: '#F0FDF4',
+            iconColor: '#16A34A',
+            title: 'Meters & Utilities',
+            value: setupCount ? `${setupCount} Meters Active` : 'Meters on file',
+            sub: 'Electricity · Gas · Water',
+            go: 'unit-utilities',
+            attrs: `data-pid="${propertyId}" data-unit="${unit}"`,
+        },
+        {
+            icon: 'check-circle-2',
+            iconBg: '#FAF5FF',
+            iconColor: '#9333EA',
+            title: 'Inspections',
+            value: inspSub.replace('Next: ', '').replace('Last: ', '') || 'Passed',
+            sub: inspSub.startsWith('Next') ? 'Upcoming check' : 'Last check passed',
+            go: 'property-inspections',
+            attrs: `data-pid="${propertyId}" data-unit="${unit}"`,
+        },
+    ];
+
+    return `
+    <div class="space-y-2">
+        <div class="flex items-center justify-between px-1">
+            <h3 class="text-[11.5px] font-bold text-[#64748B] uppercase tracking-wider m-0">Flat Operations &amp; Vitals</h3>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+            ${vitals.map(v => `
+            <button type="button" data-go="${v.go}" ${v.attrs} class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all text-left flex flex-col justify-between gap-2.5 group cursor-pointer">
+                <div class="flex items-center justify-between">
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style="background:${v.iconBg};color:${v.iconColor}">
+                        <i data-lucide="${v.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+                </div>
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${v.title}</span>
+                    <span class="block text-[13px] font-bold text-[#0F172A] mt-0.5 leading-snug group-hover:text-[#2563EB] transition-colors">${v.value}</span>
+                    <span class="block text-[11px] text-[#94A3B8] mt-0.5">${v.sub}</span>
+                </div>
+            </button>`).join('')}
         </div>
     </div>`;
 }
@@ -11792,8 +12114,9 @@ function renderFlatDetailOverviewTab(propertyId, unit, u, p, tenancy, members, c
     const roster = getFlatMemberRoster(propertyId, unit);
     const peopleCtx = { occ: u.status === 'occupied', tenancy, members: roster.members, count: roster.count, pendingInvite: pendingInvitesForProperty(propertyId).find(i => i.unit === unit) };
     return `
-    <div class="flat-dt-tab-panel flat-dt-tab-panel--overview space-y-4">
+    <div class="flat-dt-tab-panel flat-dt-tab-panel--overview space-y-4 text-left pb-6">
         ${renderFlatDetailOverviewCard(propertyId, unit, u, p, tenancy, coverPhoto, photoCount, statusLabel, statusBg, statusColor)}
+        ${renderFlatDetailVitalsGrid(propertyId, unit)}
         ${renderFlatOverviewTenantsList(propertyId, unit, peopleCtx)}
     </div>`;
 }
@@ -16653,25 +16976,23 @@ function getInspectionTypeMeta(type = '') {
 
 function inspReportRow(report) {
     const dateLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(report.date) || report.date : report.date;
-    const typeTitle = report.type || 'Inspection';
-    const meta = getInspectionTypeMeta(typeTitle);
-    const unitBadge = report.unit || '';
+    const isCommunal = !report.unit || report.unit === 'Whole Property' || report.unit === 'Communal';
+    const flatDisplay = isCommunal ? '🏢 Communal Building Areas' : (report.unit || 'Flat Unit');
+    const inspectionName = report.type || (isCommunal ? 'Building Safety Audit' : 'Routine Property Inspection');
 
     return `
-    <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors cursor-pointer group">
-        <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl ${meta.bg} ${meta.text} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <i data-lucide="${meta.icon}" class="w-5 h-5"></i>
+    <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors cursor-pointer group">
+        <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                <i data-lucide="${isCommunal ? 'building-2' : 'door-closed'}" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
                 <div class="flex items-center gap-2 mb-0.5">
-                    <span class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate leading-snug">${escapeHtml(typeTitle)}</span>
-                    ${unitBadge ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F1F5F9] text-[#475569] shrink-0">${escapeHtml(unitBadge)}</span>` : ''}
+                    <span class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate leading-snug">${escapeHtml(flatDisplay)}</span>
                 </div>
-                <p class="text-[11.5px] font-medium text-[#64748B] m-0 flex items-center gap-1.5 truncate">
+                <p class="text-[12px] font-semibold text-[#475569] m-0 truncate">${escapeHtml(inspectionName)}</p>
+                <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 truncate">
                     <span>${dateLabel}</span>
-                    <span class="text-[#CBD5E1]">·</span>
-                    <span class="text-[#15803D]">Completed</span>
                 </p>
             </div>
         </div>
@@ -16766,33 +17087,34 @@ function renderPropertyInspectionTab(propertyId, opts = {}) {
         </div>
         <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-3.5 py-2 rounded-xl bg-[#2563EB] text-white text-[12.5px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
             <i data-lucide="plus" class="w-4 h-4"></i>
-            <span>Log Inspection</span>
+            <span>Conduct Inspection</span>
         </button>
     </div>` : '';
 
     const pastSection = `
-    <div class="space-y-2.5">
+    <div class="space-y-3">
         <div class="flex items-center justify-between px-1">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Inspection History (${past.length})</p>
         </div>
         ${units.length > 1 ? `
         <!-- Multi-Unit Scope Selector Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0 flex-1">
                 <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                     <i data-lucide="door-closed" class="w-4 h-4"></i>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit</span>
+                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Filter by Flat / Unit</span>
                     <div class="relative flex items-center">
                         <select data-action="select-insp-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
-                            <option value="all" ${activeUnitFilter === 'all' ? 'selected' : ''}>All Units (${past.length})</option>
-                            <option value="communal" ${activeUnitFilter === 'communal' ? 'selected' : ''}>Communal Areas</option>
+                            <option value="all" ${activeUnitFilter === 'all' ? 'selected' : ''}>All Flats &amp; Areas (${past.length})</option>
+                            <option value="communal" ${activeUnitFilter === 'communal' ? 'selected' : ''}>🏢 Communal Building Areas (${past.filter(i => !i.unit || i.unit === 'Communal').length})</option>
                             ${units.map(u => {
                                 const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
                                 const count = past.filter(i => i.unit === name).length;
-                                const beds = u.beds ? ` · ${u.beds} bed` : '';
-                                return `<option value="${escapeHtml(name)}" ${activeUnitFilter === name ? 'selected' : ''}>${escapeHtml(name)}${beds}${count ? ` (${count})` : ''}</option>`;
+                                const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
+                                const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : '';
+                                return `<option value="${escapeHtml(name)}" ${activeUnitFilter === name ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}${count ? ` (${count})` : ' (0)'}</option>`;
                             }).join('')}
                         </select>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
@@ -16811,39 +17133,19 @@ function renderPropertyInspectionTab(propertyId, opts = {}) {
         </div>` : `
         <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
             <i data-lucide="clipboard-list" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
-            <p class="text-[13px] font-semibold text-[#0F172A] m-0">No past reports recorded for this selection</p>
-            <p class="text-[11.5px] text-[#64748B] mt-1 m-0">${activeUnitFilter !== 'all' ? `No inspection found for ${activeUnitFilter}.` : 'Conduct an on-site check to log an inspection record.'}</p>
-            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" class="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-[12.5px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors inline-flex items-center gap-1.5 cursor-pointer mt-3">
+            <p class="text-[13px] font-semibold text-[#0F172A] m-0">No past reports recorded for this flat</p>
+            <p class="text-[11.5px] text-[#64748B] mt-1 m-0">${activeUnitFilter !== 'all' ? `No inspection has been conducted for ${activeUnitFilter} yet.` : 'Conduct an on-site check to log an inspection record.'}</p>
+            <button type="button" data-go="conduct-inspection" data-pid="${propertyId}" data-unit="${activeUnitFilter !== 'all' ? activeUnitFilter : ''}" class="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-[12.5px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors inline-flex items-center gap-1.5 cursor-pointer mt-3">
                 <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Log Inspection</span>
+                <span>Conduct Inspection for ${activeUnitFilter !== 'all' ? activeUnitFilter : 'Property'}</span>
             </button>
         </div>`}
-    </div>`;
-
-    const photosSection = `
-    <div class="space-y-1.5">
-        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1">Inspection Media</p>
-        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs overflow-hidden">
-            <button type="button" data-go="property-photos" data-pid="${propertyId}" class="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors cursor-pointer group">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                        <i data-lucide="images" class="w-5 h-5"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate leading-snug">Property & Room Photos</div>
-                        <div class="text-[11.5px] text-[#64748B] truncate mt-0.5">Check-in, checkout & room condition archives</div>
-                    </div>
-                </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
-            </button>
-        </div>
     </div>`;
 
     return `
     <div class="screen-content screen-content-sm prop-hub-page space-y-4 text-left pb-8">
         ${headerStatusCard}
         ${pastSection}
-        ${photosSection}
     </div>`;
 }
 
@@ -18356,149 +18658,183 @@ function screenAssignContractor() {
 function screenConductInspection() {
     const pid = STATE.propertyId ?? 0;
     const p = PROPERTIES[pid] || PROPERTIES[0];
-    const upcoming = getScheduledInspection(pid);
-    const prefill = STATE.inspectionPrefill || {};
-    const selectedType = normalizeInspectionType(prefill.type || upcoming?.type || 'Routine Interim');
-    const dateVal = prefill.date || toDateInputValue(upcoming?.date) || new Date().toISOString().split('T')[0];
-    const types = ['Check-in', 'Routine Interim', 'Annual Safety', 'Check-out'];
+    const dateVal = new Date().toISOString().slice(0, 10);
     const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
-    const selectedUnit = STATE.selectedUnit || '';
+    const isMulti = units.length > 1;
+
+    // Resolve preselected unit / communal
+    let selectedUnit = STATE.selectedUnit;
+    if (!selectedUnit) {
+        if (STATE.inspectionFilterUnit && STATE.inspectionFilterUnit !== 'all') {
+            selectedUnit = STATE.inspectionFilterUnit === 'communal' ? 'Communal' : STATE.inspectionFilterUnit;
+        } else if (STATE.inspectionScope === 'communal') {
+            selectedUnit = 'Communal';
+        } else if (units.length > 0) {
+            selectedUnit = typeof unitName === 'function' ? unitName(units[0]) : (units[0].name || String(units[0]));
+        } else {
+            selectedUnit = 'Communal';
+        }
+    }
+
+    const isCommunal = selectedUnit === 'Communal' || selectedUnit === 'communal' || STATE.inspectionScope === 'communal';
+    const effectiveUnit = isCommunal ? 'Communal' : selectedUnit;
+    const currentScope = isCommunal ? 'communal' : 'unit';
+
+    const unitTypes = [
+        { id: 'Routine Health Check', label: 'Routine Health Check' },
+        { id: 'Move-in (Check-in)', label: 'Move-in (Check-in)' },
+        { id: 'Move-out (Check-out)', label: 'Move-out (Check-out)' },
+    ];
+
+    const communalTypes = [
+        { id: 'Building Safety Audit', label: 'Building Safety Audit' },
+        { id: 'Communal Routine Walk', label: 'Communal Routine Walk' },
+    ];
+
+    const activeTypesList = isCommunal ? communalTypes : unitTypes;
+    const selectedType = STATE.selectedInspType || (isCommunal ? 'Building Safety Audit' : 'Routine Health Check');
+
+    // Room lists
+    const unitCatalog = typeof getInventoryRoomCatalog === 'function' ? getInventoryRoomCatalog(pid) : [];
+    const unitRooms = unitCatalog.length ? unitCatalog.map(r => ({
+        name: r.name,
+        icon: r.icon || (r.template === 'Kitchen' ? 'utensils' : r.template === 'Living room' ? 'sofa' : r.template === 'Bedroom' ? 'bed-double' : r.template === 'Bathroom' ? 'bath' : 'door-open')
+    })) : [
+        { name: 'Living Room', icon: 'sofa' },
+        { name: 'Kitchen & Appliances', icon: 'utensils' },
+        { name: 'Master Bedroom', icon: 'bed-double' },
+        { name: 'Bathroom & Plumbing', icon: 'bath' },
+        { name: 'Hallway & Smoke Alarms', icon: 'shield-check' }
+    ];
+
+    const communalAreas = [
+        { name: 'Main Entrance & Intercom', icon: 'door-open' },
+        { name: 'Communal Hallway & Stairs', icon: 'footprints' },
+        { name: 'Fire Doors & Emergency Lighting', icon: 'flame' },
+        { name: 'Exterior, Roof & Gutters', icon: 'home' },
+        { name: 'Bin Storage & Meter Cupboards', icon: 'trash-2' }
+    ];
+
+    const activeRooms = isCommunal ? communalAreas : unitRooms;
+    const checks = STATE.inspectionRoomChecks || {};
+    const checkedCount = activeRooms.filter(r => checks[r.name]).length;
+    const totalCount = activeRooms.length;
 
     return `${topBar('Conduct Inspection', { back: true, sub: p?.name || '' })}
-    <div class="screen-content screen-content-sm space-y-4 text-left pb-10">
-        <!-- Property Context Banner -->
-        <div class="card p-4 rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-white border border-[#BFDBFE] shadow-sm">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-                </div>
-                <div class="min-w-0">
-                    <h3 class="text-[14px] font-bold text-[#0F172A] truncate m-0">${escapeHtml(p?.name || 'Property')}</h3>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${upcoming ? `Completing scheduled visit · ${upcoming.date}` : 'Live on-site inspection walkthrough'}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Unit / Scope Selector -->
-        ${units.length > 1 ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Inspection Scope / Unit</label>
-            <div class="flex flex-wrap gap-2">
-                <button type="button" data-action="select-insp-unit" data-unit="" class="px-3.5 py-1.5 rounded-xl text-[12px] font-bold border transition-all cursor-pointer ${!selectedUnit ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#CBD5E1]'}">Whole Property</button>
-                ${units.map(u => {
-        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-        const isSel = selectedUnit === name;
-        return `<button type="button" data-action="select-insp-unit" data-unit="${escapeHtml(name)}" class="px-3.5 py-1.5 rounded-xl text-[12px] font-bold border transition-all cursor-pointer ${isSel ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#CBD5E1]'}">${escapeHtml(name)}</button>`;
-    }).join('')}
-            </div>
-            <input type="hidden" data-field="inspUnit" value="${escapeHtml(selectedUnit)}">
-        </div>` : `<input type="hidden" data-field="inspUnit" value="">`}
-
-        <!-- Inspection Type & Date -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-10">
+        <!-- Setup Card: Unit / Location, Type & Date -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3.5">
             <div>
-                <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-1.5">${requiredLabel('Inspection Type')}</label>
-                <select data-field="inspType" class="form-input form-select w-full">
-                    ${types.map(t => `<option value="${escapeHtml(t)}" ${t === selectedType ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
-                </select>
+                <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="door-closed" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                        <span>Select Flat / Area</span>
+                    </span>
+                    <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Choose Unit</span>
+                </label>
+                <div class="relative">
+                    <select data-action="select-conduct-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                        ${units.map(u => {
+                            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                            const isSel = !isCommunal && effectiveUnit === name;
+                            const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(pid, name) : null;
+                            const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.status === 'vacant' ? ' · Vacant' : '');
+                            return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}</option>`;
+                        }).join('')}
+                        <option value="communal" ${isCommunal ? 'selected' : ''}>🏢 Communal Areas &amp; Building Common Parts</option>
+                    </select>
+                </div>
             </div>
+            <input type="hidden" data-field="inspUnit" value="${escapeHtml(effectiveUnit)}">
 
-            <div>
-                <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-1.5">${requiredLabel('Inspection Date')}</label>
-                <input type="date" data-field="inspDate" value="${dateVal}" class="form-input w-full">
-            </div>
-        </div>
-
-
-
-        <!-- Room & Area Checklist (Live Walkthrough with Progress Tracking) -->
-        ${(() => {
-            const catalog = typeof getInventoryRoomCatalog === 'function' ? getInventoryRoomCatalog(pid) : [];
-            const list = catalog.length ? catalog : [
-                { name: 'Living Room', icon: 'sofa', slug: 'reception-0' },
-                { name: 'Kitchen', icon: 'utensils', slug: 'kitchen-0' },
-                { name: 'Bedroom', icon: 'bed-double', slug: 'bedroom-0' },
-                { name: 'Bathroom', icon: 'bath', slug: 'bathroom-0' },
-                { name: 'Hallway & Alarms', icon: 'door-open', slug: 'hallway-0' }
-            ];
-            const checks = STATE.inspectionRoomChecks || {};
-            const checkedCount = list.filter(r => checks[r.name]).length;
-            const totalCount = list.length;
-            const pct = Math.round((checkedCount / totalCount) * 100);
-
-            return `
-            <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Room & Area Walkthrough</label>
-                        <p class="text-[12px] font-semibold text-[#0F172A] m-0 mt-0.5">${checkedCount === 0 ? 'Pending Walkthrough (0/' + totalCount + ')' : checkedCount === totalCount ? 'All ' + totalCount + ' Areas Inspected ✓' : checkedCount + ' of ' + totalCount + ' Inspected'}</p>
+            <div class="grid grid-cols-2 gap-3 pt-0.5">
+                <div>
+                    <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                        <span>Inspection Type</span>
+                    </label>
+                    <div class="relative">
+                        <select data-field="inspType" data-action="select-conduct-type-dropdown" class="form-input form-select w-full text-[13px] font-semibold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                            ${activeTypesList.map(t => `<option value="${escapeHtml(t.id)}" ${selectedType === t.id ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
+                        </select>
                     </div>
-                    <button type="button" data-action="mark-all-rooms-good" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1">
-                        <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
-                        <span>Mark All Good</span>
-                    </button>
                 </div>
 
-                <!-- Live Walkthrough Progress Bar -->
-                <div class="w-full bg-[#F1F5F9] h-2 rounded-full overflow-hidden border border-[#E2E8F0]">
-                    <div class="h-full transition-all duration-300 ${pct === 100 ? 'bg-[#059669]' : 'bg-[#2563EB]'}" style="width: ${pct}%"></div>
+                <div>
+                    <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                        <span>Date</span>
+                    </label>
+                    <input type="date" data-field="inspDate" value="${dateVal}" class="form-input w-full text-[13px] font-semibold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
                 </div>
+            </div>
+        </div>
 
-                <div class="divide-y divide-[#F1F5F9] text-[13px] pt-1">
-                    ${list.map(room => {
-                const roomName = room.name || 'Room';
-                const inv = typeof ensureInventoryRoom === 'function' ? ensureInventoryRoom(pid, room.slug) : {};
-                const sizeSqft = inv?.sizeSqft?.trim();
-                const currentStatus = checks[roomName] || null; // null by default (Unchecked)
-                return `
-                        <div class="py-2.5 flex flex-row items-center justify-between gap-2">
-                            <div class="min-w-0 flex-1">
-                                <h4 class="font-bold text-[#0F172A] text-[14px] m-0 leading-tight">${escapeHtml(roomName)}</h4>
+        <!-- Room / Area Walkthrough Checklist -->
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between pb-1 border-b border-[#F1F5F9]">
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${isCommunal ? 'Communal Areas' : 'Room Checklist'}</span>
+                    <p class="text-[12px] font-semibold text-[#0F172A] m-0 mt-0.5">${checkedCount === totalCount ? `All ${totalCount} Areas Inspected ✓` : `${checkedCount} of ${totalCount} Checked`}</p>
+                </div>
+                <button type="button" data-action="mark-all-rooms-good" class="px-2.5 py-1 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1">
+                    <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                    <span>Mark All Pass</span>
+                </button>
+            </div>
+
+            <div class="divide-y divide-[#F1F5F9] text-[13px]">
+                ${activeRooms.map(room => {
+                    const roomName = room.name || 'Room';
+                    const currentStatus = checks[roomName] || null;
+                    const hasIssue = currentStatus === 'issue';
+                    return `
+                    <div class="py-2.5 space-y-1.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <div class="w-7 h-7 rounded-lg bg-[#F8FAFC] text-[#64748B] flex items-center justify-center shrink-0 border border-[#E2E8F0]">
+                                    <i data-lucide="${room.icon || 'check'}" class="w-3.5 h-3.5"></i>
+                                </div>
+                                <span class="font-bold text-[#0F172A] text-[13px] truncate">${escapeHtml(roomName)}</span>
                             </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" data-action="set-room-check" data-room="${escapeHtml(roomName)}" data-status="good" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${currentStatus === 'good' ? 'bg-[#ECFDF5] text-[#059669] border-[#059669] shadow-xs' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Pass
-                                </button>
-                                <button type="button" data-action="set-room-check" data-room="${escapeHtml(roomName)}" data-status="fair" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${currentStatus === 'fair' ? 'bg-[#FEF3C7] text-[#D97706] border-[#D97706] shadow-xs' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Fair
-                                </button>
-                                <button type="button" data-action="set-room-check" data-room="${escapeHtml(roomName)}" data-status="issue" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${currentStatus === 'issue' ? 'bg-[#FEE2E2] text-[#DC2626] border-[#DC2626] shadow-xs' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                                    <i data-lucide="x" class="w-3.5 h-3.5"></i> Defect
-                                </button>
-                                <button type="button" data-action="upload-photo" data-upload-kind="inspection" class="p-1.5 rounded-xl text-[11px] font-bold border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#2563EB] hover:border-[#2563EB] transition-all cursor-pointer flex items-center justify-center shrink-0" title="Snap photo for ${escapeHtml(roomName)}">
-                                    <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-                                </button>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" data-action="set-room-check" data-room="${escapeHtml(roomName)}" data-status="good" class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${currentStatus === 'good' ? 'bg-[#ECFDF5] text-[#059669] border-[#059669] shadow-xs' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC]'}">Pass</button>
+                                <button type="button" data-action="set-room-check" data-room="${escapeHtml(roomName)}" data-status="fair" class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${currentStatus === 'fair' ? 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A] shadow-xs' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC]'}">Fair</button>
+                                <button type="button" data-action="set-room-check" data-room="${escapeHtml(roomName)}" data-status="issue" class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${currentStatus === 'issue' ? 'bg-[#FEF2F2] text-[#DC2626] border-[#FCA5A5] shadow-xs' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC]'}">Defect</button>
                             </div>
-                        </div>`;
-            }).join('')}
-                </div>
-            </div>`;
-        })()}
+                        </div>
+                        ${hasIssue ? `
+                        <div class="p-2 rounded-xl bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-between gap-2">
+                            <span class="text-[11px] font-semibold text-[#991B1B] truncate">Defect flagged</span>
+                            <button type="button" data-action="flag-insp-maintenance" data-room="${escapeHtml(roomName)}" class="px-2 py-0.5 rounded-lg bg-[#DC2626] text-white text-[10.5px] font-bold hover:bg-[#B91C1C] transition-colors cursor-pointer shrink-0">
+                                + Log Repair
+                            </button>
+                        </div>` : ''}
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>
 
-        <!-- Photos Section -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+        <!-- Photos & Notes Card -->
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5">
             <div class="flex items-center justify-between">
-                <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Inspection Photos (${STATE.inspectionPhotos?.length || 0})</label>
-                <span class="text-[11px] text-[#64748B]">Timestamped</span>
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Photos &amp; Notes</span>
+                <span class="text-[11px] text-[#64748B]">${STATE.inspectionPhotos?.length || 0} attached</span>
             </div>
             ${renderPhotoPreviewStrip(STATE.inspectionPhotos, { removable: true, removeAction: 'remove-inspection-photo' })}
-            <button type="button" data-action="upload-photo" class="border-2 border-dashed border-[#CBD5E1] rounded-2xl p-5 text-center w-full hover:bg-[#F8FAFC] transition-colors cursor-pointer block">
-                <i data-lucide="camera" class="w-7 h-7 text-[#2563EB] mx-auto mb-1.5"></i>
-                <p class="text-[13px] font-bold text-[#0F172A] m-0">Take Photo or Upload</p>
-                <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Attach room condition photos & meter readings</p>
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" data-action="upload-photo" class="px-3 py-2 rounded-xl border border-[#CBD5E1] hover:bg-[#F8FAFC] text-[12px] font-bold text-[#2563EB] flex items-center gap-1.5 transition-colors cursor-pointer">
+                    <i data-lucide="camera" class="w-4 h-4"></i>
+                    <span>Add Photo</span>
+                </button>
+            </div>
+            ${formTextarea('Notes', '', 'Record inspector observations or tenant feedback...', 'inspNotes')}
         </div>
 
-        <!-- Observations & Notes -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <label class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-1.5">Inspector Notes & Actions</label>
-            ${formTextarea('Notes', upcoming?.notes || '', 'Record any defects, maintenance items, or tenant feedback...', 'inspNotes')}
-        </div>
-
-        <!-- Action Button -->
-        <button type="button" data-action="save-inspection" class="w-full py-4 rounded-2xl bg-[#2563EB] text-white font-bold text-[14px] shadow-md hover:bg-[#1D4ED8] transition-all flex items-center justify-center gap-2 cursor-pointer">
+        <!-- Submit Button -->
+        <button type="button" data-action="save-inspection" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[14px] shadow-md hover:bg-[#1D4ED8] transition-all flex items-center justify-center gap-2 cursor-pointer">
             <i data-lucide="check-circle" class="w-5 h-5"></i>
-            <span>Complete & Save Inspection Report</span>
+            <span>Complete &amp; Save Inspection Report</span>
         </button>
     </div>`;
 }
@@ -21701,15 +22037,54 @@ function removeTenantInspPhoto(idx) {
 function saveInspection() {
     if (!validateFields([['inspDate', 'Date', v => v]])) return;
     const photoCount = STATE.inspectionPhotos?.length || 0;
+    const inspType = fieldVal('inspType') || STATE.selectedInspType || 'Routine Health Check';
+    const inspUnit = fieldVal('inspUnit') || STATE.selectedUnit || 'Communal';
+    const checks = STATE.inspectionRoomChecks || {};
+    const checkValues = Object.values(checks);
+    const hasDefects = checkValues.includes('issue');
+    const hasFair = checkValues.includes('fair');
+    const calculatedRating = hasDefects ? '3.8' : (hasFair ? '4.5' : '4.9');
+
+    const isCheckin = inspType.includes('Check-in') || inspType.includes('Move-in');
+    const isAnnual = inspType.includes('Annual') || inspType.includes('Safety');
+
     const payload = {
-        type: fieldVal('inspType'),
+        type: inspType,
+        unit: inspUnit,
+        scope: STATE.inspectionScope || (inspUnit === 'Communal' ? 'communal' : 'unit'),
         date: fieldVal('inspDate'),
         notes: fieldVal('inspNotes') || '',
+        rating: calculatedRating,
         photos: photoCount,
         photoUrls: [...(STATE.inspectionPhotos || [])],
-        report: `${fieldVal('inspType') || 'Inspection'} report.pdf`,
+        roomChecks: { ...checks },
+        report: `${inspType} report - ${inspUnit}.pdf`,
         scheduled: false,
     };
+
+    if (isCheckin) {
+        payload.keys = {
+            frontDoor: parseInt(fieldVal('inspKeysFront') || '2', 10),
+            fobs: parseInt(fieldVal('inspKeysFob') || '1', 10),
+            mailbox: parseInt(fieldVal('inspKeysMail') || '1', 10),
+        };
+        payload.meters = {
+            electric: (fieldVal('inspMeterElec') || '48,210') + ' kWh',
+            gas: (fieldVal('inspMeterGas') || '08,450') + ' m³',
+            water: (fieldVal('inspMeterWater') || '01,230') + ' m³',
+        };
+        payload.alarmsTested = true;
+    }
+
+    if (isAnnual) {
+        payload.safetyChecks = {
+            fireDoors: 'Passed',
+            smokeAlarms: 'Tested OK',
+            boilerPressure: '1.5 bar (Optimal)',
+            dampCheck: 'Zero damp detected',
+        };
+    }
+
     const scheduled = getScheduledInspection(STATE.propertyId);
     if (scheduled) {
         Object.assign(scheduled, payload);
@@ -21721,19 +22096,25 @@ function saveInspection() {
         });
     }
     STATE.inspectionPhotos = [];
+    STATE.inspectionRoomChecks = {};
     STATE.inspectionRating = 4;
     STATE.inspectionPrefill = null;
     const pid = STATE.propertyId;
     const notifyIds = getSelectedNotifyTargetIds();
-    const typeLabel = fieldVal('inspType') || 'Inspection';
     const notified = notifyTenantsAboutEvent(pid, notifyIds, {
         title: 'Inspection completed',
-        desc: `${typeLabel} · ${PROPERTIES[pid]?.name || ''}`,
+        desc: `${inspType} · ${inspUnit} · ${PROPERTIES[pid]?.name || ''}`,
     });
     const toastMsg = notified
-        ? `Inspection saved — ${notified} tenant${notified === 1 ? '' : 's'} notified`
-        : 'Inspection saved';
-    withLoading(() => { syncSmartReminders(); AppStore.save(); toast(toastMsg); go('property-inspections', { propertyId: pid }); });
+        ? `${inspType} report saved for ${inspUnit} — ${notified} tenant${notified === 1 ? '' : 's'} notified`
+        : `${inspType} report saved for ${inspUnit}`;
+    withLoading(() => {
+        syncSmartReminders();
+        AppStore.save();
+        toast(toastMsg);
+        STATE.inspectionFilterUnit = inspUnit;
+        go('property-inspections', { propertyId: pid, unit: inspUnit });
+    });
 }
 
 function saveEditTenant() {
@@ -21783,15 +22164,50 @@ function saveRenewCompliance() {
 function saveEditInventoryRoom() {
     const pid = STATE.propertyId ?? 0;
     const rid = STATE.roomId ?? 0;
+    const activeUnit = typeof getActiveInventoryUnit === 'function' ? getActiveInventoryUnit(pid) : '';
+    const unitKey = activeUnit || 'global';
+    const roomMeta = inventoryRoomMeta(pid, rid);
     const key = inventoryKey(pid, rid);
     const items = collectInventoryEditItemsFromDom();
+    const newName = fieldVal('editRoomName')?.trim();
+    const newCategory = (fieldVal('editRoomCategory') || STATE.selectedEditCategory)?.trim();
+    const meta = AppStore.meta(pid);
+
+    // Save rename if changed
+    if (newName && newName !== roomMeta.name) {
+        if (!meta.roomRenamesByUnit) meta.roomRenamesByUnit = {};
+        if (!meta.roomRenamesByUnit[unitKey]) meta.roomRenamesByUnit[unitKey] = {};
+        meta.roomRenamesByUnit[unitKey][roomMeta.slug] = newName;
+        
+        const customList = (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey]) || meta.customRooms || [];
+        const customObj = customList.find(r => r.slug === roomMeta.slug);
+        if (customObj) {
+            customObj.name = newName;
+            customObj.template = newCategory || newName;
+        }
+    }
+
+    // Save category override if selected
+    if (newCategory) {
+        if (!meta.roomCategoriesByUnit) meta.roomCategoriesByUnit = {};
+        if (!meta.roomCategoriesByUnit[unitKey]) meta.roomCategoriesByUnit[unitKey] = {};
+        meta.roomCategoriesByUnit[unitKey][roomMeta.slug] = newCategory;
+
+        const customList = (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey]) || meta.customRooms || [];
+        const customObj = customList.find(r => r.slug === roomMeta.slug);
+        if (customObj) {
+            customObj.template = newCategory;
+        }
+    }
+
     AppStore.inventory[key] = {
         notes: fieldVal('roomNotes'),
         sizeSqft: fieldVal('roomSizeSqft') || '',
-        items,
+        items: items,
         photos: AppStore.inventory[key]?.photos || [],
     };
     STATE.inventoryEditItems = null;
+    STATE.selectedEditCategory = null;
     withLoading(() => { AppStore.save(); toast('Room inventory saved'); go('inventory-room', { propertyId: pid, roomId: rid }); });
 }
 
@@ -23264,6 +23680,94 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="save-tenancy"]').forEach(el => { el.onclick = saveTenancy; });
     app.querySelectorAll('[data-action="save-checkout"]').forEach(el => { el.onclick = saveCheckout; });
     app.querySelectorAll('[data-action="save-inspection"]').forEach(el => { el.onclick = saveInspection; });
+    app.querySelectorAll('[data-action="select-conduct-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            const val = el.value;
+            if (val === 'communal') {
+                STATE.inspectionScope = 'communal';
+                STATE.selectedUnit = 'Communal';
+                STATE.selectedInspType = 'Building Safety Audit';
+            } else {
+                STATE.inspectionScope = 'unit';
+                STATE.selectedUnit = val;
+                STATE.selectedInspType = 'Routine Health Check';
+            }
+            STATE.inspectionRoomChecks = {};
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-conduct-type-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.selectedInspType = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="set-room-check"]').forEach(el => {
+        el.onclick = () => {
+            const room = el.dataset.room;
+            const status = el.dataset.status;
+            if (room && status) {
+                if (!STATE.inspectionRoomChecks) STATE.inspectionRoomChecks = {};
+                STATE.inspectionRoomChecks[room] = status;
+                render();
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="mark-all-rooms-good"]').forEach(el => {
+        el.onclick = () => {
+            const currentScope = STATE.inspectionScope || 'unit';
+            const unitRooms = [
+                { name: 'Living Room' },
+                { name: 'Kitchen & Appliances' },
+                { name: 'Master Bedroom' },
+                { name: 'Bathroom & Plumbing' },
+                { name: 'Hallway & Smoke Alarms' }
+            ];
+            const communalAreas = [
+                { name: 'Main Entrance & Intercom' },
+                { name: 'Communal Hallway & Stairs' },
+                { name: 'Fire Doors & Lighting' },
+                { name: 'Exterior & Roof' },
+                { name: 'Bin Storage & Meters' }
+            ];
+            const list = currentScope === 'communal' ? communalAreas : unitRooms;
+            STATE.inspectionRoomChecks = {};
+            list.forEach(r => {
+                STATE.inspectionRoomChecks[r.name] = 'good';
+            });
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="flag-insp-maintenance"]').forEach(el => {
+        el.onclick = () => {
+            const room = el.dataset.room || 'Room';
+            go('log-maintenance', { issue: `Defect in ${room} noted during inspection`, propertyId: STATE.propertyId, unit: STATE.selectedUnit });
+        };
+    });
+    app.querySelectorAll('[data-action="select-insp-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.inspectionFilterUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-inventory-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.selectedUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-appliance-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.appliancesFilterUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="select-alarm-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.alarmsFilterUnit = el.value;
+            render();
+        };
+    });
     app.querySelectorAll('[data-action="save-invoice"]').forEach(el => { el.onclick = saveCreateInvoice; });
     app.querySelectorAll('[data-action="pay-contractor"]').forEach(el => {
         el.onclick = () => payContractorInvoice(+el.dataset.cid);
@@ -23738,6 +24242,130 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="remove-inventory-item"]').forEach(el => {
         el.onclick = () => removeInventoryEditItem(+el.dataset.itemIdx);
     });
+    app.querySelectorAll('[data-action="cycle-fixture-condition"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.itemIdx;
+            const pid = STATE.propertyId ?? 0;
+            const rid = STATE.roomId ?? 0;
+            const key = inventoryKey(pid, rid);
+            const roomData = AppStore.inventory[key];
+            if (!roomData || !roomData.items || roomData.items[idx] === undefined) return;
+            
+            const current = roomData.items[idx];
+            const name = typeof current === 'object' ? (current.name || current.item || 'Fixture') : String(current);
+            const cond = typeof current === 'object' ? (current.condition || 'Good') : 'Good';
+            
+            const cycleMap = {
+                Good: 'Fair',
+                Fair: 'Damaged',
+                Damaged: 'Missing',
+                Missing: 'Good',
+            };
+            const nextCond = cycleMap[cond] || 'Good';
+            
+            roomData.items[idx] = { name, condition: nextCond };
+            AppStore.save();
+            toast(`"${name}" status changed to ${nextCond}`);
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="delete-inventory-room"]').forEach(el => {
+        el.onclick = () => {
+            const slug = el.dataset.roomSlug;
+            const pid = STATE.propertyId ?? 0;
+            const activeUnit = typeof getActiveInventoryUnit === 'function' ? getActiveInventoryUnit(pid) : '';
+            const unitKey = activeUnit || 'global';
+            const meta = AppStore.meta(pid);
+            const invKey = inventoryKey(pid, slug);
+            
+            if (!confirm('Are you sure you want to remove this room from the inventory?')) return;
+            
+            // Remove from customRooms if custom
+            if (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey]) {
+                meta.customRoomsByUnit[unitKey] = meta.customRoomsByUnit[unitKey].filter(r => r.slug !== slug);
+            }
+            if (meta.customRooms) {
+                meta.customRooms = meta.customRooms.filter(r => r.slug !== slug);
+            }
+            // Mark room slug as removed for this unit/property
+            if (!meta.removedRoomsByUnit) meta.removedRoomsByUnit = {};
+            if (!meta.removedRoomsByUnit[unitKey]) meta.removedRoomsByUnit[unitKey] = [];
+            if (!meta.removedRoomsByUnit[unitKey].includes(slug)) {
+                meta.removedRoomsByUnit[unitKey].push(slug);
+            }
+            if (!meta.removedRooms) meta.removedRooms = [];
+            if (!meta.removedRooms.includes(slug)) {
+                meta.removedRooms.push(slug);
+            }
+            
+            // Remove data
+            if (AppStore.inventory[invKey]) {
+                delete AppStore.inventory[invKey];
+            }
+            AppStore.save();
+            toast('Room removed from inventory');
+            go('property-detail', { propertyId: pid, tab: 'inventory' });
+        };
+    });
+    app.querySelectorAll('[data-action="select-inventory-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.selectedInventoryUnit = el.value;
+            STATE.selectedUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="change-edit-room-category"]').forEach(el => {
+        el.onchange = () => {
+            STATE.selectedEditCategory = el.value;
+            STATE.inventoryEditItems = collectInventoryEditItemsFromDom();
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="add-preset-inventory-item"]').forEach(el => {
+        el.onclick = () => {
+            const preset = el.dataset.preset;
+            if (!preset) return;
+            const current = collectInventoryEditItemsFromDom();
+            if (!current.includes(preset)) {
+                current.push(preset);
+                STATE.inventoryEditItems = current;
+                render();
+            } else {
+                toast(`"${preset}" already added`);
+            }
+        };
+    });
+    app.querySelectorAll('[data-action="add-inventory-item"]').forEach(el => {
+        el.onclick = () => {
+            const current = collectInventoryEditItemsFromDom();
+            current.push('');
+            STATE.inventoryEditItems = current;
+            render();
+            const inputs = app.querySelectorAll('[data-inventory-item-name]');
+            if (inputs.length) inputs[inputs.length - 1].focus();
+        };
+    });
+    app.querySelectorAll('[data-action="remove-inventory-item"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.itemIdx;
+            const current = collectInventoryEditItemsFromDom();
+            if (idx >= 0 && idx < current.length) {
+                current.splice(idx, 1);
+                STATE.inventoryEditItems = current;
+                render();
+            }
+        };
+    });
+    const inlineInput = document.getElementById('inlineInvItemInput');
+    if (inlineInput) {
+        inlineInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const addBtn = app.querySelector('[data-action="inline-add-inventory-item"]');
+                if (addBtn) addBtn.click();
+            }
+        };
+    }
     app.querySelectorAll('[data-action="inline-add-inventory-item"]').forEach(el => {
         el.onclick = () => {
             const input = document.getElementById('inlineInvItemInput');
@@ -23777,39 +24405,209 @@ function bindFeatureEvents() {
         el.onclick = () => {
             STATE.showAddRoomModal = true;
             STATE.newRoomDraftName = '';
+            STATE.newRoomDraftSize = '';
             render();
         };
     });
     app.querySelectorAll('[data-action="close-add-room-modal"]').forEach(el => {
         el.onclick = () => {
             STATE.showAddRoomModal = false;
+            STATE.newRoomDraftName = '';
+            STATE.newRoomDraftSize = '';
             render();
         };
     });
     app.querySelectorAll('[data-action="select-room-preset"]').forEach(el => {
         el.onclick = () => {
+            const preset = el.dataset.preset || '';
             const input = document.getElementById('newRoomNameInput');
-            if (input) input.value = el.dataset.preset || '';
-            STATE.newRoomDraftName = el.dataset.preset || '';
+            if (input) {
+                input.value = preset;
+                input.focus();
+            }
+            STATE.newRoomDraftName = preset;
         };
     });
+    const addRoomInput = document.getElementById('newRoomNameInput');
+    if (addRoomInput) {
+        addRoomInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const confirmBtn = app.querySelector('[data-action="confirm-add-room"]');
+                if (confirmBtn) confirmBtn.click();
+            }
+        };
+    }
     app.querySelectorAll('[data-action="confirm-add-room"]').forEach(el => {
         el.onclick = () => {
-            const input = document.getElementById('newRoomNameInput');
-            const name = (input?.value || STATE.newRoomDraftName || '').trim();
+            const nameInput = document.getElementById('newRoomNameInput');
+            const sizeInput = document.getElementById('newRoomSizeInput');
+            const name = (nameInput?.value || STATE.newRoomDraftName || '').trim();
+            const sizeSqft = (sizeInput?.value || STATE.newRoomDraftSize || '').trim();
             if (!name) { toast('Please enter a room name'); return; }
             const pid = STATE.propertyId ?? 0;
-            const layout = getPropertyInventoryLayout(pid);
-            const norm = name.toLowerCase();
-            if (norm.includes('bed')) layout.bedrooms = (layout.bedrooms || 1) + 1;
-            else if (norm.includes('bath') || norm.includes('ensuite') || norm.includes('toilet')) layout.bathrooms = (layout.bathrooms || 1) + 1;
-            else if (norm.includes('kitchen')) layout.kitchens = (layout.kitchens || 1) + 1;
-            else layout.reception = (layout.reception || 1) + 1;
-            AppStore.meta(pid).inventoryLayout = layout;
+            const activeUnit = typeof getActiveInventoryUnit === 'function' ? getActiveInventoryUnit(pid) : '';
+            const unitKey = activeUnit || 'global';
+            const meta = AppStore.meta(pid);
+            
+            if (!meta.customRoomsByUnit) meta.customRoomsByUnit = {};
+            if (!meta.customRoomsByUnit[unitKey]) meta.customRoomsByUnit[unitKey] = [];
+            
+            const slug = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+            const icon = getRoomIcon(name);
+            const roomObj = { slug, name, template: name, icon, isCustom: true };
+            
+            meta.customRoomsByUnit[unitKey].push(roomObj);
+            if (!meta.customRooms) meta.customRooms = [];
+            meta.customRooms.push(roomObj);
+            
+            const invKey = inventoryKey(pid, slug);
+            AppStore.inventory[invKey] = {
+                notes: '',
+                items: getDefaultItemsForRoom(name),
+                photos: [],
+                sizeSqft: sizeSqft,
+            };
+            
             AppStore.save();
             STATE.showAddRoomModal = false;
+            STATE.newRoomDraftName = '';
+            STATE.newRoomDraftSize = '';
             toast(`Room "${name}" added to inventory`);
+            
+            const catalog = getInventoryRoomCatalog(pid);
+            const newIdx = catalog.findIndex(r => r.slug === slug);
+            if (newIdx >= 0) {
+                go('inventory-room', { propertyId: pid, roomId: newIdx });
+            } else {
+                render();
+            }
+        };
+    });
+    // Inventory Room Photo Upload Handler
+    app.querySelectorAll('[data-action="trigger-room-photo-upload"]').forEach(el => {
+        el.onclick = () => {
+            const input = document.getElementById('inventoryRoomPhotoInput');
+            if (input) input.click();
+        };
+    });
+    const roomPhotoInput = document.getElementById('inventoryRoomPhotoInput');
+    if (roomPhotoInput) {
+        roomPhotoInput.onchange = (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const dataUrl = evt.target.result;
+                    const pid = STATE.propertyId ?? 0;
+                    const rid = STATE.roomId ?? 0;
+                    const key = inventoryKey(pid, rid);
+                    if (!AppStore.inventory[key]) AppStore.inventory[key] = { items: [], notes: '', photos: [], sizeSqft: '' };
+                    if (!Array.isArray(AppStore.inventory[key].photos)) AppStore.inventory[key].photos = [];
+                    AppStore.inventory[key].photos.push(dataUrl);
+                    AppStore.save();
+                    toast('Photo added to room');
+                    render();
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+    app.querySelectorAll('[data-action="remove-inventory-photo"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.photoIdx;
+            const pid = STATE.propertyId ?? 0;
+            const rid = STATE.roomId ?? 0;
+            const key = inventoryKey(pid, rid);
+            if (AppStore.inventory[key]?.photos && AppStore.inventory[key].photos[idx] !== undefined) {
+                AppStore.inventory[key].photos.splice(idx, 1);
+                AppStore.save();
+                toast('Photo removed');
+                render();
+            }
+        };
+    });
+    // Inventory Item Condition Toggle Handler
+    app.querySelectorAll('[data-action="toggle-inventory-item-condition"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.itemIdx;
+            const pid = STATE.propertyId ?? 0;
+            const rid = STATE.roomId ?? 0;
+            const key = inventoryKey(pid, rid);
+            const roomData = AppStore.inventory[key];
+            if (!roomData || !roomData.items || roomData.items[idx] === undefined) return;
+            
+            const current = roomData.items[idx];
+            const itemObj = inventoryItemObject(current);
+            
+            const cycle = { Good: 'Fair', Fair: 'Damaged', Damaged: 'Missing', Missing: 'Good' };
+            itemObj.condition = cycle[itemObj.condition] || 'Good';
+            
+            roomData.items[idx] = itemObj;
+            AppStore.save();
+            toast(`"${itemObj.name}" marked as ${itemObj.condition}`);
             render();
+        };
+    });
+    // Inventory Item Photo Upload Trigger Handler
+    app.querySelectorAll('[data-action="trigger-item-photo-upload"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.itemIdx;
+            STATE.activeItemPhotoIdx = idx;
+            const input = document.getElementById('inventoryItemPhotoInput');
+            if (input) {
+                input.value = '';
+                input.click();
+            }
+        };
+    });
+    const itemPhotoInput = document.getElementById('inventoryItemPhotoInput');
+    if (itemPhotoInput) {
+        itemPhotoInput.onchange = (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const dataUrl = evt.target.result;
+                    const pid = STATE.propertyId ?? 0;
+                    const rid = STATE.roomId ?? 0;
+                    const itemIdx = STATE.activeItemPhotoIdx ?? 0;
+                    const key = inventoryKey(pid, rid);
+                    const roomData = AppStore.inventory[key];
+                    if (roomData && roomData.items && roomData.items[itemIdx] !== undefined) {
+                        const itemObj = inventoryItemObject(roomData.items[itemIdx]);
+                        if (!Array.isArray(itemObj.photos)) itemObj.photos = [];
+                        itemObj.photos.push(dataUrl);
+                        roomData.items[itemIdx] = itemObj;
+                        AppStore.save();
+                        toast(`Photo attached to "${itemObj.name}"`);
+                        render();
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+    // Remove Item Photo Handler
+    app.querySelectorAll('[data-action="remove-item-photo"]').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            const itemIdx = +el.dataset.itemIdx;
+            const photoIdx = +el.dataset.photoIdx;
+            const pid = STATE.propertyId ?? 0;
+            const rid = STATE.roomId ?? 0;
+            const key = inventoryKey(pid, rid);
+            const roomData = AppStore.inventory[key];
+            if (roomData && roomData.items && roomData.items[itemIdx] !== undefined) {
+                const itemObj = inventoryItemObject(roomData.items[itemIdx]);
+                if (itemObj.photos && itemObj.photos[photoIdx] !== undefined) {
+                    itemObj.photos.splice(photoIdx, 1);
+                    roomData.items[itemIdx] = itemObj;
+                    AppStore.save();
+                    toast('Item photo removed');
+                    render();
+                }
+            }
         };
     });
     app.querySelectorAll('[data-action="add-preset-house-rule"]').forEach(el => {

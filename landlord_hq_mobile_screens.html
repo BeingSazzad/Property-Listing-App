@@ -15,7 +15,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        tailwind.config = {
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
@@ -5144,11 +5145,6 @@
             gap: 10px;
         }
 
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 10px;
-        }
 
         .flat-overview-unit-name {
             font-size: 16px;
@@ -10495,6 +10491,171 @@
             padding-right: 36px;
         }
 
+        .card:active {
+            transform: scale(.99);
+        }
+
+        .card-hover:hover {
+            box-shadow: 0 4px 16px rgba(15, 23, 42, .06);
+        }
+
+        .menu-row {
+            transition: background .15s;
+        }
+
+        .menu-row:active {
+            background: #F8FAFC;
+        }
+
+        .form-label {
+            font-size: var(--text-label);
+            font-weight: var(--font-medium);
+            color: var(--color-text-secondary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-stack .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-stack .form-label {
+            margin-bottom: 4px;
+        }
+
+        .profile-form-page {
+            gap: 12px;
+            padding-top: 4px;
+        }
+
+        .profile-form-page .profile-form-photo {
+            margin-bottom: 2px;
+        }
+
+        .profile-photo-picker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .profile-photo-frame {
+            position: relative;
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            flex-shrink: 0;
+        }
+
+        .profile-photo-frame .profile-photo-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .profile-photo-edit-btn {
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 32px;
+            height: 32px;
+            border: 2px solid #fff;
+            border-radius: 999px;
+            background: #2563EB;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+            padding: 0;
+        }
+
+        .profile-photo-edit-btn:active {
+            background: #1D4ED8;
+        }
+
+        .profile-photo-edit-btn i {
+            width: 14px;
+            height: 14px;
+            display: block;
+        }
+
+        .profile-form-photo-hint {
+            margin: 10px 0 0;
+            font-size: 12px;
+            color: #94A3B8;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+        }
+
+        .form-helper {
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: 400;
+            color: var(--color-text-muted);
+            margin: 4px 0 0;
+        }
+
+        .form-helper--section {
+            margin: 0 0 8px;
+        }
+
+        .form-input,
+        .auth-input {
+            width: 100%;
+            min-height: 40px;
+            padding: 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-control);
+            font-family: var(--font-family);
+            font-size: var(--text-body);
+            font-weight: var(--font-regular);
+            line-height: 1.4;
+            color: var(--color-text);
+            background: var(--color-surface);
+            box-sizing: border-box;
+        }
+
+        .form-input::placeholder,
+        .auth-input::placeholder {
+            color: var(--color-text-muted);
+            font-weight: 400;
+            opacity: 1;
+        }
+
+        .form-input:focus,
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
         /* Custom selects stay open for Figma capture (native <select> closes on blur) */
         .hold-select {
             position: relative;
@@ -10561,16 +10722,29 @@
             left: 0;
             right: 0;
             top: calc(100% + 4px);
-            max-height: 220px;
+            max-height: 240px;
             overflow-y: auto;
             overscroll-behavior: contain;
             background: #fff;
             border: 1px solid #E2E8F0;
-            border-radius: 10px;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, .14), 0 2px 6px rgba(15, 23, 42, .06);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, .15), 0 4px 10px rgba(15, 23, 42, .05);
             padding: 6px;
             box-sizing: border-box;
             z-index: 90;
+        }
+
+        .hold-select--compact {
+            position: relative;
+        }
+
+        .hold-select--compact .hold-select-menu {
+            left: auto;
+            right: 0;
+            min-width: 200px;
+            width: max-content;
+            max-width: min(90vw, 300px);
+            padding: 6px;
         }
 
         .hold-select-trigger--compact {
@@ -10614,12 +10788,6 @@
             margin: 0;
             box-sizing: border-box;
             border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #0F172A;
-            cursor: pointer;
-            font-family: inherit;
-            line-height: 1.35;
         }
 
         .hold-select-option:hover {
@@ -32525,10 +32693,10 @@
 
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=420"></script>
-    <script src="landlord_hq_contractor.js?v=420"></script>
-    <script src="landlord_hq_features.js?v=420"></script>
-    <script src="landlord_hq_product.js?v=420"></script>
+    <script src="landlord_hq_screens.js?v=460"></script>
+    <script src="landlord_hq_contractor.js?v=460"></script>
+    <script src="landlord_hq_features.js?v=460"></script>
+    <script src="landlord_hq_product.js?v=460"></script>
     <script>
             (function () {
                 function showBootError(msg) {
