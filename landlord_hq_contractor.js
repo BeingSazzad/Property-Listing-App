@@ -2158,30 +2158,34 @@ function screenTenantInventory() {
     const pid = t.propertyId;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    return `${topBar('Inventory', { back: true, sub: 'Photos from your landlord' })}
-    <div class="screen-content screen-enter stack-sm">
-        <p class="text-[13px] text-[#64748B]">Room checklists and photos uploaded by your landlord for check-in / check-out.</p>
-        ${rooms.length ? rooms.map(([name, sub, icon, idx]) => {
-            const key = typeof inventoryKey === 'function' ? inventoryKey(pid, idx) : null;
-            const photos = (key && AppStore.inventory?.[key]?.photos) || [];
-            const thumb = photos[0];
-            return `
-        <button type="button" data-go="tenant-inventory-room" data-room="${idx}" class="card w-full p-4 flex items-center gap-3 text-left">
-            ${thumb
-                ? `<img src="${esc(thumb)}" alt="" class="w-12 h-12 rounded-xl object-cover shrink-0">`
-                : `<div class="w-12 h-12 rounded-xl bg-[#F8FAFC] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-5 h-5 text-[#64748B]"></i></div>`}
-            <div class="min-w-0 flex-1">
-                <p class="text-[14px] font-bold text-[#0F172A] mb-0">${esc(name)}</p>
-                <p class="text-[12px] text-[#64748B] mt-0.5 mb-0">${esc(sub)}</p>
+    return `${topBar('Inventory', { back: true, sub: 'Condition & checklists' })}
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
+        <div class="flex items-center justify-between px-1 mt-1">
+            <p class="text-[13.5px] font-bold text-[#0F172A] m-0">Room Checklists</p>
+            <span class="text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#D1FAE5]">${rooms.length} Rooms</span>
+        </div>
+
+        <div class="space-y-2">
+        ${rooms.length ? rooms.map(([name, sub, icon, idx, condSum]) => `
+        <button type="button" data-go="tenant-inventory-room" data-room="${idx}" class="card w-full p-3.5 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs cursor-pointer group">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
+                <div class="min-w-0">
+                    <p class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${esc(name)}</p>
+                    <p class="text-[11.5px] text-[#64748B] truncate mt-0.5 m-0">${esc(sub)}</p>
+                </div>
             </div>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-        </button>`;
-        }).join('') : `
-        <div class="empty-state card">
-            <i data-lucide="package" class="w-10 h-10 text-[#CBD5E1]"></i>
-            <p class="empty-state-title">No inventory yet</p>
-            <p class="empty-state-desc">When your landlord records room inventory and photos, they will appear here.</p>
+            <div class="flex items-center gap-2 shrink-0">
+                ${condSum ? `<span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full ${condSum.class}">${condSum.label}</span>` : ''}
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
+            </div>
+        </button>`).join('') : `
+        <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <i data-lucide="package" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
+            <p class="text-[14px] font-bold text-[#0F172A] m-0">No inventory yet</p>
+            <p class="text-[12px] text-[#64748B] m-0 mt-1">When your landlord records room inventory and photos, they will appear here.</p>
         </div>`}
+        </div>
     </div>`;
 }
 
@@ -2204,27 +2208,82 @@ function screenTenantInventoryRoom() {
     const photoGrid = typeof renderTenantReadonlyPhotoGrid === 'function'
         ? renderTenantReadonlyPhotoGrid(roomPhotos, { coverBadge: true, empty: 'No photos for this room yet.' })
         : '';
-    return `${topBar(roomName, { back: true, sub: 'Inventory' })}
-    <div class="screen-content screen-enter stack-sm">
-        ${roomSize ? `<p class="text-[12px] text-[#64748B]">Size · ${esc(roomSize)} sq ft</p>` : ''}
-        <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Photos</p>
-            ${photoGrid || `<p class="text-[12px] text-[#94A3B8]">No photos for this room yet.</p>`}
+
+    return `${topBar(roomName, { back: true, sub: 'Room Inventory' })}
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
+        <!-- Room Overview Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <div class="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Details</span>
+                    <h3 class="text-[17px] font-bold text-[#0F172A] m-0 mt-0.5">${esc(roomName)}</h3>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 pt-2.5">
+                ${roomSize ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-medium text-[#475569]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i> ${esc(roomSize)} sq ft</span>` : ''}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[11.5px] font-semibold text-[#2563EB]"><i data-lucide="package" class="w-3.5 h-3.5"></i> ${items.length} ${items.length === 1 ? 'item' : 'items'}</span>
+                ${roomPhotos.length ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ECFDF5] text-[11.5px] font-semibold text-[#059669]"><i data-lucide="camera" class="w-3.5 h-3.5"></i> ${roomPhotos.length} ${roomPhotos.length === 1 ? 'photo' : 'photos'}</span>` : ''}
+            </div>
         </div>
-        <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Items (${items.length})</p>
+
+        <!-- Room Photos Section -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Room Photos (${roomPhotos.length})</span>
+                    <span class="text-[10.5px] text-[#94A3B8]">Recorded at check-in inspection</span>
+                </div>
+                <span class="text-[11px] text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-md font-medium">Verified</span>
+            </div>
+            ${photoGrid || `<p class="text-[12px] text-[#94A3B8] m-0 italic">No room photos uploaded yet.</p>`}
+        </div>
+
+        <!-- Fixtures & Items List with Photos -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Items &amp; Condition (${items.length})</span>
+                <span class="text-[10.5px] text-[#94A3B8]">Condition status</span>
+            </div>
             ${items.length ? `
-            <ul class="tnt-rules-list tnt-rules-list--full">
-                ${items.map((item, i) => {
-                    const label = typeof inventoryItemName === 'function' ? inventoryItemName(item) : String(item);
-                    return `<li><span class="tnt-rule-num">${i + 1}</span>${esc(label)}</li>`;
-                }).join('')}
-            </ul>` : `<p class="text-[12px] text-[#94A3B8]">No items listed.</p>`}
+            <div class="divide-y divide-[#F1F5F9]">
+                ${items.map((item, idx) => {
+        const itemObj = typeof inventoryItemObject === 'function' ? inventoryItemObject(item) : { name: String(item), condition: 'Good', photos: [] };
+        const itemName = itemObj.name || 'Fixture';
+        const cond = itemObj.condition || 'Good';
+        const itemPhotos = itemObj.photos || [];
+        const badgeClass = typeof inventoryConditionBadgeClass === 'function' ? inventoryConditionBadgeClass(cond) : 'badge-emerald';
+        return `
+                    <div class="py-2.5 space-y-2">
+                        <div class="flex items-center justify-between gap-2.5">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] shrink-0"></span>
+                                <span class="text-[13px] font-bold text-[#0F172A] truncate">${esc(itemName)}</span>
+                            </div>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs ${badgeClass}">
+                                ${esc(cond)}
+                            </span>
+                        </div>
+                        ${itemPhotos.length ? `
+                        <!-- Item Photos Strip -->
+                        <div class="flex items-center gap-2 pl-3.5 overflow-x-auto py-1">
+                            ${itemPhotos.map((pUrl) => `
+                            <div class="relative group/photo shrink-0">
+                                <img src="${esc(pUrl)}" alt="${esc(itemName)}" class="w-12 h-12 object-cover rounded-xl border border-[#E2E8F0] shadow-2xs">
+                            </div>`).join('')}
+                        </div>` : ''}
+                    </div>`;
+    }).join('')}
+            </div>` : `
+            <div class="text-center py-4">
+                <p class="text-[13px] text-[#94A3B8] m-0">No items listed for this room.</p>
+            </div>`}
         </div>
+
+        <!-- Room Notes Card -->
         ${notes ? `
-        <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase">Notes</p>
-            <p class="text-[13px] text-[#475569] mt-2 leading-relaxed">${esc(notes)}</p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2">
+            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Notes &amp; Observations</span>
+            <p class="text-[13px] text-[#334155] leading-relaxed m-0 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">${esc(notes)}</p>
         </div>` : ''}
     </div>`;
 }
