@@ -5786,70 +5786,89 @@ function screenInvoiceDetail() {
     const isCharge = typeof isLandlordExtraCharge === 'function' && isLandlordExtraCharge(inv);
     const payKind = isCharge ? 'charges' : isMaint ? 'maintenance' : 'rent';
     const typeLabel = typeof invoiceTypeLabel === 'function' ? invoiceTypeLabel(inv) : (isMaint ? (inv.desc || 'Bill') : 'Monthly rent');
-    const detailRows = isTenant ? [
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const tenantItem = TENANT_LIST.find(t => t.id === inv.tenantId || (t.name === inv.tenant && inv.prop.includes(t.prop)));
+    const pageTitle = paid ? 'Payment record' : isCharge ? 'Extra charge' : isMaint ? 'Bill due' : 'Rent due';
+    const heroDesc = (isMaint || isCharge) && inv.desc
+        ? inv.desc
+        : (!isMaint && !isCharge && inv.month ? inv.month : '');
+
+    const rows = [
         ['Property', inv.prop.split(',')[0]],
         ...(inv.unit ? [['Unit', inv.unit]] : []),
         ['Type', typeLabel],
         ...(isCharge && inv.chargeType ? [['Charge category', (typeof CHARGE_TYPE_OPTIONS !== 'undefined' ? CHARGE_TYPE_OPTIONS.find(c => c.id === inv.chargeType)?.label : null) || inv.chargeType]] : []),
         ['Due date', inv.due],
         ['Invoice #', inv.num],
-    ] : [
-        ['Tenant', inv.tenant || tenantNameForInvoice(inv)],
-        ['Property', inv.prop.split(',')[0]],
-        ...(inv.unit ? [['Unit', inv.unit]] : []),
-        ['Type', typeLabel],
-        ['Due date', inv.due],
-        ['Invoice #', inv.num],
     ];
-    if (paid) {
-        detailRows.push(['Paid on', inv.paidOn || '—']);
-        detailRows.push(['Payment method', inv.paymentMethod || '—']);
-        if (inv.paymentReference) detailRows.push(['Reference', inv.paymentReference]);
-        if (inv.paymentNotes) detailRows.push(['Notes', inv.paymentNotes]);
-        if (inv.receiptSent) detailRows.push(['Receipt', 'Sent to tenant']);
-        if (inv.status === 'Partial') detailRows.push(['Status note', 'Partial payment · balance tracking coming soon']);
+    if (!isTenant) {
+        rows.unshift(['Tenant', inv.tenant || (typeof tenantNameForInvoice === 'function' ? tenantNameForInvoice(inv) : 'Tenant')]);
     }
-    const sc = paid ? '#16A34A' : inv.status === 'Overdue' ? '#DC2626' : '#D97706';
-    const amountTone = paid ? 'is-paid' : inv.status === 'Overdue' ? 'is-overdue' : 'is-due';
-    const tenantItem = TENANT_LIST.find(t => t.id === inv.tenantId || (t.name === inv.tenant && inv.prop.includes(t.prop)));
-    const pageTitle = paid ? 'Payment record' : isCharge ? 'Extra charge' : isMaint ? 'Bill due' : 'Rent due';
-    const heroDesc = (isMaint || isCharge) && inv.desc
-        ? inv.desc
-        : (!isMaint && !isCharge && inv.month ? inv.month : '');
-    const viewPayments = !isTenant && tenantItem
-        ? `<button type="button" data-go="tenant-detail" data-tid="${tenantItem.id}" data-tab="payments" class="btn-secondary">View rent payments</button>`
-        : '';
-    const downloadPdf = `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-secondary">Download PDF</button>`;
+    if (paid) {
+        rows.push(['Paid on', inv.paidOn || 'Today']);
+        rows.push(['Payment method', inv.paymentMethod || 'Stripe']);
+        if (inv.paymentReference) rows.push(['Reference', inv.paymentReference]);
+        if (inv.paymentNotes) rows.push(['Notes', inv.paymentNotes]);
+    }
+
     const primaryAction = isTenant
         ? (!paid
-            ? `<button type="button" data-action="tenant-pay" data-kind="${payKind}" data-iid="${inv.id}" class="btn-primary">Pay with Stripe</button>`
-            : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary">Download receipt</button>`)
+            ? `<button type="button" data-action="tenant-pay" data-kind="${payKind}" data-iid="${inv.id}" class="btn-primary w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer text-[13.5px]"><i data-lucide="credit-card" class="w-4 h-4"></i><span>Pay ${esc(inv.amount)} with Stripe</span></button>`
+            : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer text-[13.5px]"><i data-lucide="download" class="w-4 h-4"></i><span>Download Receipt (PDF)</span></button>`)
         : (!paid
-            ? `<button type="button" data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary">Record payment</button>`
-            : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary">Download receipt</button>`);
+            ? `<button type="button" data-action="mark-invoice-paid" data-iid="${inv.id}" class="btn-primary w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer text-[13.5px]"><i data-lucide="check" class="w-4 h-4"></i><span>Record Payment</span></button>`
+            : `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-primary w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer text-[13.5px]"><i data-lucide="download" class="w-4 h-4"></i><span>Download Receipt (PDF)</span></button>`);
+
+    const secondaryAction = isTenant
+        ? (!paid ? `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-secondary w-full py-3 rounded-xl font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer"><i data-lucide="download" class="w-3.5 h-3.5 text-[#2563EB]"></i><span>Download Invoice (PDF)</span></button>` : '')
+        : (tenantItem ? `<button type="button" data-go="tenant-detail" data-tid="${tenantItem.id}" data-tab="payments" class="btn-secondary w-full py-3 rounded-xl font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer"><span>View tenant payments</span></button>`
+            : (!paid ? `<button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="btn-secondary w-full py-3 rounded-xl font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer"><i data-lucide="download" class="w-3.5 h-3.5 text-[#2563EB]"></i><span>Download Invoice (PDF)</span></button>` : ''));
+
     const destructive = !isTenant
         ? (!paid
-            ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline">Cancel bill</button>`
-            : `<button type="button" data-action="undo-rent-payment" data-iid="${inv.id}" class="btn-danger-outline">Undo payment</button>`)
+            ? `<button type="button" data-action="delete-invoice" data-iid="${inv.id}" class="btn-danger-outline w-full py-2.5 rounded-xl text-[12.5px] font-semibold mt-1">Cancel bill</button>`
+            : `<button type="button" data-action="undo-rent-payment" data-iid="${inv.id}" class="btn-danger-outline w-full py-2.5 rounded-xl text-[12.5px] font-semibold mt-1">Undo payment</button>`)
         : '';
+
     return `${topBar(`<span class="invoice-detail-heading">${pageTitle}</span>`, { back: true })}
-    <div class="screen-content screen-enter invoice-detail-page">
-        <div class="card invoice-detail-hero">
-            <p class="invoice-detail-kicker">${paid ? 'Amount paid' : 'Amount due'}</p>
-            <p class="invoice-detail-amount ${amountTone}">${inv.amount}</p>
-            <span class="invoice-detail-status" style="background:${sc}18;color:${sc}">${inv.status}</span>
-            ${heroDesc ? `<p class="invoice-detail-desc">${heroDesc}</p>` : ''}
+    <div class="screen-content screen-enter invoice-detail-page space-y-4 pb-10">
+        <!-- Standard Official Receipt Card (Unified, standard proportions) -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
+            <!-- Compact Hero Banner -->
+            <div class="text-center pt-1 pb-1">
+                <div class="w-11 h-11 rounded-full ${paid ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FFFBEB] text-[#D97706]'} flex items-center justify-center mx-auto mb-2 shadow-2xs">
+                    <i data-lucide="${paid ? 'check-circle-2' : 'clock'}" class="w-5 h-5"></i>
+                </div>
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                    ${paid ? 'Amount paid' : 'Amount due'}
+                </span>
+                <div class="text-[28px] font-black text-[#0F172A] tracking-tight leading-none mt-1">
+                    ${esc(inv.amount)}
+                </div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold mt-2 shadow-2xs ${paid ? 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]' : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]'}">
+                    <span class="w-1.5 h-1.5 rounded-full ${paid ? 'bg-[#059669]' : 'bg-[#D97706]'}"></span>
+                    <span>${esc(inv.status)}</span>
+                </div>
+                ${heroDesc ? `<p class="text-[12px] text-[#64748B] m-0 mt-1.5 font-medium">${esc(heroDesc)}</p>` : ''}
+            </div>
+
+            <!-- Subtle Receipt Separator -->
+            <div class="border-t border-[#F1F5F9]"></div>
+
+            <!-- Compact Key-Value Details (Standard Height) -->
+            <div class="space-y-2">
+                ${rows.map(([k, v]) => `
+                <div class="flex items-center justify-between gap-3 py-1.5 border-b border-[#F8FAFC] last:border-b-0">
+                    <span class="text-[12.5px] font-medium text-[#64748B] shrink-0">${esc(k)}</span>
+                    <span class="text-[13px] font-bold text-[#0F172A] text-right truncate">${esc(v)}</span>
+                </div>`).join('')}
+            </div>
         </div>
-        <div class="card invoice-detail-card">
-            ${detailRows.map(([k, v]) => `
-            <div class="invoice-detail-row">
-                <span class="invoice-detail-label">${k}</span>
-                <span class="invoice-detail-value">${v}</span>
-            </div>`).join('')}
-        </div>
-        <div class="invoice-detail-actions">
+
+        <!-- Action Buttons -->
+        <div class="space-y-2 pt-1">
             ${primaryAction}
-            <div class="invoice-detail-actions-row">${downloadPdf}${viewPayments}</div>
+            ${secondaryAction}
             ${destructive}
         </div>
     </div>`;

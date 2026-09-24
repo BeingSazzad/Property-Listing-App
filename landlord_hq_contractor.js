@@ -1979,6 +1979,7 @@ function screenTenantBuildingInfo() {
     const building = typeof getPropertyBuilding === 'function' ? getPropertyBuilding(pid) : {};
     const meta = typeof AppStore !== 'undefined' ? AppStore.meta(pid) : {};
     const info = meta?.info || {};
+    const utils = meta?.utilities || {};
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const parkingDisplay = typeof propertyHasParking === 'function' && propertyHasParking(meta)
         ? (typeof propertyParkingSummary === 'function' ? propertyParkingSummary(meta) : '—')
@@ -2210,7 +2211,59 @@ function screenTenantBuildingInfo() {
             </div>
         </div>` : ''}
 
-        <!-- 8. Property & Unit Photos -->
+        <!-- 8. Meters & Emergency Isolation -->
+        ${(utils.water || utils.elec || utils.gas) ? `
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Meters &amp; Emergency Isolation</p>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">Connected</span>
+            </div>
+            <div class="space-y-2">
+                ${utils.water ? `
+                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                            <i data-lucide="droplet" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[13px] font-bold text-[#0F172A] m-0">Water Stopcock</p>
+                            <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${esc(utils.water.shutOff || utils.water.meterLocation || 'Under kitchen sink')} · ${esc(utils.water.provider || 'Thames Water')}</p>
+                        </div>
+                    </div>
+                    ${utils.water.meterNumber ? `<span class="text-[11px] font-mono text-[#475569] bg-white border border-[#E2E8F0] px-2 py-0.5 rounded-md shrink-0">${esc(utils.water.meterNumber)}</span>` : ''}
+                </div>` : ''}
+
+                ${utils.elec ? `
+                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-lg bg-[#FFFBEB] text-[#D97706] flex items-center justify-center shrink-0">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[13px] font-bold text-[#0F172A] m-0">Electricity Breaker</p>
+                            <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${esc(utils.elec.meterLocation || 'Hallway cupboard')} · ${esc(utils.elec.provider || 'EDF Energy')}</p>
+                        </div>
+                    </div>
+                    ${utils.elec.meterNumber ? `<span class="text-[11px] font-mono text-[#475569] bg-white border border-[#E2E8F0] px-2 py-0.5 rounded-md shrink-0">${esc(utils.elec.meterNumber)}</span>` : ''}
+                </div>` : ''}
+
+                ${utils.gas ? `
+                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-lg bg-[#FEF2F2] text-[#DC2626] flex items-center justify-center shrink-0">
+                            <i data-lucide="flame" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[13px] font-bold text-[#0F172A] m-0">Gas Isolation Valve</p>
+                            <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${esc(utils.gas.shutOff || utils.gas.meterLocation || 'External meter box')} · ${esc(utils.gas.provider || 'British Gas')}</p>
+                        </div>
+                    </div>
+                    ${utils.gas.meterNumber ? `<span class="text-[11px] font-mono text-[#475569] bg-white border border-[#E2E8F0] px-2 py-0.5 rounded-md shrink-0">${esc(utils.gas.meterNumber)}</span>` : ''}
+                </div>` : ''}
+            </div>
+        </div>` : ''}
+
+        <!-- 9. Property & Unit Photos -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between gap-2">
                 <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Property Photos</p>
@@ -2552,35 +2605,77 @@ function screenTenantPaymentHistory() {
         maintenance: { title: 'No maintenance bills', desc: 'Repair shares and utility overage bills will show here.' },
     };
     const empty = emptyCopy[kind] || emptyCopy.charges;
-    const stillDue = typeof renderTenantStillDueCard === 'function' ? renderTenantStillDueCard(tid) : '';
-    const listBody = !rows.length ? `
-        <div class="empty-state card">
-            <i data-lucide="receipt" class="empty-state-icon"></i>
-            <p class="empty-state-title">${empty.title}</p>
-            <p class="empty-state-desc">${empty.desc}</p>
-        </div>` : `
-        ${unpaid.length && dueTotal ? `
-        <div class="fin-summary card">
-            <p class="fin-summary-label">Still due · ${kind === 'rent' ? 'Rent' : 'Extra charge'}</p>
-            <p class="fin-summary-amount">${typeof formatRentAmount === 'function' ? formatRentAmount(dueTotal) : `£${dueTotal}`}</p>
-            <p class="fin-summary-hint">${unpaid.length} outstanding · tap a row to pay</p>
-        </div>` : ''}
-        ${unpaid.length ? `
-        <p class="txn-section-label ${dueTotal ? 'txn-section-label--spaced' : ''}">Outstanding</p>
-        <div class="txn-list">${unpaid.map(renderRow).join('')}</div>` : ''}
-        ${paid.length ? `
-        <p class="txn-section-label ${unpaid.length ? 'txn-section-label--spaced' : ''}">Paid</p>
-        <div class="txn-list">${paid.map(renderRow).join('')}</div>` : ''}`;
-    return `${topBar('Payment history', { back: true })}
-    <div class="screen-content screen-enter txn-page">
+    const pay = typeof tenantPaymentSummary === 'function' ? tenantPaymentSummary(tid) : {};
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const nextDue = pay.nextDueDate && pay.nextDueDate !== '—' ? pay.nextDueDate : 'Jul 1, 2026';
+    const formattedDue = typeof formatRentAmount === 'function' ? formatRentAmount(dueTotal) : `£${dueTotal}`;
+
+    return `${topBar('Payment history', { back: true, sub: 'Rent & charges ledger' })}
+    <div class="screen-content screen-enter txn-page space-y-4 pb-12">
+        <!-- 1. Executive Financial Balance Hero Card (Single unified card matching landlord design) -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                        ${kind === 'rent' ? 'Rent Balance' : kind === 'charges' ? 'Extra Charges' : 'Maintenance Balance'}
+                    </span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span class="text-[30px] font-black text-[#0F172A] tracking-tight leading-none">${formattedDue}</span>
+                    </div>
+                    <p class="text-[12px] text-[#64748B] mt-2 m-0 flex items-center gap-1.5 leading-normal">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#94A3B8] shrink-0"></i>
+                        ${dueTotal > 0 ? `<span>Next payment due <strong class="text-[#0F172A]">${esc(nextDue)}</strong></span>` : `<span class="text-[#059669] font-medium">All payments up to date</span>`}
+                    </p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-2xs ${dueTotal > 0 ? 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]' : 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]'}">
+                    ${dueTotal > 0 ? `${unpaid.length} Bill${unpaid.length === 1 ? '' : 's'} Outstanding` : 'Settled'}
+                </span>
+            </div>
+
+            ${dueTotal > 0 ? `
+            <button type="button" data-action="tenant-pay" data-kind="${kind}" data-iid="${unpaid[0]?.id ?? ''}" class="btn-primary w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer text-[13.5px]">
+                <i data-lucide="credit-card" class="w-4 h-4"></i>
+                <span>Pay ${formattedDue} now</span>
+            </button>` : ''}
+        </div>
+
+        <!-- 2. Consistent Filter Tabs (Landlord Design Tokens) -->
         <div class="fin-segments txn-segments">
             ${tabs.map(([k, l]) => `
             <button type="button" data-tenant-pay-filter="${k}" class="fin-segment ${kind === k ? 'active' : ''}">
                 <span class="fin-segment-label">${l}</span>
             </button>`).join('')}
         </div>
-        ${kind === 'rent' ? stillDue : ''}
-        ${listBody}
+
+        <!-- 3. Transaction Lists -->
+        ${!rows.length ? `
+        <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <i data-lucide="receipt" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
+            <p class="text-[14px] font-bold text-[#0F172A] m-0">${empty.title}</p>
+            <p class="text-[12px] text-[#64748B] m-0 mt-1">${empty.desc}</p>
+        </div>` : `
+        ${unpaid.length ? `
+        <div>
+            <div class="flex items-center justify-between px-1 mb-2">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Outstanding (${unpaid.length})</span>
+                <span class="text-[11px] text-[#D97706] font-semibold">Action required</span>
+            </div>
+            <div class="txn-list">${unpaid.map(renderRow).join('')}</div>
+        </div>` : ''}
+
+        ${paid.length ? `
+        <div>
+            <div class="flex items-center justify-between px-1 mb-2 mt-2">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Paid History (${paid.length})</span>
+                <span class="text-[11px] text-[#059669] font-medium flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Verified</span>
+            </div>
+            <div class="txn-list">${paid.map(renderRow).join('')}</div>
+        </div>` : ''}
+
+        <button type="button" data-action="export-rent-pdf" class="btn-secondary w-full py-3 rounded-2xl text-[12.5px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-1">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+            <span>Download Statement (PDF)</span>
+        </button>`}
     </div>`;
 }
 
@@ -2622,6 +2717,8 @@ function renderTenantIssueCard(item) {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const photos = typeof getMaintReportPhotos === 'function' ? getMaintReportPhotos(item) : [];
     const photoSrc = photos[0] || (IMG.maint[item.id % IMG.maint.length]);
+    const rawVideos = typeof getMaintReportVideos === 'function' ? getMaintReportVideos(item) : (item.videos || item.reportVideos || []);
+    const hasVideo = rawVideos.length > 0;
 
     const isDone = item.status === 'done';
     const isProgress = item.status === 'progress' || item.status === 'in_progress';
@@ -2646,7 +2743,10 @@ function renderTenantIssueCard(item) {
 
     return `
     <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-sm hover:border-[#CBD5E1] transition-all flex items-start gap-3.5 w-full text-left group cursor-pointer">
-        <img src="${esc(photoSrc)}" alt="" class="w-14 h-14 rounded-xl object-cover shrink-0 border border-[#E2E8F0]">
+        <div class="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-2xs">
+            <img src="${esc(photoSrc)}" alt="" class="w-full h-full object-cover">
+            ${hasVideo ? `<span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white"><i data-lucide="play" class="w-4 h-4 fill-white"></i></span>` : ''}
+        </div>
         <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-2">
                 <h4 class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors truncate">${esc(item.issue)}</h4>
@@ -2656,11 +2756,13 @@ function renderTenantIssueCard(item) {
                 <i data-lucide="hard-hat" class="w-3.5 h-3.5 text-[#64748B]"></i>
                 <span class="truncate">${esc(contractor)}</span>
             </p>
-            <div class="flex items-center gap-2 mt-2">
+            <div class="flex flex-wrap items-center gap-1.5 mt-2">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${statusCls}">
                     ${statusLabel}
                 </span>
                 ${isUrgent ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">Urgent</span>` : ''}
+                ${hasVideo ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center gap-1"><i data-lucide="video" class="w-3 h-3"></i> Video</span>` : ''}
+                ${photos.length > 1 ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]">${photos.length} photos</span>` : ''}
             </div>
         </div>
         <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0 mt-4"></i>
@@ -3607,9 +3709,23 @@ function screenContractorJobDetail() {
     const maintItem = job.maintId != null && typeof MAINTENANCE_ITEMS !== 'undefined'
         ? MAINTENANCE_ITEMS.find(m => m.id === job.maintId)
         : null;
-    const photos = [...(job.reportPhotos || []), ...(job.photos?.before || [])].slice(0, 4);
+    const photos = [...(job.reportPhotos || []), ...(job.photos?.before || [])];
+    const rawVideos = typeof getMaintReportVideos === 'function'
+        ? getMaintReportVideos(job || maintItem)
+        : (job.reportVideos || maintItem?.videos || []);
+    const videos = rawVideos.map(v => typeof normalizeMaintVideo === 'function' ? normalizeMaintVideo(v) : v);
     const price = contractorJobEstimate(job);
     const paymentStatus = ['paid', 'approved'].includes(job.status) ? 'Paid' : (job.status === 'waiting_approval' ? 'Awaiting approval' : 'Upon completion');
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    // Check utilities for emergency shutoff / stopcock / fusebox
+    const pid = job.propertyId ?? maintItem?.propertyId ?? 0;
+    const meta = typeof AppStore !== 'undefined' ? AppStore.meta(pid) : {};
+    const utils = meta?.utilities || {};
+    const waterStopcock = utils.water?.shutOff || utils.water?.meterLocation || 'Under kitchen sink';
+    const elecLocation = utils.elec?.meterLocation || utils.elec?.meter || 'Hallway intake / meter box';
+    const isPlumbing = /sink|pipe|water|tap|toilet|leak|basin|drain/i.test(job.issue || '') || (maintItem?.categoryId === 'plumbing');
+    const isElectrical = /power|plug|light|fuse|electric|breaker|wire/i.test(job.issue || '') || (maintItem?.categoryId === 'electrical');
     const primaryAction = {
         assigned: `<button data-contractor-action="accept" data-msg="Job accepted" class="btn-primary ctr-compact-cta">Accept job</button>`,
         accepted: `<button data-contractor-action="schedule" class="btn-primary ctr-compact-cta">Schedule visit</button>`,
@@ -3623,25 +3739,63 @@ function screenContractorJobDetail() {
     const reviewsBlock = typeof renderContractorJobReviewsReadonly === 'function'
         ? renderContractorJobReviewsReadonly(maintItem, job) : '';
     return `${topBar('Job details', { back: true })}
-    <div class="screen-content screen-enter ctr-compact-page ctr-compact-page--footer">
+    <div class="screen-content screen-enter ctr-compact-page ctr-compact-page--footer space-y-3.5 pb-12">
         <div class="ctr-compact-head">
             <span class="ctr-v2-job-badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
             <span class="ctr-compact-id">#JOB-${1000 + job.id}</span>
         </div>
-        <h1 class="ctr-compact-title">${job.issue}</h1>
+        <h1 class="ctr-compact-title">${esc(job.issue)}</h1>
         <div class="ctr-compact-meta">
-            <span><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${job.address}</span>
-            <span><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${job.visitDate || 'Not scheduled'}</span>
+            <span><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${esc(job.address)}</span>
+            <span><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${esc(job.visitDate || 'Not scheduled')}</span>
         </div>
+
+        <!-- Site Access & Emergency Shutoff Location -->
+        ${isPlumbing ? `
+        <div class="card ctr-compact-block p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#DBEAFE] space-y-1 text-left">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="droplet" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="text-[11px] font-bold text-[#1E40AF] uppercase tracking-wider">Main Water Stopcock</span>
+            </div>
+            <p class="text-[12.5px] font-bold text-[#0F172A] m-0 pl-8">${esc(waterStopcock)}</p>
+        </div>` : ''}
+
+        ${isElectrical ? `
+        <div class="card ctr-compact-block p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] space-y-1 text-left">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="text-[11px] font-bold text-[#92400E] uppercase tracking-wider">Fuse Box / Breaker Location</span>
+            </div>
+            <p class="text-[12.5px] font-bold text-[#0F172A] m-0 pl-8">${esc(elecLocation)}</p>
+        </div>` : ''}
+
         <div class="card ctr-compact-block">
             <p class="ctr-compact-label">Job description</p>
-            <p class="ctr-compact-text">${job.desc}</p>
+            <p class="ctr-compact-text">${esc(job.desc)}</p>
         </div>
-        ${photos.length ? `
-        <div class="card ctr-compact-block">
-            <p class="ctr-compact-label">Photos</p>
-            <div class="ctr-compact-photo-row">
-                ${photos.map(src => `<img src="${src}" alt="" class="ctr-compact-photo">`).join('')}
+
+        <!-- Evidence Media: Photos & Videos with Lightbox & Player -->
+        ${(photos.length || videos.length) ? `
+        <div class="card ctr-compact-block space-y-2.5">
+            <div class="flex items-center justify-between">
+                <p class="ctr-compact-label m-0">Evidence Media (${photos.length + videos.length})</p>
+                <span class="text-[11px] text-[#64748B] font-medium">Tap to inspect</span>
+            </div>
+            <div class="flex items-center gap-2.5 overflow-x-auto py-1">
+                ${videos.map((v, i) => `
+                <button type="button" class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#CBD5E1] shadow-2xs group cursor-pointer" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
+                    <img src="${v.poster || photos[0] || IMG.maint[0]}" alt="" class="w-full h-full object-cover">
+                    <span class="absolute inset-0 bg-black/40 flex items-center justify-center text-white group-hover:scale-110 transition-transform"><i data-lucide="play" class="w-5 h-5 fill-white"></i></span>
+                    <span class="absolute bottom-1 right-1 text-[8px] font-black bg-black/80 text-white px-1 py-0.2 rounded">VIDEO</span>
+                </button>`).join('')}
+                ${photos.map((src, i) => `
+                <button type="button" class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-2xs group cursor-pointer" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
+                    <img src="${src}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                </button>`).join('')}
             </div>
         </div>` : ''}
         ${renderCtrProgressChecklist(job)}

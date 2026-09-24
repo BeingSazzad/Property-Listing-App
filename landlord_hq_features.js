@@ -16330,8 +16330,14 @@ function invoiceBelongsToTenant(inv, tenantId) {
 }
 
 function invoicesForTenant(tenantId) {
+    const parseSortTs = (i) => {
+        if (!i) return 0;
+        const str = i.due || i.paidOn || (i.month ? `1 ${i.month}` : '');
+        const ts = Date.parse(str);
+        return Number.isNaN(ts) ? 0 : ts;
+    };
     return INVOICES.filter(i => invoiceBelongsToTenant(i, tenantId))
-        .sort((a, b) => (b.month || b.due).localeCompare(a.month || a.due));
+        .sort((a, b) => parseSortTs(b) - parseSortTs(a));
 }
 
 function invoiceTypeLabel(inv) {
@@ -16696,10 +16702,11 @@ function renderTenantStillDueCard(tenantId) {
         </div>
         ${pay.nextDueDate && pay.nextDueDate !== '—' ? `<p class="tenant-still-due-hint">Next rent due ${escapeHtml(pay.nextDueDate)}</p>` : ''}` : ''}
         ${extraDue ? `
+        ${extras.length > 1 ? `
         <div class="tenant-still-due-row">
             <span>Extra charges</span>
             <strong>${escapeHtml(pay.billBalance)}</strong>
-        </div>
+        </div>` : ''}
         ${extras.map(i => {
         const name = typeof chargeInvoiceLabel === 'function' ? chargeInvoiceLabel(i) : (i.desc || 'Charge');
         return `<button type="button" data-go="invoice-detail" data-iid="${i.id}" class="tenant-still-due-item">
