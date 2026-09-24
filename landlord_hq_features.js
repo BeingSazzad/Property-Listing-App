@@ -4016,6 +4016,10 @@ function hasUnitSpecCount(v) {
 }
 
 function getActiveInventoryUnit(propertyId) {
+    if (typeof STATE !== 'undefined' && STATE.userRole === 'tenant') {
+        const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+        if (t?.unit) return t.unit;
+    }
     const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
     if (units.length <= 1) return '';
     return STATE.selectedInventoryUnit || STATE.selectedUnit || (typeof unitName === 'function' ? unitName(units[0]) : (units[0]?.name || 'Flat 1'));
@@ -4393,6 +4397,10 @@ function getInventoryItems(pid, rid) {
     return ensureInventoryRoom(pid, rid).items.map(inventoryItemName);
 }
 
+function getInventoryItemObjects(pid, rid) {
+    return ensureInventoryRoom(pid, rid).items.map(inventoryItemObject);
+}
+
 function getInventoryNotes(pid, rid) {
     return ensureInventoryRoom(pid, rid).notes?.trim() || '';
 }
@@ -4652,7 +4660,7 @@ function screenInventoryRoomEnhanced() {
     const rooms = getInventoryRooms(pid);
     const room = rooms[rid] || rooms[0];
     const roomName = room?.[0] || 'Room';
-    const items = getInventoryItems(pid, rid);
+    const items = typeof getInventoryItemObjects === 'function' ? getInventoryItemObjects(pid, rid) : getInventoryItems(pid, rid);
     const notes = getInventoryNotes(pid, rid);
     const invKey = inventoryKey(pid, rid);
     const roomPhotos = AppStore.inventory[invKey]?.photos || [];
@@ -18296,104 +18304,78 @@ function screenReminders() {
     const customCount = propFilteredList.filter(r => !r.auto).length;
 
     const tabs = [
-        ['all', `All (${totalCount})`],
-        ['soon', `Due Soon (${soonCount})`],
-        ['overdue', `Overdue (${overdueCount})`],
-        ['custom', `Custom (${customCount})`],
+        ['all', 'All', totalCount],
+        ['overdue', 'Overdue', overdueCount, overdueCount > 0],
+        ['soon', 'Due Soon', soonCount, false],
+        ['custom', 'Custom', customCount, false],
     ];
     const list = filteredReminders(filter, propFilter);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const activePropName = propFilter !== 'all' ? (PROPERTIES[Number(propFilter)]?.name || '') : '';
+    const isSingleProp = propFilter !== 'all' && propFilter !== '' && propFilter != null;
 
-    return `${topBar('Smart Reminders', { back: true, sub: activePropName ? `${activePropName} · ${list.length} alert${list.length === 1 ? '' : 's'}` : `${list.length} active alert${list.length === 1 ? '' : 's'}` })}
+    const rightAddBtn = `<button type="button" data-go="add-reminder" class="px-3 py-1.5 rounded-full bg-[#2563EB] text-white text-[12px] font-semibold flex items-center gap-1.5 hover:bg-[#1D4ED8] active:scale-95 transition-all cursor-pointer shadow-xs" title="Add Reminder"><i data-lucide="plus" class="w-3.5 h-3.5"></i><span>Add</span></button>`;
+
+    return `${topBar('Smart Reminders', { back: true, rightBtn: rightAddBtn })}
     <div class="screen-content screen-enter space-y-3 text-left pb-6">
-        <!-- Compact KPI Header -->
-        <div class="grid grid-cols-3 gap-2">
-            <div class="card p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-center shadow-xs">
-                <span class="block text-[9px] font-bold text-[#64748B] uppercase tracking-wider">Total</span>
-                <span class="block text-[16px] font-bold text-[#0F172A] mt-0.5">${totalCount}</span>
-            </div>
-            <div class="card p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-center shadow-xs">
-                <span class="block text-[9px] font-bold text-[#64748B] uppercase tracking-wider">Due Soon</span>
-                <span class="block text-[16px] font-bold text-[#D97706] mt-0.5">${soonCount}</span>
-            </div>
-            <div class="card p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-center shadow-xs">
-                <span class="block text-[9px] font-bold text-[#64748B] uppercase tracking-wider">Overdue</span>
-                <span class="block text-[16px] font-bold ${overdueCount ? 'text-[#DC2626]' : 'text-[#16A34A]'} mt-0.5">${overdueCount}</span>
-            </div>
-        </div>
-
-        <!-- Top Primary Action Button -->
-        <button type="button" data-go="add-reminder" class="w-full py-3 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.99] text-white font-bold text-[13px] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer group">
-            <i data-lucide="plus-circle" class="w-4 h-4 text-white/90 group-hover:rotate-90 transition-transform"></i>
-            <span>Add Custom Reminder</span>
-        </button>
-
         <!-- Property Filter Selector -->
-        <div class="flex items-center gap-2.5 bg-white p-2.5 px-3 rounded-xl border border-[#E2E8F0] shadow-xs">
-            <div class="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                <i data-lucide="building-2" class="w-4 h-4"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-                <select data-action="filter-reminder-property" class="w-full bg-transparent text-[12px] font-bold text-[#0F172A] border-0 focus:ring-0 p-0 pr-4 truncate cursor-pointer outline-none">
-                    <option value="all" ${propFilter === 'all' ? 'selected' : ''}>All Properties (${allReminders.length})</option>
-                    ${PROPERTIES.map(p => {
+        <div class="relative flex items-center bg-white px-3.5 py-2.5 rounded-xl border border-[#E2E8F0] shadow-xs">
+            <i data-lucide="building-2" class="w-4 h-4 text-[#64748B] shrink-0 mr-2.5"></i>
+            <select data-action="filter-reminder-property" class="w-full bg-transparent text-[13px] font-semibold text-[#0F172A] border-0 p-0 pr-6 outline-none cursor-pointer" style="appearance:none;-webkit-appearance:none;">
+                <option value="all" ${propFilter === 'all' ? 'selected' : ''}>All Properties (${allReminders.length})</option>
+                ${PROPERTIES.map(p => {
         const count = allReminders.filter(r => r.propertyId === p.id).length;
         return `<option value="${p.id}" ${propFilter === String(p.id) ? 'selected' : ''}>${esc(p.name)} (${count})</option>`;
     }).join('')}
-                </select>
-            </div>
-            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#94A3B8] pointer-events-none shrink-0"></i>
+            </select>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#94A3B8] pointer-events-none absolute right-3.5 shrink-0"></i>
         </div>
 
-        <!-- Compact Segmented Filter Pills -->
-        <div class="flex items-center gap-1 p-1 bg-[#F1F5F9] rounded-xl text-[11px] font-bold text-[#64748B] overflow-x-auto">
-            ${tabs.map(([k, l]) => `
-            <button type="button" data-reminder-filter="${k}" class="flex-1 py-1.5 px-2 rounded-lg whitespace-nowrap text-center transition-all cursor-pointer ${filter === k ? 'bg-white text-[#0F172A] shadow-xs' : 'hover:text-[#0F172A]'}">${l}</button>`).join('')}
+        <!-- Minimal Segmented Filter Tabs -->
+        <div class="flex items-center gap-1 p-1 bg-[#F1F5F9] rounded-xl text-[11px] font-semibold text-[#64748B]">
+            ${tabs.map(([k, label, count, isAlert]) => `
+            <button type="button" data-reminder-filter="${k}" class="flex-1 py-1.5 px-2 rounded-lg whitespace-nowrap text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${filter === k ? 'bg-white text-[#0F172A] shadow-xs font-bold' : 'hover:text-[#0F172A]'}">
+                <span>${label}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full ${filter === k ? (isAlert ? 'bg-[#FEE2E2] text-[#DC2626]' : 'bg-[#F1F5F9] text-[#475569]') : (isAlert ? 'bg-[#FEE2E2] text-[#DC2626]' : 'text-[#94A3B8]')} font-bold leading-none">${count}</span>
+            </button>`).join('')}
         </div>
 
-        <!-- High-Density Compact Cards -->
+        <!-- Clutter-Free, Minimal Reminder List -->
         ${list.length ? `
-        <div class="space-y-2">
+        <div class="space-y-2 pt-1">
             ${list.map(r => {
         const p = PROPERTIES[r.propertyId];
         const rt = reminderTypeMeta(r.type);
         const badge = reminderStatusBadge(r);
         const dueLabel = formatReminderDue(r.due);
+        const subline = isSingleProp ? `Due ${esc(dueLabel)}` : `${esc(p?.name || 'All Properties')} · Due ${esc(dueLabel)}`;
         return `
-                <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 group">
-                    <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform" style="background:${rt[3]};color:${rt[4]}">
-                            <i data-lucide="${rt[2]}" class="w-5 h-5"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="text-[13px] font-bold text-[#0F172A] truncate group-hover:text-[#2563EB] transition-colors m-0">${esc(r.title)}</h4>
-                            <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(p?.name || 'All Properties')} · <span class="font-bold text-[#334155]">Due ${esc(dueLabel)}</span></p>
-                        </div>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 shadow-xs" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>
-                    </button>
-                    <div class="flex items-center gap-1 shrink-0 pl-1 border-l border-[#F1F5F9]">
-                        <button type="button" data-action="edit-reminder" data-rid="${r.id}" class="w-7 h-7 rounded-lg text-[#64748B] hover:text-[#2563EB] hover:bg-[#EFF6FF] flex items-center justify-center transition-colors cursor-pointer" title="Edit">
-                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                        </button>
-                        ${!r.auto ? `
-                        <button type="button" data-action="delete-reminder" data-rid="${r.id}" class="w-7 h-7 rounded-lg text-[#64748B] hover:text-[#DC2626] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer" title="Delete">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        </button>` : ''}
-                    </div>
-                </div>`;
+            <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="card w-full p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 text-left cursor-pointer group">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background:${rt[3]};color:${rt[4]}">
+                    <i data-lucide="${rt[2]}" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">${esc(r.title)}</h4>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${subline}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-2xs" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#64748B] transition-colors"></i>
+                </div>
+            </button>`;
     }).join('')}
         </div>` : `
-        <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
-            <i data-lucide="bell-off" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
-            <p class="text-[13px] font-bold text-[#0F172A] m-0">No reminders in this filter</p>
-            <p class="text-[11px] text-[#64748B] mt-1 m-0">All items are compliant and up to date.</p>
+        <div class="card p-8 text-center bg-white rounded-2xl border border-[#E2E8F0] mt-2">
+            <div class="w-10 h-10 rounded-full bg-[#ECFDF5] text-[#16A34A] flex items-center justify-center mx-auto mb-2.5">
+                <i data-lucide="check" class="w-5 h-5"></i>
+            </div>
+            <p class="text-[13px] font-bold text-[#0F172A] m-0">All caught up</p>
+            <p class="text-[11.5px] text-[#64748B] mt-1 m-0">No active reminders in this category.</p>
         </div>`}
 
-        <!-- Footer Hint -->
-        <p class="text-[10px] text-[#94A3B8] text-center pt-2 flex items-center justify-center gap-1">
-            <i data-lucide="refresh-cw" class="w-3 h-3 text-[#94A3B8]"></i>
-            <span>Certificates, alarms, lease and inspection dates sync automatically</span>
+        <!-- Minimal Footer -->
+        <p class="text-[10.5px] text-[#94A3B8] text-center pt-3 flex items-center justify-center gap-1.5 m-0">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+            <span>Certificates, alarms and inspection dates sync automatically</span>
         </p>
     </div>`;
 }
@@ -24756,6 +24738,11 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="mark-all-read"]').forEach(el => { el.onclick = markAllNotificationsRead; });
     app.querySelectorAll('[data-action="download-doc"]').forEach(el => { el.onclick = downloadDocument; });
     app.querySelectorAll('[data-action="download-inspection-report"]').forEach(el => { el.onclick = downloadInspectionReport; });
+    app.querySelectorAll('[data-action="download-inventory-report"]').forEach(el => {
+        el.onclick = () => {
+            if (typeof toast === 'function') toast('Signed Check-in Inventory Report downloaded (PDF)');
+        };
+    });
     app.querySelectorAll('[data-action="share-doc-preview"]').forEach(el => { el.onclick = shareDocumentPreview; });
     app.querySelectorAll('[data-action="remove-payment-method"]').forEach(el => { el.onclick = removePaymentMethod; });
     app.querySelectorAll('[data-action="upload-tenant-doc"]').forEach(el => { el.onclick = uploadTenantDocument; });

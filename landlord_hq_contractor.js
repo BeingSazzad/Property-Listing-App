@@ -1523,14 +1523,13 @@ function renderTenantHomePropertyCard(t, p) {
         || (typeof getPropertyCoverPhoto === 'function'
             ? getPropertyCoverPhoto(t.propertyId)
             : (IMG.props[t.propertyId] || IMG.props[0]));
-    const addrLine = [t.unit, p?.address].filter(Boolean).join(', ');
     return `
-    <button type="button" data-go="tenant-active-tenancy" class="tnt-home-hero card w-full text-left">
+    <button type="button" data-go="tenant-active-tenancy" class="tnt-home-hero card w-full text-left group">
         <div class="tnt-home-hero-body">
-            <p class="tnt-home-hero-label">My home</p>
+            <span class="tnt-home-hero-label">Active Tenancy</span>
             <p class="tnt-home-hero-title">${esc(p?.name || 'Your property')}</p>
-            <p class="tnt-home-hero-addr">${esc(addrLine || p?.address || '—')}</p>
-            <span class="tnt-home-hero-pill">View property <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
+            <p class="tnt-home-hero-addr">${esc(t.unit ? `${t.unit}, ${p?.address || ''}` : (p?.address || '—'))}</p>
+            <span class="tnt-home-hero-pill">View home details <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
         </div>
         <img src="${esc(cover)}" alt="" class="tnt-home-hero-img">
     </button>`;
@@ -1541,20 +1540,29 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
     const rentAmt = rentDue
         ? (pay?.balance || '—')
         : (t.rent ? `£${String(t.rent).replace(/^£/, '')}` : '—');
-    const lastParts = (pay?.lastPayment || '—').split('·').map(s => s.trim());
-    const lastAmt = lastParts[0] || '—';
-    const lastDate = lastParts[1] || '—';
-    const dueMeta = pay?.nextDue
-        ? pay.nextDue.split('·').pop()?.trim() || '1st of every month'
-        : '1st of every month';
+    const lastAmt = pay?.lastPaymentAmount || ((pay?.lastPayment || '—').split('·')[0]?.trim()) || '—';
+    const lastDate = pay?.lastPaymentDate || ((pay?.lastPayment || '—').split('·')[1]?.trim()) || '—';
+    const dueMeta = pay?.nextDueDate || (pay?.nextDue ? pay.nextDue.split('·').pop()?.trim() : '1st of every month');
+
+    const hasMaint = pay?.maintBalance && pay.maintBalance !== '£0.00';
+    const hasCharge = pay?.chargeBalance && pay.chargeBalance !== '£0.00';
+    const maintInv = (hasMaint && pay.maintInvoiceId != null) ? INVOICES.find(i => i.id === pay.maintInvoiceId) : null;
+    const maintDesc = maintInv?.desc || 'Repair share';
+    const maintDue = maintInv?.due || 'Soon';
+
+    const chargeInv = (hasCharge && pay.chargeInvoiceId != null) ? INVOICES.find(i => i.id === pay.chargeInvoiceId) : null;
+    const chargeDesc = chargeInv?.desc || 'Service charge';
+    const chargeDue = chargeInv?.due || 'Soon';
+
     return `
     <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5 text-left">
-        <div class="flex items-start justify-between">
+        <!-- Primary Rent Header & Status -->
+        <div class="flex items-start justify-between gap-2">
             <div>
                 <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Next Rent Due</span>
                 <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-[26px] font-black ${rentDue ? 'text-[#D97706]' : 'text-[#0F172A]'} tracking-tight">${esc(rentAmt)}</span>
-                    <span class="text-[12px] font-semibold text-[#64748B]">· Due ${esc(dueMeta)}</span>
+                    <span class="text-[28px] font-black text-[#0F172A] tracking-tight">${esc(rentAmt)}</span>
+                    <span class="text-[12px] font-medium text-[#64748B]">· Due ${esc(dueMeta)}</span>
                 </div>
             </div>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${rentDue ? 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]' : 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]'} shrink-0 shadow-2xs">
@@ -1563,6 +1571,7 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
             </span>
         </div>
 
+        <!-- Rent Action & Reassurance Row -->
         <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-[12px] text-[#64748B] min-w-0">
                 <div class="w-6 h-6 rounded-full bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0">
@@ -1577,60 +1586,62 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
                 <span>${rentDue ? 'Pay Rent' : 'View Ledger'}</span>
             </button>
         </div>
+
+        <!-- Subordinate Secondary Dues (Clean, Integrated & No Duplicate Text) -->
+        ${(hasMaint || hasCharge) ? `
+        <div class="pt-3 border-t border-[#F1F5F9] space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Other Pending Charges</span>
+                <span class="text-[10px] font-bold text-[#D97706] bg-[#FFFBEB] px-2 py-0.5 rounded-full border border-[#FDE68A]">${(hasMaint ? 1 : 0) + (hasCharge ? 1 : 0)} pending</span>
+            </div>
+            ${hasMaint ? `
+            <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center shrink-0">
+                        <i data-lucide="wrench" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(maintDesc)}</p>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(maintDue)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-[14px] font-extrabold text-[#0F172A]">${esc(pay.maintBalance)}</span>
+                    <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay.maintInvoiceId ?? ''}" class="py-1.5 px-3 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold shadow-2xs cursor-pointer transition-colors flex items-center gap-1">
+                        <i data-lucide="credit-card" class="w-3 h-3"></i>
+                        <span>Pay</span>
+                    </button>
+                </div>
+            </div>` : ''}
+            ${hasCharge ? `
+            <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="receipt" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(chargeDesc)}</p>
+                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(chargeDue)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-[14px] font-extrabold text-[#0F172A]">${esc(pay.chargeBalance)}</span>
+                    <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay.chargeInvoiceId ?? ''}" class="py-1.5 px-3 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold shadow-2xs cursor-pointer transition-colors flex items-center gap-1">
+                        <i data-lucide="credit-card" class="w-3 h-3"></i>
+                        <span>Pay</span>
+                    </button>
+                </div>
+            </div>` : ''}
+        </div>` : ''}
     </div>`;
 }
 
 function renderTenantHomeChargeCard(pay) {
-    if (!pay?.chargeBalance || pay.chargeBalance === '£0.00') return '';
-    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    return `
-    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-        <div class="flex items-start justify-between">
-            <div>
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Extra Charge Due</span>
-                <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-[22px] font-extrabold text-[#0F172A] tracking-tight">${esc(pay.chargeBalance)}</span>
-                    <span class="text-[12px] font-medium text-[#64748B]">· ${esc(pay.nextChargeDue || 'Service charge')}</span>
-                </div>
-            </div>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] shrink-0">
-                Payment Due
-            </span>
-        </div>
-        <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-end gap-2">
-            <button type="button" data-go="transaction-history" data-tenant-pay-preset="charges" class="btn-secondary py-2 px-3.5 rounded-xl text-[12px] font-bold shadow-xs cursor-pointer">View Details</button>
-            <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay?.chargeInvoiceId ?? ''}" class="btn-primary py-2 px-4 rounded-xl text-[12px] font-bold shadow-xs flex items-center gap-1.5 cursor-pointer">
-                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
-                <span>Pay Charge</span>
-            </button>
-        </div>
-    </div>`;
+    return '';
 }
 
 function renderTenantHomeMaintBill(pay) {
-    if (!pay?.maintBalance || pay.maintBalance === '£0.00') return '';
-    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    return `
-    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-        <div class="flex items-start justify-between">
-            <div>
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Maintenance Bill</span>
-                <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-[22px] font-extrabold text-[#0F172A] tracking-tight">${esc(pay.maintBalance)}</span>
-                    <span class="text-[12px] font-medium text-[#64748B]">· ${esc(pay.nextMaintDue || 'Repair share')}</span>
-                </div>
-            </div>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] shrink-0">
-                Pending
-            </span>
-        </div>
-        <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-end gap-2">
-            <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="btn-primary py-2 px-4 rounded-xl text-[12px] font-bold shadow-xs flex items-center gap-1.5 cursor-pointer">
-                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
-                <span>Pay Bill</span>
-            </button>
-        </div>
-    </div>`;
+    return '';
 }
 
 function renderTenantHomeMaintSection(tenant, tid) {
@@ -1972,17 +1983,7 @@ function screenTenantBuildingInfo() {
     const parkingDisplay = typeof propertyHasParking === 'function' && propertyHasParking(meta)
         ? (typeof propertyParkingSummary === 'function' ? propertyParkingSummary(meta) : '—')
         : (building.parking || info.parking || 'Street / permit');
-    const rows = [
-        ['Address', p?.address || '—'],
-        ['Your unit', t.unit || '—'],
-        ['Building type', building.type || info.type || 'Residential'],
-        ['Floors', building.floors != null ? String(building.floors) : (info.floors || '—')],
-        ['Total units', building.flatCount != null ? String(building.flatCount) : '—'],
-        ['Year built', building.yearBuilt || info.built || '—'],
-        ['Parking', parkingDisplay],
-        ['Emergency contact', LANDLORD_USER.phone || '—'],
-    ];
-    const utilItems = typeof propertyUtilityDisplayItems === 'function' ? propertyUtilityDisplayItems(meta) : [];
+
     const floorPlans = meta.floorPlans || [];
     const propertyPhotos = meta.photos?.length
         ? meta.photos
@@ -2012,56 +2013,133 @@ function screenTenantBuildingInfo() {
                 { id: 'co', name: 'CO Alarm', location: 'Boiler Room / Bedroom', expiry: 'Exp: 15 Jan 2026', photo: typeof DEMO_ALARM_PHOTOS !== 'undefined' ? DEMO_ALARM_PHOTOS.co : '', icon: 'shield-alert' },
             ]);
     const invRooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
-    const renderIcon = typeof renderBuildingIconItem === 'function'
-        ? renderBuildingIconItem
-        : ({ label, sub }) => `<p class="text-[13px] text-[#475569]"><strong>${label}</strong>${sub ? ` · ${sub}` : ''}</p>`;
     const photoGrid = typeof renderTenantReadonlyPhotoGrid === 'function'
         ? renderTenantReadonlyPhotoGrid
         : (photos) => `<div class="photo-gallery-grid">${(photos || []).map(src => `<img src="${esc(src)}" class="photo-gallery-img" alt="">`).join('')}</div>`;
-    return `${topBar('Your building', { back: true })}
-    <div class="screen-content screen-content-sm screen-enter building-info-page">
-        <div class="building-info-hero card p-4">
-            <div class="building-info-thumb"><img src="${esc(cover)}" alt=""></div>
-            <div class="mt-3">
-                <p class="building-info-name">${esc(p?.name || '')}</p>
-                <p class="building-info-addr">${esc(p?.address || '')}</p>
+
+    const buildingType = building.type || info.type || 'Block of Flats';
+    const floorCount = building.floors != null ? String(building.floors) : (info.floors || '3');
+    const unitCount = building.flatCount != null ? String(building.flatCount) : '4';
+    const yearBuilt = building.yearBuilt || info.built || '2019';
+    const landlordPhone = LANDLORD_USER.phone || '+44 7700 900123';
+
+    return `${topBar('Your building', { back: true, sub: p?.name || '' })}
+    <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-12">
+        <!-- 1. Building Passport Hero Card (Replaces redundant table with modern passport) -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] mb-1.5">
+                        <i data-lucide="building-2" class="w-3 h-3"></i>
+                        Building &amp; Estate
+                    </span>
+                    <h2 class="text-[18px] font-extrabold text-[#0F172A] tracking-tight leading-snug m-0">${esc(p?.name || '')}</h2>
+                    <p class="text-[12px] text-[#64748B] mt-0.5 m-0 flex items-center gap-1 leading-normal">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#94A3B8] shrink-0"></i>
+                        <span>${esc(p?.address || '')}</span>
+                    </p>
+                </div>
+                <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-2xs">
+                    <img src="${esc(cover)}" alt="" class="w-full h-full object-cover">
+                </div>
+            </div>
+
+            <!-- Home Unit & Lease Strip -->
+            <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#059669]"></span>
+                    <span class="text-[12.5px] font-bold text-[#0F172A]">Your Home: <span class="text-[#2563EB]">${esc(t.unit || 'Flat')}</span></span>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">Active Tenancy</span>
             </div>
         </div>
-        <div class="card p-4">
-            <div class="building-info-rows">
-                ${rows.map(([label, value]) => `
-                <div class="building-info-row${label === 'Address' ? ' building-info-row--address' : ''}">
-                    <div class="building-info-row-left"><span class="building-info-row-label">${label}</span></div>
-                    <span class="building-info-row-value">${esc(value)}</span>
-                </div>`).join('')}
+
+        <!-- 2. Modern 2x2 Bento Vitals Grid (Replaces outdated raw table) -->
+        <div class="grid grid-cols-2 gap-2.5">
+            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                    <i data-lucide="building-2" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Type</span>
+                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0 truncate">${esc(buildingType)}</p>
+                </div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] flex items-center justify-center shrink-0 border border-[#E2E8F0]">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Floors</span>
+                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0">${esc(floorCount)} Storeys</p>
+                </div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] flex items-center justify-center shrink-0 border border-[#E2E8F0]">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Community</span>
+                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0">${esc(unitCount)} Flats</p>
+                </div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] flex items-center justify-center shrink-0 border border-[#E2E8F0]">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Year Built</span>
+                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0">${esc(yearBuilt)}</p>
+                </div>
             </div>
         </div>
-        <div class="card p-4">
-            <div class="flex items-center justify-between gap-2 mb-3">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Property photos</p>
-                <span class="text-[11px] text-[#94A3B8]">${propertyPhotos.length} photo${propertyPhotos.length === 1 ? '' : 's'}</span>
+
+        <!-- 3. Dedicated Emergency Assistance Card with Direct Call -->
+        <div class="card p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0">
+                        <i data-lucide="phone-call" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="block text-[10.5px] font-bold text-[#92400E] uppercase tracking-wider">24/7 Landlord &amp; Emergency</span>
+                        <p class="text-[13px] font-bold text-[#0F172A] m-0">${esc(landlordPhone)}</p>
+                    </div>
+                </div>
+                <a href="tel:${esc(landlordPhone)}" class="px-3 py-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-[12px] font-bold shadow-2xs flex items-center gap-1.5 transition-colors shrink-0">
+                    <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                    <span>Call</span>
+                </a>
             </div>
-            <p class="text-[12px] text-[#64748B] mb-3">Uploaded by your landlord for the whole building.</p>
-            ${photoGrid(propertyPhotos, { coverBadge: true, empty: 'No property photos uploaded yet.' })}
+            <p class="text-[11px] text-[#78350F] m-0 leading-normal">
+                For urgent gas, electrical, or water leak emergencies, call immediately. For routine repairs, use <button type="button" data-go="log-maintenance" class="font-bold underline text-[#92400E] cursor-pointer">Report Issue</button>.
+            </p>
         </div>
-        ${t.unit ? `
-        <div class="card p-4">
-            <div class="flex items-center justify-between gap-2 mb-3">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Your unit photos · ${esc(t.unit)}</p>
-                <span class="text-[11px] text-[#94A3B8]">${unitPhotos.length} photo${unitPhotos.length === 1 ? '' : 's'}</span>
+
+        <!-- 4. Inventory & Schedule of Condition Portal -->
+        <button type="button" data-go="tenant-inventory" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all w-full text-left flex items-center justify-between gap-3 group cursor-pointer">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                        <h4 class="text-[14.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Inventory &amp; Condition</h4>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] shrink-0">Deposit Protected</span>
+                    </div>
+                    <p class="text-[12px] text-[#64748B] m-0 truncate">Schedule of Condition · ${invRooms.length} room checklists &amp; photos</p>
+                </div>
             </div>
-            <p class="text-[12px] text-[#64748B] mb-3">Flat photos your landlord uploaded for this unit.</p>
-            ${photoGrid(unitPhotos, { coverBadge: true, empty: 'No unit photos uploaded yet.' })}
-        </div>` : ''}
-        ${floorPlans.length ? `
-        <div class="card p-4">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase mb-3">Floor plans</p>
-            ${photoGrid(floorPlans, { empty: 'No floor plans yet.' })}
-        </div>` : ''}
-        ${renderTenantBuildingUtilities(meta, pid)}
-        ${(meta.parking?.type || meta.parking?.details || meta.parking?.permit) ? `
-        <div class="card p-4">
-            <div class="flex items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-1 text-[#2563EB] text-[12px] font-bold shrink-0">
+                <span>View</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
+            </div>
+        </button>
+
+        <!-- 5. Parking & EV Access -->
+        ${(meta.parking?.type || meta.parking?.details || meta.parking?.permit || parkingDisplay !== '—') ? `
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
                 <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Parking &amp; EV Access</p>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">Allocated Space</span>
             </div>
@@ -2070,15 +2148,17 @@ function screenTenantBuildingInfo() {
                     <i data-lucide="car" class="w-5 h-5"></i>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-[13px] font-bold text-[#0F172A]">${esc(meta.parking?.type || 'Off-street Allocated Space')}</p>
-                    <p class="text-[12px] text-[#475569] mt-0.5 font-medium">${esc(meta.parking?.details || (meta.parking?.bay ? `Bay #${meta.parking?.bay}` : 'Bay #12'))} · <span class="text-[#64748B]">${esc(meta.parking?.permit ? (meta.parking.permit.toLowerCase().startsWith('permit') ? meta.parking.permit : `Permit ${meta.parking.permit}`) : 'Permit LB-4421')}</span></p>
-                    <p class="text-[11px] text-[#059669] font-medium mt-0.5"><i data-lucide="zap" class="w-3 h-3 inline mr-0.5"></i>7.4kW Type 2 Pod Point Charger Available</p>
+                    <p class="text-[13px] font-bold text-[#0F172A] m-0">${esc(meta.parking?.type || parkingDisplay || 'Allocated Space')}</p>
+                    <p class="text-[12px] text-[#475569] mt-0.5 m-0 font-medium">${esc(meta.parking?.details || (meta.parking?.bay ? `Bay #${meta.parking?.bay}` : 'Bay #PL-02'))} · <span class="text-[#64748B]">${esc(meta.parking?.permit ? (meta.parking.permit.toLowerCase().startsWith('permit') ? meta.parking.permit : `Permit ${meta.parking.permit}`) : 'Permit PL-BAY-02')}</span></p>
+                    <p class="text-[11px] text-[#059669] font-medium mt-1 m-0 flex items-center gap-1"><i data-lucide="zap" class="w-3.5 h-3.5 text-[#059669]"></i> 7.4kW Type 2 Pod Point Charger Available</p>
                 </div>
             </div>
         </div>` : ''}
+
+        <!-- 6. Appliances & Manuals -->
         ${appliances.length ? `
-        <div class="card p-4">
-            <div class="flex items-center justify-between gap-2 mb-3">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between gap-2">
                 <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Appliances &amp; Manuals</p>
                 <span class="text-[11px] font-semibold text-[#64748B]">${appliances.length} Recorded</span>
             </div>
@@ -2095,17 +2175,19 @@ function screenTenantBuildingInfo() {
                                 <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${esc(a.name || 'Appliance')}</p>
                                 ${a.warranty ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] shrink-0">${esc(a.warranty)}</span>` : ''}
                             </div>
-                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5 font-medium">${esc(a.brand)}</p>` : ''}
-                            ${a.description ? `<p class="text-[11px] text-[#475569] mt-0.5 leading-relaxed">${esc(a.description)}</p>` : ''}
+                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5 m-0 font-medium">${esc(a.brand)}</p>` : ''}
+                            ${a.description ? `<p class="text-[11px] text-[#475569] mt-0.5 m-0 leading-relaxed">${esc(a.description)}</p>` : ''}
                         </div>
                     </div>`;
                 }).join('')}
             </div>
         </div>` : ''}
+
+        <!-- 7. Safety & Smoke Alarms -->
         ${alarmEntries.length ? `
-        <div class="card p-4">
-            <div class="flex items-center justify-between gap-2 mb-3">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Safety &amp; Smoke Alarms</p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Safety &amp; Detectors</p>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">All Tested OK</span>
             </div>
             <div class="space-y-2">
@@ -2127,26 +2209,43 @@ function screenTenantBuildingInfo() {
                 }).join('')}
             </div>
         </div>` : ''}
-        <div class="card p-4">
-            <div class="flex items-center justify-between gap-2 mb-2">
-                <div>
-                    <p class="text-[11px] font-bold text-[#64748B] uppercase mb-0">Inventory</p>
-                    <p class="text-[12px] text-[#64748B] mt-1">Room photos & checklists from your landlord</p>
-                </div>
-                <button type="button" data-go="tenant-inventory" class="header-text-link shrink-0">View all</button>
+
+        <!-- 8. Property & Unit Photos -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Property Photos</p>
+                <span class="text-[11px] font-semibold text-[#64748B]">${propertyPhotos.length} photo${propertyPhotos.length === 1 ? '' : 's'}</span>
             </div>
-            ${invRooms.length ? `
-            <div class="stack-sm mt-2">
-                ${invRooms.slice(0, 3).map(([name, sub, icon, idx]) => `
-                <button type="button" data-go="tenant-inventory-room" data-room="${idx}" class="card w-full p-3 flex items-center gap-3 text-left">
-                    <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] flex items-center justify-center shrink-0"><i data-lucide="${icon || 'package'}" class="w-4 h-4 text-[#64748B]"></i></div>
-                    <div class="min-w-0 flex-1"><p class="text-[13px] font-semibold mb-0">${esc(name)}</p><p class="text-[11px] text-[#64748B] truncate mb-0">${esc(sub)}</p></div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-                </button>`).join('')}
-            </div>` : `<p class="text-[12px] text-[#94A3B8]">No inventory rooms recorded yet.</p>`}
+            <p class="text-[12px] text-[#64748B] m-0">Uploaded by your landlord for the building.</p>
+            ${photoGrid(propertyPhotos, { coverBadge: true, empty: 'No property photos uploaded yet.' })}
         </div>
-        ${info.notes ? `<div class="card p-4"><p class="text-[11px] font-bold text-[#64748B] uppercase">Building notes</p><p class="text-[13px] text-[#475569] mt-2 leading-relaxed">${esc(info.notes)}</p></div>` : ''}
-        <button type="button" data-go="tenant-house-rules" class="btn-secondary w-full py-3 text-[13px]">House rules & regulations</button>
+
+        ${t.unit && unitPhotos.length ? `
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">${esc(t.unit)} Photos</p>
+                <span class="text-[11px] font-semibold text-[#64748B]">${unitPhotos.length} photo${unitPhotos.length === 1 ? '' : 's'}</span>
+            </div>
+            ${photoGrid(unitPhotos, { coverBadge: true, empty: 'No unit photos uploaded yet.' })}
+        </div>` : ''}
+
+        ${floorPlans.length ? `
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Floor Plans</p>
+            ${photoGrid(floorPlans, { empty: 'No floor plans yet.' })}
+        </div>` : ''}
+
+        <!-- 9. House Rules & Building Notes -->
+        ${info.notes ? `
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Building Notes</p>
+            <p class="text-[13px] text-[#475569] leading-relaxed m-0 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">${esc(info.notes)}</p>
+        </div>` : ''}
+
+        <button type="button" data-go="tenant-house-rules" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+            <i data-lucide="scroll-text" class="w-4 h-4 text-[#2563EB]"></i>
+            <span>House Rules &amp; Regulations</span>
+        </button>
     </div>`;
 }
 
@@ -2156,35 +2255,104 @@ function screenTenantInventory() {
         return `${topBar('Inventory', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Join a flat first to view inventory.</p></div>`;
     }
     const pid = t.propertyId;
+    const p = PROPERTIES[pid];
+    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(t.id) : null;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    return `${topBar('Inventory', { back: true, sub: 'Condition & checklists' })}
-    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
-        <div class="flex items-center justify-between px-1 mt-1">
-            <p class="text-[13.5px] font-bold text-[#0F172A] m-0">Room Checklists</p>
-            <span class="text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#D1FAE5]">${rooms.length} Rooms</span>
-        </div>
+    const depAmount = fin?.deposit || '£2,450';
 
-        <div class="space-y-2">
-        ${rooms.length ? rooms.map(([name, sub, icon, idx, condSum]) => `
-        <button type="button" data-go="tenant-inventory-room" data-room="${idx}" class="card w-full p-3.5 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs cursor-pointer group">
-            <div class="flex items-center gap-3.5 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
-                <div class="min-w-0">
-                    <p class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${esc(name)}</p>
-                    <p class="text-[11.5px] text-[#64748B] truncate mt-0.5 m-0">${esc(sub)}</p>
+    let totalItems = 0;
+    let totalPhotos = 0;
+    const roomCards = rooms.map(([name, sub, icon, idx, condSum]) => {
+        const itemObjs = typeof getInventoryItemObjects === 'function'
+            ? getInventoryItemObjects(pid, idx)
+            : (typeof getInventoryItems === 'function' ? getInventoryItems(pid, idx).map(n => ({ name: n })) : []);
+        totalItems += itemObjs.length;
+        const invKey = typeof inventoryKey === 'function' ? inventoryKey(pid, idx) : `${pid}-${idx}`;
+        const photos = AppStore.inventory?.[invKey]?.photos || [];
+        totalPhotos += photos.length;
+        const previewItems = itemObjs.slice(0, 3).map(it => it.name).join(' · ');
+        return { name, sub, icon, idx, condSum, itemCount: itemObjs.length, photoCount: photos.length, previewItems };
+    });
+
+    return `${topBar('Inventory & Condition', { back: true, sub: [t?.unit, p?.name].filter(Boolean).join(' · ') })}
+    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
+        <!-- 1. Deposit & Legal Protection Passport Banner -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] mb-1.5">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                        Deposit Protected
+                    </span>
+                    <h2 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight m-0">Check-in Schedule of Condition</h2>
+                    <p class="text-[12px] text-[#64748B] mt-1 m-0 leading-relaxed">
+                        Handover report recorded at move-in for <strong class="text-[#0F172A]">${esc(t.unit || 'your unit')}</strong>. Protects your <strong class="text-[#0F172A]">${esc(depAmount)}</strong> deposit from pre-existing wear.
+                    </p>
                 </div>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-                ${condSum ? `<span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full ${condSum.class}">${condSum.label}</span>` : ''}
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
+
+            <!-- 3-Column Balanced Vitals KPI Grid -->
+            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-[#F1F5F9]">
+                <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-center">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Rooms</span>
+                    <span class="text-[15px] font-black text-[#0F172A] mt-0.5 block">${rooms.length}</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-center">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Fixtures</span>
+                    <span class="text-[15px] font-black text-[#0F172A] mt-0.5 block">${totalItems}</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-center">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Photos</span>
+                    <span class="text-[15px] font-black text-[#2563EB] mt-0.5 block">${totalPhotos}</span>
+                </div>
             </div>
-        </button>`).join('') : `
-        <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
-            <i data-lucide="package" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
-            <p class="text-[14px] font-bold text-[#0F172A] m-0">No inventory yet</p>
-            <p class="text-[12px] text-[#64748B] m-0 mt-1">When your landlord records room inventory and photos, they will appear here.</p>
-        </div>`}
+        </div>
+
+        <!-- 2. Room Checklists Section -->
+        <div class="flex items-center justify-between px-1 mt-1">
+            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Checklists (${rooms.length})</span>
+            <span class="text-[11px] text-[#64748B]">Tap room to inspect items</span>
+        </div>
+
+        <div class="space-y-2.5">
+            ${roomCards.length ? roomCards.map(r => `
+            <button type="button" data-go="tenant-inventory-room" data-room="${r.idx}" class="card w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all text-left flex items-start justify-between gap-3 group cursor-pointer">
+                <div class="flex items-start gap-3.5 min-w-0 flex-1">
+                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs mt-0.5">
+                        <i data-lucide="${r.icon || 'package'}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h4 class="text-[14.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">${esc(r.name)}</h4>
+                            ${r.condSum ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.condSum.class}">${r.condSum.label}</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 text-[11.5px] text-[#64748B] mb-1.5 flex-wrap">
+                            <span class="font-medium">${r.itemCount} fixture${r.itemCount === 1 ? '' : 's'}</span>
+                            ${r.photoCount ? `<span>·</span><span class="text-[#2563EB] font-semibold">${r.photoCount} photo${r.photoCount === 1 ? '' : 's'}</span>` : ''}
+                        </div>
+                        ${r.previewItems ? `<p class="text-[11.5px] text-[#94A3B8] m-0 truncate leading-tight">${esc(r.previewItems)}</p>` : ''}
+                    </div>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0 mt-3"></i>
+            </button>`).join('') : `
+            <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+                <i data-lucide="package" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
+                <p class="text-[14px] font-bold text-[#0F172A] m-0">No room inventory recorded</p>
+                <p class="text-[12px] text-[#64748B] m-0 mt-1">When your landlord finishes recording check-in condition, it will appear here.</p>
+            </div>`}
+        </div>
+
+        <!-- 3. Actions / Export -->
+        <div class="pt-2 space-y-2">
+            <button type="button" data-action="download-inventory-report" class="btn-primary w-full py-3.5 rounded-2xl text-[13px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download Signed Report (PDF)</span>
+            </button>
+            <button type="button" data-go="log-maintenance" class="btn-secondary w-full py-3 rounded-2xl text-[12.5px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-[#D97706]"></i>
+                <span>Report Inventory Discrepancy</span>
+            </button>
         </div>
     </div>`;
 }
@@ -2199,7 +2367,7 @@ function screenTenantInventoryRoom() {
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const room = rooms[rid] || rooms[0];
     const roomName = room?.[0] || 'Room';
-    const items = typeof getInventoryItems === 'function' ? getInventoryItems(pid, rid) : [];
+    const items = typeof getInventoryItemObjects === 'function' ? getInventoryItemObjects(pid, rid) : [];
     const notes = typeof getInventoryNotes === 'function' ? getInventoryNotes(pid, rid) : '';
     const roomSize = typeof getInventoryRoomSize === 'function' ? getInventoryRoomSize(pid, rid) : '';
     const invKey = typeof inventoryKey === 'function' ? inventoryKey(pid, rid) : `${pid}-${rid}`;
@@ -2208,83 +2376,96 @@ function screenTenantInventoryRoom() {
     const photoGrid = typeof renderTenantReadonlyPhotoGrid === 'function'
         ? renderTenantReadonlyPhotoGrid(roomPhotos, { coverBadge: true, empty: 'No photos for this room yet.' })
         : '';
+    const condSum = room?.[4] || { label: 'All Good', class: 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]' };
 
-    return `${topBar(roomName, { back: true, sub: 'Room Inventory' })}
+    return `${topBar(roomName, { back: true, sub: 'Room Inventory & Fixtures' })}
     <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
-        <!-- Room Overview Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
-            <div class="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
+        <!-- 1. Room Overview Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-start justify-between gap-3">
                 <div>
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Details</span>
-                    <h3 class="text-[17px] font-bold text-[#0F172A] m-0 mt-0.5">${esc(roomName)}</h3>
+                    <h3 class="text-[18px] font-extrabold text-[#0F172A] tracking-tight m-0 mt-0.5">${esc(roomName)}</h3>
                 </div>
+                <span class="text-[10.5px] font-bold px-2.5 py-1 rounded-full ${condSum.class} shrink-0">
+                    ${condSum.label}
+                </span>
             </div>
-            <div class="flex flex-wrap items-center gap-2 pt-2.5">
-                ${roomSize ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-medium text-[#475569]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i> ${esc(roomSize)} sq ft</span>` : ''}
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[11.5px] font-semibold text-[#2563EB]"><i data-lucide="package" class="w-3.5 h-3.5"></i> ${items.length} ${items.length === 1 ? 'item' : 'items'}</span>
-                ${roomPhotos.length ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ECFDF5] text-[11.5px] font-semibold text-[#059669]"><i data-lucide="camera" class="w-3.5 h-3.5"></i> ${roomPhotos.length} ${roomPhotos.length === 1 ? 'photo' : 'photos'}</span>` : ''}
+
+            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-[#F1F5F9]">
+                ${roomSize ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#2563EB]"></i> ${esc(roomSize)} sq ft</span>` : ''}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EFF6FF] text-[11.5px] font-semibold text-[#2563EB]"><i data-lucide="package" class="w-3.5 h-3.5"></i> ${items.length} ${items.length === 1 ? 'fixture' : 'fixtures'}</span>
+                ${roomPhotos.length ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#ECFDF5] text-[11.5px] font-semibold text-[#059669]"><i data-lucide="camera" class="w-3.5 h-3.5"></i> ${roomPhotos.length} ${roomPhotos.length === 1 ? 'photo' : 'photos'}</span>` : ''}
             </div>
         </div>
 
-        <!-- Room Photos Section -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+        <!-- 2. Room Inspection Photos Section -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between">
                 <div>
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Room Photos (${roomPhotos.length})</span>
-                    <span class="text-[10.5px] text-[#94A3B8]">Recorded at check-in inspection</span>
+                    <span class="text-[11px] text-[#94A3B8]">Recorded at check-in handover</span>
                 </div>
-                <span class="text-[11px] text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-md font-medium">Verified</span>
+                <span class="text-[10px] font-bold text-[#059669] bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 rounded-full">Verified</span>
             </div>
             ${photoGrid || `<p class="text-[12px] text-[#94A3B8] m-0 italic">No room photos uploaded yet.</p>`}
         </div>
 
-        <!-- Fixtures & Items List with Photos -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+        <!-- 3. Fixtures & Condition Schedule -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Items &amp; Condition (${items.length})</span>
-                <span class="text-[10.5px] text-[#94A3B8]">Condition status</span>
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Fixtures &amp; Condition (${items.length})</span>
+                    <span class="text-[11px] text-[#94A3B8]">Handover condition recorded</span>
+                </div>
+                <span class="text-[10.5px] text-[#64748B] font-semibold">Protected</span>
             </div>
+
             ${items.length ? `
             <div class="divide-y divide-[#F1F5F9]">
-                ${items.map((item, idx) => {
-        const itemObj = typeof inventoryItemObject === 'function' ? inventoryItemObject(item) : { name: String(item), condition: 'Good', photos: [] };
-        const itemName = itemObj.name || 'Fixture';
-        const cond = itemObj.condition || 'Good';
-        const itemPhotos = itemObj.photos || [];
-        const badgeClass = typeof inventoryConditionBadgeClass === 'function' ? inventoryConditionBadgeClass(cond) : 'badge-emerald';
-        return `
-                    <div class="py-2.5 space-y-2">
+                ${items.map(item => {
+                    const itemName = item.name || 'Fixture';
+                    const cond = item.condition || 'Good';
+                    const itemPhotos = item.photos || [];
+                    const badgeClass = typeof inventoryConditionBadgeClass === 'function' ? inventoryConditionBadgeClass(cond) : 'bg-[#DCFCE7] text-[#16A34A]';
+                    return `
+                    <div class="py-3 space-y-2">
                         <div class="flex items-center justify-between gap-2.5">
-                            <div class="flex items-center gap-2 min-w-0 flex-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] shrink-0"></span>
-                                <span class="text-[13px] font-bold text-[#0F172A] truncate">${esc(itemName)}</span>
+                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                <span class="w-1.5 h-1.5 rounded-full ${cond === 'Good' ? 'bg-[#10B981]' : (cond === 'Fair' ? 'bg-[#F59E0B]' : 'bg-[#EF4444]')} shrink-0"></span>
+                                <span class="text-[13.5px] font-bold text-[#0F172A] truncate">${esc(itemName)}</span>
                             </div>
-                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs ${badgeClass}">
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs ${badgeClass} shrink-0">
                                 ${esc(cond)}
                             </span>
                         </div>
                         ${itemPhotos.length ? `
-                        <!-- Item Photos Strip -->
-                        <div class="flex items-center gap-2 pl-3.5 overflow-x-auto py-1">
+                        <div class="flex items-center gap-2 pl-4 overflow-x-auto py-1">
                             ${itemPhotos.map((pUrl) => `
                             <div class="relative group/photo shrink-0">
-                                <img src="${esc(pUrl)}" alt="${esc(itemName)}" class="w-12 h-12 object-cover rounded-xl border border-[#E2E8F0] shadow-2xs">
+                                <img src="${esc(pUrl)}" alt="${esc(itemName)}" class="w-14 h-14 object-cover rounded-xl border border-[#E2E8F0] shadow-2xs">
                             </div>`).join('')}
                         </div>` : ''}
                     </div>`;
-    }).join('')}
+                }).join('')}
             </div>` : `
             <div class="text-center py-4">
                 <p class="text-[13px] text-[#94A3B8] m-0">No items listed for this room.</p>
             </div>`}
         </div>
 
-        <!-- Room Notes Card -->
+        <!-- 4. Room Handover Notes -->
         ${notes ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2">
-            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Notes &amp; Observations</span>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2">
+            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Handover Notes &amp; Observations</span>
             <p class="text-[13px] text-[#334155] leading-relaxed m-0 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">${esc(notes)}</p>
         </div>` : ''}
+
+        <!-- 5. Action: Report Discrepancy -->
+        <button type="button" data-go="log-maintenance" class="btn-secondary w-full py-3 rounded-2xl text-[12.5px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+            <span>Report Discrepancy for ${esc(roomName)}</span>
+        </button>
     </div>`;
 }
 
@@ -2611,7 +2792,6 @@ function screenTenantRefDetail() {
 function screenTenantActiveTenancy() {
     const t = getActiveTenant();
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t?.id;
-    const listItem = TENANT_LIST[tid];
     const p = PROPERTIES[t?.propertyId];
     const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(tid) : null;
     const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(t?.propertyId, t?.unit) : null;
@@ -2621,6 +2801,28 @@ function screenTenantActiveTenancy() {
     const leaseEndLabel = fin?.leaseEnd && typeof formatDisplayDate === 'function'
         ? formatDisplayDate(fin.leaseEnd) || fin.leaseEnd
         : (fin?.leaseEnd || t?.leaseEnd || '—');
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    const unitObj = p && typeof getPropertyUnits === 'function'
+        ? getPropertyUnits(p.id).find(u => (typeof unitName === 'function' ? unitName(u) : u.name) === t?.unit)
+        : null;
+    const cover = (t?.unit && typeof getFlatCoverPhoto === 'function'
+        ? getFlatCoverPhoto(t.propertyId, t.unit)
+        : null)
+        || (typeof getPropertyCoverPhoto === 'function'
+            ? getPropertyCoverPhoto(t.propertyId)
+            : (IMG.props[t?.propertyId] || IMG.props[0]));
+    const unitGal = (t?.unit && typeof getFlatPhotoGallery === 'function')
+        ? getFlatPhotoGallery(t.propertyId, t.unit)
+        : null;
+    const photoCount = unitGal?.photos?.length || 0;
+
+    const beds = unitObj?.beds ?? 3;
+    const baths = unitObj?.baths ?? 2;
+    const sqft = unitObj?.sqft ?? 1050;
+    const rentAmount = fin?.rent || t?.rent || '£2,450';
+    const isGroup = tenancy?.type === 'group';
+
     const more = [
         ['file-text', 'Documents', 'tenant-documents'],
         ['scroll-text', 'House rules', 'tenant-house-rules'],
@@ -2633,43 +2835,129 @@ function screenTenantActiveTenancy() {
     const { members } = typeof getFlatMemberRoster === 'function'
         ? getFlatMemberRoster(t?.propertyId, t?.unit)
         : { members: [] };
-    const showHousehold = tenancy?.type === 'group' && members.length > 1;
+    const showHousehold = isGroup && members.length > 1;
+
     return `${topBar('Active tenancy', { back: true, sub: [t?.unit, p?.name].filter(Boolean).join(' · ') })}
-    <div class="screen-content screen-enter stack-sm">
-        ${typeof renderTenantLivingCard === 'function' && listItem ? renderTenantLivingCard(listItem) : ''}
-        <p class="screen-section-title">Lease</p>
-        ${typeof tenantFieldsCard === 'function' ? tenantFieldsCard([
-            ['Type', tenancy?.type === 'group' ? 'Group' : 'Solo'],
-            ['Monthly rent', fin?.rent || t?.rent || '—'],
-            ['Move-in', moveInLabel],
-            ['Lease ends', leaseEndLabel],
-        ]) : ''}
-        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
-        ${showHousehold && typeof renderTenantAccountMembers === 'function' ? renderTenantAccountMembers(tid) : ''}
-        <p class="screen-section-title">More</p>
-        <div class="card flat-records-nav-list">
-            ${more.map(([icon, label, go]) => `
-            <button type="button" data-go="${go}" class="flat-records-nav-row w-full text-left">
-                <span class="flat-records-nav-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
-                <span class="flat-records-nav-body"><span class="flat-records-nav-label">${label}</span></span>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-            </button>`).join('')}
+    <div class="screen-content screen-enter space-y-3.5 text-left pb-6">
+        <!-- 1. Property & Home Hero Card (Balanced, cohesive, with photos & vitals) -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] mb-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>
+                        Currently living here
+                    </span>
+                    <h2 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight leading-snug m-0">${esc(t?.unit || 'Unit')} · ${esc(p?.name || 'Property')}</h2>
+                    <p class="text-[12px] text-[#64748B] mt-0.5 m-0 leading-normal">${esc(p?.address || '—')}</p>
+                </div>
+                <button type="button" data-go="tenant-building-info" class="relative rounded-xl overflow-hidden shrink-0 w-16 h-16 border border-[#E2E8F0] group cursor-pointer" title="View property photos">
+                    <img src="${esc(cover)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                    ${photoCount ? `<span class="absolute bottom-1 right-1 px-1.5 py-0.2 rounded-md bg-black/70 text-white text-[9px] font-bold">${photoCount}📷</span>` : ''}
+                </button>
+            </div>
+
+            <!-- Balanced Unit Vitals Chips (Properly proportioned) -->
+            <div class="pt-3 border-t border-[#F1F5F9] flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+                    <i data-lucide="bed-double" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>${beds} Beds</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+                    <i data-lucide="bath" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>${baths} Baths</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+                    <i data-lucide="ruler" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>${Number(sqft).toLocaleString()} sq ft</span>
+                </span>
+                ${unitObj?.furnished ? `
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+                    <i data-lucide="sofa" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span>${esc(unitObj.furnished)}</span>
+                </span>` : ''}
+            </div>
         </div>
-        ${t?.tenancyHistory && t.tenancyHistory.length > 0 ? `
-        <p class="screen-section-title">Rental history</p>
-        <div class="space-y-2">
-            ${t.tenancyHistory.map(h => {
-                const prop = PROPERTIES[h.propertyId];
-                return `
-                <div class="card p-3.5 rounded-xl bg-white border border-[#E2E8F0] text-left">
-                    <div class="flex items-center justify-between">
-                        <p class="text-[13px] font-bold text-[#0F172A]">${prop?.name || h.propertyName || 'Previous Property'} · ${h.unit}</p>
-                        <span class="text-[10px] font-bold bg-[#F1F5F9] text-[#64748B] px-2 py-0.5 rounded-full">Completed</span>
+
+        <!-- 2. Lease & Financial Terms Card (High-hierarchy, 2-column balanced grid) -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Lease Agreement</span>
+                    <div class="flex items-baseline gap-1.5 mt-1">
+                        <span class="text-[28px] font-black text-[#0F172A] tracking-tight">${esc(rentAmount)}</span>
+                        <span class="text-[12px] font-semibold text-[#64748B]">/ month</span>
                     </div>
-                    <p class="text-[11px] text-[#64748B] mt-1">Landlord: ${h.landlord || '—'} · Lease: ${h.leaseStart || '—'} → ${h.leaseEnd || '—'}</p>
-                    ${h.deposit ? `<p class="text-[11px] text-[#059669] font-medium mt-0.5">Deposit: ${h.deposit}</p>` : ''}
-                </div>`;
-            }).join('')}
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] shrink-0">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                    <span>${isGroup ? 'Group Lease' : 'Solo Lease'}</span>
+                </span>
+            </div>
+
+            <!-- Balanced 2-Column Key Dates Grid -->
+            <div class="grid grid-cols-2 gap-2.5 pt-1">
+                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Move-in Date</span>
+                    <p class="text-[13px] font-bold text-[#0F172A] mt-1 m-0">${esc(moveInLabel)}</p>
+                </div>
+                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Lease Ends</span>
+                    <p class="text-[13px] font-bold text-[#0F172A] mt-1 m-0">${esc(leaseEndLabel)}</p>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#F1F5F9] flex items-center justify-between text-[11.5px] text-[#64748B]">
+                <span class="flex items-center gap-1.5">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                    <span>Fixed term tenancy</span>
+                </span>
+                <button type="button" data-go="tenant-documents" class="text-[#2563EB] font-bold hover:underline cursor-pointer flex items-center gap-0.5">
+                    <span>View Agreement</span>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Deposit Section -->
+        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
+
+        <!-- 4. Group Members (if applicable) -->
+        ${showHousehold && typeof renderTenantAccountMembers === 'function' ? renderTenantAccountMembers(tid) : ''}
+
+        <!-- 5. Hub & Records List -->
+        <div>
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 mb-2">Property Records &amp; Info</p>
+            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
+                ${more.map(([icon, label, go]) => `
+                <button type="button" data-go="${go}" class="w-full p-3.5 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-xl bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0">
+                            <i data-lucide="${icon}" class="w-4 h-4"></i>
+                        </div>
+                        <span class="text-[13px] font-bold text-[#0F172A] truncate">${label}</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+                </button>`).join('')}
+            </div>
+        </div>
+
+        ${t?.tenancyHistory && t.tenancyHistory.length > 0 ? `
+        <div>
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 mb-2">Previous Rental History</p>
+            <div class="space-y-2">
+                ${t.tenancyHistory.map(h => {
+                    const prop = PROPERTIES[h.propertyId];
+                    return `
+                    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] text-left">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[13px] font-bold text-[#0F172A] m-0">${prop?.name || h.propertyName || 'Previous Property'} · ${h.unit}</p>
+                            <span class="text-[10px] font-bold bg-[#F1F5F9] text-[#64748B] px-2 py-0.5 rounded-full">Completed</span>
+                        </div>
+                        <p class="text-[11px] text-[#64748B] mt-1 m-0">Landlord: ${h.landlord || '—'} · Lease: ${h.leaseStart || '—'} → ${h.leaseEnd || '—'}</p>
+                        ${h.deposit ? `<p class="text-[11px] text-[#059669] font-medium mt-0.5 m-0">Deposit: ${h.deposit}</p>` : ''}
+                    </div>`;
+                }).join('')}
+            </div>
         </div>` : ''}
     </div>`;
 }
