@@ -4506,67 +4506,67 @@ function screenContractorNotifications() {
 }
 
 function screenContractorReviews() {
-    const summary = typeof contractorReviewSummary === 'function' ? contractorReviewSummary() : { avg: '4.9', count: 5 };
+    const summary = typeof contractorReviewSummary === 'function' ? contractorReviewSummary() : { avg: '4.8', count: 5 };
     const reviews = typeof collectContractorReviews === 'function' ? collectContractorReviews() : [];
     const dist = contractorReviewDistribution(reviews);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
-    return `${topBar('Reviews', { back: true, sub: `${summary.count} verified client reviews` })}
-    <div class="screen-content screen-enter ctr-compact-page space-y-4 text-left pb-12">
+    return `${topBar('Reviews', { back: true })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-16">
         <!-- Rating Overview Card -->
-        <div class="card p-4.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-5 text-left">
-            <div class="flex flex-col items-center justify-center pr-4 border-r border-[#F1F5F9] shrink-0">
-                <span class="text-[36px] font-black text-[#0F172A] tracking-tight leading-none">${summary.avg}</span>
-                <div class="flex items-center gap-0.5 text-[#F59E0B] text-[14px] mt-1.5">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-5 text-left">
+            <div class="flex flex-col items-center justify-center shrink-0 px-2">
+                <span class="text-[34px] font-black text-[#0F172A] tracking-tight leading-none">${summary.avg}</span>
+                <div class="flex items-center gap-0.5 text-[#F59E0B] text-[14px] mt-2">
                     <i data-lucide="star" class="w-4 h-4 fill-[#F59E0B]"></i>
                     <i data-lucide="star" class="w-4 h-4 fill-[#F59E0B]"></i>
                     <i data-lucide="star" class="w-4 h-4 fill-[#F59E0B]"></i>
                     <i data-lucide="star" class="w-4 h-4 fill-[#F59E0B]"></i>
                     <i data-lucide="star" class="w-4 h-4 fill-[#F59E0B]"></i>
                 </div>
-                <span class="text-[11.5px] font-medium text-[#64748B] mt-1">${summary.count} review${summary.count === 1 ? '' : 's'}</span>
+                <span class="text-[11.5px] font-semibold text-[#64748B] mt-1.5">${summary.count} review${summary.count === 1 ? '' : 's'}</span>
             </div>
 
-            <div class="flex-1 space-y-1.5 min-w-0">
+            <div class="flex-1 space-y-1.5 min-w-0 pr-1">
                 ${dist.map(d => `
-                <div class="flex items-center gap-2 text-[12px] font-bold text-[#64748B]">
-                    <span class="w-2.5 text-right font-semibold text-[#475569]">${d.stars}</span>
+                <div class="flex items-center gap-2 text-[11px] font-bold text-[#64748B]">
+                    <span class="w-2 text-right font-bold text-[#475569]">${d.stars}</span>
                     <i data-lucide="star" class="w-3 h-3 text-[#F59E0B] fill-[#F59E0B] shrink-0"></i>
-                    <div class="flex-1 h-2 rounded-full bg-[#F1F5F9] overflow-hidden">
+                    <div class="flex-1 h-1.5 rounded-full bg-[#F1F5F9] overflow-hidden">
                         <div class="h-full rounded-full bg-[#F59E0B] transition-all duration-500" style="width:${d.pct}%"></div>
                     </div>
-                    <span class="w-7 text-right text-[11px] font-medium text-[#94A3B8]">${d.count}</span>
+                    <span class="w-3 text-right text-[11px] font-medium text-[#94A3B8]">${d.count}</span>
                 </div>`).join('')}
             </div>
         </div>
 
         <!-- Review Cards List -->
         <div class="space-y-3">
-            <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0 px-1">Recent Feedback</h3>
+            <h3 class="text-[15px] font-black text-[#0F172A] m-0 px-1">Recent Feedback</h3>
             ${reviews.length ? reviews.map(r => {
                 const initials = (r.from || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
                 const isLandlord = (r.role === 'landlord' || (r.from && r.from.includes('Landlord')));
                 return `
-            <article class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2 text-left">
+            <article class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5 text-left">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] font-black text-[13px] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                        <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] font-black text-[13px] flex items-center justify-center shrink-0">
                             ${initials}
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-1.5">
-                                <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${esc(r.from)}</h4>
-                                ${isLandlord ? `<span class="px-1.5 py-0.2 rounded bg-[#FEF3C7] text-[#D97706] text-[10px] font-bold">Landlord</span>` : `<span class="px-1.5 py-0.2 rounded bg-[#F1F5F9] text-[#475569] text-[10px] font-bold">Tenant</span>`}
+                                <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate">${esc(r.from)}</h4>
+                                ${isLandlord ? `<span class="px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#D97706] text-[10px] font-extrabold">Landlord</span>` : `<span class="px-2 py-0.5 rounded-md bg-[#F1F5F9] text-[#475569] text-[10px] font-extrabold">Tenant</span>`}
                             </div>
-                            <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate mt-0.5">${esc(r.job)}</p>
+                            <p class="text-[12px] font-medium text-[#64748B] m-0 truncate mt-0.5">${esc(r.job)}</p>
                         </div>
                     </div>
-                    <span class="text-[11px] font-medium text-[#94A3B8] shrink-0">${esc(r.at)}</span>
+                    <span class="text-[11.5px] font-medium text-[#94A3B8] shrink-0">${esc(r.at)}</span>
                 </div>
 
-                <div class="flex items-center gap-1 text-[#F59E0B] text-[12px]">
+                <div class="flex items-center gap-0.5 text-[#F59E0B] text-[13px]">
                     ${Array.from({ length: r.stars }).map(() => `<i data-lucide="star" class="w-3.5 h-3.5 fill-[#F59E0B]"></i>`).join('')}
-                    ${Array.from({ length: 5 - r.stars }).map(() => `<i data-lucide="star" class="w-3.5 h-3.5 text-[#E2E8F0]"></i>`).join('')}
+                    ${Array.from({ length: 5 - r.stars }).map(() => `<i data-lucide="star" class="w-3.5 h-3.5 text-[#E2E8F0] fill-[#E2E8F0]"></i>`).join('')}
                 </div>
 
                 <p class="text-[13px] font-medium text-[#334155] leading-relaxed m-0">${esc(r.comment)}</p>
