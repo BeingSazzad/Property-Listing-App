@@ -2982,8 +2982,8 @@ function screenTenantActiveTenancy() {
                 </button>
             </div>
 
-            <!-- Balanced Unit Vitals Chips (Clean single-line layout) -->
-            <div class="pt-3 border-t border-[#F1F5F9] flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <!-- Balanced Unit Vitals Chips (Clean flex-wrap layout - NO scrollbars) -->
+            <div class="pt-3 border-t border-[#F1F5F9] flex items-center flex-wrap gap-1.5 py-0.5">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
                     <i data-lucide="bed-double" class="w-3.5 h-3.5 text-[#2563EB]"></i>
                     <span>${beds} Beds</span>
