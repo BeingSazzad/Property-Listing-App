@@ -19764,7 +19764,7 @@ function screenFlatKeys() {
     const displayStats = activeUnit === 'all' ? propStats : unitStats;
 
     const displayUnit = activeUnit === 'all'
-        ? 'Building Key Audit'
+        ? 'All Units'
         : (typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(activeUnit, propertyId) : activeUnit);
 
     const rightBtn = activeUnit !== 'all'
@@ -19776,94 +19776,78 @@ function screenFlatKeys() {
 
     const filterCustody = STATE.keysCustodyFilter || 'all';
 
-    // Multi-Unit Scope Selector Card
+    // Streamlined Unit Scope Dropdown Bar (minimal & clean)
     const scopeCard = units.length > 1 ? `
-    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
-        <div class="flex items-center gap-3 min-w-0 flex-1">
-            <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                 <i data-lucide="door-closed" class="w-4 h-4"></i>
             </div>
-            <div class="min-w-0 flex-1">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0.5">Unit Scope</span>
-                <div class="relative flex items-center">
-                    <select data-action="select-keys-unit-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
-                        <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units Audit (${propStats.totalPhysicalKeys} keys)</option>
-                        ${units.map(u => {
-                            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                            const uStats = getUnitKeyStats(propertyId, name);
-                            return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)} (${uStats.totalPhysicalKeys} keys · ${uStats.withTenants} with tenant)</option>`;
-                        }).join('')}
-                    </select>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
-                </div>
+            <div class="relative flex-1 min-w-0">
+                <select data-action="select-keys-unit-dropdown" class="figma-hold-select w-full text-[13px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5">
+                    <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units Audit (${propStats.totalPhysicalKeys} keys)</option>
+                    ${units.map(u => {
+                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                        const uStats = getUnitKeyStats(propertyId, name);
+                        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)} (${uStats.totalPhysicalKeys} keys)</option>`;
+                    }).join('')}
+                </select>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
         </div>
-        ${activeUnit !== 'all' ? `
-        <button type="button" data-action="filter-keys-unit" data-unit="all" class="text-[11px] font-bold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1.5 rounded-lg shrink-0 cursor-pointer transition-colors">
-            All Units
-        </button>` : ''}
     </div>` : '';
 
-    // KPI Summary Header Grid
+    // Interactive Metric Cards (combine metrics & quick filter tabs in 1 touchpoint)
     const kpiHeader = `
-    <div class="grid grid-cols-3 gap-2.5">
-        <!-- Total Keys -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Total Keys</span>
-                <div class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
-                    <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-                </div>
+    <div class="grid grid-cols-3 gap-2">
+        <!-- Total Keys Card / Tab -->
+        <button type="button" data-action="filter-keys-custody" data-filter="all" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'all' ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1]'}">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'all' ? 'text-[#94A3B8]' : 'text-[#64748B]'}">Total</span>
+                <i data-lucide="key-round" class="w-3.5 h-3.5 ${filterCustody === 'all' ? 'text-[#38BDF8]' : 'text-[#2563EB]'}"></i>
             </div>
-            <p class="text-[20px] font-black text-[#0F172A] m-0 leading-none">${displayStats.totalPhysicalKeys}</p>
-            <span class="text-[10.5px] text-[#64748B] font-medium block mt-1.5">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'} on file</span>
-        </div>
+            <p class="text-[19px] font-black m-0 leading-none">${displayStats.totalPhysicalKeys}</p>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'all' ? 'text-[#94A3B8]' : 'text-[#64748B]'}">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'}</span>
+        </button>
 
-        <!-- With Tenants -->
-        <div class="p-3.5 rounded-2xl bg-[#ECFDF5]/60 border border-[#A7F3D0] shadow-xs">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10.5px] font-bold text-[#059669] uppercase tracking-wider">With Tenant</span>
-                <div class="w-6 h-6 rounded-lg bg-[#ECFDF5] text-[#059669] flex items-center justify-center">
-                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                </div>
+        <!-- With Tenant Card / Tab -->
+        <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'tenant' ? 'bg-[#059669] text-white border-[#059669] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#A7F3D0]'}">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}">Tenant</span>
+                <i data-lucide="user-check" class="w-3.5 h-3.5 ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}"></i>
             </div>
-            <p class="text-[20px] font-black text-[#059669] m-0 leading-none">${displayStats.withTenants}</p>
-            <span class="text-[10.5px] text-[#059669]/80 font-medium block mt-1.5">In circulation</span>
-        </div>
+            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'tenant' ? 'text-white' : 'text-[#059669]'}">${displayStats.withTenants}</p>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}">Issued</span>
+        </button>
 
-        <!-- In Safe / Spares -->
-        <div class="p-3.5 rounded-2xl bg-[#EFF6FF]/60 border border-[#DBEAFE] shadow-xs">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10.5px] font-bold text-[#2563EB] uppercase tracking-wider">In Safe</span>
-                <div class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
-                    <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-                </div>
+        <!-- In Safe Card / Tab -->
+        <button type="button" data-action="filter-keys-custody" data-filter="safe" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'safe' ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#DBEAFE]'}">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}">In Safe</span>
+                <i data-lucide="shield" class="w-3.5 h-3.5 ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}"></i>
             </div>
-            <p class="text-[20px] font-black text-[#2563EB] m-0 leading-none">${displayStats.inSafe}</p>
-            <span class="text-[10.5px] text-[#2563EB]/80 font-medium block mt-1.5">Office spares</span>
-        </div>
+            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'safe' ? 'text-white' : 'text-[#2563EB]'}">${displayStats.inSafe}</p>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}">Office</span>
+        </button>
     </div>`;
 
     // Missing Alert Banner (if any)
     const missingBanner = displayStats.missing > 0 ? `
-    <div class="p-3.5 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] flex items-center gap-3">
-        <div class="w-8 h-8 rounded-xl bg-white text-[#DC2626] flex items-center justify-center shrink-0 shadow-2xs">
-            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+    <div class="p-3 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-white text-[#DC2626] flex items-center justify-center shrink-0 shadow-2xs">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
         </div>
         <div class="min-w-0 flex-1">
-            <p class="text-[13px] font-bold text-[#991B1B] m-0">${displayStats.missing} key${displayStats.missing === 1 ? '' : 's'} reported missing</p>
-            <p class="text-[11.5px] text-[#B91C1C] m-0 mt-0.5">Replacement lock or key charge required from deposit.</p>
+            <p class="text-[12.5px] font-bold text-[#991B1B] m-0">${displayStats.missing} key${displayStats.missing === 1 ? '' : 's'} reported missing</p>
         </div>
     </div>` : '';
 
     let contentBody = '';
     if (activeUnit === 'all') {
         contentBody = `
-        <div class="space-y-3">
-            <div class="flex items-center justify-between px-1">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Unit Key Registers (${units.length} Units)</p>
-            </div>
-            <div class="space-y-3">
+        <div class="space-y-2.5">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0 px-1">Unit Key Registers (${units.length} Units)</p>
+            <div class="space-y-2.5">
                 ${units.map(u => {
                     const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
                     const uStats = getUnitKeyStats(propertyId, name);
@@ -19872,34 +19856,34 @@ function screenFlatKeys() {
                     );
                     const tenantName = occupants[0]?.name || 'Vacant / Ready';
                     return `
-                    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+                    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                                    <i data-lucide="door-closed" class="w-5 h-5"></i>
+                                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                                    <i data-lucide="door-closed" class="w-4 h-4"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight">${escapeHtml(name)}</h4>
-                                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(tenantName)}</p>
+                                    <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 leading-tight">${escapeHtml(name)}</h4>
+                                    <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(tenantName)}</p>
                                 </div>
                             </div>
-                            <button type="button" data-action="filter-keys-unit" data-unit="${escapeHtml(name)}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[12px] font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0">
+                            <button type="button" data-action="filter-keys-unit" data-unit="${escapeHtml(name)}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[11.5px] font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0">
                                 <span>Manage</span>
                                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-[#F1F5F9] text-center">
-                            <div class="p-2 rounded-xl bg-[#F8FAFC]">
-                                <span class="block text-[10px] font-bold text-[#64748B] uppercase">Total</span>
-                                <span class="block text-[14px] font-bold text-[#0F172A] mt-0.5">${uStats.totalPhysicalKeys}</span>
+                        <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-[#F1F5F9] text-center">
+                            <div class="p-1.5 rounded-xl bg-[#F8FAFC]">
+                                <span class="block text-[9.5px] font-bold text-[#64748B] uppercase">Total</span>
+                                <span class="block text-[13px] font-bold text-[#0F172A] mt-0.5">${uStats.totalPhysicalKeys}</span>
                             </div>
-                            <div class="p-2 rounded-xl bg-[#ECFDF5]">
-                                <span class="block text-[10px] font-bold text-[#059669] uppercase">Tenant</span>
-                                <span class="block text-[14px] font-bold text-[#059669] mt-0.5">${uStats.withTenants}</span>
+                            <div class="p-1.5 rounded-xl bg-[#ECFDF5]">
+                                <span class="block text-[9.5px] font-bold text-[#059669] uppercase">Tenant</span>
+                                <span class="block text-[13px] font-bold text-[#059669] mt-0.5">${uStats.withTenants}</span>
                             </div>
-                            <div class="p-2 rounded-xl bg-[#EFF6FF]">
-                                <span class="block text-[10px] font-bold text-[#2563EB] uppercase">Safe</span>
-                                <span class="block text-[14px] font-bold text-[#2563EB] mt-0.5">${uStats.inSafe}</span>
+                            <div class="p-1.5 rounded-xl bg-[#EFF6FF]">
+                                <span class="block text-[9.5px] font-bold text-[#2563EB] uppercase">Safe</span>
+                                <span class="block text-[13px] font-bold text-[#2563EB] mt-0.5">${uStats.inSafe}</span>
                             </div>
                         </div>
                     </div>`;
@@ -19917,20 +19901,7 @@ function screenFlatKeys() {
         });
 
         contentBody = `
-        <div class="space-y-3">
-            <!-- Filter Chips -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                <button type="button" data-action="filter-keys-custody" data-filter="all" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'all' ? 'bg-[#0F172A] text-white shadow-xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                    All Sets (${rawKeys.length})
-                </button>
-                <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'tenant' ? 'bg-[#059669] text-white shadow-xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                    With Tenant (${unitStats.withTenants})
-                </button>
-                <button type="button" data-action="filter-keys-custody" data-filter="safe" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'safe' ? 'bg-[#2563EB] text-white shadow-xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                    In Safe / Office (${unitStats.inSafe})
-                </button>
-            </div>
-
+        <div class="space-y-2.5">
             <!-- Key Sets List -->
             ${filteredKeys.length ? `
             <div class="space-y-2.5">
@@ -19938,44 +19909,44 @@ function screenFlatKeys() {
                     const custody = resolveKeyCustody(k, propertyId, activeUnit);
                     const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
                     return `
-                    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+                    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start gap-3 min-w-0">
-                                <div class="w-10 h-10 rounded-xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0 shadow-2xs">
-                                    <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-5 h-5"></i>
+                                <div class="w-9 h-9 rounded-xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0 shadow-2xs">
+                                    <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-2 flex-wrap">
-                                        <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-snug">${escapeHtml(k.label || 'Key Set')}</h4>
-                                        <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
+                                        <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 leading-snug">${escapeHtml(k.label || 'Key Set')}</h4>
+                                        <span class="px-1.5 py-0.5 rounded-md text-[10.5px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
                                     </div>
-                                    <p class="text-[11.5px] text-[#64748B] m-0 mt-1 flex items-center gap-1.5 truncate">
-                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 shrink-0 text-[#94A3B8]"></i>
+                                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 truncate">
+                                        <i data-lucide="map-pin" class="w-3 h-3 shrink-0 text-[#94A3B8]"></i>
                                         <span class="truncate">${escapeHtml(k.location || 'Location on file')}</span>
                                     </p>
                                 </div>
                             </div>
-                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 flex items-center gap-1.5 ${custody.badgeClass}">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border shrink-0 flex items-center gap-1.5 ${custody.badgeClass}">
                                 <span class="w-1.5 h-1.5 rounded-full ${custody.dotClass}"></span>
-                                <span class="truncate max-w-[130px]">${custody.label}</span>
+                                <span class="truncate max-w-[120px]">${custody.label}</span>
                             </span>
                         </div>
 
                         <!-- 1-Tap Quick Actions Bar -->
-                        <div class="pt-2.5 border-t border-[#F1F5F9] flex items-center justify-between gap-2">
+                        <div class="pt-2 border-t border-[#F1F5F9] flex items-center justify-between gap-2">
                             <div class="flex items-center gap-1.5">
                                 ${custody.isTenant ? `
-                                <button type="button" data-action="quick-return-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[11.5px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
+                                <button type="button" data-action="quick-return-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[11px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
                                     <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i>
                                     <span>Return to Safe</span>
                                 </button>` : `
-                                <button type="button" data-action="quick-assign-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1.5 rounded-xl bg-[#ECFDF5] text-[#059669] hover:bg-[#D1FAE5] text-[11.5px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
+                                <button type="button" data-action="quick-assign-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-xl bg-[#ECFDF5] text-[#059669] hover:bg-[#D1FAE5] text-[11px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
                                     <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
                                     <span>Hand over to Tenant</span>
                                 </button>`}
                             </div>
-                            <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-2.5 py-1.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] text-[11.5px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
-                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                            <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-2 py-1 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="edit-2" class="w-3 h-3"></i>
                                 <span>Edit Set</span>
                             </button>
                         </div>
@@ -19983,19 +19954,21 @@ function screenFlatKeys() {
                 }).join('')}
             </div>` : `
             <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
-                <i data-lucide="key-round" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
-                <p class="text-[13px] font-semibold text-[#0F172A] m-0">No key sets found for this filter</p>
-                <p class="text-[11.5px] text-[#64748B] mt-1 m-0">Add front door, postbox, or fob records for this unit.</p>
-                <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-[12.5px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors inline-flex items-center gap-1.5 cursor-pointer mt-3">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span>+ Add key set</span>
+                <div class="w-10 h-10 rounded-full bg-[#F1F5F9] text-[#94A3B8] flex items-center justify-center mx-auto mb-2">
+                    <i data-lucide="key-round" class="w-5 h-5"></i>
+                </div>
+                <p class="text-[13px] font-bold text-[#0F172A] m-0">No key sets for this filter</p>
+                <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Add front door, postbox, or fob records for ${escapeHtml(activeUnit)}.</p>
+                <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors inline-flex items-center gap-1.5 cursor-pointer mt-3">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Add Key Set</span>
                 </button>
             </div>`}
         </div>`;
     }
 
     return `${topBar('Keys & Access', { back: true, sub: `${p?.name || ''} · ${displayUnit}`, rightBtn })}
-    <div class="screen-content screen-content-sm prop-hub-page space-y-3.5 text-left pb-8">
+    <div class="screen-content screen-content-sm prop-hub-page space-y-3 text-left pb-8">
         ${scopeCard}
         ${kpiHeader}
         ${missingBanner}
@@ -24920,6 +24893,19 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="select-keys-unit-dropdown"]').forEach(el => {
         el.onchange = () => {
             STATE.keysFilterUnit = el.value;
+            STATE.selectedUnit = el.value;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="filter-keys-custody"]').forEach(el => {
+        el.onclick = () => {
+            STATE.keysCustodyFilter = el.dataset.filter || 'all';
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="filter-keys-unit"]').forEach(el => {
+        el.onclick = () => {
+            STATE.selectedUnit = el.dataset.unit || 'all';
             render();
         };
     });

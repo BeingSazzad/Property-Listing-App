@@ -40,6 +40,7 @@ const tests = [
   { name: 'screenTenantInventoryRoom', fn: 'screenTenantInventoryRoom()' },
   { name: 'screenContractorJobDetail', fn: "demoLogin('contractor'); screenContractorJobDetail()" },
   { name: 'screenContractorScheduleHub', fn: "screenContractorScheduleHub()" },
+  { name: 'screenFlatKeys', fn: "demoLogin('landlord'); screenFlatKeys()" },
 ];
 
 tests.forEach(t => {
