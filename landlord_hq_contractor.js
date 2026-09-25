@@ -3961,41 +3961,156 @@ function screenContractorScheduleHub() {
     </div>`;
 }
 
+function getContractorEarningsDataset(period) {
+    switch (period) {
+        case '1W':
+            return {
+                periodLabel: 'This week',
+                total: 355,
+                change: '+15% vs last week',
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                values: [45, 110, 80, 0, 120, 0, 0],
+                maxVal: 150
+            };
+        case '1M':
+            return {
+                periodLabel: 'This month',
+                total: 1280,
+                change: '+12% vs last month',
+                labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'],
+                values: [280, 340, 355, 305],
+                maxVal: 400
+            };
+        case '3M':
+            return {
+                periodLabel: 'Last 3 months',
+                total: 3650,
+                change: '+22% vs Q4',
+                labels: ['Jan', 'Feb', 'Mar'],
+                values: [1100, 1200, 1350],
+                maxVal: 1500
+            };
+        case '1Y':
+            return {
+                periodLabel: 'This year',
+                total: 14200,
+                change: '+18% YoY',
+                labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+                values: [2100, 2400, 2050, 2300, 2550, 2800],
+                maxVal: 3000
+            };
+        default: // 'all'
+            return {
+                periodLabel: 'All time',
+                total: 28500,
+                change: 'Lifetime earnings',
+                labels: ['2023', '2024', '2025', '2026'],
+                values: [5400, 8800, 11500, 2800],
+                maxVal: 12000
+            };
+    }
+}
+
+function renderContractorEarningsTrendChart(data) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const maxVal = data.maxVal || 100;
+    const maxIdx = data.values.indexOf(Math.max(...data.values));
+    
+    return `
+    <div class="space-y-2">
+        <div class="flex items-center justify-between text-[11px] font-bold text-[#94A3B8] pb-1 border-b border-[#F1F5F9]">
+            <span>Peak: £${data.maxVal.toLocaleString()}</span>
+            <span>Scale: GBP (£)</span>
+        </div>
+        
+        <!-- Bar Chart with X-Axis Date Labels -->
+        <div class="flex items-end justify-between gap-2 h-36 pt-5 pb-1 px-1">
+            ${data.values.map((v, i) => {
+                const pct = Math.max(12, Math.round((v / maxVal) * 100));
+                const isPeak = i === maxIdx && v > 0;
+                const barColor = isPeak ? 'bg-[#2563EB]' : 'bg-[#DBEAFE] hover:bg-[#93C5FD]';
+                const label = data.labels[i] || '';
+                return `
+                <div class="flex-1 flex flex-col items-center h-full justify-end group relative">
+                    <!-- Tooltip value on hover -->
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-7 px-2 py-0.5 rounded bg-[#0F172A] text-white text-[10.5px] font-bold whitespace-nowrap z-10 pointer-events-none shadow-xs">
+                        £${v.toLocaleString()}
+                    </div>
+                    <div class="w-full ${barColor} rounded-t-lg transition-all duration-300 relative" style="height:${pct}%">
+                        ${isPeak ? `<span class="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-extrabold text-[#2563EB]">£${v.toLocaleString()}</span>` : ''}
+                    </div>
+                    <span class="text-[11px] font-bold ${isPeak ? 'text-[#0F172A]' : 'text-[#64748B]'} mt-2 truncate w-full text-center">${esc(label)}</span>
+                </div>`;
+            }).join('')}
+        </div>
+    </div>`;
+}
+
 function screenContractorEarnings() {
+    const period = STATE.contractorEarnPeriod || '1M';
+    const chartData = getContractorEarningsDataset(period);
     const summary = contractorEarningsSummary();
-    const bars = [40, 65, 55, 80, 70, 90, 60, 75].map(h => `<span class="ctr-earn-bar" style="height:${h}%"></span>`).join('');
-    const fee = Math.round(summary.total * 0.05);
-    const net = summary.total - fee;
+    const fee = Math.round(chartData.total * 0.05);
+    const net = chartData.total - fee;
+    const avgJob = summary.completed ? Math.round(chartData.total / Math.max(1, summary.completed)) : 175;
+
     return `${topBar('Earnings', { back: true })}
-    <div class="screen-content screen-enter ctr-compact-page">
-        <div class="card ctr-compact-block ctr-compact-earn-hero">
-            <p class="ctr-compact-label">This month</p>
-            <p class="ctr-compact-earn-amt">£${summary.total.toLocaleString()}</p>
-            <p class="ctr-compact-muted"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i> +12% vs last month</p>
+    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-8">
+        <!-- Hero Earnings Summary Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${chartData.periodLabel}</span>
+            <div class="flex items-baseline gap-3">
+                <h2 class="text-[28px] font-black text-[#2563EB] tracking-tight leading-none m-0">£${chartData.total.toLocaleString()}</h2>
+                <span class="text-[12px] font-bold text-[#16A34A] flex items-center gap-1">
+                    <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                    ${chartData.change}
+                </span>
+            </div>
             ${renderCtrEarnPeriodPills()}
         </div>
-        <div class="card ctr-compact-block">
-            <p class="ctr-compact-label">Earnings trend</p>
-            <div class="ctr-earn-chart ctr-earn-chart--compact">${bars}</div>
+
+        <!-- Earnings Trend Bar Chart Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider m-0">Earnings Trend</h3>
+            ${renderContractorEarningsTrendChart(chartData)}
         </div>
-        <div class="card ctr-compact-block">
-            <p class="ctr-compact-label">Breakdown</p>
-            <div class="ctr-compact-breakdown">
-                <div class="ctr-compact-breakdown-row"><span>Total income</span><strong>£${summary.total.toLocaleString()}</strong></div>
-                <div class="ctr-compact-breakdown-row"><span>Platform fee</span><span>−£${fee.toLocaleString()}</span></div>
-                <div class="ctr-compact-breakdown-row ctr-compact-breakdown-row--total"><span>Net earnings</span><strong>£${net.toLocaleString()}</strong></div>
+
+        <!-- Financial Breakdown Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider m-0">Financial Summary</h3>
+            <div class="divide-y divide-[#F1F5F9] text-[13px]">
+                <div class="py-2 flex items-center justify-between text-[#0F172A]">
+                    <span class="font-medium text-[#64748B]">Gross revenue</span>
+                    <span class="font-bold">£${chartData.total.toLocaleString()}</span>
+                </div>
+                <div class="py-2 flex items-center justify-between text-[#0F172A]">
+                    <span class="font-medium text-[#64748B]">Platform fee (5%)</span>
+                    <span class="font-bold text-[#DC2626]">−£${fee.toLocaleString()}</span>
+                </div>
+                <div class="py-2 flex items-center justify-between text-[#0F172A]">
+                    <span class="font-medium text-[#64748B]">Avg. job value</span>
+                    <span class="font-bold text-[#2563EB]">£${avgJob.toLocaleString()}</span>
+                </div>
+                <div class="pt-2.5 flex items-center justify-between text-[14px] font-extrabold text-[#0F172A]">
+                    <span>Net earnings</span>
+                    <span class="text-[#16A34A]">£${net.toLocaleString()}</span>
+                </div>
             </div>
         </div>
-        <p class="ctr-compact-section-title">Recent payouts</p>
-        <div class="ctr-compact-txn-list">
-            ${summary.jobs.length ? summary.jobs.map(j => `
-            <div class="card ctr-compact-txn">
-                <div>
-                    <p class="ctr-compact-txn-title">${j.issue}</p>
-                    <p class="ctr-compact-muted">${j.visitDate || j.assignedDate || '—'}</p>
-                </div>
-                <span class="ctr-compact-txn-amt">+${contractorJobEstimate(j)}</span>
-            </div>`).join('') : `<p class="ctr-compact-muted">Completed jobs appear here.</p>`}
+
+        <!-- Recent Payout Ledger -->
+        <div class="space-y-2">
+            <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider px-1 m-0">Recent Payouts</h3>
+            <div class="space-y-2">
+                ${summary.jobs.length ? summary.jobs.map(j => `
+                <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
+                    <div class="min-w-0">
+                        <p class="text-[13.5px] font-bold text-[#0F172A] truncate m-0">${j.issue}</p>
+                        <p class="text-[11.5px] font-medium text-[#64748B] truncate m-0 mt-0.5">${j.visitDate || j.assignedDate || 'Completed'}</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] text-[13px] font-extrabold shrink-0">+${contractorJobEstimate(j)}</span>
+                </div>`).join('') : `<p class="text-[12.5px] font-medium text-[#64748B] px-1">Completed jobs will appear here.</p>`}
+            </div>
         </div>
     </div>`;
 }
