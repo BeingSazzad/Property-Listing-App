@@ -3590,13 +3590,15 @@ function renderCtrScheduleHero(job) {
     </button>`;
 }
 
-function renderCtrOverviewCard(icon, label, value, sub, tone) {
+function renderCtrOverviewCard(icon, label, value, sub) {
     return `
-    <button type="button" data-go="contractor-jobs" class="ctr-overview-card ctr-overview-card--${tone}">
-        <span class="ctr-overview-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
-        <p class="ctr-overview-value">${value}</p>
-        <p class="ctr-overview-label">${label}</p>
-        <p class="ctr-overview-sub">${sub}</p>
+    <button type="button" data-go="contractor-jobs" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] transition-all flex flex-col text-left cursor-pointer group">
+        <span class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:bg-[#2563EB] group-hover:text-white transition-colors">
+            <i data-lucide="${icon}" class="w-4 h-4"></i>
+        </span>
+        <p class="text-[24px] font-black text-[#0F172A] tracking-tight leading-none mt-2.5 mb-0">${value}</p>
+        <p class="text-[13px] font-bold text-[#0F172A] m-0 mt-1 truncate group-hover:text-[#2563EB] transition-colors">${label}</p>
+        <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${sub}</p>
     </button>`;
 }
 
@@ -3634,10 +3636,10 @@ function screenContractorDashboard() {
             <span class="ctr-home-week-pill">This week</span>
         </div>
         <div class="ctr-overview-grid">
-            ${renderCtrOverviewCard('briefcase', 'Assigned jobs', stats.assigned, newAssigned ? `${newAssigned} new` : 'Up to date', 'blue')}
-            ${renderCtrOverviewCard('wrench', 'In progress', stats.inProgress, stats.inProgress ? 'Active now' : 'None active', 'amber')}
-            ${renderCtrOverviewCard('check-circle', 'Completed', stats.completed, 'This month', 'green')}
-            ${renderCtrOverviewCard('clock', 'Pending review', stats.pendingReview, stats.pendingReview ? 'Needs action' : 'All clear', 'rose')}
+            ${renderCtrOverviewCard('briefcase', 'Assigned jobs', stats.assigned, newAssigned ? `${newAssigned} new` : 'Up to date')}
+            ${renderCtrOverviewCard('wrench', 'In progress', stats.inProgress, stats.inProgress ? 'Active now' : 'None active')}
+            ${renderCtrOverviewCard('check-circle', 'Completed', stats.completed, 'This month')}
+            ${renderCtrOverviewCard('clock', 'Pending review', stats.pendingReview, stats.pendingReview ? 'Needs action' : 'All clear')}
         </div>
         <div class="dash-section-head">
             <div>
