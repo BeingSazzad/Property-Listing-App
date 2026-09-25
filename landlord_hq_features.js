@@ -19735,6 +19735,19 @@ function getPropertyKeyStats(propertyId) {
     };
 }
 
+function getPropertyAllKeys(propertyId) {
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(propertyId) : [];
+    const all = [];
+    units.forEach(u => {
+        const uName = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const keys = getUnitKeys(propertyId, uName);
+        keys.forEach((k, idx) => {
+            all.push({ ...k, unitName: uName, keyIdxInUnit: idx });
+        });
+    });
+    return all;
+}
+
 function resolveKeyCustody(k, propertyId, unitName) {
     const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
         t.propertyId === propertyId && t.unit === unitName
@@ -19891,63 +19904,50 @@ function screenFlatKeys() {
     </div>` : '';
 
     let contentBody = '';
+    const rawKeys = activeUnit !== 'all'
+        ? getUnitKeys(propertyId, activeUnit).map((k, i) => ({ ...k, unitName: activeUnit, keyIdxInUnit: i }))
+        : getPropertyAllKeys(propertyId);
+
+    const filteredKeys = rawKeys.filter(k => {
+        if (filterCustody === 'all') return true;
+        const custody = resolveKeyCustody(k, propertyId, k.unitName);
+        if (filterCustody === 'tenant') return custody.isTenant;
+        if (filterCustody === 'safe') return !custody.isTenant;
+        return true;
+    });
+
     if (activeUnit === 'all') {
         contentBody = `
         <div class="space-y-2.5">
-            <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider m-0 px-1">Unit Key Registers (${units.length} Units)</p>
+            <div class="flex items-center justify-between px-1">
+                <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider m-0">All Unit Keys Audit (${filteredKeys.length} Key Sets)</p>
+            </div>
+            ${filteredKeys.length ? `
             <div class="space-y-2.5">
-                ${units.map(u => {
-            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-            const uStats = getUnitKeyStats(propertyId, name);
-            const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
-                t.propertyId === propertyId && t.unit === name
-            );
-            const tenantName = occupants[0]?.name || 'Vacant / Ready';
+                ${filteredKeys.map((k, i) => {
+            const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
             return `
-                    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                                    <i data-lucide="door-closed" class="w-4 h-4"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight">${escapeHtml(name)}</h4>
-                                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(tenantName)}</p>
-                                </div>
+                    <div data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                                <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
                             </div>
-                            <button type="button" data-action="filter-keys-unit" data-unit="${escapeHtml(name)}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[12px] font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0">
-                                <span>Manage</span>
-                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-[#F1F5F9] text-center">
-                            <div class="p-1.5 rounded-xl bg-[#F8FAFC]">
-                                <span class="block text-[10px] font-bold text-[#64748B] uppercase">Total</span>
-                                <span class="block text-[14px] font-bold text-[#0F172A] mt-0.5">${uStats.totalPhysicalKeys}</span>
-                            </div>
-                            <div class="p-1.5 rounded-xl bg-[#ECFDF5]">
-                                <span class="block text-[10px] font-bold text-[#059669] uppercase">Tenant</span>
-                                <span class="block text-[14px] font-bold text-[#059669] mt-0.5">${uStats.withTenants}</span>
-                            </div>
-                            <div class="p-1.5 rounded-xl bg-[#EFF6FF]">
-                                <span class="block text-[10px] font-bold text-[#2563EB] uppercase">Safe</span>
-                                <span class="block text-[14px] font-bold text-[#2563EB] mt-0.5">${uStats.inSafe}</span>
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate group-hover:text-[#2563EB] transition-colors">${escapeHtml(k.label || 'Key Set')}</h4>
+                                <span class="text-[11px] font-bold text-[#64748B] block mt-0.5">${escapeHtml(k.unitName)}</span>
                             </div>
                         </div>
+                        <button type="button" data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="w-8 h-8 rounded-full hover:bg-[#F1F5F9] text-[#64748B] flex items-center justify-center cursor-pointer shrink-0 transition-colors" title="Options">
+                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                        </button>
                     </div>`;
         }).join('')}
-            </div>
+            </div>` : `
+            <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
+                <p class="text-[14px] font-bold text-[#0F172A] m-0">No key sets found</p>
+            </div>`}
         </div>`;
     } else {
-        const rawKeys = getUnitKeys(propertyId, activeUnit);
-        const filteredKeys = rawKeys.filter(k => {
-            if (filterCustody === 'all') return true;
-            const custody = resolveKeyCustody(k, propertyId, activeUnit);
-            if (filterCustody === 'tenant') return custody.isTenant;
-            if (filterCustody === 'safe') return !custody.isTenant;
-            return true;
-        });
-
         contentBody = `
         <div class="space-y-2.5">
             <!-- Key Sets List -->
@@ -19956,14 +19956,14 @@ function screenFlatKeys() {
                 ${filteredKeys.map((k, i) => {
             const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
             return `
-                    <div data-action="view-key-modal" data-key-idx="${i}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
+                    <div data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                                 <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
                             </div>
                             <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate group-hover:text-[#2563EB] transition-colors flex-1 min-w-0">${escapeHtml(k.label || 'Key Set')}</h4>
                         </div>
-                        <button type="button" data-action="view-key-modal" data-key-idx="${i}" class="w-8 h-8 rounded-full hover:bg-[#F1F5F9] text-[#64748B] flex items-center justify-center cursor-pointer shrink-0 transition-colors" title="Options">
+                        <button type="button" data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="w-8 h-8 rounded-full hover:bg-[#F1F5F9] text-[#64748B] flex items-center justify-center cursor-pointer shrink-0 transition-colors" title="Options">
                             <i data-lucide="more-vertical" class="w-4 h-4"></i>
                         </button>
                     </div>`;
@@ -19984,17 +19984,22 @@ function screenFlatKeys() {
     }
 
     let keyViewModalHtml = '';
-    if (typeof STATE.viewKeyModalIdx === 'number' && STATE.viewKeyModalIdx >= 0) {
-        const rawKeys = activeUnit !== 'all' ? getUnitKeys(propertyId, activeUnit) : getPropertyKeyStats(propertyId).allKeys;
-        const selectedKey = rawKeys[STATE.viewKeyModalIdx];
+    const viewUnit = STATE.viewKeyModalUnit || (activeUnit !== 'all' ? activeUnit : '');
+    if (typeof STATE.viewKeyModalIdx === 'number' && STATE.viewKeyModalIdx >= 0 && viewUnit) {
+        const unitKeys = getUnitKeys(propertyId, viewUnit);
+        const selectedKey = unitKeys[STATE.viewKeyModalIdx];
         if (selectedKey) {
-            const custody = resolveKeyCustody(selectedKey, propertyId, activeUnit);
+            const custody = resolveKeyCustody(selectedKey, propertyId, viewUnit);
             const isFob = /fob|electronic|card|rfid/i.test(selectedKey.label || '');
             const isEditingModal = STATE.editingKeyModal === true;
 
-            const { members } = getFlatMemberRoster(propertyId, activeUnit !== 'all' ? activeUnit : '');
+            const displaySub = activeUnit === 'all'
+                ? `${viewUnit} · Key Details`
+                : (typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(viewUnit, propertyId) : viewUnit);
+
+            const { members } = getFlatMemberRoster(propertyId, viewUnit);
             const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
-                t.propertyId === propertyId && (activeUnit === 'all' || t.unit === activeUnit)
+                t.propertyId === propertyId && t.unit === viewUnit
             );
             const holderOptions = [
                 ...members.map(m => m.name),
@@ -20011,7 +20016,10 @@ function screenFlatKeys() {
                 <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
                     <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xl max-w-[390px] w-full space-y-4 text-left animate-slide-up" onclick="event.stopPropagation()">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Edit Key Set</h3>
+                            <div>
+                                <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Edit Key Set</h3>
+                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${escapeHtml(viewUnit)}</p>
+                            </div>
                             <button type="button" data-action="close-key-view-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center cursor-pointer shrink-0">
                                 <i data-lucide="x" class="w-4 h-4"></i>
                             </button>
@@ -20040,7 +20048,7 @@ function screenFlatKeys() {
                         </div>
 
                         <div class="pt-2 flex items-center gap-2">
-                            <button type="button" data-action="save-single-key-modal" data-key-idx="${STATE.viewKeyModalIdx}" data-unit="${escapeHtml(activeUnit)}" class="btn-primary flex-1 py-3 text-[14px] flex items-center justify-center gap-1.5 cursor-pointer">
+                            <button type="button" data-action="save-single-key-modal" data-key-idx="${STATE.viewKeyModalIdx}" data-unit="${escapeHtml(viewUnit)}" class="btn-primary flex-1 py-3 text-[14px] flex items-center justify-center gap-1.5 cursor-pointer">
                                 <i data-lucide="check" class="w-4 h-4"></i>
                                 <span>Save Changes</span>
                             </button>
@@ -20061,7 +20069,7 @@ function screenFlatKeys() {
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <h3 class="text-[16px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(selectedKey.label || 'Key Set')}</h3>
-                                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${escapeHtml(activeUnit === 'all' ? 'Key Details' : displayUnit)}</p>
+                                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${escapeHtml(displaySub)}</p>
                                 </div>
                             </div>
                             <button type="button" data-action="close-key-view-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center cursor-pointer shrink-0">
@@ -20095,7 +20103,7 @@ function screenFlatKeys() {
                                 <i data-lucide="edit-3" class="w-4 h-4"></i>
                                 <span>Edit Key</span>
                             </button>
-                            <button type="button" data-action="delete-single-key-modal" data-key-idx="${STATE.viewKeyModalIdx}" data-unit="${escapeHtml(activeUnit)}" class="px-3.5 py-3 rounded-xl bg-[#FEF2F2] text-[#DC2626] font-bold text-[14px] hover:bg-[#FEE2E2] cursor-pointer flex items-center justify-center" title="Delete Key Set">
+                            <button type="button" data-action="delete-single-key-modal" data-key-idx="${STATE.viewKeyModalIdx}" data-unit="${escapeHtml(viewUnit)}" class="px-3.5 py-3 rounded-xl bg-[#FEF2F2] text-[#DC2626] font-bold text-[14px] hover:bg-[#FEE2E2] cursor-pointer flex items-center justify-center" title="Delete Key Set">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                             <button type="button" data-action="close-key-view-modal" class="btn-secondary py-3 px-3.5 text-[14px] cursor-pointer">
@@ -25065,13 +25073,16 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="view-key-modal"]').forEach(el => {
         el.onclick = () => {
+            STATE.viewKeyModalUnit = el.dataset.unit || STATE.selectedUnit || '';
             STATE.viewKeyModalIdx = +el.dataset.keyIdx;
+            STATE.editingKeyModal = false;
             render();
         };
     });
     app.querySelectorAll('[data-action="close-key-view-modal"]').forEach(el => {
         el.onclick = () => {
             STATE.viewKeyModalIdx = null;
+            STATE.viewKeyModalUnit = null;
             STATE.editingKeyModal = false;
             render();
         };
@@ -25091,7 +25102,7 @@ function bindFeatureEvents() {
     app.querySelectorAll('[data-action="save-single-key-modal"]').forEach(el => {
         el.onclick = () => {
             const idx = +el.dataset.keyIdx;
-            let unit = el.dataset.unit || STATE.selectedUnit || '';
+            let unit = el.dataset.unit || STATE.viewKeyModalUnit || STATE.selectedUnit || '';
             const pid = STATE.propertyId ?? 0;
             if (!unit || unit === 'all') {
                 const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
@@ -25104,7 +25115,7 @@ function bindFeatureEvents() {
                 const locInput = document.getElementById('modal-single-key-location');
                 const holderInput = document.getElementById('modal-single-key-holder');
 
-                if (labelInput) keys[idx].label = labelInput.value.trim() || keys[idx].label;
+                if (labelInput && labelInput.value.trim()) keys[idx].label = labelInput.value.trim();
                 if (qtyInput) keys[idx].qty = qtyInput.value || '1';
                 if (locInput) keys[idx].location = locInput.value.trim();
                 if (holderInput) keys[idx].holder = holderInput.value.trim();
@@ -25115,13 +25126,14 @@ function bindFeatureEvents() {
             }
             STATE.editingKeyModal = false;
             STATE.viewKeyModalIdx = null;
+            STATE.viewKeyModalUnit = null;
             render();
         };
     });
     app.querySelectorAll('[data-action="delete-single-key-modal"]').forEach(el => {
         el.onclick = () => {
             const idx = +el.dataset.keyIdx;
-            let unit = el.dataset.unit || STATE.selectedUnit || '';
+            let unit = el.dataset.unit || STATE.viewKeyModalUnit || STATE.selectedUnit || '';
             const pid = STATE.propertyId ?? 0;
             if (!unit || unit === 'all') {
                 const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
@@ -25136,6 +25148,7 @@ function bindFeatureEvents() {
             }
             STATE.editingKeyModal = false;
             STATE.viewKeyModalIdx = null;
+            STATE.viewKeyModalUnit = null;
             render();
         };
     });
