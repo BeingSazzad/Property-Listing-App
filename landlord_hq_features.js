@@ -7695,8 +7695,8 @@ function contractorTrustLine(c) {
     return parts.length ? parts.join(' · ') : 'On Landlord HQ';
 }
 
-function filterContractorsList(list, q, tradeFilter) {
-    let filtered = list;
+function filterContractorsList(list, q, tradeFilter, sortBy = STATE.contractorSort || 'recently') {
+    let filtered = list.slice();
     if (tradeFilter && tradeFilter !== 'all') {
         filtered = filtered.filter(c => {
             const id = c.tradeId || (typeof resolveContractorTrade === 'function' ? resolveContractorTrade(c).id : '');
@@ -7706,35 +7706,28 @@ function filterContractorsList(list, q, tradeFilter) {
     if (q) {
         filtered = filtered.filter(c =>
             c.name.toLowerCase().includes(q)
-            || c.trade.toLowerCase().includes(q)
+            || (c.trade || '').toLowerCase().includes(q)
             || (c.category || '').toLowerCase().includes(q)
             || (c.jobsFor || '').toLowerCase().includes(q)
         );
+    }
+    if (sortBy === 'rating') {
+        filtered.sort((a, b) => parseFloat(typeof contractorDisplayRating === 'function' ? contractorDisplayRating(b) : '0') - parseFloat(typeof contractorDisplayRating === 'function' ? contractorDisplayRating(a) : '0'));
+    } else if (sortBy === 'name') {
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+        filtered.sort((a, b) => (b.id || 0) - (a.id || 0));
     }
     return filtered;
 }
 
 function renderContractorTradeChips(active, list = CONTRACTORS) {
-    const trades = typeof CONTRACTOR_TRADE_CATALOG !== 'undefined' ? CONTRACTOR_TRADE_CATALOG : [];
-    const usedIds = [...new Set(list.map(c => c.tradeId || (typeof resolveContractorTrade === 'function' ? resolveContractorTrade(c).id : 'general')))];
-    const chips = [['all', 'layout-grid', 'All', list.length]];
-    trades.filter(t => usedIds.includes(t.id)).forEach(t => {
-        const count = list.filter(c => (c.tradeId || resolveContractorTrade(c).id) === t.id).length;
-        chips.push([t.id, t.icon, t.shortLabel, count, t.bg, t.color]);
-    });
-    return `
-    <div class="ctr-trade-chips">
-        ${chips.map(([id, icon, label, count, bg, color]) => `
-        <button type="button" data-contractor-trade-filter="${id}" class="ctr-trade-chip ${active === id ? 'active' : ''}"${bg ? ` style="--chip-bg:${bg};--chip-color:${color}"` : ''}>
-            <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
-            <span>${label}</span>
-            ${id !== 'all' && count ? `<span class="ctr-trade-chip-count">${count}</span>` : ''}
-        </button>`).join('')}
-    </div>`;
+    return '';
 }
 
 function resetContractorFilters() {
     STATE.contractorTradeFilter = 'all';
+    STATE.contractorSort = 'recently';
     STATE.search.contractors = '';
     render();
 }
@@ -7795,46 +7788,66 @@ function contractorRow(c) {
 function screenContractors() {
     const q = (STATE.search.contractors || '').toLowerCase();
     const tradeF = STATE.contractorTradeFilter || 'all';
-    const list = filterContractorsList(CONTRACTORS, q, tradeF);
+    const sortBy = STATE.contractorSort || 'recently';
+    const list = filterContractorsList(CONTRACTORS, q, tradeF, sortBy);
     const pendingInvites = (AppStore.contractorInvites || []).filter(i => i.status === 'pending');
-    const hasFilters = tradeF !== 'all' || q;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const trades = typeof CONTRACTOR_TRADE_CATALOG !== 'undefined' ? CONTRACTOR_TRADE_CATALOG : [];
+    const usedTradeIds = [...new Set(CONTRACTORS.map(c => c.tradeId || (typeof resolveContractorTrade === 'function' ? resolveContractorTrade(c).id : 'general')))];
+
     return `${renderContractorsPageHeader()}
-    <div class="screen-content screen-content-sm screen-enter ctr-page">
+    <div class="screen-content screen-content-sm screen-enter ctr-page space-y-3">
         ${pendingInvites.length ? `
         <button type="button" data-go="invite-contractor" class="ctr-pending-strip w-full text-left">
             <i data-lucide="clock" class="w-4 h-4 shrink-0"></i>
             <span>${pendingInvites.length} invite${pendingInvites.length === 1 ? '' : 's'} pending</span>
             <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 ml-auto"></i>
         </button>` : ''}
-        <div class="ctr-search-row">
-            <div class="search-bar ctr-search flex-1">
-                <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-                <input data-search="contractors" type="text" value="${STATE.search.contractors || ''}" placeholder="Search contractors…" class="flex-1 text-[13px] bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
+        <div class="ctr-search-row flex items-center gap-2">
+            <div class="search-bar ctr-search flex-1 flex items-center bg-white px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] shadow-2xs">
+                <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0 mr-2"></i>
+                <input data-search="contractors" type="text" value="${esc(STATE.search.contractors || '')}" placeholder="Search contractors…" class="w-full text-[13px] font-medium bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
             </div>
-            <button type="button" data-action="reset-contractor-filters" class="ctr-filter-btn${hasFilters ? ' ctr-filter-btn--active' : ''}" aria-label="Reset filters">
-                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-                <span>Filter</span>
-                ${hasFilters ? '<span class="ctr-filter-dot"></span>' : ''}
-            </button>
+            <div class="relative flex items-center bg-white px-3 py-2.5 rounded-xl border border-[#CBD5E1] shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer shrink-0">
+                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-[#64748B] shrink-0 mr-1.5 pointer-events-none"></i>
+                <select data-action="filter-contractor-trade" class="bg-transparent text-[12.5px] font-bold text-[#0F172A] border-0 p-0 pr-5 outline-none cursor-pointer" style="appearance:none;-webkit-appearance:none;">
+                    <option value="all" ${tradeF === 'all' ? 'selected' : ''}>All Trades (${CONTRACTORS.length})</option>
+                    ${trades.filter(t => usedTradeIds.includes(t.id)).map(t => {
+                        const cnt = CONTRACTORS.filter(c => (c.tradeId || (typeof resolveContractorTrade === 'function' ? resolveContractorTrade(c).id : 'general')) === t.id).length;
+                        return `<option value="${t.id}" ${tradeF === t.id ? 'selected' : ''}>${esc(t.shortLabel || t.label)} (${cnt})</option>`;
+                    }).join('')}
+                </select>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#94A3B8] pointer-events-none absolute right-2.5 shrink-0"></i>
+            </div>
         </div>
-        ${renderContractorTradeChips(tradeF)}
-        <div class="ctr-list-head">
-            <p class="ctr-list-count">${list.length} contractor${list.length === 1 ? '' : 's'} found</p>
-            <span class="ctr-list-sort"><i data-lucide="arrow-down-wide-narrow" class="w-3.5 h-3.5"></i> Recently added</span>
+
+        <div class="ctr-list-head flex items-center justify-between px-1 pt-1">
+            <p class="ctr-list-count text-[12px] font-bold text-[#64748B] m-0">${list.length} contractor${list.length === 1 ? '' : 's'} found</p>
+            <div class="relative flex items-center gap-1.5 text-[11.5px] font-bold text-[#475569] cursor-pointer">
+                <i data-lucide="arrow-down-wide-narrow" class="w-3.5 h-3.5 text-[#64748B] shrink-0 pointer-events-none"></i>
+                <select data-action="sort-contractors" class="bg-transparent text-[11.5px] font-bold text-[#334155] border-0 p-0 pr-4 outline-none cursor-pointer" style="appearance:none;-webkit-appearance:none;">
+                    <option value="recently" ${sortBy === 'recently' ? 'selected' : ''}>Recently added</option>
+                    <option value="rating" ${sortBy === 'rating' ? 'selected' : ''}>Highest rated</option>
+                    <option value="name" ${sortBy === 'name' ? 'selected' : ''}>Name (A-Z)</option>
+                </select>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-[#94A3B8] pointer-events-none absolute right-0 shrink-0"></i>
+            </div>
         </div>
-        ${list.length ? `<div class="ctr-list ctr-list--v2">${list.map(contractorRow).join('')}</div>` : `
-        <div class="ctr-empty card">
-            <i data-lucide="hard-hat" class="w-10 h-10 text-[#CBD5E1]"></i>
-            <p class="ctr-empty-title">No contractors found</p>
-            <p class="ctr-empty-sub">${q || tradeF !== 'all' ? 'Try a different search or trade filter' : 'Invite your first contractor to get started'}</p>
+
+        ${list.length ? `<div class="ctr-list ctr-list--v2 pt-1">${list.map(contractorRow).join('')}</div>` : `
+        <div class="ctr-empty card p-8 text-center bg-white rounded-2xl border border-[#E2E8F0] mt-2">
+            <i data-lucide="hard-hat" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
+            <p class="ctr-empty-title font-bold text-[#0F172A]">No contractors found</p>
+            <p class="ctr-empty-sub text-[12px] text-[#64748B] mt-1">${q || tradeF !== 'all' ? 'Try a different search or trade filter' : 'Invite your first contractor to get started'}</p>
         </div>`}
-        <button type="button" data-go="invite-contractor" class="ctr-invite-banner card w-full text-left">
-            <span class="ctr-invite-banner-icon"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
-            <span class="ctr-invite-banner-copy min-w-0">
-                <span class="ctr-invite-banner-title">Invite your trusted contractor</span>
-                <span class="ctr-invite-banner-sub">They join Landlord HQ to receive jobs, chat, and send invoices.</span>
+
+        <button type="button" data-go="invite-contractor" class="ctr-invite-banner card w-full text-left p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+            <span class="ctr-invite-banner-copy min-w-0 flex-1">
+                <span class="block text-[13px] font-bold text-[#0F172A]">Invite your trusted contractor</span>
+                <span class="block text-[11px] text-[#64748B] truncate">They join Landlord HQ to receive jobs, chat, and send invoices.</span>
             </span>
-            <span class="ctr-invite-banner-link">Invite now <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
+            <span class="text-[12px] font-bold text-[#2563EB] shrink-0 flex items-center gap-0.5">Invite <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
         </button>
     </div>`;
 }
@@ -24977,6 +24990,12 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="filter-reminder-property"]').forEach(el => {
         el.onchange = (e) => { STATE.reminderPropertyFilter = e.target.value; render(); };
+    });
+    app.querySelectorAll('[data-action="filter-contractor-trade"]').forEach(el => {
+        el.onchange = (e) => { STATE.contractorTradeFilter = e.target.value; render(); };
+    });
+    app.querySelectorAll('[data-action="sort-contractors"]').forEach(el => {
+        el.onchange = (e) => { STATE.contractorSort = e.target.value; render(); };
     });
     app.querySelectorAll('[data-action="edit-reminder"]').forEach(el => {
         el.onclick = (e) => { e.stopPropagation(); go('edit-reminder', { reminderId: +el.dataset.rid }); };
