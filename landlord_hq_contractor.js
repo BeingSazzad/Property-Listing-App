@@ -3601,46 +3601,73 @@ function contractorHomeHeader(name, company) {
 function renderCtrScheduleHero(job) {
     if (!job) {
         return `
-        <div class="ctr-schedule-hero card">
-            <div class="ctr-schedule-hero-glow"></div>
-            <div class="ctr-schedule-hero-top">
-                <span class="ctr-schedule-hero-label"><i data-lucide="calendar" class="w-4 h-4"></i> Today's schedule</span>
+        <div class="card p-4 rounded-3xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold text-white inline-flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-[#4ADE80]"></span> On duty
+                </span>
             </div>
-            <p class="ctr-schedule-hero-time">No visits today</p>
-            <p class="ctr-schedule-hero-title">Check your jobs for upcoming work</p>
-            <button type="button" data-go="contractor-jobs" class="ctr-schedule-hero-btn">View jobs <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+            <p class="text-[24px] font-black text-white m-0 tracking-tight">No visits scheduled today</p>
+            <p class="text-[12px] text-white/90 m-0">Check your active jobs for upcoming assignments.</p>
+            <button type="button" data-go="contractor-jobs" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm mt-1 hover:bg-[#F8FAFC] transition-colors cursor-pointer border-none outline-none">
+                View jobs <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
         </div>`;
     }
     const timeMatch = (job.visitDate || '').match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
-    const timeLabel = timeMatch ? timeMatch[1] : (job.visitDate || 'Scheduled');
+    const timeLabel = timeMatch ? timeMatch[1] : (job.visitDate || '4:30 PM');
     const location = contractorJobLocation(job);
     return `
-    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-schedule-hero card w-full text-left">
-        <div class="ctr-schedule-hero-glow"></div>
-        <div class="ctr-schedule-hero-top">
-            <span class="ctr-schedule-hero-label"><i data-lucide="calendar" class="w-4 h-4"></i> Today's schedule</span>
-            <span class="ctr-schedule-duty"><span class="ctr-schedule-duty-dot"></span> On duty</span>
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card w-full p-4 rounded-3xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden group border-none outline-none cursor-pointer">
+        <div class="flex items-center justify-between">
+            <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
+            </span>
+            <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold text-white inline-flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse"></span> On duty
+            </span>
         </div>
-        <p class="ctr-schedule-hero-time">${timeLabel}</p>
-        <p class="ctr-schedule-hero-title">${job.issue}</p>
-        <p class="ctr-schedule-hero-loc"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${location} · ${job.property}</p>
-        <span class="ctr-schedule-hero-btn">View schedule <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+        <p class="text-[26px] font-black text-white m-0 tracking-tight leading-none pt-0.5">${timeLabel}</p>
+        <p class="text-[16px] font-black text-white m-0 truncate leading-snug">${job.issue}</p>
+        <p class="text-[12px] font-medium text-white/90 m-0 truncate flex items-center gap-1">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 shrink-0 text-white"></i> ${location}
+        </p>
+        <div class="pt-1">
+            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm group-hover:bg-[#F8FAFC] transition-colors">
+                View schedule <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </span>
+        </div>
     </button>`;
 }
 
 function renderCtrOverviewCard(icon, label, value, sub) {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const badgeStyles = {
+        'briefcase': 'bg-[#EFF6FF] text-[#2563EB]',
+        'wrench': 'bg-[#EFF6FF] text-[#2563EB]',
+        'check-circle': 'bg-[#ECFDF5] text-[#059669]',
+        'clock': 'bg-[#FFFBEB] text-[#D97706]',
+    }[icon] || 'bg-[#EFF6FF] text-[#2563EB]';
+
     return `
-    <button type="button" data-go="contractor-jobs" class="card p-2.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] transition-all flex flex-col text-left cursor-pointer group">
-        <div class="flex items-center justify-between gap-2">
-            <span class="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:bg-[#2563EB] group-hover:text-white transition-colors">
-                <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+    <button type="button" data-go="contractor-jobs" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] transition-all text-left flex flex-col justify-between h-[92px] group cursor-pointer relative">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-full ${badgeStyles} flex items-center justify-center shrink-0">
+                    <i data-lucide="${icon}" class="w-4 h-4"></i>
+                </span>
+                <span class="text-[20px] font-black text-[#0F172A] tracking-tight leading-none">${value}</span>
+            </div>
+            <span class="w-6 h-6 rounded-full bg-[#F1F5F9] text-[#64748B] flex items-center justify-center group-hover:bg-[#2563EB] group-hover:text-white transition-colors shrink-0">
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             </span>
-            <span class="text-[20px] font-black text-[#0F172A] tracking-tight leading-none">${value}</span>
         </div>
-        <div class="mt-2 min-w-0">
-            <p class="text-[12.5px] font-extrabold text-[#0F172A] m-0 leading-snug truncate group-hover:text-[#2563EB] transition-colors">${esc(label)}</p>
-            <p class="text-[10.5px] font-semibold text-[#64748B] m-0 mt-0.5 truncate">${esc(sub)}</p>
+        <div class="min-w-0 pt-1">
+            <p class="text-[12px] font-extrabold text-[#0F172A] m-0 leading-snug truncate group-hover:text-[#2563EB] transition-colors">${esc(label)}</p>
+            <p class="text-[10px] font-semibold text-[#64748B] m-0 mt-0.5 truncate">${esc(sub)}</p>
         </div>
     </button>`;
 }
@@ -3650,14 +3677,21 @@ function renderCtrHomeJobRow(job) {
     const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
     const location = contractorJobLocation(job);
     return `
-    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-home-job-row card w-full text-left">
-        <img src="${thumb}" alt="" class="ctr-home-job-thumb">
-        <div class="ctr-home-job-body">
-            <p class="ctr-home-job-title">${job.issue}</p>
-            <p class="ctr-home-job-loc">${location}</p>
-            <span class="ctr-home-job-badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left hover:border-[#2563EB] transition-all cursor-pointer group w-full">
+        <div class="flex items-center gap-3 min-w-0">
+            <img src="${thumb}" alt="" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#E2E8F0]">
+            <div class="min-w-0">
+                <p class="text-[13.5px] font-extrabold text-[#0F172A] m-0 truncate group-hover:text-[#2563EB] transition-colors">${job.issue}</p>
+                <p class="text-[11.5px] font-semibold text-[#64748B] m-0 mt-0.5 truncate flex items-center gap-1">
+                    <i data-lucide="map-pin" class="w-3 h-3 text-[#94A3B8] shrink-0"></i> ${location}
+                </p>
+                <p class="text-[10.5px] font-medium text-[#94A3B8] m-0 mt-0.5">${job.visitDate || 'Today · 4:30 PM'}</p>
+            </div>
         </div>
-        <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+        <div class="flex items-center gap-2 shrink-0">
+            <span class="px-2.5 py-1 rounded-full text-[10.5px] font-extrabold tracking-wide" style="background:${st.bg};color:${st.color}">${st.label}</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] transition-colors"></i>
+        </div>
     </button>`;
 }
 
@@ -3669,71 +3703,48 @@ function screenContractorDashboard() {
         .slice(0, 3);
     const newAssigned = CONTRACTOR_JOBS.filter(j => j.status === 'assigned').length;
     return `${contractorHomeHeader('Mike Thompson', 'Plumber Pro Ltd')}
-    <div class="screen-content screen-enter ctr-home-page">
+    <div class="screen-content screen-enter ctr-home-page space-y-4 text-left pb-16">
         ${renderCtrScheduleHero(nextVisit)}
-        <div class="dash-section-head">
-            <div>
-                <h3 class="screen-section-title">Work overview</h3>
-                <p class="dash-section-sub">Snapshot for this week</p>
-            </div>
-            <span class="ctr-home-week-pill">This week</span>
-        </div>
-        <div class="ctr-overview-grid">
-            ${renderCtrOverviewCard('briefcase', 'Assigned jobs', stats.assigned, newAssigned ? `${newAssigned} new` : 'Up to date')}
-            ${renderCtrOverviewCard('wrench', 'In progress', stats.inProgress, stats.inProgress ? 'Active now' : 'None active')}
-            ${renderCtrOverviewCard('check-circle', 'Completed', stats.completed, 'This month')}
-            ${renderCtrOverviewCard('clock', 'Pending review', stats.pendingReview, stats.pendingReview ? 'Needs action' : 'All clear')}
-        </div>
-        <div class="dash-section-head">
-            <div>
-                <h3 class="screen-section-title">Recent jobs</h3>
-                <p class="dash-section-sub">${recent.length ? `${recent.length} active` : 'No recent activity'}</p>
-            </div>
-            <button type="button" data-go="contractor-jobs" class="dash-view-all">View all</button>
-        </div>
-        <div class="ctr-home-jobs-list">
-            ${recent.length ? recent.map(j => renderCtrHomeJobRow(j)).join('') : `
-            <div class="empty-state card">
-                <i data-lucide="briefcase" class="empty-state-icon"></i>
-                <p class="empty-state-title">No jobs yet</p>
-                <p class="empty-state-desc">New assignments from landlords appear here.</p>
-            </div>`}
-        </div>
-        <div class="dash-section-head">
-            <div>
-                <h3 class="screen-section-title">Tools &amp; quick actions</h3>
-                <p class="dash-section-sub">Jobs, schedule &amp; earnings</p>
-            </div>
-        </div>
-        <div class="grid grid-cols-4 gap-2.5">
-            ${[
-                ['clipboard-list', 'My jobs', 'contractor-jobs'],
-                ['calendar', 'Schedule', 'contractor-schedule-hub'],
-                ['banknote', 'Earnings', 'contractor-earnings'],
-                ['message-square', 'Messages', 'messages'],
-            ].map(([ic, label, go]) => `
-            <button type="button" data-go="${go}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
-                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
-                    <i data-lucide="${ic}" class="w-5 h-5"></i>
+        
+        <!-- Work Overview -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-[15px] font-black text-[#0F172A] m-0">Work overview</h3>
+                    <p class="text-[11.5px] font-medium text-[#64748B] m-0">Snapshot for this week</p>
                 </div>
-                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">${label}</span>
-            </button>`).join('')}
-        </div>
-        <div class="dash-section-head">
-            <div>
-                <h3 class="screen-section-title">Announcements</h3>
-                <p class="dash-section-sub">Platform updates &amp; training</p>
+                <span class="px-2.5 py-1 rounded-xl bg-[#F1F5F9] text-[#475569] text-[11.5px] font-bold border border-[#E2E8F0] flex items-center gap-1 cursor-pointer">
+                    This week <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#64748B]"></i>
+                </span>
             </div>
-            <button type="button" data-go="contractor-notifications" class="dash-view-all">View all</button>
+            <div class="grid grid-cols-2 gap-2.5">
+                ${renderCtrOverviewCard('briefcase', 'Assigned jobs', stats.assigned, newAssigned ? `${newAssigned} new` : 'Up to date')}
+                ${renderCtrOverviewCard('wrench', 'In progress', stats.inProgress, stats.inProgress ? 'Active now' : 'None active')}
+                ${renderCtrOverviewCard('check-circle', 'Completed', stats.completed, 'This month')}
+                ${renderCtrOverviewCard('clock', 'Pending review', stats.pendingReview, stats.pendingReview ? 'Needs action' : 'All clear')}
+            </div>
         </div>
-        <button type="button" data-go="contractor-notifications" class="ctr-announce-card card w-full text-left">
-            <span class="ctr-announce-icon"><i data-lucide="megaphone" class="w-5 h-5"></i></span>
-            <span class="ctr-announce-body">
-                <span class="ctr-announce-title">Gas safety refresher — 25 May at 9:00 AM</span>
-                <span class="ctr-announce-desc">Required for all plumbing &amp; heating contractors on the platform.</span>
-            </span>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#94A3B8] shrink-0"></i>
-        </button>
+
+        <!-- Recent Jobs -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-[15px] font-black text-[#0F172A] m-0">Recent jobs</h3>
+                    <p class="text-[11.5px] font-medium text-[#64748B] m-0">${recent.length ? `${recent.length} active` : 'No recent activity'}</p>
+                </div>
+                <button type="button" data-go="contractor-jobs" class="text-[12.5px] font-bold text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none p-0">
+                    View all <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+            <div class="space-y-2">
+                ${recent.length ? recent.map(j => renderCtrHomeJobRow(j)).join('') : `
+                <div class="empty-state card">
+                    <i data-lucide="briefcase" class="empty-state-icon"></i>
+                    <p class="empty-state-title">No jobs yet</p>
+                    <p class="empty-state-desc">New assignments from landlords appear here.</p>
+                </div>`}
+            </div>
+        </div>
     </div>`;
 }
 
