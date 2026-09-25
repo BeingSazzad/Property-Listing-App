@@ -17539,47 +17539,54 @@ function renderMaintInboxCard(item, opts = {}) {
     const tenantReport = isTenantMaintReport(item);
     const job = getContractorJobForMaint(item.id);
     const assigned = maintHasAssignedContractor(item, job);
+    const contractorName = getMaintContractorName(item, job);
+    const assigneeLabel = contractorName ? contractorName : (item.status === 'open' ? 'Landlord Reviewing' : 'Assigned');
+    
     const needsContractor = (item.status === 'open' || item.status === 'progress') && !assigned;
     const showAssign = !opts.hideAssign && tenantReport && needsContractor && STATE.userRole !== 'tenant';
-    const propName = item.prop.split(',')[0];
-    let location;
-    if (opts.hideProperty) {
-        location = item.unit && item.unit !== '—' ? item.unit : '';
-    } else {
-        location = typeof formatMaintLocation === 'function'
-            ? formatMaintLocation(item, { propName })
-            : `${propName}${item.unit && item.unit !== '—' ? ` · ${item.unit}` : ''}`;
-    }
     const when = item.reportedAt || item.time || '—';
-    const thumb = maintCardThumbHtml(item, 'maint-inbox-card-photo');
+    const photos = getMaintReportPhotos(item);
+    const photoCount = photos.length;
+    const hasVideo = item.videoUrl || (item.media && item.media.some(m => m.type === 'video')) || item.hasVideo;
+
+    const thumb = photos.length
+        ? `<div class="relative shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-[#F1F5F9] border border-[#E2E8F0]">
+            <img src="${photos[0]}" alt="" class="w-full h-full object-cover">
+            ${hasVideo ? `<span class="absolute inset-0 bg-black/40 flex items-center justify-center text-white"><i data-lucide="play" class="w-4 h-4 fill-white"></i></span>` : ''}
+           </div>`
+        : maintCardThumbHtml(item, 'w-14 h-14 rounded-2xl object-cover shrink-0');
+
     const actionHtml = showAssign
-        ? `<button type="button" data-action="quick-assign-contractor" data-mid="${item.id}" class="maint-inbox-card-assign">Assign</button>`
+        ? `<button type="button" data-action="quick-assign-contractor" data-mid="${item.id}" class="btn-primary py-1.5 px-3 text-[11px] font-bold rounded-xl shrink-0">Assign</button>`
         : '';
+
     return `
-    <div class="maint-inbox-card card${showAssign ? ' maint-inbox-card--assign' : ''}">
-        <div class="maint-inbox-card-inner">
-            <div class="maint-inbox-card-layout">
+    <div class="card p-3.5 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm mb-3 text-left transition-all hover:border-[#BFDBFE]">
+        <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="w-full text-left cursor-pointer group">
+            <div class="flex items-start gap-3">
                 ${thumb}
-                <div class="maint-inbox-card-stack min-w-0">
-                    <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="maint-inbox-card-main w-full text-left">
-                        <div class="maint-inbox-card-body min-w-0">
-                            <div class="maint-inbox-card-head">
-                                <p class="maint-inbox-card-title">${escapeHtml(item.issue)}</p>
-                                <span class="maint-inbox-card-time">${escapeHtml(when)}</span>
-                            </div>
-                            <p class="maint-inbox-card-loc">${escapeHtml(location)}</p>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                        <h4 class="text-[14.5px] font-extrabold text-[#0F172A] tracking-tight group-hover:text-[#2563EB] transition-colors truncate m-0">${escapeHtml(item.issue)}</h4>
+                        <div class="flex items-center gap-1 shrink-0 text-[#94A3B8]">
+                            <span class="text-[11.5px] font-medium">${escapeHtml(when)}</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
                         </div>
-                    </button>
-                    <div class="maint-inbox-card-footer">
-                        <div class="maint-inbox-card-badges">
-                            <span class="maint-work-status-pill ${workStatus.cls}">${workStatus.label}</span>
-                            <span class="maint-priority-pill ${priority.cls}">${priority.label}</span>
-                        </div>
-                        ${actionHtml}
+                    </div>
+                    <p class="text-[12px] font-semibold text-[#64748B] m-0 mt-0.5 flex items-center gap-1">
+                        <i data-lucide="hard-hat" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                        <span>${escapeHtml(assigneeLabel)}</span>
+                    </p>
+                    <div class="flex items-center gap-1.5 flex-wrap mt-2.5">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${workStatus.cls}">${workStatus.label}</span>
+                        ${priority ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${priority.cls}">${priority.label}</span>` : ''}
+                        ${hasVideo ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]"><i data-lucide="video" class="w-3 h-3"></i> Video</span>` : ''}
+                        ${photoCount ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]">${photoCount} photo${photoCount > 1 ? 's' : ''}</span>` : ''}
                     </div>
                 </div>
             </div>
-        </div>
+        </button>
+        ${actionHtml ? `<div class="mt-2.5 pt-2.5 border-t border-[#F1F5F9] text-right">${actionHtml}</div>` : ''}
     </div>`;
 }
 
