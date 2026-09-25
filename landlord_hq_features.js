@@ -6076,12 +6076,21 @@ function removeFlatFromProperty(propertyId, flatName) {
         return false;
     }
     meta.units = (meta.units || units).filter(x => unitName(x) !== flatName);
+    meta.unitCount = meta.units.length;
+
     if (meta.unitPhotoGalleries?.[flatName]) delete meta.unitPhotoGalleries[flatName];
     if (meta.unitPhotos?.[flatName]) delete meta.unitPhotos[flatName];
     if (meta.unitUtilities?.[flatName]) delete meta.unitUtilities[flatName];
     if (meta.unitKeys?.[flatName]) delete meta.unitKeys[flatName];
+
     const building = getPropertyBuilding(propertyId);
     building.flatCount = meta.units.length;
+    building.unitsCount = meta.units.length;
+
+    if (STATE.selectedUnit === flatName) {
+        STATE.selectedUnit = meta.units[0] ? unitName(meta.units[0]) : '';
+    }
+
     syncPropertyStatus(propertyId);
     return true;
 }
