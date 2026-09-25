@@ -15217,6 +15217,8 @@ function renderSharedJobInvoiceCard(job, role, item) {
         const awaiting = job.status === 'waiting_approval';
         const awaitingPay = job.status === 'approved';
         const canPay = (role === 'landlord' && paidBy === 'landlord') || (role === 'tenant' && paidBy === 'tenant');
+        const extraItems = job.extraWork || unpaid?.extraWork || [];
+        const invNotes = job.invoice?.notes || unpaid?.notes || '';
         return `
         <div class="card p-4">
             <p class="ctr-section-label">Invoice</p>
@@ -15232,6 +15234,19 @@ function renderSharedJobInvoiceCard(job, role, item) {
                     ? '<span class="badge shrink-0" style="background:#EFF6FF;color:#2563EB">Pay now</span>'
                     : '<i data-lucide="check-circle" class="w-6 h-6 text-[#16A34A] shrink-0"></i>'}
             </div>
+            ${extraItems.length ? `
+            <div class="mt-2.5 pt-2.5 border-t border-[#F1F5F9] space-y-1.5">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#64748B] block">Extra Work Included</span>
+                ${extraItems.map(w => `
+                <div class="flex items-center justify-between text-[12.5px]">
+                    <span class="font-medium text-[#334155] truncate">${typeof escapeHtml === 'function' ? escapeHtml(w.desc) : w.desc}</span>
+                    <span class="font-bold text-[#0F172A] shrink-0">+£${parseFloat(String(w.amount).replace(/[^\d.]/g, '') || 0).toFixed(2)}</span>
+                </div>`).join('')}
+            </div>` : ''}
+            ${invNotes ? `
+            <p class="text-[12px] text-[#64748B] mt-2.5 bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0]">
+                <strong class="text-[#0F172A]">Contractor note:</strong> ${typeof escapeHtml === 'function' ? escapeHtml(invNotes) : invNotes}
+            </p>` : ''}
             ${role === 'landlord' && awaiting
                 ? `<p class="text-[12px] text-[#64748B] mt-2">Review the invoice below, then approve from the action at the bottom of the screen.</p>`
                 : ''}

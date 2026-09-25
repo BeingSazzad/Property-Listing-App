@@ -130,22 +130,28 @@ function syncContractorJobToMaintenance(job) {
         item.contractor = contractorName;
     }
     if (job.status === 'accepted') pushOnce('Contractor accepted', contractorName);
-    if (job.status === 'scheduled' && job.visitDate && job.visitDate !== 'Not scheduled') {
+    if ((job.status === 'scheduled' || job.status === 'accepted') && job.visitDate && job.visitDate !== 'Not scheduled') {
+        item.visitDate = job.visitDate;
+        item.scheduledTime = job.visitDate;
         pushOnce('Visit scheduled', job.visitDate);
     }
     if (job.status === 'in_progress') pushOnce('Work started', job.visitDate || 'On site');
     if (job.status === 'waiting_approval') {
         item.status = 'progress';
+        item.invoice = job.invoice;
+        item.extraWork = job.extraWork || [];
         pushOnce('Invoice submitted', job.invoice?.amount ? `${job.invoice.amount} · awaiting review` : 'Awaiting landlord review');
     }
     if (job.status === 'approved') {
         item.status = 'progress';
         item.paymentPending = true;
+        item.invoice = job.invoice;
         pushOnce('Work approved', job.invoice?.amount ? `Awaiting payment · ${job.invoice.amount}` : 'Awaiting payment');
     }
     if (job.status === 'paid') {
         item.status = 'done';
         item.paymentPending = false;
+        item.invoice = job.invoice;
         pushOnce('Paid via Stripe', job.invoice?.amount ? job.invoice.amount : 'Payment complete');
     }
     if (job.status === 'completed') {
@@ -155,13 +161,22 @@ function syncContractorJobToMaintenance(job) {
 
 function submitContractorInvoice(job) {
     if (!job.invoice || typeof AppStore === 'undefined') return;
-    const exists = AppStore.contractorInvoices?.find(i => i.maintId === job.maintId && i.job === job.issue);
-    if (exists) return;
+    if (!AppStore.contractorInvoices) AppStore.contractorInvoices = [];
+    const exists = AppStore.contractorInvoices.find(i => i.maintId === job.maintId && i.job === job.issue);
+    if (exists) {
+        exists.amount = job.invoice.amount;
+        exists.extraWork = job.extraWork || [];
+        exists.notes = job.invoice.notes || '';
+        exists.status = 'Unpaid';
+        return;
+    }
     AppStore.contractorInvoices.push({
         id: AppStore.nextId(AppStore.contractorInvoices),
         contractor: job.contractorName || 'Plumber Pro',
         job: job.issue,
         amount: job.invoice.amount,
+        extraWork: job.extraWork || [],
+        notes: job.invoice.notes || '',
         status: 'Unpaid',
         propertyId: job.propertyId,
         maintId: job.maintId,
