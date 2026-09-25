@@ -19956,7 +19956,7 @@ function screenFlatKeys() {
                 ${filteredKeys.map((k, i) => {
             const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
             return `
-                    <div data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
+                    <div data-action="view-key-modal" data-key-idx="${i}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                                 <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
@@ -19987,12 +19987,73 @@ function screenFlatKeys() {
         </div>`;
     }
 
+    let keyViewModalHtml = '';
+    if (typeof STATE.viewKeyModalIdx === 'number' && STATE.viewKeyModalIdx >= 0) {
+        const rawKeys = activeUnit !== 'all' ? getUnitKeys(propertyId, activeUnit) : getPropertyKeyStats(propertyId).allKeys;
+        const selectedKey = rawKeys[STATE.viewKeyModalIdx];
+        if (selectedKey) {
+            const custody = resolveKeyCustody(selectedKey, propertyId, activeUnit);
+            const isFob = /fob|electronic|card|rfid/i.test(selectedKey.label || '');
+            keyViewModalHtml = `
+            <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
+                <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xl w-full max-w-md space-y-4 text-left animate-slide-up" onclick="event.stopPropagation()">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-11 h-11 rounded-2xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0">
+                                <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-5.5 h-5.5"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-[16px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(selectedKey.label || 'Key Set')}</h3>
+                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${escapeHtml(activeUnit === 'all' ? 'Key Details' : displayUnit)}</p>
+                            </div>
+                        </div>
+                        <button type="button" data-action="close-key-view-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center cursor-pointer shrink-0">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-2 pt-2 border-t border-[#F1F5F9]">
+                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                            <span class="text-[12px] font-bold text-[#64748B]">Key Type / Tag</span>
+                            <span class="text-[12px] font-bold text-[#0F172A] truncate">${escapeHtml(selectedKey.label || 'Standard Key')}</span>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                            <span class="text-[12px] font-bold text-[#64748B]">Quantity</span>
+                            <span class="text-[12px] font-bold text-[#0F172A]">${escapeHtml(String(selectedKey.qty || '1'))} Sets</span>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                            <span class="text-[12px] font-bold text-[#64748B]">Location / Access</span>
+                            <span class="text-[12px] font-bold text-[#0F172A] truncate">${escapeHtml(selectedKey.location || 'Flat entrance')}</span>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                            <span class="text-[12px] font-bold text-[#64748B]">Current Custody</span>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${custody.badgeClass}">
+                                ${escapeHtml(custody.holderDisplay)} (${custody.isTenant ? 'With Tenant' : 'In Safe'})
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex items-center gap-2">
+                        <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="btn-primary flex-1 py-3 text-[14px] flex items-center justify-center gap-2 cursor-pointer">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            <span>Edit Key Register</span>
+                        </button>
+                        <button type="button" data-action="close-key-view-modal" class="btn-secondary py-3 px-4 text-[14px] cursor-pointer">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }
+
     return `${topBar('Keys & Access', { back: true, sub: `${p?.name || ''} · ${displayUnit}`, rightBtn })}
     <div class="screen-content screen-content-sm prop-hub-page space-y-3 text-left pb-8">
         ${scopeCard}
         ${kpiHeader}
         ${missingBanner}
         ${contentBody}
+        ${keyViewModalHtml}
     </div>`;
 }
 
@@ -24941,6 +25002,18 @@ function bindFeatureEvents() {
             render();
         };
     });
+    app.querySelectorAll('[data-action="view-key-modal"]').forEach(el => {
+        el.onclick = () => {
+            STATE.viewKeyModalIdx = +el.dataset.keyIdx;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="close-key-view-modal"]').forEach(el => {
+        el.onclick = () => {
+            STATE.viewKeyModalIdx = null;
+            render();
+        };
+    });
     app.querySelectorAll('[data-action="filter-keys-unit"]').forEach(el => {
         el.onclick = () => {
             STATE.selectedUnit = el.dataset.unit || 'all';
@@ -25250,6 +25323,7 @@ function goFeature(screen, opts = {}) {
     } else {
         STATE.flatKeysEdit = null;
     }
+    if (screen !== 'flat-keys') STATE.viewKeyModalIdx = null;
     if (screen !== 'property-floor-plans') STATE.floorPlanMenuIdx = null;
     if (screen === 'property-detail' && opts.tab !== 'inventory') {
         STATE.editingInventoryLayout = false;
