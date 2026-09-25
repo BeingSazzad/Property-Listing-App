@@ -3775,9 +3775,14 @@ function screenContractorJobs() {
                 <p class="dash-section-sub">${counts.all} total · filter by status</p>
             </div>
         </div>
-        <div class="ctr-v2-filter-row">
-            ${tabs.map(([k, l, n]) => `
-            <button type="button" data-contractor-filter="${k}" class="ctr-v2-filter-pill ${f === k ? 'is-active' : ''}">${l} (${n})</button>`).join('')}
+        <div class="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] text-center my-3">
+            ${tabs.map(([k, l, n]) => {
+                const isActive = f === k;
+                return `
+                <button type="button" data-contractor-filter="${k}" class="py-2 px-1 rounded-xl text-[11.5px] font-extrabold transition-all cursor-pointer truncate ${isActive ? 'bg-[#2563EB] text-white shadow-2xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
+                    ${l} <span class="text-[10.5px] opacity-80">(${n})</span>
+                </button>`;
+            }).join('')}
         </div>
         <div class="search-bar ctr-jobs-search">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
