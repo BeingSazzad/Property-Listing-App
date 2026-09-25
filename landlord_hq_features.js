@@ -14301,11 +14301,30 @@ function renderEditPropertyUnitsSection(propertyId) {
 
 function formatFloorLabel(floor) {
     const n = +floor;
+    if (n === -1) return 'Basement / Lower Ground';
     if (n === 0) return 'Ground Floor';
     if (n === 1) return '1st Floor';
     if (n === 2) return '2nd Floor';
     if (n === 3) return '3rd Floor';
     return `${n}th Floor`;
+}
+
+function renderFloorSelectOptions(propertyId, currentFloor) {
+    const b = getPropertyBuilding(propertyId);
+    const buildingFloors = Math.max(1, b?.floors || 2);
+    const maxFloors = Math.max(buildingFloors, 8);
+    const options = [
+        { value: '', label: 'Select floor' },
+        { value: '-1', label: 'Basement / Lower Ground' },
+        { value: '0', label: 'Ground Floor (Floor 0)' },
+    ];
+    for (let i = 1; i <= maxFloors; i++) {
+        options.push({ value: String(i), label: formatFloorLabel(i) });
+    }
+    const currStr = currentFloor != null && currentFloor !== '' ? String(currentFloor) : '';
+    return options.map(o => `
+        <option value="${o.value}" ${currStr === o.value ? 'selected' : ''}>${o.label}</option>
+    `).join('');
 }
 
 function inferFloorFromFlatName(name) {
@@ -19372,7 +19391,7 @@ function screenAddFlat() {
                 <div class="form-field"><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${draft.sqft}" placeholder="750"></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${draft.floor !== '' && draft.floor != null ? draft.floor : ''}" placeholder="0 = ground" min="0"></div>
+                <div class="form-field"><label class="form-label">Floor</label><select data-field="flatFloor" class="form-input form-select">${renderFloorSelectOptions(STATE.propertyId, draft.floor)}</select></div>
                 <div class="form-field"><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(draft.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>
             </div>
             ${flatUnitExtraFieldsHtml(draft, STATE.propertyId)}
@@ -19473,7 +19492,7 @@ function screenEditFlat() {
                 <div class="form-field"><label class="form-label">Sq ft</label><input data-field="flatSqft" type="text" class="form-input" value="${u.sqft || ''}" placeholder="750"></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <div class="form-field"><label class="form-label">Floor number</label><input data-field="flatFloor" type="number" class="form-input" value="${u.floor != null && u.floor !== '' ? u.floor : ''}" placeholder="0 = ground" min="0"></div>
+                <div class="form-field"><label class="form-label">Floor</label><select data-field="flatFloor" class="form-input form-select">${renderFloorSelectOptions(STATE.propertyId, u.floor)}</select></div>
                 <div class="form-field"><label class="form-label">Floor note</label><input data-field="floorNote" type="text" class="form-input" value="${(u.floorNote || '').replace(/"/g, '&quot;')}" placeholder="e.g. Rear wing"></div>
             </div>
             ${flatUnitExtraFieldsHtml(u, STATE.propertyId)}
@@ -21669,7 +21688,10 @@ function screenAddPropertyEnhanced() {
         <p class="screen-section-title">Property details</p>
         ${labeledInput('Property name', 'name', '', 'text', 'e.g. 12 Park Lane', true)}
         ${labeledInput('Street address', 'address', '', 'text', 'Street and town', true)}
-        ${labeledInput('Postcode', 'postcode', '', 'text', 'e.g. SW1A 1AA')}
+        <div class="grid grid-cols-2 gap-3">
+            ${labeledInput('Postcode', 'postcode', '', 'text', 'e.g. SW1A 1AA')}
+            ${labeledInput('Floors in building', 'floorsCount', '2', 'number', 'e.g. 3')}
+        </div>
         ${formSelectField('Property type', 'propertyType', PROPERTY_TYPE_OPTIONS, '', { blankLabel: 'Select type (optional)' })}
         <div class="form-group mb-3">
             <label class="flex items-center gap-2.5 cursor-pointer py-1 select-none">
@@ -21712,6 +21734,7 @@ function saveAddProperty() {
     const postcode = (fieldVal('postcode') || '').trim();
     const address = (fieldVal('address') || '').trim();
     const isHmo = !!document.querySelector('[data-field="isHmo"]')?.checked;
+    const floorsCount = Math.max(1, +fieldVal('floorsCount') || 2);
     PROPERTIES.push({
         id,
         name: fieldVal('name').trim(),
@@ -21726,7 +21749,7 @@ function saveAddProperty() {
     const meta = AppStore.meta(id);
     meta.isHmo = isHmo;
     meta.units = [];
-    meta.building = { flatCount: 0, floors: 0, flatsPerFloor: 0, useFloors: false };
+    meta.building = { flatCount: 0, floors: floorsCount, flatsPerFloor: 0, useFloors: floorsCount > 1 };
     const photos = [...(STATE.pendingPropertyPhotos || [])];
     const coverIdx = STATE.pendingPropertyCover ?? 0;
     if (photos.length > 1 && coverIdx > 0 && coverIdx < photos.length) {
