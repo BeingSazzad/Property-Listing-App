@@ -18488,10 +18488,11 @@ function screenReminderDetail() {
     recalcReminderMeta(r);
     const p = PROPERTIES[r.propertyId];
     const rt = reminderTypeMeta(r.type);
+    const daysLeft = r.daysLeft ?? daysUntil(r.due) ?? 999;
+    const isWithinMonth = daysLeft <= 30;
     const badge = reminderStatusBadge(r);
     const action = reminderPrimaryAction(r);
     const dueLabel = formatReminderDue(r.due);
-    const source = reminderSourceLabel(r);
     const recordsView = ['gas', 'electrical', 'epc', 'smoke', 'heat', 'co2', 'insurance', 'mortgage'].includes(r.type) ? 'compliance' : r.type === 'inspection' ? 'inspections' : 'compliance';
     const row = (icon, label, attrs, danger = false) => `
             <button type="button" ${attrs} class="flat-records-nav-row w-full text-left">
@@ -18500,34 +18501,38 @@ function screenReminderDetail() {
                 <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
             </button>`;
     return `${topBar('Smart Reminder', { back: true, sub: p?.name || '' })}
-    <div class="screen-content screen-enter stack-sm">
-        <div class="card reminder-detail-hero urgency-${r.urgency}">
-            <div class="reminder-detail-head">
-                <div class="dash-reminder-icon" style="background:${rt[3]};color:${rt[4]}"><i data-lucide="${rt[2]}" class="w-5 h-5"></i></div>
-                <div class="reminder-detail-copy">
-                    <p class="reminder-detail-type">${esc(rt[1])}</p>
-                    <h2 class="reminder-detail-title">${esc(r.title)}</h2>
+    <div class="screen-content screen-enter space-y-3">
+        <!-- Minimal Hero Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs text-left space-y-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background:${rt[3]};color:${rt[4]}">
+                        <i data-lucide="${rt[2]}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="text-[16px] font-bold text-[#0F172A] m-0 truncate">${esc(r.title)}</h2>
+                        <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(p?.name || 'Property')}</p>
+                    </div>
                 </div>
-                <span class="badge shrink-0" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>
+                ${isWithinMonth ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-2xs" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>` : ''}
             </div>
-            <div class="reminder-detail-meta">
-                <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Due</span>
-                    <span class="reminder-detail-meta-value">${esc(dueLabel)}</span>
+
+            <div class="pt-3 border-t border-[#F1F5F9] grid grid-cols-2 gap-3 text-left">
+                <div>
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Due Date</span>
+                    <span class="text-[13px] font-bold text-[#0F172A] mt-0.5 block">${esc(dueLabel)}</span>
                 </div>
                 ${r.expiryDate ? `
-                <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Expiry</span>
-                    <span class="reminder-detail-meta-value">${esc(formatReminderDue(r.expiryDate))}</span>
+                <div>
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Expiry Date</span>
+                    <span class="text-[13px] font-bold text-[#0F172A] mt-0.5 block">${esc(formatReminderDue(r.expiryDate))}</span>
                 </div>` : ''}
-                <div class="reminder-detail-meta-item">
-                    <span class="reminder-detail-meta-label">Source</span>
-                    <span class="reminder-detail-meta-value">${esc(source)}</span>
-                </div>
             </div>
         </div>
-        <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full">${esc(action.label)}</button>
-        <div class="card flat-records-nav-list">
+
+        <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full py-3.5 text-[14px] font-bold shadow-xs">${esc(action.label)}</button>
+
+        <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs overflow-hidden">
             ${row('calendar', 'Change due date', `data-go="edit-reminder" data-rid="${r.id}"`)}
             ${row('folder', 'Property records', `data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="${recordsView}"`)}
             ${row('trash-2', r.auto ? 'Remove from list' : 'Delete', `data-action="delete-reminder" data-rid="${r.id}"`, true)}
