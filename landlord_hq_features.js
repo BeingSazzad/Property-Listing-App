@@ -4028,7 +4028,7 @@ function getActiveInventoryUnit(propertyId) {
 function getInventoryRoomCatalog(propertyId) {
     const activeUnit = getActiveInventoryUnit(propertyId);
     let layout = getPropertyInventoryLayout(propertyId);
-    
+
     // If a specific unit is selected in a multi-unit property
     if (activeUnit && activeUnit !== 'communal') {
         const u = typeof getUnitByName === 'function' ? getUnitByName(propertyId, activeUnit) : null;
@@ -4049,7 +4049,7 @@ function getInventoryRoomCatalog(propertyId) {
     const reception = Math.max(0, +layout.reception || 0);
     const bedrooms = Math.max(0, +layout.bedrooms || 0);
     const bathrooms = Math.max(0, +layout.bathrooms || 0);
-    
+
     for (let i = 0; i < kitchens; i++) {
         catalog.push({
             slug: `kitchen-${i}`,
@@ -4093,10 +4093,10 @@ function getInventoryRoomCatalog(propertyId) {
     // Custom rooms added by user (scoped to active unit if multi-unit)
     const meta = AppStore.meta(propertyId);
     const unitKey = activeUnit || 'global';
-    const custom = (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey]) 
-        ? meta.customRoomsByUnit[unitKey] 
+    const custom = (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey])
+        ? meta.customRoomsByUnit[unitKey]
         : (meta.customRooms || []);
-        
+
     custom.forEach((r, idx) => {
         catalog.push({
             slug: r.slug || `custom-${idx}`,
@@ -4348,12 +4348,12 @@ function renderPropertyInventoryTab(propertyId) {
             <div class="relative">
                 <select data-action="select-inventory-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
                     ${units.map(u => {
-                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                        const isSel = activeUnit === name;
-                        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
-                        const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.beds ? ` · ${u.beds} bed` : (u.status === 'vacant' ? ' · Vacant' : ''));
-                        return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}</option>`;
-                    }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const isSel = activeUnit === name;
+        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
+        const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.beds ? ` · ${u.beds} bed` : (u.status === 'vacant' ? ' · Vacant' : ''));
+        return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}</option>`;
+    }).join('')}
                     <option value="communal" ${activeUnit === 'communal' ? 'selected' : ''}>🏢 Communal Areas &amp; Building Common Parts</option>
                 </select>
             </div>
@@ -9838,7 +9838,7 @@ function renderBuildingCertTiles(propertyId) {
     const allDocs = AppStore.docsForProperty(propertyId).filter(doc => !doc.unit);
     const folderCount = (folderId) => (typeof docsForFolder === 'function' ? docsForFolder(allDocs, folderId).length : 0);
     const otherCount = (typeof propertyFolderFileCount === 'function' ? propertyFolderFileCount(propertyId, 'custom') + propertyFolderFileCount(propertyId, 'fire') : 0);
-    
+
     const allDefs = [
         { folderId: 'gas', cid: 0, label: 'Gas Safety (CP12)', defaultSub: 'Annual safety inspection', icon: 'flame', iconColor: 'text-[#0284C7] bg-[#F0F9FF]' },
         { folderId: 'eicr', cid: 1, label: 'Electrical (EICR)', defaultSub: '5-year wiring check', icon: 'zap', iconColor: 'text-[#D97706] bg-[#FFFBEB]' },
@@ -9848,7 +9848,7 @@ function renderBuildingCertTiles(propertyId) {
         { folderId: 'licence', label: 'Property Licence', defaultSub: 'Council licensing registration', icon: 'badge-check', iconColor: 'text-[#475569] bg-[#F1F5F9]', folderOnly: true, optional: true },
         { folderId: 'custom', label: 'Building Documents', defaultSub: `${otherCount} files on record`, icon: 'files', iconColor: 'text-[#2563EB] bg-[#EFF6FF]', isOther: true },
     ];
-    
+
     return `
     <div class="space-y-2">
         <div class="flex items-center justify-between px-1">
@@ -9856,34 +9856,34 @@ function renderBuildingCertTiles(propertyId) {
         </div>
         <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
             ${allDefs.map(def => {
-                const row = def.cid != null ? rows[def.cid] : null;
-                const count = def.isOther ? otherCount : (def.folderOnly ? folderCount(def.folderId) : 0);
-                const st = def.isOther 
-                    ? { tone: 'neutral', label: count ? `${count} Files` : 'Empty' }
-                    : (row?.st || (def.folderOnly
-                        ? (count ? { tone: 'ok', label: `${count} on file` } : { tone: def.optional ? 'neutral' : 'bad', label: def.optional ? 'Optional' : 'Not set' })
-                        : { tone: 'bad', label: 'Not set' }));
-                
-                const sub = row?.displayExp 
-                    ? (st.tone === 'bad' ? `Expired on ${row.displayExp}` : `Valid until ${row.displayExp}`)
-                    : (def.isOther ? `${count} files on record` : (def.folderOnly && count ? `${count} document${count === 1 ? '' : 's'} protected` : def.defaultSub));
+        const row = def.cid != null ? rows[def.cid] : null;
+        const count = def.isOther ? otherCount : (def.folderOnly ? folderCount(def.folderId) : 0);
+        const st = def.isOther
+            ? { tone: 'neutral', label: count ? `${count} Files` : 'Empty' }
+            : (row?.st || (def.folderOnly
+                ? (count ? { tone: 'ok', label: `${count} on file` } : { tone: def.optional ? 'neutral' : 'bad', label: def.optional ? 'Optional' : 'Not set' })
+                : { tone: 'bad', label: 'Not set' }));
 
-                let badgeHtml = '';
-                if (st.tone === 'bad') {
-                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span>Expired</span>`;
-                } else if (st.tone === 'warn') {
-                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>${st.label}</span>`;
-                } else if (st.tone === 'ok') {
-                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Valid</span>`;
-                } else {
-                    badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] shrink-0">${def.optional ? 'Optional' : (def.isOther && count ? `${count} Files` : 'Active')}</span>`;
-                }
+        const sub = row?.displayExp
+            ? (st.tone === 'bad' ? `Expired on ${row.displayExp}` : `Valid until ${row.displayExp}`)
+            : (def.isOther ? `${count} files on record` : (def.folderOnly && count ? `${count} document${count === 1 ? '' : 's'} protected` : def.defaultSub));
 
-                const routeAction = def.isOther 
-                    ? `data-go="property-doc-vault" data-pid="${propertyId}"`
-                    : `data-go="property-doc-folder" data-folder="${def.folderId}" data-pid="${propertyId}"`;
+        let badgeHtml = '';
+        if (st.tone === 'bad') {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span>Expired</span>`;
+        } else if (st.tone === 'warn') {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>${st.label}</span>`;
+        } else if (st.tone === 'ok') {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Valid</span>`;
+        } else {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] shrink-0">${def.optional ? 'Optional' : (def.isOther && count ? `${count} Files` : 'Active')}</span>`;
+        }
 
-                return `
+        const routeAction = def.isOther
+            ? `data-go="property-doc-vault" data-pid="${propertyId}"`
+            : `data-go="property-doc-folder" data-folder="${def.folderId}" data-pid="${propertyId}"`;
+
+        return `
                 <button type="button" ${routeAction} class="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] transition-colors cursor-pointer group">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="w-10 h-10 rounded-xl ${def.iconColor || 'bg-[#F8FAFC] text-[#334155]'} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
@@ -9899,7 +9899,7 @@ function renderBuildingCertTiles(propertyId) {
                         <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                     </div>
                 </button>`;
-            }).join('')}
+    }).join('')}
         </div>
     </div>`;
 }
@@ -9995,7 +9995,7 @@ function screenPropertyCompliance() {
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
     const sub = p?.name?.split(',')[0] || '';
     const certIssues = propertyCertTileIssues(propertyId);
-    
+
     // Count total tracked vs valid
     const totalCount = 7;
     const validCount = Math.max(0, totalCount - certIssues.length);
@@ -10063,10 +10063,10 @@ function screenPropertyDocumentVault() {
         <!-- Direct Document List -->
         <div class="space-y-2.5">
             ${filteredDocs.length ? filteredDocs.map(doc => {
-                const style = getDocIconAndColor(doc);
-                const isShared = doc.shared;
-                const docText = `${doc.name || ''} ${doc.type || ''} ${doc.date || ''}`.toLowerCase();
-                return `
+        const style = getDocIconAndColor(doc);
+        const isShared = doc.shared;
+        const docText = `${doc.name || ''} ${doc.type || ''} ${doc.date || ''}`.toLowerCase();
+        return `
                 <div data-doc-row="true" data-doc-text="${escapeHtml(docText)}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3 hover:border-[#CBD5E1] transition-all group">
                     <button type="button" data-go="document-preview" data-doc="${doc.id}" class="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer">
                         <div class="w-10 h-10 rounded-xl ${style.color} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
@@ -10093,7 +10093,7 @@ function screenPropertyDocumentVault() {
                         </button>
                     </div>
                 </div>`;
-            }).join('') : `
+    }).join('') : `
             <div class="p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-center space-y-2">
                 <div class="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#2563EB] mx-auto flex items-center justify-center">
                     <i data-lucide="files" class="w-6 h-6"></i>
@@ -10957,12 +10957,12 @@ function screenPropertyAppliances() {
                 <select data-action="select-appliance-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
                     <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units (${allAppliances.length})</option>
                     ${units.map(u => {
-                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                        const count = allAppliances.filter(a => (a.unit || 'Flat 1') === name).length;
-                        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
-                        const sub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.beds ? ` · ${u.beds} bed` : '');
-                        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${sub}${count ? ` (${count})` : ''}</option>`;
-                    }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const count = allAppliances.filter(a => (a.unit || 'Flat 1') === name).length;
+        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
+        const sub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.beds ? ` · ${u.beds} bed` : '');
+        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${sub}${count ? ` (${count})` : ''}</option>`;
+    }).join('')}
                 </select>
             </div>
         </div>` : ''}
@@ -10973,8 +10973,8 @@ function screenPropertyAppliances() {
             </div>
             <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAppliances.map(a => {
-                    const photoSrc = a.photo || getDemoAppliancePhoto(a.name, a.id);
-                    return `
+        const photoSrc = a.photo || getDemoAppliancePhoto(a.name, a.id);
+        return `
                     <button type="button" data-action="open-appliance-item-modal" data-aid="${escapeHtml(a.id || a.name)}" class="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left cursor-pointer">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <img src="${photoSrc}" alt="" class="w-11 h-11 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
@@ -10993,7 +10993,7 @@ function screenPropertyAppliances() {
                             <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                         </div>
                     </button>`;
-                }).join('')}
+    }).join('')}
             </div>
         </div>
     </div>`;
@@ -11041,10 +11041,10 @@ function screenPropertyAlarms() {
                 <select data-action="select-alarm-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
                     <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Locations (${allAlarms.length})</option>
                     ${units.map(u => {
-                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                        const count = allAlarms.filter(a => (a.unit || 'Flat 1') === name).length;
-                        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${count ? ` · ${count}` : ''}</option>`;
-                    }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const count = allAlarms.filter(a => (a.unit || 'Flat 1') === name).length;
+        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)}${count ? ` · ${count}` : ''}</option>`;
+    }).join('')}
                     <option value="Communal" ${activeUnit === 'Communal' ? 'selected' : ''}>🏢 Communal Areas</option>
                 </select>
             </div>
@@ -11056,8 +11056,8 @@ function screenPropertyAlarms() {
             </div>
             <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9] overflow-hidden">
                 ${displayAlarms.map(al => {
-                    const photoSrc = al.photo || getDemoAlarmPhoto(al.name, al.id);
-                    return `
+        const photoSrc = al.photo || getDemoAlarmPhoto(al.name, al.id);
+        return `
                     <button type="button" data-action="open-alarm-item-modal" data-alid="${escapeHtml(al.id || al.name)}" class="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors group text-left cursor-pointer">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <img src="${photoSrc}" alt="" class="w-11 h-11 rounded-xl object-cover shrink-0 shadow-xs border border-slate-100 group-hover:scale-105 transition-transform">
@@ -11076,7 +11076,7 @@ function screenPropertyAlarms() {
                             <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
                         </div>
                     </button>`;
-                }).join('')}
+    }).join('')}
             </div>
         </div>
     </div>`;
@@ -13411,7 +13411,7 @@ function documentPreviewContext(doc) {
 
     const rent = doc?.rent || matchedTenancy?.rent || listItem?.rent || (t?.rent ? `£${t.rent}/mo` : '');
     const deposit = doc?.deposit || matchedTenancy?.deposit || (t?.deposit ? `£${t.deposit}` : '');
-    const term = doc?.term || (matchedTenancy?.start && matchedTenancy?.end 
+    const term = doc?.term || (matchedTenancy?.start && matchedTenancy?.end
         ? `${matchedTenancy.start} – ${matchedTenancy.end}`
         : (listItem?.lease || (t?.leaseStart && t?.leaseEnd ? `${t.leaseStart} – ${t.leaseEnd}` : '')));
 
@@ -13469,7 +13469,7 @@ function screenDocumentPreviewEnhanced() {
     const propName = ctx.property || (doc?.propertyId != null ? PROPERTIES[doc.propertyId]?.name : '') || 'Property';
     const unitPart = ctx.unit || doc?.unit || '';
     const subtitle = `${propName}${unitPart ? ` · ${unitPart}` : ''}${doc?.expiryDate ? ` · Expires ${doc.expiryDate}` : (doc?.date ? ` · ${doc.date}` : '')}`;
-    
+
     const hasImage = !!(doc?.fileUrl && typeof isDocImage === 'function' && isDocImage(doc));
     const hasPdf = !!(doc?.fileUrl && (doc.mime?.includes('pdf') || String(doc.name).toLowerCase().endsWith('.pdf')));
     const previewBody = hasImage
@@ -17125,12 +17125,12 @@ function renderPropertyInspectionTab(propertyId, opts = {}) {
                             <option value="all" ${activeUnitFilter === 'all' ? 'selected' : ''}>All Flats &amp; Areas (${past.length})</option>
                             <option value="communal" ${activeUnitFilter === 'communal' ? 'selected' : ''}>🏢 Communal Building Areas (${past.filter(i => !i.unit || i.unit === 'Communal').length})</option>
                             ${units.map(u => {
-                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                                const count = past.filter(i => i.unit === name).length;
-                                const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
-                                const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : '';
-                                return `<option value="${escapeHtml(name)}" ${activeUnitFilter === name ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}${count ? ` (${count})` : ' (0)'}</option>`;
-                            }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const count = past.filter(i => i.unit === name).length;
+        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(propertyId, name) : null;
+        const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : '';
+        return `<option value="${escapeHtml(name)}" ${activeUnitFilter === name ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}${count ? ` (${count})` : ' (0)'}</option>`;
+    }).join('')}
                         </select>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
                     </div>
@@ -18724,12 +18724,12 @@ function screenConductInspection() {
                 <div class="relative">
                     <select data-action="select-conduct-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
                         ${units.map(u => {
-                            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                            const isSel = !isCommunal && effectiveUnit === name;
-                            const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(pid, name) : null;
-                            const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.status === 'vacant' ? ' · Vacant' : '');
-                            return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}</option>`;
-                        }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const isSel = !isCommunal && effectiveUnit === name;
+        const tenancy = typeof getTenancyForUnit === 'function' ? getTenancyForUnit(pid, name) : null;
+        const tenantSub = tenancy?.leadName ? ` · ${tenancy.leadName}` : (u.status === 'vacant' ? ' · Vacant' : '');
+        return `<option value="${escapeHtml(name)}" ${isSel ? 'selected' : ''}>${escapeHtml(name)}${tenantSub}</option>`;
+    }).join('')}
                         <option value="communal" ${isCommunal ? 'selected' : ''}>🏢 Communal Areas &amp; Building Common Parts</option>
                     </select>
                 </div>
@@ -18774,10 +18774,10 @@ function screenConductInspection() {
 
             <div class="divide-y divide-[#F1F5F9] text-[13px]">
                 ${activeRooms.map(room => {
-                    const roomName = room.name || 'Room';
-                    const currentStatus = checks[roomName] || null;
-                    const hasIssue = currentStatus === 'issue';
-                    return `
+        const roomName = room.name || 'Room';
+        const currentStatus = checks[roomName] || null;
+        const hasIssue = currentStatus === 'issue';
+        return `
                     <div class="py-2.5 space-y-1.5">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -18800,7 +18800,7 @@ function screenConductInspection() {
                             </button>
                         </div>` : ''}
                     </div>`;
-                }).join('')}
+    }).join('')}
             </div>
         </div>
 
@@ -19787,54 +19787,48 @@ function screenFlatKeys() {
                 <select data-action="select-keys-unit-dropdown" class="figma-hold-select w-full text-[13px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5">
                     <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units Audit (${propStats.totalPhysicalKeys} keys)</option>
                     ${units.map(u => {
-                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                        const uStats = getUnitKeyStats(propertyId, name);
-                        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)} (${uStats.totalPhysicalKeys} keys)</option>`;
-                    }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const uStats = getUnitKeyStats(propertyId, name);
+        return `<option value="${escapeHtml(name)}" ${activeUnit === name ? 'selected' : ''}>${escapeHtml(name)} (${uStats.totalPhysicalKeys} keys)</option>`;
+    }).join('')}
                 </select>
                 <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
         </div>
     </div>` : '';
 
-    // Standard Landlord HQ Stat Cards
+    // Interactive Metric Cards (combine metrics & quick filter tabs in 1 touchpoint)
     const kpiHeader = `
-    <div class="grid grid-cols-3 gap-2.5">
-        <!-- Total Keys -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Total</span>
-                <div class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
-                    <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-                </div>
+    <div class="grid grid-cols-3 gap-2">
+        <!-- Total Keys Card / Tab -->
+        <button type="button" data-action="filter-keys-custody" data-filter="all" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'all' ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1]'}">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'all' ? 'text-[#94A3B8]' : 'text-[#64748B]'}">Total</span>
+                <i data-lucide="key-round" class="w-3.5 h-3.5 ${filterCustody === 'all' ? 'text-[#38BDF8]' : 'text-[#2563EB]'}"></i>
             </div>
-            <p class="text-[20px] font-black text-[#0F172A] m-0 leading-none">${displayStats.totalPhysicalKeys}</p>
-            <span class="text-[10.5px] text-[#64748B] font-medium block mt-1.5 truncate">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'}</span>
-        </div>
+            <p class="text-[19px] font-black m-0 leading-none">${displayStats.totalPhysicalKeys}</p>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'all' ? 'text-[#94A3B8]' : 'text-[#64748B]'}">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'}</span>
+        </button>
 
-        <!-- With Tenant -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Tenant</span>
-                <div class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
-                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                </div>
+        <!-- With Tenant Card / Tab -->
+        <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'tenant' ? 'bg-[#059669] text-white border-[#059669] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#A7F3D0]'}">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}">Tenant</span>
+                <i data-lucide="user-check" class="w-3.5 h-3.5 ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}"></i>
             </div>
-            <p class="text-[20px] font-black text-[#0F172A] m-0 leading-none">${displayStats.withTenants}</p>
-            <span class="text-[10.5px] text-[#64748B] font-medium block mt-1.5 truncate">Issued</span>
-        </div>
+            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'tenant' ? 'text-white' : 'text-[#059669]'}">${displayStats.withTenants}</p>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}">Issued</span>
+        </button>
 
-        <!-- In Safe -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">In Safe</span>
-                <div class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
-                    <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-                </div>
+        <!-- In Safe Card / Tab -->
+        <button type="button" data-action="filter-keys-custody" data-filter="safe" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'safe' ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#DBEAFE]'}">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}">In Safe</span>
+                <i data-lucide="shield" class="w-3.5 h-3.5 ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}"></i>
             </div>
-            <p class="text-[20px] font-black text-[#0F172A] m-0 leading-none">${displayStats.inSafe}</p>
-            <span class="text-[10.5px] text-[#64748B] font-medium block mt-1.5 truncate">Office</span>
-        </div>
+            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'safe' ? 'text-white' : 'text-[#2563EB]'}">${displayStats.inSafe}</p>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}">Office</span>
+        </button>
     </div>`;
 
     // Missing Alert Banner (if any)
@@ -19855,13 +19849,13 @@ function screenFlatKeys() {
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0 px-1">Unit Key Registers (${units.length} Units)</p>
             <div class="space-y-2.5">
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const uStats = getUnitKeyStats(propertyId, name);
-                    const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
-                        t.propertyId === propertyId && t.unit === name
-                    );
-                    const tenantName = occupants[0]?.name || 'Vacant / Ready';
-                    return `
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+            const uStats = getUnitKeyStats(propertyId, name);
+            const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+                t.propertyId === propertyId && t.unit === name
+            );
+            const tenantName = occupants[0]?.name || 'Vacant / Ready';
+            return `
                     <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
@@ -19893,7 +19887,7 @@ function screenFlatKeys() {
                             </div>
                         </div>
                     </div>`;
-                }).join('')}
+        }).join('')}
             </div>
         </div>`;
     } else {
@@ -19908,15 +19902,15 @@ function screenFlatKeys() {
 
         contentBody = `
         <div class="space-y-2.5">
-            <!-- Standard Design System Filter Chips -->
+            <!-- Fade Blue Filter Chips -->
             <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                <button type="button" data-action="filter-keys-custody" data-filter="all" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'all' ? 'bg-[#2563EB] text-white shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
+                <button type="button" data-action="filter-keys-custody" data-filter="all" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'all' ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/40 shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
                     All Sets (${rawKeys.length})
                 </button>
-                <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'tenant' ? 'bg-[#2563EB] text-white shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
+                <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'tenant' ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/40 shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
                     With Tenant (${unitStats.withTenants})
                 </button>
-                <button type="button" data-action="filter-keys-custody" data-filter="safe" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'safe' ? 'bg-[#2563EB] text-white shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
+                <button type="button" data-action="filter-keys-custody" data-filter="safe" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'safe' ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/40 shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
                     In Safe / Office (${unitStats.inSafe})
                 </button>
             </div>
@@ -19925,9 +19919,9 @@ function screenFlatKeys() {
             ${filteredKeys.length ? `
             <div class="space-y-2.5">
                 ${filteredKeys.map((k, i) => {
-                    const custody = resolveKeyCustody(k, propertyId, activeUnit);
-                    const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
-                    return `
+            const custody = resolveKeyCustody(k, propertyId, activeUnit);
+            const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
+            return `
                     <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start gap-3 min-w-0">
@@ -19970,10 +19964,10 @@ function screenFlatKeys() {
                             </button>
                         </div>
                     </div>`;
-                }).join('')}
+        }).join('')}
             </div>` : `
             <div class="card p-6 text-center bg-white rounded-2xl border border-[#E2E8F0]">
-                <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto mb-2">
+                <div class="w-10 h-10 rounded-full bg-[#F1F5F9] text-[#94A3B8] flex items-center justify-center mx-auto mb-2">
                     <i data-lucide="key-round" class="w-5 h-5"></i>
                 </div>
                 <p class="text-[13px] font-bold text-[#0F172A] m-0">No key sets for this filter</p>
@@ -20351,9 +20345,9 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
             </div>
             <div class="divide-y divide-[#F1F5F9] text-[12px]">
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const fd = getFlatServiceData(pid, name).electricity;
-                    return `
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+            const fd = getFlatServiceData(pid, name).electricity;
+            return `
                     <div class="py-2.5 flex items-center justify-between gap-2">
                         <div class="min-w-0">
                             <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
@@ -20364,7 +20358,7 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
                         </div>
                         <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">EICR OK</span>
                     </div>`;
-                }).join('')}
+        }).join('')}
                 <div class="py-2.5 flex items-center justify-between gap-2">
                     <div class="min-w-0">
                         <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
@@ -20391,9 +20385,9 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
             </div>
             <div class="divide-y divide-[#F1F5F9] text-[12px]">
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const fd = getFlatServiceData(pid, name).gas;
-                    return `
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+            const fd = getFlatServiceData(pid, name).gas;
+            return `
                     <div class="py-2.5 flex items-center justify-between gap-2">
                         <div class="min-w-0">
                             <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
@@ -20404,7 +20398,7 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
                         </div>
                         <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">CP12 Valid</span>
                     </div>`;
-                }).join('')}
+        }).join('')}
             </div>
         </div>`;
     }
@@ -20421,9 +20415,9 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
             </div>
             <div class="divide-y divide-[#F1F5F9] text-[12px]">
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const fd = getFlatServiceData(pid, name).council;
-                    return `
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+            const fd = getFlatServiceData(pid, name).council;
+            return `
                     <div class="py-2.5 flex items-center justify-between gap-2">
                         <div class="min-w-0">
                             <p class="font-bold text-[#0F172A] m-0">${escapeHtml(name)}</p>
@@ -20431,7 +20425,7 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
                         </div>
                         <span class="text-[11px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-0.5 rounded-full shrink-0">${escapeHtml(fd.taxBand)}</span>
                     </div>`;
-                }).join('')}
+        }).join('')}
             </div>
         </div>`;
     }
@@ -20448,9 +20442,9 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
             </div>
             <div class="divide-y divide-[#F1F5F9] text-[12px]">
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const fd = getFlatServiceData(pid, name).water;
-                    return `
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+            const fd = getFlatServiceData(pid, name).water;
+            return `
                     <div class="py-2.5 flex items-center justify-between gap-2">
                         <div class="min-w-0">
                             <p class="font-bold text-[#0F172A] m-0">${escapeHtml(name)}</p>
@@ -20458,7 +20452,7 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
                         </div>
                         <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">Accessible</span>
                     </div>`;
-                }).join('')}
+        }).join('')}
             </div>
         </div>`;
     }
@@ -20475,9 +20469,9 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
             </div>
             <div class="divide-y divide-[#F1F5F9] text-[12px]">
                 ${units.map(u => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const fd = getFlatServiceData(pid, name).wifi;
-                    return `
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+            const fd = getFlatServiceData(pid, name).wifi;
+            return `
                     <div class="py-2.5 flex items-center justify-between gap-2">
                         <div class="min-w-0">
                             <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
@@ -20488,7 +20482,7 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
                         </div>
                         <span class="text-[10.5px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full shrink-0">Private</span>
                     </div>`;
-                }).join('')}
+        }).join('')}
             </div>
         </div>`;
     }
@@ -20505,10 +20499,10 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
             </div>
             <div class="divide-y divide-[#F1F5F9] text-[12px]">
                 ${units.map((u, idx) => {
-                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                    const bayNum = idx + 1;
-                    const vehicles = ['Toyota RAV4 (AB21 XYZ)', 'BMW 3 Series (CD68 LMN)', 'Nissan Leaf (EV Charger 7kW)', 'Visitor / Flat Bay'];
-                    return `
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+            const bayNum = idx + 1;
+            const vehicles = ['Toyota RAV4 (AB21 XYZ)', 'BMW 3 Series (CD68 LMN)', 'Nissan Leaf (EV Charger 7kW)', 'Visitor / Flat Bay'];
+            return `
                     <div class="py-2.5 flex items-center justify-between gap-2">
                         <div class="min-w-0">
                             <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
@@ -20519,7 +20513,7 @@ function renderUtilityFlatBreakdown(pid, utilityId, units) {
                         </div>
                         <span class="text-[10.5px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full shrink-0">Permit 0${bayNum}</span>
                     </div>`;
-                }).join('')}
+        }).join('')}
             </div>
         </div>`;
     }
@@ -20624,10 +20618,10 @@ function screenPropertyUtilitiesView() {
                         <select data-action="select-utilities-scope-dropdown" class="figma-hold-select w-full text-[13.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-1">
                             <option value="building" ${activeScope === 'building' ? 'selected' : ''}>Whole Building & Communal</option>
                             ${units.map(u => {
-                                const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                                const beds = u.beds ? ` · ${u.beds} bed` : '';
-                                return `<option value="${escapeHtml(name)}" ${activeScope === name ? 'selected' : ''}>${escapeHtml(name)}${beds}</option>`;
-                            }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        const beds = u.beds ? ` · ${u.beds} bed` : '';
+        return `<option value="${escapeHtml(name)}" ${activeScope === name ? 'selected' : ''}>${escapeHtml(name)}${beds}</option>`;
+    }).join('')}
                         </select>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 pointer-events-none"></i>
                     </div>
@@ -20820,9 +20814,9 @@ function screenUtilityDetail() {
                 <select data-action="select-utility-detail-scope" class="w-full text-[12.5px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer truncate">
                     <option value="building" ${activeScope === 'building' ? 'selected' : ''}>Whole Building & Communal</option>
                     ${units.map(u => {
-                        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
-                        return `<option value="${escapeHtml(name)}" ${activeScope === name ? 'selected' : ''}>${escapeHtml(name)}</option>`;
-                    }).join('')}
+        const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+        return `<option value="${escapeHtml(name)}" ${activeScope === name ? 'selected' : ''}>${escapeHtml(name)}</option>`;
+    }).join('')}
                 </select>
             </div>
             <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-[#64748B] shrink-0 pointer-events-none"></i>
@@ -21197,7 +21191,7 @@ function savePropertyMeta(section) {
     } else if (section === 'utilities') {
         if (!meta.utilities) meta.utilities = {};
         migrateUtilityKeys(meta);
-        
+
         // Gas
         if (meta.utilities.gas || fieldVal('util_gas_provider') || fieldVal('util_gas_meter')) {
             meta.utilities.gas = {
@@ -22159,7 +22153,7 @@ function saveEditInventoryRoom() {
         if (!meta.roomRenamesByUnit) meta.roomRenamesByUnit = {};
         if (!meta.roomRenamesByUnit[unitKey]) meta.roomRenamesByUnit[unitKey] = {};
         meta.roomRenamesByUnit[unitKey][roomMeta.slug] = newName;
-        
+
         const customList = (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey]) || meta.customRooms || [];
         const customObj = customList.find(r => r.slug === roomMeta.slug);
         if (customObj) {
@@ -24231,11 +24225,11 @@ function bindFeatureEvents() {
             const key = inventoryKey(pid, rid);
             const roomData = AppStore.inventory[key];
             if (!roomData || !roomData.items || roomData.items[idx] === undefined) return;
-            
+
             const current = roomData.items[idx];
             const name = typeof current === 'object' ? (current.name || current.item || 'Fixture') : String(current);
             const cond = typeof current === 'object' ? (current.condition || 'Good') : 'Good';
-            
+
             const cycleMap = {
                 Good: 'Fair',
                 Fair: 'Damaged',
@@ -24243,7 +24237,7 @@ function bindFeatureEvents() {
                 Missing: 'Good',
             };
             const nextCond = cycleMap[cond] || 'Good';
-            
+
             roomData.items[idx] = { name, condition: nextCond };
             AppStore.save();
             toast(`"${name}" status changed to ${nextCond}`);
@@ -24258,9 +24252,9 @@ function bindFeatureEvents() {
             const unitKey = activeUnit || 'global';
             const meta = AppStore.meta(pid);
             const invKey = inventoryKey(pid, slug);
-            
+
             if (!confirm('Are you sure you want to remove this room from the inventory?')) return;
-            
+
             // Remove from customRooms if custom
             if (meta.customRoomsByUnit && meta.customRoomsByUnit[unitKey]) {
                 meta.customRoomsByUnit[unitKey] = meta.customRoomsByUnit[unitKey].filter(r => r.slug !== slug);
@@ -24278,7 +24272,7 @@ function bindFeatureEvents() {
             if (!meta.removedRooms.includes(slug)) {
                 meta.removedRooms.push(slug);
             }
-            
+
             // Remove data
             if (AppStore.inventory[invKey]) {
                 delete AppStore.inventory[invKey];
@@ -24430,18 +24424,18 @@ function bindFeatureEvents() {
             const activeUnit = typeof getActiveInventoryUnit === 'function' ? getActiveInventoryUnit(pid) : '';
             const unitKey = activeUnit || 'global';
             const meta = AppStore.meta(pid);
-            
+
             if (!meta.customRoomsByUnit) meta.customRoomsByUnit = {};
             if (!meta.customRoomsByUnit[unitKey]) meta.customRoomsByUnit[unitKey] = [];
-            
+
             const slug = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
             const icon = getRoomIcon(name);
             const roomObj = { slug, name, template: name, icon, isCustom: true };
-            
+
             meta.customRoomsByUnit[unitKey].push(roomObj);
             if (!meta.customRooms) meta.customRooms = [];
             meta.customRooms.push(roomObj);
-            
+
             const invKey = inventoryKey(pid, slug);
             AppStore.inventory[invKey] = {
                 notes: '',
@@ -24449,13 +24443,13 @@ function bindFeatureEvents() {
                 photos: [],
                 sizeSqft: sizeSqft,
             };
-            
+
             AppStore.save();
             STATE.showAddRoomModal = false;
             STATE.newRoomDraftName = '';
             STATE.newRoomDraftSize = '';
             toast(`Room "${name}" added to inventory`);
-            
+
             const catalog = getInventoryRoomCatalog(pid);
             const newIdx = catalog.findIndex(r => r.slug === slug);
             if (newIdx >= 0) {
@@ -24517,13 +24511,13 @@ function bindFeatureEvents() {
             const key = inventoryKey(pid, rid);
             const roomData = AppStore.inventory[key];
             if (!roomData || !roomData.items || roomData.items[idx] === undefined) return;
-            
+
             const current = roomData.items[idx];
             const itemObj = inventoryItemObject(current);
-            
+
             const cycle = { Good: 'Fair', Fair: 'Damaged', Damaged: 'Missing', Missing: 'Good' };
             itemObj.condition = cycle[itemObj.condition] || 'Good';
-            
+
             roomData.items[idx] = itemObj;
             AppStore.save();
             toast(`"${itemObj.name}" marked as ${itemObj.condition}`);
