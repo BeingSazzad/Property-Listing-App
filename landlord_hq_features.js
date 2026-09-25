@@ -19810,33 +19810,33 @@ function screenFlatKeys() {
     const kpiHeader = `
     <div class="grid grid-cols-3 gap-2">
         <!-- Total Keys Card / Tab -->
-        <button type="button" data-action="filter-keys-custody" data-filter="all" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'all' ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1]'}">
+        <button type="button" data-action="filter-keys-custody" data-filter="all" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'all' ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#BFDBFE]'}">
             <div class="flex items-center justify-between mb-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'all' ? 'text-[#94A3B8]' : 'text-[#64748B]'}">Total</span>
-                <i data-lucide="key-round" class="w-3.5 h-3.5 ${filterCustody === 'all' ? 'text-[#38BDF8]' : 'text-[#2563EB]'}"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'all' ? 'text-[#DBEAFE]' : 'text-[#64748B]'}">Total</span>
+                <i data-lucide="key-round" class="w-3.5 h-3.5 ${filterCustody === 'all' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}"></i>
             </div>
-            <p class="text-[19px] font-black m-0 leading-none">${displayStats.totalPhysicalKeys}</p>
-            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'all' ? 'text-[#94A3B8]' : 'text-[#64748B]'}">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'}</span>
+            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'all' ? 'text-white' : 'text-[#0F172A]'}">${displayStats.totalPhysicalKeys}</p>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'all' ? 'text-[#DBEAFE]' : 'text-[#64748B]'}">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'}</span>
         </button>
 
         <!-- With Tenant Card / Tab -->
-        <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'tenant' ? 'bg-[#059669] text-white border-[#059669] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#A7F3D0]'}">
+        <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'tenant' ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#BFDBFE]'}">
             <div class="flex items-center justify-between mb-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}">Tenant</span>
-                <i data-lucide="user-check" class="w-3.5 h-3.5 ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'tenant' ? 'text-[#DBEAFE]' : 'text-[#059669]'}">Tenant</span>
+                <i data-lucide="user-check" class="w-3.5 h-3.5 ${filterCustody === 'tenant' ? 'text-[#DBEAFE]' : 'text-[#059669]'}"></i>
             </div>
             <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'tenant' ? 'text-white' : 'text-[#059669]'}">${displayStats.withTenants}</p>
-            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'tenant' ? 'text-[#A7F3D0]' : 'text-[#059669]'}">Issued</span>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'tenant' ? 'text-[#DBEAFE]' : 'text-[#059669]'}">Issued</span>
         </button>
 
         <!-- In Safe Card / Tab -->
-        <button type="button" data-action="filter-keys-custody" data-filter="safe" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'safe' ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#DBEAFE]'}">
+        <button type="button" data-action="filter-keys-custody" data-filter="safe" class="p-3 rounded-2xl text-left transition-all cursor-pointer border ${filterCustody === 'safe' ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm' : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#BFDBFE]'}">
             <div class="flex items-center justify-between mb-1">
-                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}">In Safe</span>
-                <i data-lucide="shield" class="w-3.5 h-3.5 ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'safe' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}">In Safe</span>
+                <i data-lucide="shield" class="w-3.5 h-3.5 ${filterCustody === 'safe' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}"></i>
             </div>
             <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'safe' ? 'text-white' : 'text-[#2563EB]'}">${displayStats.inSafe}</p>
-            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'safe' ? 'text-[#93C5FD]' : 'text-[#2563EB]'}">Office</span>
+            <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'safe' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}">Office</span>
         </button>
     </div>`;
 
@@ -19911,19 +19911,6 @@ function screenFlatKeys() {
 
         contentBody = `
         <div class="space-y-2.5">
-            <!-- Fade Blue Filter Chips -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                <button type="button" data-action="filter-keys-custody" data-filter="all" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'all' ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/40 shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                    All Sets (${rawKeys.length})
-                </button>
-                <button type="button" data-action="filter-keys-custody" data-filter="tenant" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'tenant' ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/40 shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                    With Tenant (${unitStats.withTenants})
-                </button>
-                <button type="button" data-action="filter-keys-custody" data-filter="safe" class="px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer shrink-0 ${filterCustody === 'safe' ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/40 shadow-2xs' : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC]'}">
-                    In Safe / Office (${unitStats.inSafe})
-                </button>
-            </div>
-
             <!-- Key Sets List -->
             ${filteredKeys.length ? `
             <div class="space-y-2.5">
