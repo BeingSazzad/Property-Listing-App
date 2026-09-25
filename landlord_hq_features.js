@@ -7768,33 +7768,29 @@ function contractorRow(c) {
     const response = typeof contractorResponseLabel === 'function' ? contractorResponseLabel(c) : 'Responds in 1 hr';
     const verified = (c.certificates?.length || c.gasSafe || c.liabilityInsurance);
     return `
-    <article class="ctr-v2-card card">
-        <button type="button" data-action="view-contractor-profile" data-cid="${c.id}" class="ctr-v2-main w-full text-left">
-            <div class="ctr-v2-avatar-wrap">
-                <img src="${c.img}" class="ctr-v2-avatar" alt="">
-                <span class="ctr-v2-platform" title="On Landlord HQ"></span>
+    <article class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 text-left cursor-pointer group mb-2.5" data-action="view-contractor-profile" data-cid="${c.id}">
+        <div class="relative shrink-0">
+            <img src="${c.img}" class="w-11 h-11 rounded-full object-cover" alt="">
+            <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#16A34A] border-2 border-white" title="Active"></span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">${escapeHtml(c.name)}</span>
+                ${verified ? '<i data-lucide="badge-check" class="w-4 h-4 text-[#2563EB] shrink-0"></i>' : ''}
             </div>
-            <div class="ctr-v2-body min-w-0">
-                <div class="ctr-v2-name-row">
-                    <span class="ctr-v2-name">${escapeHtml(c.name)}</span>
-                    ${verified ? '<i data-lucide="badge-check" class="ctr-v2-verified w-4 h-4"></i>' : ''}
-                </div>
-                <div class="ctr-v2-trade-row">
-                    ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(c) : `<span class="ctr-trade-badge">${escapeHtml(c.category || c.trade)}</span>`}
-                </div>
-                <p class="ctr-v2-rating">
-                    <i data-lucide="star" class="w-3.5 h-3.5"></i>
-                    <span>${rating}</span>
-                    <span class="ctr-v2-dot">·</span>
+            <div class="flex items-center gap-2 mt-1 flex-wrap">
+                ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(c) : `<span class="ctr-trade-badge">${escapeHtml(c.category || c.trade)}</span>`}
+                <span class="text-[11px] font-semibold text-[#64748B] flex items-center gap-1">
+                    <i data-lucide="star" class="w-3.5 h-3.5 text-[#F59E0B] fill-[#F59E0B] shrink-0"></i>
+                    <span class="text-[#0F172A] font-bold">${rating}</span>
+                    <span class="text-[#CBD5E1]">·</span>
                     <span>${response}</span>
-                </p>
-                <p class="ctr-v2-trust">${escapeHtml(contractorTrustLine(c))}</p>
+                </span>
             </div>
-            <i data-lucide="chevron-right" class="ctr-v2-chevron w-4 h-4"></i>
-        </button>
-        <button type="button" data-go="chat" data-chat="${chatId}" class="ctr-v2-msg" aria-label="Message ${escapeHtml(c.name)}">
+        </div>
+        <button type="button" data-go="chat" data-chat="${chatId}" class="w-9 h-9 rounded-xl bg-[#F8FAFC] hover:bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 relative transition-colors cursor-pointer border border-[#E2E8F0] active:scale-95" aria-label="Message ${escapeHtml(c.name)}" onclick="event.stopPropagation()">
             <i data-lucide="message-square" class="w-4 h-4"></i>
-            ${unread ? `<span class="ctr-v2-msg-badge">${unread}</span>` : ''}
+            ${unread ? `<span class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#2563EB] text-white text-[10px] font-bold flex items-center justify-center leading-none">${unread}</span>` : ''}
         </button>
     </article>`;
 }
