@@ -3871,7 +3871,6 @@ function screenContractorJobDetail() {
                 </button>`).join('')}
             </div>
         </div>` : ''}
-        ${renderCtrProgressChecklist(job)}
         ${(() => {
             const hasAgreedPrice = ['in_progress', 'waiting_approval', 'approved', 'completed', 'paid'].includes(job.status) || job.quoteAmount != null;
             const priceDisplay = contractorJobEstimate(job);
