@@ -1625,26 +1625,29 @@ function renderTenantDepositSection(tenantId) {
         ? metaItems.filter(item => item.label === 'Scheme' || item.label === 'Deposit return')
         : metaItems;
     if (!amounts.length && !tenantMeta.length) return '';
+    const mainAmt = amounts.length ? amounts.join(' · ') : 'Deposit on file';
     return `
-    <div class="tenant-v2-section">
-        <div class="tenant-v2-section-head">
-            <h3>${tenantApp ? 'Deposit' : 'Deposit & move-in'}</h3>
-            ${canEditScheme
-            ? `<button type="button" data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="tenant-v2-link">Edit scheme</button>`
-            : ''}
-        </div>
-        <div class="card tenant-deposit-card">
-            <div class="tenant-deposit-card-head">
-                ${amounts.length ? `<p class="tenant-deposit-line">${escapeHtml(amounts.join(' · '))}</p>` : '<p class="tenant-deposit-line">Deposit on file</p>'}
+    <div class="space-y-1.5 text-left">
+        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 m-0 mb-1.5">${tenantApp ? 'Deposit Protection' : 'Deposit & move-in'}</p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <div>
+                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Total Deposit</span>
+                    <p class="text-[20px] font-black text-[#0F172A] tracking-tight mt-0.5 m-0">${escapeHtml(mainAmt)}</p>
+                </div>
                 ${renderDepositStatusBadge(dep.status, dep.scheme)}
             </div>
             ${tenantMeta.length ? `
-            <div class="tenant-deposit-facts ${tenantMeta.length === 1 ? 'tenant-deposit-facts--single' : ''}">
+            <div class="pt-2.5 border-t border-[#F1F5F9] space-y-2">
                 ${tenantMeta.map(item => `
-                <div class="tenant-deposit-fact">
-                    <span class="tenant-deposit-fact-label">${escapeHtml(item.label)}</span>
-                    <span class="tenant-deposit-fact-value">${escapeHtml(item.value)}</span>
+                <div class="flex items-center justify-between text-[12px]">
+                    <span class="text-[#64748B] font-semibold">${escapeHtml(item.label)}</span>
+                    <span class="text-[#0F172A] font-bold">${escapeHtml(item.value)}</span>
                 </div>`).join('')}
+            </div>` : ''}
+            ${canEditScheme ? `
+            <div class="pt-2 border-t border-[#F1F5F9] text-right">
+                <button type="button" data-go="edit-tenancy-deposit" data-pid="${listItem.propertyId}" data-unit="${listItem.unit}" class="text-[#2563EB] text-[12px] font-bold hover:underline cursor-pointer">Edit scheme &gt;</button>
             </div>` : ''}
         </div>
     </div>`;

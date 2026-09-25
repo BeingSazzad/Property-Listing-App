@@ -3041,15 +3041,15 @@ function screenTenantActiveTenancy() {
                 </span>
             </div>
 
-            <!-- Balanced 2-Column Key Dates Grid -->
-            <div class="grid grid-cols-2 gap-2.5 pt-1">
-                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Move-in Date</span>
-                    <p class="text-[13px] font-bold text-[#0F172A] mt-1 m-0">${esc(moveInLabel)}</p>
+            <!-- Clean Key Dates Row (No inner background boxes) -->
+            <div class="grid grid-cols-2 gap-3 py-1 border-t border-[#F1F5F9] text-left">
+                <div>
+                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Move-in Date</span>
+                    <p class="text-[14px] font-extrabold text-[#0F172A] mt-0.5 m-0">${esc(moveInLabel)}</p>
                 </div>
-                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Lease Ends</span>
-                    <p class="text-[13px] font-bold text-[#0F172A] mt-1 m-0">${esc(leaseEndLabel)}</p>
+                <div>
+                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Lease Ends</span>
+                    <p class="text-[14px] font-extrabold text-[#0F172A] mt-0.5 m-0">${esc(leaseEndLabel)}</p>
                 </div>
             </div>
 
