@@ -249,7 +249,7 @@ function contractorJobAction(action, msg) {
         return;
     }
     if (action === 'work') {
-        go('contractor-work', { jobId: job.id, jobTab: 'work' });
+        go('contractor-documents', { jobId: job.id, jobTab: 'invoice' });
         return;
     }
     if (action === 'documents') {
@@ -3592,7 +3592,7 @@ function contractorHomeHeader(name, company) {
 function renderCtrScheduleHero(job) {
     if (!job) {
         return `
-        <div class="card p-4 rounded-3xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden">
+        <div class="card p-4 rounded-2xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden">
             <div class="flex items-center justify-between">
                 <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
                     <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
@@ -3603,7 +3603,7 @@ function renderCtrScheduleHero(job) {
             </div>
             <p class="text-[24px] font-black text-white m-0 tracking-tight">No visits scheduled today</p>
             <p class="text-[12px] text-white/90 m-0">Check your active jobs for upcoming assignments.</p>
-            <button type="button" data-go="contractor-jobs" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm mt-1 hover:bg-[#F8FAFC] transition-colors cursor-pointer border-none outline-none">
+            <button type="button" data-go="contractor-jobs" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm mt-1 hover:bg-[#F8FAFC] transition-colors cursor-pointer border-none outline-none">
                 View jobs <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
             </button>
         </div>`;
@@ -3612,7 +3612,7 @@ function renderCtrScheduleHero(job) {
     const timeLabel = timeMatch ? timeMatch[1] : (job.visitDate || '4:30 PM');
     const location = contractorJobLocation(job);
     return `
-    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card w-full p-4 rounded-3xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden group border-none outline-none cursor-pointer">
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card w-full p-4 rounded-2xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden group border-none outline-none cursor-pointer">
         <div class="flex items-center justify-between">
             <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
                 <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
@@ -3627,7 +3627,7 @@ function renderCtrScheduleHero(job) {
             <i data-lucide="map-pin" class="w-3.5 h-3.5 shrink-0 text-white"></i> ${location}
         </p>
         <div class="pt-1">
-            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm group-hover:bg-[#F8FAFC] transition-colors">
+            <span class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm group-hover:bg-[#F8FAFC] transition-colors">
                 View schedule <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
             </span>
         </div>
@@ -3882,16 +3882,6 @@ function screenContractorJobDetail() {
                     </span>
                 </div>
             </div>
-
-            <!-- Utility Location Note (Inline info banner, not a giant card) -->
-            ${(isPlumbing && waterStopcock) || (isElectrical && elecLocation) ? `
-            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-2.5 text-[12px]">
-                <i data-lucide="${isPlumbing ? 'droplet' : 'zap'}" class="w-4 h-4 ${isPlumbing ? 'text-[#0284C7]' : 'text-[#D97706]'} shrink-0"></i>
-                <div class="min-w-0">
-                    <span class="text-[#64748B] font-semibold">${isPlumbing ? 'Water Stopcock:' : 'Fuse Box:'}</span>
-                    <span class="text-[#0F172A] font-bold ml-1">${esc(isPlumbing ? waterStopcock : elecLocation)}</span>
-                </div>
-            </div>` : ''}
 
             <!-- Description -->
             <div class="space-y-1 pt-1 border-t border-[#F1F5F9]">
@@ -4310,16 +4300,31 @@ function screenContractorJobInvoice() {
 
 function screenContractorSchedule() {
     const job = contractorJob(STATE.contractorJobId);
-    return `${topBar(job.property, { back: true, sub: job.issue })}
-    <div class="screen-content screen-enter">
-        <div class="card p-4">
-            <p class="text-[14px] text-[#64748B] mt-1">${job.address}</p>
-            <p class="text-[13px] text-[#64748B] mt-2">Tenant: ${job.tenant}</p>
+    if (!job) return `${topBar('Schedule visit', { back: true })}<div class="screen-content p-4"><p class="text-[13px] text-[#64748B]">No job selected.</p></div>`;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `${topBar('Schedule visit', { back: true, sub: job.issue })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-16">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5">
+            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-[15px] font-black text-[#0F172A] m-0 truncate">${esc(job.issue)}</h3>
+                    <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(job.address)} · Tenant: ${esc(job.tenant)}</p>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-mono font-extrabold border border-[#DBEAFE] shrink-0 ml-2">
+                    #JOB-${1000 + job.id}
+                </span>
+            </div>
+            
+            <div class="space-y-3">
+                ${formField('Visit date', job.scheduledDate || '2025-03-14', 'date', '', 'visitDate')}
+                ${formField('Visit time', job.scheduledTime || '11:30', 'time', '', 'visitTime')}
+                ${formTextarea('Message for tenant', job.scheduleNotes || '', 'e.g. I will arrive between 11:30–12:00', 'scheduleNotes')}
+            </div>
+
+            <button type="button" data-action="confirm-contractor-schedule" class="btn-primary w-full py-3.5 rounded-xl text-[14px] font-bold shadow-md cursor-pointer mt-2">
+                Confirm Visit
+            </button>
         </div>
-        ${formField('Visit date', job.scheduledDate || '2025-03-14', 'date', '', 'visitDate')}
-        ${formField('Visit time', job.scheduledTime || '11:30', 'time', '', 'visitTime')}
-        ${formTextarea('Message for tenant', job.scheduleNotes, 'e.g. I will arrive between 11:30–12:00', 'scheduleNotes')}
-        <button type="button" data-action="confirm-contractor-schedule" class="btn-primary w-full py-4 text-[13px] font-semibold">Confirm Visit</button>
     </div>`;
 }
 
