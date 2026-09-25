@@ -480,10 +480,10 @@ const AppStore = {
         };
         this.contractorInvoices = [
             { id: 0, contractor: 'Plumber Pro', job: 'Kitchen sink leaking', amount: '£185', status: 'Unpaid', propertyId: 0, maintId: 0 },
-            { id: 1, contractor: 'Heating Co.', job: 'Boiler service & CP12', amount: '£220', status: 'Paid', propertyId: 1, maintId: 3 },
-            { id: 2, contractor: 'Plumber Pro', job: 'Tap replacement', amount: '£145', status: 'Unpaid', propertyId: 0, maintId: 6 },
-            { id: 3, contractor: 'Electric Fix', job: 'Light fitting replacement', amount: '£95', status: 'Paid', propertyId: 3, maintId: 5 },
-            { id: 4, contractor: 'Heating Co.', job: 'Radiator valve repair', amount: '£130', status: 'Unpaid', propertyId: 3, maintId: 4 },
+            { id: 1, contractor: 'Heating Co.', job: 'Boiler service & CP12', amount: '£240', status: 'Paid', propertyId: 1, maintId: 3 },
+            { id: 2, contractor: 'Plumber Pro', job: 'Tap replacement', amount: '£185', status: 'Unpaid', propertyId: 1, maintId: 6 },
+            { id: 3, contractor: 'Electric Fix', job: 'Light fitting replacement', amount: '£140', status: 'Paid', propertyId: 3, maintId: 5 },
+            { id: 4, contractor: 'Heating Co.', job: 'Radiator valve repair', amount: '£150', status: 'Unpaid', propertyId: 3, maintId: 4 },
             { id: 5, contractor: 'Plumber Pro', job: 'Bathroom basin replacement', amount: '£260', status: 'Unpaid', propertyId: 0, maintId: 8 },
         ];
         this.propertyMeta = {
