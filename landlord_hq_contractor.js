@@ -3885,24 +3885,33 @@ function screenContractorJobDetail() {
     const isElectrical = /power|plug|light|fuse|electric|breaker|wire/i.test(job.issue || '') || (maintItem?.categoryId === 'electrical');
 
     const primaryAction = {
-        assigned: `<button type="button" data-contractor-action="accept" data-msg="Job accepted" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer">Accept job</button>`,
-        accepted: `<button type="button" data-contractor-action="schedule" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer">Schedule visit</button>`,
-        scheduled: `<button type="button" data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer">Start job</button>`,
-        in_progress: `<button type="button" data-contractor-action="work" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer"><i data-lucide="file-text" class="w-4 h-4"></i> Finish &amp; invoice</button>`,
-        waiting_approval: `<div class="p-3.5 rounded-2xl bg-[#F3E8FF] text-[#7E22CE] text-[13px] font-bold text-center border border-[#E9D5FF]">Invoice submitted — awaiting landlord review</div>`,
-        approved: `<div class="p-3.5 rounded-2xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Approved — payment via Stripe</div>`,
-        completed: `<div class="p-3.5 rounded-2xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Job completed</div>`,
-        paid: `<div class="p-3.5 rounded-2xl bg-[#ECFDF5] text-[#047857] text-[13px] font-bold text-center border border-[#A7F3D0]">Payment received</div>`,
+        assigned: `<button type="button" data-contractor-action="accept" data-msg="Job accepted" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer">Accept job</button>`,
+        accepted: `<button type="button" data-contractor-action="schedule" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer">Schedule visit</button>`,
+        scheduled: `<button type="button" data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer">Start job</button>`,
+        in_progress: `<button type="button" data-contractor-action="work" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer"><i data-lucide="file-text" class="w-4 h-4"></i> Finish &amp; invoice</button>`,
+        waiting_approval: `
+        <div class="card p-4 rounded-xl bg-[#FAF5FF] border border-[#E9D5FF] text-center space-y-1.5">
+            <span class="inline-flex items-center gap-1.5 text-[13px] font-extrabold text-[#7E22CE]">
+                <i data-lucide="clock" class="w-4 h-4"></i> Invoice submitted
+            </span>
+            <p class="text-[12px] font-medium text-[#6B21A8] m-0">Awaiting landlord approval and payout release</p>
+            <button type="button" data-go="contractor-documents" data-job="${job.id}" class="text-[12.5px] font-bold text-[#2563EB] hover:underline cursor-pointer inline-flex items-center gap-1 pt-1">
+                View submitted invoice <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>`,
+        approved: `<div class="card p-3.5 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Approved — payment via Stripe</div>`,
+        completed: `<div class="card p-3.5 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Job completed</div>`,
+        paid: `<div class="card p-3.5 rounded-xl bg-[#ECFDF5] text-[#047857] text-[13px] font-bold text-center border border-[#A7F3D0]">Payment received</div>`,
     }[job.status] || '';
 
     const reviewsBlock = typeof renderContractorJobReviewsReadonly === 'function'
         ? renderContractorJobReviewsReadonly(maintItem, job) : '';
 
     return `${topBar('Job details', { back: true })}
-    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-24">
+    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-16">
         
         <!-- Unified Main Job Card (Clean cohesive layout, no fragmented box clutter) -->
-        <div class="card p-4.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5 text-left">
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-4 text-left">
             <!-- Status & Job Ref Badge -->
             <div class="flex items-center justify-between">
                 <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase" style="background:${st.bg};color:${st.color}">
@@ -3916,29 +3925,33 @@ function screenContractorJobDetail() {
             <!-- Title & Meta Information -->
             <div>
                 <h1 class="text-[20px] font-black text-[#0F172A] tracking-tight leading-snug m-0">${esc(job.issue)}</h1>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-medium text-[#64748B] mt-2">
-                    <span class="flex items-center gap-1.5">
-                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium text-[#64748B] mt-2.5">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
                         ${esc(job.address)}
                     </span>
-                    <span class="flex items-center gap-1.5">
-                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
                         ${esc(job.visitDate || 'Today, 4:30 PM')}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-[#64748B] shrink-0"></i>
+                        Landlord: ${esc(job.landlord || 'John Smith')}
                     </span>
                 </div>
             </div>
 
             <!-- Description -->
-            <div class="space-y-1 pt-1 border-t border-[#F1F5F9]">
-                <h3 class="text-[12px] font-extrabold text-[#64748B] uppercase tracking-wider m-0">Job Description</h3>
+            <div class="space-y-1.5 pt-3.5 border-t border-[#F1F5F9]">
+                <h3 class="text-[11.5px] font-extrabold text-[#64748B] uppercase tracking-wider m-0">Job Description</h3>
                 <p class="text-[13px] font-medium text-[#334155] leading-relaxed m-0">${esc(job.desc)}</p>
             </div>
 
             <!-- Attached Media Thumbnails (Compact, clean thumbnails at bottom) -->
             ${(photos.length || videos.length) ? `
-            <div class="space-y-2 pt-1 border-t border-[#F1F5F9]">
-                <span class="text-[12px] font-extrabold text-[#64748B] uppercase tracking-wider block">Evidence Media (${totalMediaCount})</span>
-                <div class="flex items-center gap-2.5 overflow-x-auto pb-1">
+            <div class="space-y-2 pt-3.5 border-t border-[#F1F5F9]">
+                <span class="text-[11.5px] font-extrabold text-[#64748B] uppercase tracking-wider block">Evidence Media (${totalMediaCount})</span>
+                <div class="flex items-center gap-2.5 overflow-x-auto pb-1 pt-0.5">
                     ${videos.map((v) => `
                     <button type="button" class="relative w-20 h-16 rounded-xl overflow-hidden border border-[#CBD5E1] shrink-0 group cursor-pointer bg-black" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
                         <img src="${v.poster || photos[0] || IMG.maint[0]}" alt="" class="w-full h-full object-cover">
@@ -3953,22 +3966,22 @@ function screenContractorJobDetail() {
             </div>` : ''}
 
             <!-- Contact Row (Seamlessly integrated at the bottom of the card) -->
-            <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+            <div class="pt-3.5 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] font-bold text-[13px] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
                         ${contactInitials}
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${esc(contactName)}</p>
-                        <p class="text-[11px] font-medium text-[#64748B] m-0">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
+                        <p class="text-[14px] font-bold text-[#0F172A] m-0 truncate">${esc(contactName)}</p>
+                        <p class="text-[12px] font-medium text-[#64748B] m-0">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-1.5 shrink-0">
-                    <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-8.5 h-8.5 rounded-xl bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0] flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer" title="Call">
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] border border-[#CBD5E1] flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer" title="Call">
                         <i data-lucide="phone" class="w-4 h-4"></i>
                     </button>
-                    <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-8.5 h-8.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
+                    <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
                         <i data-lucide="message-square" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -3977,8 +3990,8 @@ function screenContractorJobDetail() {
 
         ${reviewsBlock}
 
-        <!-- Sticky Bottom Primary Action -->
-        <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-[#E2E8F0] z-40 max-w-[430px] mx-auto">
+        <!-- Primary Action (Always visible inside phone frame directly below job card) -->
+        <div class="pt-1">
             ${primaryAction}
         </div>
     </div>
