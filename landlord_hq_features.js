@@ -1639,7 +1639,7 @@ function renderTenantDepositSection(tenantId) {
                 ${renderDepositStatusBadge(dep.status, dep.scheme)}
             </div>
             ${tenantMeta.length ? `
-            <div class="tenant-deposit-facts">
+            <div class="tenant-deposit-facts ${tenantMeta.length === 1 ? 'tenant-deposit-facts--single' : ''}">
                 ${tenantMeta.map(item => `
                 <div class="tenant-deposit-fact">
                     <span class="tenant-deposit-fact-label">${escapeHtml(item.label)}</span>

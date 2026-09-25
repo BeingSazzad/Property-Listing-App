@@ -2974,22 +2974,22 @@ function screenTenantActiveTenancy() {
                 </button>
             </div>
 
-            <!-- Balanced Unit Vitals Chips (Properly proportioned) -->
-            <div class="pt-3 border-t border-[#F1F5F9] flex items-center gap-2 flex-wrap">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+            <!-- Balanced Unit Vitals Chips (Clean single-line layout) -->
+            <div class="pt-3 border-t border-[#F1F5F9] flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
                     <i data-lucide="bed-double" class="w-3.5 h-3.5 text-[#2563EB]"></i>
                     <span>${beds} Beds</span>
                 </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
                     <i data-lucide="bath" class="w-3.5 h-3.5 text-[#2563EB]"></i>
                     <span>${baths} Baths</span>
                 </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
                     <i data-lucide="ruler" class="w-3.5 h-3.5 text-[#2563EB]"></i>
                     <span>${Number(sqft).toLocaleString()} sq ft</span>
                 </span>
                 ${unitObj?.furnished ? `
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
                     <i data-lucide="sofa" class="w-3.5 h-3.5 text-[#2563EB]"></i>
                     <span>${esc(unitObj.furnished)}</span>
                 </span>` : ''}
@@ -3049,7 +3049,7 @@ function screenTenantActiveTenancy() {
                 ${more.map(([icon, label, go]) => `
                 <button type="button" data-go="${go}" class="w-full p-3.5 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-xl bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0">
+                        <div class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                             <i data-lucide="${icon}" class="w-4 h-4"></i>
                         </div>
                         <span class="text-[13px] font-bold text-[#0F172A] truncate">${label}</span>
