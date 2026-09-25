@@ -4209,9 +4209,9 @@ function screenContractorJobInvoice() {
     <div class="screen-content screen-enter ctr-compact-page space-y-4 text-left pb-12">
         
         <!-- 1. Invoice Details Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+        <div class="card p-4 rounded-[16px] bg-white border border-[#E2E8F0] shadow-2xs space-y-3 text-left">
             <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-[10px] bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                     <i data-lucide="file-text" class="w-5 h-5"></i>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -4221,7 +4221,7 @@ function screenContractorJobInvoice() {
             </div>
 
             ${job.invoice ? `
-            <div class="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 mt-2">
+            <div class="p-3.5 rounded-[12px] bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 mt-2">
                 <div class="flex items-center justify-between gap-2">
                     <div>
                         <p class="text-[16px] font-black text-[#0F172A] m-0">${job.invoice.amount}</p>
@@ -4232,7 +4232,7 @@ function screenContractorJobInvoice() {
                     </span>
                 </div>
                 <p class="text-[12px] text-[#475569] m-0">${esc(job.invoice.description || job.issue)}</p>
-                <button type="button" data-action="preview-contractor-invoice" class="w-full py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] text-[12.5px] font-bold hover:bg-[#F1F5F9] transition-colors cursor-pointer text-center mt-1">
+                <button type="button" data-action="preview-contractor-invoice" class="w-full py-2.5 rounded-[12px] bg-white border border-[#CBD5E1] text-[#0F172A] text-[12.5px] font-bold hover:bg-[#F1F5F9] transition-colors cursor-pointer text-center mt-1">
                     <i data-lucide="download" class="w-3.5 h-3.5 inline-block mr-1"></i> Download PDF preview
                 </button>
             </div>` : `
@@ -4241,13 +4241,13 @@ function screenContractorJobInvoice() {
                     <label class="block text-[12px] font-bold text-[#475569] mb-1">Invoice amount (£)</label>
                     <div class="relative flex items-center">
                         <span class="absolute left-3.5 text-[14px] font-bold text-[#64748B]">£</span>
-                        <input type="number" data-field="invoiceAmount" value="${agreedAmount}" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-[#CBD5E1] text-[14px] font-bold text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="185">
+                        <input type="number" data-field="invoiceAmount" value="${agreedAmount}" class="w-full pl-8 pr-3.5 py-2.5 rounded-[12px] border border-[#CBD5E1] text-[14px] font-bold text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="185">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-[12px] font-bold text-[#475569] mb-1">Description</label>
-                    <input type="text" data-field="invoiceDesc" value="${esc(job.issue)}" class="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] text-[13.5px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="Kitchen sink leaking">
+                    <input type="text" data-field="invoiceDesc" value="${esc(job.issue)}" class="w-full px-3.5 py-2.5 rounded-[12px] border border-[#CBD5E1] text-[13.5px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="Kitchen sink leaking">
                 </div>
 
                 <div>
@@ -4255,19 +4255,19 @@ function screenContractorJobInvoice() {
                         <label class="text-[12px] font-bold text-[#475569]">Notes (optional)</label>
                         <span class="text-[11px] text-[#94A3B8]">0/500</span>
                     </div>
-                    <textarea data-field="invoiceNotes" rows="3" class="w-full p-3 rounded-xl border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="Parts, labour breakdown..."></textarea>
+                    <textarea data-field="invoiceNotes" rows="3" class="w-full p-3 rounded-[12px] border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="Parts, labour breakdown..."></textarea>
                 </div>
 
-                <button type="button" data-action="generate-contractor-invoice" class="w-full py-3 rounded-xl bg-[#2563EB] text-white text-[13.5px] font-bold hover:bg-[#1D4ED8] transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-xs">
+                <button type="button" data-action="generate-contractor-invoice" class="w-full py-3 rounded-[12px] bg-[#2563EB] text-white text-[13.5px] font-bold hover:bg-[#1D4ED8] transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-xs">
                     <i data-lucide="file-text" class="w-4 h-4"></i> Generate invoice
                 </button>
             </div>`}
         </div>
 
         <!-- 2. Extra Work Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+        <div class="card p-4 rounded-[16px] bg-white border border-[#E2E8F0] shadow-2xs space-y-3 text-left">
             <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-[10px] bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center shrink-0">
                     <i data-lucide="wrench" class="w-5 h-5"></i>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -4285,7 +4285,7 @@ function screenContractorJobInvoice() {
                 </div>`).join('')}
             </div>` : ''}
 
-            <button type="button" data-action="add-extra-work" class="w-full py-3 px-4 rounded-xl border border-dashed border-[#2563EB] bg-[#EFF6FF]/50 text-[#2563EB] text-[13px] font-bold hover:bg-[#EFF6FF] transition-colors cursor-pointer flex items-center justify-between">
+            <button type="button" data-action="add-extra-work" class="w-full py-3 px-4 rounded-[12px] border border-dashed border-[#2563EB] bg-[#EFF6FF]/50 text-[#2563EB] text-[13px] font-bold hover:bg-[#EFF6FF] transition-colors cursor-pointer flex items-center justify-between">
                 <span class="flex items-center gap-2">
                     <span class="w-5 h-5 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-[12px] font-black">+</span>
                     Request extra work
@@ -4295,9 +4295,9 @@ function screenContractorJobInvoice() {
         </div>
 
         <!-- 3. Job Certificates Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+        <div class="card p-4 rounded-[16px] bg-white border border-[#E2E8F0] shadow-2xs space-y-3 text-left">
             <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#F3E8FF] text-[#9333EA] flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-[10px] bg-[#F3E8FF] text-[#9333EA] flex items-center justify-center shrink-0">
                     <i data-lucide="shield-check" class="w-5 h-5"></i>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -4309,8 +4309,8 @@ function screenContractorJobInvoice() {
             ${certs.length ? `
             <div class="space-y-2">
                 ${certs.map(c => `
-                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-3 text-left">
-                    <div class="w-8 h-8 rounded-lg bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center shrink-0">
+                <div class="p-3 rounded-[12px] bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-3 text-left">
+                    <div class="w-8 h-8 rounded-[8px] bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center shrink-0">
                         <i data-lucide="file-check" class="w-4 h-4"></i>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -4320,7 +4320,7 @@ function screenContractorJobInvoice() {
                 </div>`).join('')}
             </div>` : ''}
 
-            <button type="button" data-contractor-upload="certificate" class="w-full py-4 rounded-xl border border-dashed border-[#CBD5E1] bg-[#F8FAFC] text-[#475569] text-[12.5px] font-bold hover:bg-[#F1F5F9] hover:border-[#94A3B8] transition-colors cursor-pointer flex flex-col items-center justify-center gap-1.5">
+            <button type="button" data-contractor-upload="certificate" class="w-full py-4 rounded-[12px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] text-[#475569] text-[12.5px] font-bold hover:bg-[#F1F5F9] hover:border-[#94A3B8] transition-colors cursor-pointer flex flex-col items-center justify-center gap-1.5">
                 <div class="w-8 h-8 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
                     <i data-lucide="upload-cloud" class="w-4 h-4"></i>
                 </div>
@@ -4331,7 +4331,7 @@ function screenContractorJobInvoice() {
 
         <!-- 4. Final Submission Button -->
         <div class="space-y-2 pt-2">
-            <button type="button" data-action="mark-contractor-complete" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white text-[14px] font-extrabold hover:bg-[#1D4ED8] transition-colors cursor-pointer text-center shadow-md flex items-center justify-center gap-2">
+            <button type="button" data-action="mark-contractor-complete" class="w-full py-3.5 rounded-[12px] bg-[#2563EB] text-white text-[14px] font-extrabold hover:bg-[#1D4ED8] transition-colors cursor-pointer text-center shadow-md flex items-center justify-center gap-2">
                 <i data-lucide="send" class="w-4 h-4"></i> Submit for approval
             </button>
             <p class="text-[11.5px] font-medium text-[#64748B] text-center flex items-center justify-center gap-1">
