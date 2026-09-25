@@ -13,14 +13,14 @@ const CONTRACTOR_DRAWER_NAV = [
 ];
 
 const CONTRACTOR_JOBS = [
-    { id: 0, maintId: 0, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Kitchen sink leaking', priority: 'High', visitDate: 'Today, 4:30 PM', status: 'assigned', assignedDate: 'Mar 10, 2025', inactiveHours: 48, desc: 'Water dripping from pipe under kitchen sink. Tenant reports it started this morning. Access via front door — tenant will be home after 1 PM.', tenantChatId: 0, landlordChatId: 1, reportedBy: 'tenant', reportPhotos: [IMG.maint[0], IMG.maint[2]], reportVideos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }] },
-    { id: 1, maintId: 3, propertyId: 1, property: '45 Queens Road', address: 'London, SW2 3TR', tenant: 'David Wilson', landlord: 'John Smith', issue: 'Boiler not working', priority: 'High', visitDate: 'Tomorrow, 10:00 AM', status: 'accepted', assignedDate: 'Mar 8, 2025', desc: 'No hot water or heating. Boiler showing error code E119. Parking available on street.', tenantChatId: 2, landlordChatId: 1 },
-    { id: 2, maintId: 1, propertyId: 2, property: '88 King Street', address: 'London, EC2V 8BB', tenant: '—', landlord: 'John Smith', issue: 'Window latch broken', priority: 'Medium', visitDate: 'Mar 14, 11:30 AM', status: 'scheduled', assignedDate: 'Mar 7, 2025', desc: 'Bedroom window latch broken — window cannot be secured. Room 2 currently vacant.', tenantChatId: null, landlordChatId: 1 },
-    { id: 3, maintId: 4, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Radiator not heating', priority: 'Medium', visitDate: 'Mar 12, 3:00 PM', status: 'in_progress', assignedDate: 'Mar 5, 2025', desc: 'Living room radiator cold while others work. Possible air lock or valve issue.', tenantChatId: 4, landlordChatId: 1, notes: [{ text: 'Bleed radiator — still cold on return pipe', time: 'Mar 11, 2:30 PM' }], photos: { before: [IMG.maint[2]], during: [], after: [] } },
-    { id: 4, maintId: 6, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Tap replacement', priority: 'Low', visitDate: 'Mar 1, 2025', status: 'waiting_approval', assignedDate: 'Feb 20, 2025', desc: 'Kitchen tap replaced. Invoice submitted awaiting landlord approval.', tenantChatId: 0, landlordChatId: 1, invoice: { amount: '£185', file: 'INV-PLB-1042.pdf', uploadedAt: 'Mar 1, 2025' } },
-    { id: 5, maintId: 5, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Pipe valve replacement', priority: 'Low', visitDate: 'Feb 18, 2025', status: 'completed', assignedDate: 'Feb 10, 2025', desc: 'Living room radiator pipe valve replaced — resolved heating flow.', tenantChatId: 4, landlordChatId: 1 },
-    { id: 6, maintId: null, propertyId: 3, property: '15 Victoria Ave', address: 'London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Annual gas check', priority: 'Low', visitDate: 'Jan 30, 2025', status: 'paid', assignedDate: 'Jan 15, 2025', desc: 'Annual gas safety inspection completed. Certificate uploaded.', tenantChatId: 4, landlordChatId: 1, certificates: [{ name: 'Gas Safety Certificate', uploadedAt: 'Jan 30, 2025' }] },
-    { id: 7, maintId: 7, propertyId: 0, property: '12 Park Lane', address: 'London, SW1A 1AA', unit: 'Communal', scope: 'communal', communalArea: 'Hallway', tenant: '—', landlord: 'John Smith', issue: 'Hallway pipe leaking', priority: 'Medium', visitDate: 'Tomorrow, 11:30 AM', status: 'assigned', assignedDate: 'Mar 10, 2025', desc: 'Main entrance hallway pipe leaking onto floor. Landlord reports water dripping near entrance.', tenantChatId: null, landlordChatId: 1 },
+    { id: 0, maintId: 0, propertyId: 0, property: '12 Park Lane', address: 'Flat 3, 12 Park Lane, London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Kitchen sink leaking', priority: 'High', visitDate: 'Today, 4:30 PM', quoteAmount: 185, status: 'assigned', assignedDate: 'Mar 10, 2025', inactiveHours: 48, desc: 'Water dripping from pipe under kitchen sink. Tenant reports it started this morning. Access via front door — tenant will be home after 1 PM.', tenantChatId: 0, landlordChatId: 1, reportedBy: 'tenant', reportPhotos: [IMG.maint[0], IMG.maint[2]], reportVideos: [{ name: 'under-sink-leak.mp4', poster: IMG.maint[0], demo: true }] },
+    { id: 1, maintId: 3, propertyId: 1, property: '45 Queens Road', address: 'Flat 1B, 45 Queens Road, London, SW2 3TR', tenant: 'David Wilson', landlord: 'John Smith', issue: 'Boiler not working', priority: 'High', visitDate: 'Tomorrow, 10:00 AM', quoteAmount: 240, status: 'accepted', assignedDate: 'Mar 8, 2025', desc: 'No hot water or heating. Boiler showing error code E119. Parking available on street.', tenantChatId: 2, landlordChatId: 1 },
+    { id: 2, maintId: 1, propertyId: 2, property: '88 King Street', address: 'Room 2, 88 King Street, London, EC2V 8BB', tenant: '—', landlord: 'John Smith', issue: 'Window latch broken', priority: 'Medium', visitDate: 'Mar 14, 11:30 AM', quoteAmount: 95, status: 'scheduled', assignedDate: 'Mar 7, 2025', desc: 'Bedroom window latch broken — window cannot be secured. Room 2 currently vacant. Key in safe box (code: 4821).', tenantChatId: null, landlordChatId: 1 },
+    { id: 3, maintId: 4, propertyId: 3, property: '15 Victoria Ave', address: 'Flat 4, 15 Victoria Ave, London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Radiator not heating', priority: 'Medium', visitDate: 'Mar 12, 3:00 PM', quoteAmount: 150, status: 'in_progress', assignedDate: 'Mar 5, 2025', desc: 'Living room radiator cold while others work. Possible air lock or valve issue.', tenantChatId: 4, landlordChatId: 1, notes: [{ text: 'Bleed radiator — still cold on return pipe', time: 'Mar 11, 2:30 PM' }], photos: { before: [IMG.maint[2]], during: [], after: [] } },
+    { id: 4, maintId: 6, propertyId: 0, property: '12 Park Lane', address: 'Flat 2, 12 Park Lane, London, SW1A 1AA', tenant: 'Sarah Johnson', landlord: 'John Smith', issue: 'Tap replacement', priority: 'Low', visitDate: 'Mar 1, 2025', quoteAmount: 185, status: 'waiting_approval', assignedDate: 'Feb 20, 2025', desc: 'Kitchen tap replaced. Invoice submitted awaiting landlord approval.', tenantChatId: 0, landlordChatId: 1, invoice: { amount: '£185', file: 'INV-PLB-1042.pdf', uploadedAt: 'Mar 1, 2025' } },
+    { id: 5, maintId: 5, propertyId: 3, property: '15 Victoria Ave', address: 'Flat 1, 15 Victoria Ave, London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Pipe valve replacement', priority: 'Low', visitDate: 'Feb 18, 2025', quoteAmount: 140, status: 'completed', assignedDate: 'Feb 10, 2025', desc: 'Living room radiator pipe valve replaced — resolved heating flow.', tenantChatId: 4, landlordChatId: 1 },
+    { id: 6, maintId: null, propertyId: 3, property: '15 Victoria Ave', address: 'Flat 3, 15 Victoria Ave, London, N1 5EH', tenant: 'Michael Lee', landlord: 'John Smith', issue: 'Annual gas check', priority: 'Low', visitDate: 'Jan 30, 2025', quoteAmount: 120, status: 'paid', assignedDate: 'Jan 15, 2025', desc: 'Annual gas safety inspection completed. Certificate uploaded.', tenantChatId: 4, landlordChatId: 1, certificates: [{ name: 'Gas Safety Certificate', uploadedAt: 'Jan 30, 2025' }] },
+    { id: 7, maintId: 7, propertyId: 0, property: '12 Park Lane', address: 'Communal Hallway, 12 Park Lane, London, SW1A 1AA', unit: 'Communal', scope: 'communal', communalArea: 'Hallway', tenant: '—', landlord: 'John Smith', issue: 'Hallway pipe leaking', priority: 'Medium', visitDate: 'Tomorrow, 11:30 AM', quoteAmount: 175, status: 'assigned', assignedDate: 'Mar 10, 2025', desc: 'Main entrance hallway pipe leaking onto floor. Landlord reports water dripping near entrance.', tenantChatId: null, landlordChatId: 1 },
 ];
 
 const CONTRACTOR_NOTIFS = [
@@ -3933,14 +3933,59 @@ function screenContractorJobDetail() {
                         <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
                         ${esc(job.address)}
                     </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
-                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
-                        ${esc(job.visitDate || 'Today, 4:30 PM')}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11.5px] font-bold" style="background:${contractorPriorityStyle(job.priority)[0]};color:${contractorPriorityStyle(job.priority)[1]}">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i>
+                        ${esc(job.priority)} Priority
                     </span>
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
                         <i data-lucide="user" class="w-3.5 h-3.5 text-[#64748B] shrink-0"></i>
                         Landlord: ${esc(job.landlord || 'John Smith')}
                     </span>
+                </div>
+            </div>
+
+            <!-- Visit Schedule & Pricing Tiles -->
+            <div class="space-y-2.5 pt-1">
+                <!-- Visit Schedule Tile -->
+                <div class="p-3.5 rounded-xl ${job.visitDate ? 'bg-[#F0FDF4] border border-[#BBF7D0]' : 'bg-[#EFF6FF] border border-[#DBEAFE]'} flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl ${job.visitDate ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#DBEAFE] text-[#2563EB]'} flex items-center justify-center shrink-0">
+                            <i data-lucide="${job.visitDate ? 'calendar-check' : 'calendar'}" class="w-4.5 h-4.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider ${job.visitDate ? 'text-[#15803D]' : 'text-[#2563EB]'} block">
+                                ${job.visitDate ? 'Confirmed Visit' : 'Visit Schedule'}
+                            </span>
+                            <p class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">
+                                ${esc(job.visitDate || 'Awaiting schedule')}
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" data-contractor-action="schedule" class="px-3 py-1.5 rounded-lg ${job.visitDate ? 'bg-white border border-[#CBD5E1] text-[#0F172A]' : 'bg-[#2563EB] text-white'} text-[12px] font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0">
+                        ${job.visitDate ? 'Reschedule' : 'Set visit'}
+                    </button>
+                </div>
+
+                <!-- Agreed Price / Quote Tile -->
+                <div class="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                            <i data-lucide="banknote" class="w-4.5 h-4.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#64748B] block">Job Price / Quote</span>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[16px] font-black text-[#0F172A]">${price}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold ${['paid', 'approved'].includes(job.status) ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#EFF6FF] text-[#2563EB]'}">
+                                    ${paymentStatus}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    ${['assigned', 'accepted'].includes(job.status) ? `
+                    <button type="button" data-action="open-contractor-quote-modal" class="px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-[#2563EB] text-[12px] font-bold hover:bg-[#EFF6FF] hover:border-[#2563EB] transition-colors cursor-pointer shrink-0 flex items-center gap-1">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> ${job.quoteAmount ? 'Edit quote' : 'Set quote'}
+                    </button>` : ''}
                 </div>
             </div>
 
@@ -4041,11 +4086,11 @@ function submitContractorQuote() {
     if (job) {
         job.quoteAmount = parseFloat(amt);
         job.quoteNotes = notes || '';
-        job.status = 'scheduled';
-        AppStore?.save();
+        if (typeof saveContractorJobs === 'function') saveContractorJobs();
+        if (typeof AppStore !== 'undefined') AppStore.save();
     }
     STATE.showContractorQuoteModal = false;
-    toast(`Quote of £${amt} submitted to landlord`);
+    toast(`Quote of £${amt} saved`);
     render();
 }
 
