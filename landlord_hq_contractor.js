@@ -3777,11 +3777,11 @@ function screenContractorJobs() {
                 <p class="dash-section-sub">${counts.all} total · filter by status</p>
             </div>
         </div>
-        <div class="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] text-center my-3">
+        <div class="grid grid-cols-4 gap-1 p-1 rounded-[12px] bg-[#F1F5F9] border border-[#E2E8F0] text-center my-3">
             ${tabs.map(([k, l, n]) => {
                 const isActive = f === k;
                 return `
-                <button type="button" data-contractor-filter="${k}" class="py-2 px-1 rounded-xl text-[11.5px] font-extrabold transition-all cursor-pointer truncate ${isActive ? 'bg-[#2563EB] text-white shadow-2xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
+                <button type="button" data-contractor-filter="${k}" class="py-1.5 px-1.5 rounded-[8px] text-[11.5px] font-bold transition-all cursor-pointer truncate ${isActive ? 'bg-[#2563EB] text-white shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
                     ${l} <span class="text-[10.5px] opacity-80">(${n})</span>
                 </button>`;
             }).join('')}
