@@ -6103,20 +6103,70 @@ function screenRescheduleInspection() {
 }
 
 function screenRenewCompliance() {
-    const item = COMPLIANCE_ITEMS[STATE.complianceId] || COMPLIANCE_ITEMS[0];
-    const p = PROPERTIES[STATE.propertyId];
+    const cid = STATE.complianceId ?? 0;
+    const pid = STATE.propertyId ?? 0;
+    const item = COMPLIANCE_ITEMS[cid] || COMPLIANCE_ITEMS[0];
+    const p = PROPERTIES[pid] || PROPERTIES[0] || { name: 'Property' };
+    const key = `${pid}-${cid}`;
+    const cert = AppStore.complianceCerts[key] || {};
+    const unit = STATE.selectedUnit || '';
+    const unitLabel = unit ? ` · Flat ${unit}` : '';
+
     return `${topBar('Renew Certificate', { back: true })}
-    <div class="screen-content screen-enter">
-        <div class="card p-4 flex items-center gap-3">
-            <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] flex items-center justify-center"><i data-lucide="${item[0]}" class="w-5 h-5 text-[#2563EB]"></i></div>
-            <div><p class="text-[13px] font-bold">${item[1]}</p><p class="text-[12px] text-[#64748B]">${p.name} · Current: ${item[2]}</p></div>
+    <div class="screen-content screen-content-sm screen-enter space-y-4">
+        <!-- Scope Context Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="${item[0] || 'shield-check'}" class="w-5.5 h-5.5"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-[14px] font-bold text-[#0F172A] m-0">${escapeHtml(item[1])}</p>
+                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${escapeHtml(p.name)}${escapeHtml(unitLabel)} · Current: ${escapeHtml(cert.expiryDate || item[2] || 'Not set')}</p>
+            </div>
         </div>
-        ${formField('Certificate Number', '', 'text', 'Enter certificate reference', 'certNumber')}
-        ${formField('Issue Date', '', 'date', 'Select issue date', 'issueDate')}
-        ${formField('Expiry Date', '', 'date', 'Select expiry date', 'expiryDate')}
-        ${formField('Issued By', '', 'text', 'Engineer / company name', 'issuedBy')}
-        ${photoUpload('Upload certificate PDF/photo')}
-        ${formTextarea('Notes', '', 'Additional compliance notes', 'certNotes')}
+
+        <div class="card p-4.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5">
+            <div class="form-group space-y-1 text-left">
+                <label class="form-label text-[12.5px] font-bold text-[#0F172A]">Certificate / Reference Number</label>
+                <input data-field="certNumber" type="text" value="${escapeHtml(cert.certNumber || '')}" placeholder="e.g. GSR-592811" class="form-input w-full text-[13px] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2563EB]">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 text-left">
+                <div class="form-group space-y-1">
+                    <label class="form-label text-[12.5px] font-bold text-[#0F172A]">Issue Date</label>
+                    <input data-field="issueDate" type="date" value="${cert.issueDate || ''}" class="form-input w-full text-[13px] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 outline-none focus:border-[#2563EB]">
+                </div>
+                <div class="form-group space-y-1">
+                    <label class="form-label text-[12.5px] font-bold text-[#0F172A]">Expiry Date *</label>
+                    <input data-field="expiryDate" type="date" value="${cert.expiryDate || ''}" class="form-input w-full text-[13px] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 outline-none focus:border-[#2563EB]">
+                </div>
+            </div>
+
+            <div class="form-group space-y-1 text-left">
+                <label class="form-label text-[12.5px] font-bold text-[#0F172A]">Issued By / Engineer Company</label>
+                <input data-field="issuedBy" type="text" value="${escapeHtml(cert.issuedBy || '')}" placeholder="e.g. Plumber Pro Ltd" class="form-input w-full text-[13px] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 outline-none focus:border-[#2563EB]">
+            </div>
+
+            <div class="form-group space-y-1 text-left">
+                <label class="form-label text-[12.5px] font-bold text-[#0F172A]">Upload Certificate PDF / Photo</label>
+                <button type="button" data-action="pick-add-document-file" class="w-full p-4 rounded-xl border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] bg-[#F8FAFC] flex flex-col items-center justify-center text-center cursor-pointer transition-colors">
+                    <i data-lucide="upload-cloud" class="w-6 h-6 text-[#2563EB] mb-1"></i>
+                    <span class="text-[13px] font-bold text-[#0F172A]">Choose file from device</span>
+                    <span class="text-[11px] text-[#64748B] mt-0.5">PDF, JPG or PNG (up to 10MB)</span>
+                </button>
+            </div>
+
+            <div class="form-group space-y-1 text-left">
+                <label class="form-label text-[12.5px] font-bold text-[#0F172A]">Notes / Compliance Comments</label>
+                <textarea data-field="certNotes" rows="2" placeholder="Additional notes or engineer comments..." class="form-input w-full text-[13px] bg-white border border-[#CBD5E1] rounded-xl p-3 outline-none focus:border-[#2563EB]">${escapeHtml(cert.notes || '')}</textarea>
+            </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center gap-2 text.left text-[12px] text-[#1E40AF]">
+            <i data-lucide="bell-ring" class="w-4 h-4 shrink-0 text-[#2563EB]"></i>
+            <span>Smart Reminders automatically update to alert you 30 days before expiry date!</span>
+        </div>
+
         ${saveBtn('Save Certificate', 'Certificate renewed')}
     </div>`;
 }
