@@ -3883,13 +3883,6 @@ function screenContractorJobDetail() {
                 </div>
             </div>
 
-            <!-- Attached Photo (Clean single media banner, no duplicate media boxes) -->
-            ${mainFeaturedPhoto ? `
-            <div class="rounded-xl overflow-hidden border border-[#E2E8F0] h-[190px] relative cursor-pointer" data-action="preview-maint-media" data-kind="photo" data-src="${String(mainFeaturedPhoto).replace(/"/g, '&quot;')}">
-                <img src="${mainFeaturedPhoto}" alt="${esc(job.issue)}" class="w-full h-full object-cover">
-                ${totalMediaCount > 1 ? `<span class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-xs text-white text-[11px] font-bold flex items-center gap-1"><i data-lucide="image" class="w-3.5 h-3.5"></i> ${totalMediaCount} photos</span>` : ''}
-            </div>` : ''}
-
             <!-- Utility Location Note (Inline info banner, not a giant card) -->
             ${(isPlumbing && waterStopcock) || (isElectrical && elecLocation) ? `
             <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-2.5 text-[12px]">
@@ -3905,6 +3898,24 @@ function screenContractorJobDetail() {
                 <h3 class="text-[12px] font-extrabold text-[#64748B] uppercase tracking-wider m-0">Job Description</h3>
                 <p class="text-[13px] font-medium text-[#334155] leading-relaxed m-0">${esc(job.desc)}</p>
             </div>
+
+            <!-- Attached Media Thumbnails (Compact, clean thumbnails at bottom) -->
+            ${(photos.length || videos.length) ? `
+            <div class="space-y-2 pt-1 border-t border-[#F1F5F9]">
+                <span class="text-[12px] font-extrabold text-[#64748B] uppercase tracking-wider block">Evidence Media (${totalMediaCount})</span>
+                <div class="flex items-center gap-2.5 overflow-x-auto pb-1">
+                    ${videos.map((v) => `
+                    <button type="button" class="relative w-20 h-16 rounded-xl overflow-hidden border border-[#CBD5E1] shrink-0 group cursor-pointer bg-black" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
+                        <img src="${v.poster || photos[0] || IMG.maint[0]}" alt="" class="w-full h-full object-cover">
+                        <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white"><i data-lucide="play" class="w-4 h-4 fill-white"></i></span>
+                    </button>`).join('')}
+
+                    ${photos.map((src) => `
+                    <button type="button" class="relative w-20 h-16 rounded-xl overflow-hidden border border-[#E2E8F0] shrink-0 group cursor-pointer bg-[#F8FAFC]" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
+                        <img src="${src}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                    </button>`).join('')}
+                </div>
+            </div>` : ''}
 
             <!-- Contact Row (Seamlessly integrated at the bottom of the card) -->
             <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
