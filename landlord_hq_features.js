@@ -13830,6 +13830,12 @@ function renderCashFlowCard() {
 }
 
 function screenDashboardEnhanced() {
+    if (STATE.userRole === 'tenant' && typeof screenTenantDashboard === 'function') {
+        return screenTenantDashboard();
+    }
+    if (STATE.userRole === 'contractor' && typeof screenContractorDashboard === 'function') {
+        return screenContractorDashboard();
+    }
     if (showScreenSkeleton('dashboard')) return renderDashboardSkeleton();
     const stats = portfolioStats();
     const occupiedProps = stats.occupiedProperties ?? PROPERTIES.filter(p => propertyOccupiedFlatCount(p.id) > 0).length;

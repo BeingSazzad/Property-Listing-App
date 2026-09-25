@@ -4120,6 +4120,12 @@ const maintPriorityStyle = (priority) => ({
 
 /* ─── Screens ─── */
 function screenDashboard() {
+    if (STATE.userRole === 'tenant' && typeof screenTenantDashboard === 'function') {
+        return screenTenantDashboard();
+    }
+    if (STATE.userRole === 'contractor' && typeof screenContractorDashboard === 'function') {
+        return screenContractorDashboard();
+    }
     const openMaint = MAINTENANCE_ITEMS.filter(m => m.status === 'open').length;
     const tenantCount = TENANTS.length;
     const vacantCount = PROPERTIES.filter(p => p.status === 'Vacant').length;
@@ -4242,6 +4248,12 @@ function propertiesSummaryBar() {
 }
 
 function screenProperties() {
+    if (STATE.userRole === 'tenant' && typeof screenTenantBuildingInfo === 'function') {
+        return screenTenantBuildingInfo();
+    }
+    if (STATE.userRole === 'contractor' && typeof screenContractorScheduleHub === 'function') {
+        return screenContractorScheduleHub();
+    }
     if (typeof syncPropertyStatus === 'function') PROPERTIES.forEach(p => syncPropertyStatus(p.id));
     const filtered = filterProperties();
     const counts = {
@@ -4394,6 +4406,12 @@ function screenPropertyDetail() {
 }
 
 function screenTenants() {
+    if (STATE.userRole === 'tenant' && typeof screenTenantActiveTenancy === 'function') {
+        return screenTenantActiveTenancy();
+    }
+    if (STATE.userRole === 'contractor' && typeof screenContractorScheduleHub === 'function') {
+        return screenContractorScheduleHub();
+    }
     const q = STATE.search.tenants.toLowerCase();
     const f = STATE.tenantFilter;
     const filtered = TENANT_LIST.filter(t => {
