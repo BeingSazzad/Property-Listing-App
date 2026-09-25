@@ -4271,47 +4271,34 @@ function renderContractorEarningsTrendChart(data) {
 }
 
 function screenContractorEarnings() {
-    const period = STATE.contractorEarnPeriod || '1M';
-    const chartData = getContractorEarningsDataset(period);
     const summary = contractorEarningsSummary();
-    const fee = Math.round(chartData.total * 0.05);
-    const net = chartData.total - fee;
-    const avgJob = summary.completed ? Math.round(chartData.total / Math.max(1, summary.completed)) : 175;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
     return `${topBar('Earnings', { back: true })}
-    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-8">
-        <!-- Hero Earnings Summary Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${chartData.periodLabel}</span>
-            <div class="flex items-baseline gap-3">
-                <h2 class="text-[28px] font-black text-[#2563EB] tracking-tight leading-none m-0">£${chartData.total.toLocaleString()}</h2>
-                <span class="text-[12px] font-bold text-[#16A34A] flex items-center gap-1">
-                    <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
-                    ${chartData.change}
-                </span>
-            </div>
-            ${renderCtrEarnPeriodPills()}
-        </div>
-
-        <!-- Recent Payout Ledger -->
-        <div class="space-y-2">
-            <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider px-1 m-0">Recent Payouts</h3>
+    <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-16">
+        <!-- Recent Payouts Ledger -->
+        <div class="space-y-2.5">
+            <h3 class="text-[14px] font-extrabold text-[#0F172A] uppercase tracking-wider px-1 m-0">Recent Payouts</h3>
             ${summary.jobs.length ? `
-            <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
+            <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs divide-y divide-[#F1F5F9] overflow-hidden">
                 ${summary.jobs.map(j => `
-                <div class="p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] transition-colors">
+                <div data-go="contractor-job-detail" data-job="${j.id}" class="p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] transition-colors cursor-pointer group">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-9 h-9 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0 border border-[#A7F3D0]">
-                            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+                        <div class="w-10 h-10 rounded-full bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0 border border-[#A7F3D0]">
+                            <i data-lucide="arrow-down-left" class="w-4.5 h-4.5"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[13.5px] font-bold text-[#0F172A] truncate m-0">${j.issue}</p>
-                            <p class="text-[11.5px] font-medium text-[#64748B] truncate m-0 mt-0.5">${j.visitDate || j.assignedDate || 'Completed'}</p>
+                            <p class="text-[14px] font-bold text-[#0F172A] truncate m-0 group-hover:text-[#2563EB] transition-colors">${esc(j.issue)}</p>
+                            <p class="text-[12px] font-medium text-[#64748B] truncate m-0 mt-0.5">${esc(j.visitDate || j.assignedDate || 'Completed')}</p>
                         </div>
                     </div>
-                    <span class="text-[13.5px] font-extrabold text-[#059669] shrink-0">+${contractorJobEstimate(j)}</span>
+                    <span class="text-[14px] font-extrabold text-[#059669] shrink-0">+${contractorJobEstimate(j)}</span>
                 </div>`).join('')}
-            </div>` : `<p class="text-[12.5px] font-medium text-[#64748B] px-1">Completed jobs will appear here.</p>`}
+            </div>` : `
+            <div class="card p-6 rounded-2xl bg-white border border-[#E2E8F0] text-center space-y-2">
+                <i data-lucide="banknote" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
+                <p class="text-[13px] font-semibold text-[#64748B] m-0">No payouts yet — completed jobs will appear here.</p>
+            </div>`}
         </div>
     </div>`;
 }
