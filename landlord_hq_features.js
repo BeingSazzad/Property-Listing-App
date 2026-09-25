@@ -18388,6 +18388,7 @@ function screenComplianceDashboard() {
 }
 
 function screenReminders() {
+    if (STATE.reminderFilter === 'custom') STATE.reminderFilter = 'all';
     const filter = STATE.reminderFilter || 'all';
     const propFilter = STATE.reminderPropertyFilter || 'all';
     const allReminders = (AppStore.reminders || []).map(r => recalcReminderMeta({ ...r }));
@@ -18399,13 +18400,11 @@ function screenReminders() {
     const totalCount = propFilteredList.length;
     const soonCount = propFilteredList.filter(r => r.urgency === 'soon' || r.urgency === 'warn' || ((r.daysLeft ?? 99) <= 30 && (r.daysLeft ?? -99) >= 0)).length;
     const overdueCount = propFilteredList.filter(r => r.urgency === 'overdue' || (r.daysLeft ?? 0) < 0).length;
-    const customCount = propFilteredList.filter(r => !r.auto).length;
 
     const tabs = [
         ['all', 'All', totalCount],
         ['overdue', 'Overdue', overdueCount, overdueCount > 0],
         ['soon', 'Due Soon', soonCount, false],
-        ['custom', 'Custom', customCount, false],
     ];
     const list = filteredReminders(filter, propFilter);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
