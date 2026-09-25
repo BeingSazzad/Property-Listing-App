@@ -3629,14 +3629,19 @@ function renderCtrScheduleHero(job) {
 }
 
 function renderCtrOverviewCard(icon, label, value, sub) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `
-    <button type="button" data-go="contractor-jobs" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] transition-all flex flex-col text-left cursor-pointer group">
-        <span class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:bg-[#2563EB] group-hover:text-white transition-colors">
-            <i data-lucide="${icon}" class="w-4 h-4"></i>
-        </span>
-        <p class="text-[24px] font-black text-[#0F172A] tracking-tight leading-none mt-2.5 mb-0">${value}</p>
-        <p class="text-[13px] font-bold text-[#0F172A] m-0 mt-1 truncate group-hover:text-[#2563EB] transition-colors">${label}</p>
-        <p class="text-[11px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${sub}</p>
+    <button type="button" data-go="contractor-jobs" class="card p-2.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] transition-all flex flex-col text-left cursor-pointer group">
+        <div class="flex items-center justify-between gap-2">
+            <span class="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:bg-[#2563EB] group-hover:text-white transition-colors">
+                <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+            </span>
+            <span class="text-[20px] font-black text-[#0F172A] tracking-tight leading-none">${value}</span>
+        </div>
+        <div class="mt-2 min-w-0">
+            <p class="text-[12.5px] font-extrabold text-[#0F172A] m-0 leading-snug truncate group-hover:text-[#2563EB] transition-colors">${esc(label)}</p>
+            <p class="text-[10.5px] font-semibold text-[#64748B] m-0 mt-0.5 truncate">${esc(sub)}</p>
+        </div>
     </button>`;
 }
 
