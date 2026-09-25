@@ -3328,16 +3328,17 @@ function screenTenantAccount() {
     const unitTag = t.unit ? `Tenant · ${t.unit}` : 'Tenant';
 
     const group1 = [
-        ['user', 'Personal information', 'tenant-edit-profile'],
+        ['user', 'Personal Information', 'tenant-edit-profile'],
+        ['home', 'My Tenancy & Lease', 'tenant-active-tenancy'],
+        ['credit-card', 'Payment History', 'transaction-history'],
+        ['building-2', 'Building Information', 'tenant-building-info'],
         ['bell', 'Notification Settings', 'notifications-settings'],
         ['key-round', 'Change Password', 'password'],
-        ['credit-card', 'Transaction History', 'transaction-history'],
-        ['home', 'My Tenancy', 'tenant-active-tenancy'],
     ];
 
     const group2 = [
         ['circle-help', 'Help & Support', 'help-support'],
-        ['info', 'About', 'about'],
+        ['info', 'About Landlord HQ', 'about'],
         ['shield-check', 'Privacy Policy', 'privacy'],
         ['file-text', 'Terms & Conditions', 'terms'],
     ];
@@ -3384,6 +3385,9 @@ function screenTenantAccount() {
         <button type="button" data-action="logout" class="w-full py-3.5 rounded-2xl border border-[#FCA5A5] bg-white text-[#EF4444] font-extrabold text-[14px] hover:bg-[#FEF2F2] transition-colors cursor-pointer text-center shadow-xs mt-2">
             Log out
         </button>
+        <div class="text-center pt-1">
+            <button type="button" data-go="delete-account" class="text-[12px] font-semibold text-[#94A3B8] hover:text-[#DC2626] transition-colors cursor-pointer">Delete account</button>
+        </div>
     </div>`;
 }
 
@@ -4141,19 +4145,26 @@ function screenContractorProfile() {
     const av = typeof getContractorProfilePhoto === 'function' ? getContractorProfilePhoto() : (IMG?.avatar?.plumber || 'assets/plumber.png');
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const subLabel = `${trade.shortLabel || 'Contractor'} · ${u.company || 'Service Pro'}`;
+    const certCount = typeof ensureContractorCertificates === 'function' ? ensureContractorCertificates(u).length : 2;
+    const reviewSummary = typeof contractorReviewSummary === 'function' ? contractorReviewSummary() : { avg: '4.8', count: 12 };
 
     const group1 = [
-        ['user', 'Personal information', 'personal-info'],
-        ['building-2', 'Company information', 'contractor-company'],
+        ['user', 'Personal Information', 'personal-info'],
+        ['building-2', 'Company Information', 'contractor-company'],
+        ['users', 'Organisation & Sub-accounts', 'contractor-org', 'Master + field teams'],
+        ['shield-check', 'Certifications', 'contractor-certifications', `${certCount} on file`],
         ['bell', 'Notification Settings', 'notifications-settings'],
         ['key-round', 'Change Password', 'password'],
-        ['shield-check', 'Certifications', 'contractor-certifications'],
-        ['star', 'Reviews & Ratings', 'contractor-reviews'],
     ];
 
     const group2 = [
+        ['banknote', 'Earnings & Payouts', 'contractor-earnings'],
+        ['star', 'Reviews & Ratings', 'contractor-reviews', reviewSummary.count ? `${reviewSummary.avg} (${reviewSummary.count})` : '—'],
+    ];
+
+    const group3 = [
         ['circle-help', 'Help & Support', 'help-support'],
-        ['info', 'About', 'about'],
+        ['info', 'About Landlord HQ', 'about'],
         ['shield-check', 'Privacy Policy', 'privacy'],
         ['file-text', 'Terms & Conditions', 'terms'],
     ];
@@ -4167,6 +4178,9 @@ function screenContractorProfile() {
                 <div class="min-w-0">
                     <h3 class="text-[16px] font-extrabold text-[#0F172A] truncate m-0">${esc(displayName)}</h3>
                     <p class="text-[12.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(subLabel)}</p>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] mt-1">
+                        <i data-lucide="gift" class="w-3 h-3"></i> Always free
+                    </span>
                 </div>
             </div>
             <button type="button" data-go="personal-info" class="text-[#2563EB] text-[12px] font-bold hover:underline cursor-pointer shrink-0">Edit</button>
@@ -4174,19 +4188,37 @@ function screenContractorProfile() {
 
         <!-- Inset Group 1: Business & Account Settings -->
         <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden text-left">
-            ${group1.map(([icon, label, targetGo]) => `
+            ${group1.map(([icon, label, targetGo, hint]) => `
             <button type="button" data-go="${targetGo}" class="w-full p-4 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left group">
                 <div class="flex items-center gap-3.5 min-w-0">
                     <i data-lucide="${icon}" class="w-5 h-5 text-[#334155] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
                     <span class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">${label}</span>
                 </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:translate-x-0.5 transition-transform shrink-0"></i>
+                <div class="flex items-center gap-2 shrink-0">
+                    ${hint ? `<span class="text-[11.5px] font-medium text-[#64748B]">${esc(hint)}</span>` : ''}
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:translate-x-0.5 transition-transform"></i>
+                </div>
             </button>`).join('')}
         </div>
 
-        <!-- Inset Group 2: Support & Policies -->
+        <!-- Inset Group 2: Earnings & Reviews -->
         <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden text-left">
-            ${group2.map(([icon, label, targetGo]) => `
+            ${group2.map(([icon, label, targetGo, hint]) => `
+            <button type="button" data-go="${targetGo}" class="w-full p-4 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left group">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <i data-lucide="${icon}" class="w-5 h-5 text-[#334155] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
+                    <span class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">${label}</span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    ${hint ? `<span class="text-[11.5px] font-medium text-[#64748B]">${esc(hint)}</span>` : ''}
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:translate-x-0.5 transition-transform"></i>
+                </div>
+            </button>`).join('')}
+        </div>
+
+        <!-- Inset Group 3: Support & Policies -->
+        <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden text-left">
+            ${group3.map(([icon, label, targetGo]) => `
             <button type="button" data-go="${targetGo}" class="w-full p-4 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left group">
                 <div class="flex items-center gap-3.5 min-w-0">
                     <i data-lucide="${icon}" class="w-5 h-5 text-[#334155] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
@@ -4200,6 +4232,10 @@ function screenContractorProfile() {
         <button type="button" data-action="logout" class="w-full py-3.5 rounded-2xl border border-[#FCA5A5] bg-white text-[#EF4444] font-extrabold text-[14px] hover:bg-[#FEF2F2] transition-colors cursor-pointer text-center shadow-xs mt-2">
             Log out
         </button>
+        <div class="text-center space-y-1 pt-1">
+            <button type="button" data-go="delete-account" class="text-[12px] font-semibold text-[#94A3B8] hover:text-[#DC2626] transition-colors cursor-pointer">Delete account</button>
+            <p class="text-[11px] text-[#CBD5E1] m-0">Contractor portal · Demo build</p>
+        </div>
     </div>`;
 }
 

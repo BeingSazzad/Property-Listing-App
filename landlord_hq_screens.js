@@ -4931,16 +4931,17 @@ function screenProfile() {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
     const group1 = [
-        ['user', 'Personal information', 'personal-info'],
+        ['user', 'Personal Information', 'personal-info'],
+        ['landmark', 'Rent Collection Accounts', 'bank-accounts'],
+        ['gem', 'Subscription & Billing', 'subscription'],
+        ['credit-card', 'Transaction History', 'transaction-history'],
         ['bell', 'Notification Settings', 'notifications-settings'],
         ['key-round', 'Change Password', 'password'],
-        ['credit-card', 'Transaction History', 'transaction-history'],
-        ['gem', 'Subscription', 'subscription'],
     ];
 
     const group2 = [
         ['circle-help', 'Help & Support', 'help-support'],
-        ['info', 'About', 'about'],
+        ['info', 'About Landlord HQ', 'about'],
         ['shield-check', 'Privacy Policy', 'privacy'],
         ['file-text', 'Terms & Conditions', 'terms'],
     ];
@@ -4987,6 +4988,9 @@ function screenProfile() {
         <button type="button" data-action="logout" class="w-full py-3.5 rounded-2xl border border-[#FCA5A5] bg-white text-[#EF4444] font-extrabold text-[14px] hover:bg-[#FEF2F2] transition-colors cursor-pointer text-center shadow-xs mt-2">
             Log out
         </button>
+        <div class="text-center pt-1">
+            <button type="button" data-go="delete-account" class="text-[12px] font-semibold text-[#94A3B8] hover:text-[#DC2626] transition-colors cursor-pointer">Delete account</button>
+        </div>
     </div>`;
 }
 
