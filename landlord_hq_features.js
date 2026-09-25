@@ -7778,23 +7778,7 @@ function resetContractorFilters() {
 }
 
 function renderContractorsPageHeader() {
-    return `
-    <div class="screen-header ctr-page-header">
-        <div class="sub-header-row">
-            <div class="sub-header-left">
-                <button type="button" data-action="back" class="back-btn" aria-label="Back"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-                <div class="min-w-0">
-                    <h1 class="sub-header-title">Contractors</h1>
-                </div>
-            </div>
-        </div>
-        <div class="ctr-header-actions">
-            <button type="button" data-go="invite-contractor" class="ctr-header-invite">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                Invite contractor
-            </button>
-        </div>
-    </div>`;
+    return `${topBar('Contractors', { back: true })}`;
 }
 
 function contractorRow(c) {
@@ -7841,13 +7825,19 @@ function screenContractors() {
     const usedTradeIds = [...new Set(CONTRACTORS.map(c => c.tradeId || (typeof resolveContractorTrade === 'function' ? resolveContractorTrade(c).id : 'general')))];
 
     return `${renderContractorsPageHeader()}
-    <div class="screen-content screen-content-sm screen-enter ctr-page space-y-3">
+    <div class="screen-content screen-content-sm screen-enter ctr-page space-y-3 pb-8">
+        <button type="button" data-go="invite-contractor" class="btn-primary w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer text-[13.5px]">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Invite contractor</span>
+        </button>
+
         ${pendingInvites.length ? `
         <button type="button" data-go="invite-contractor" class="ctr-pending-strip w-full text-left">
             <i data-lucide="clock" class="w-4 h-4 shrink-0"></i>
             <span>${pendingInvites.length} invite${pendingInvites.length === 1 ? '' : 's'} pending</span>
             <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 ml-auto"></i>
         </button>` : ''}
+
         <div class="ctr-search-row flex items-center gap-2">
             <div class="search-bar ctr-search flex-1 flex items-center bg-white px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] shadow-2xs">
                 <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0 mr-2"></i>
@@ -7885,15 +7875,6 @@ function screenContractors() {
             <p class="ctr-empty-title font-bold text-[#0F172A]">No contractors found</p>
             <p class="ctr-empty-sub text-[12px] text-[#64748B] mt-1">${q || tradeF !== 'all' ? 'Try a different search or trade filter' : 'Invite your first contractor to get started'}</p>
         </div>`}
-
-        <button type="button" data-go="invite-contractor" class="ctr-invite-banner card w-full text-left p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-3">
-            <span class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
-            <span class="ctr-invite-banner-copy min-w-0 flex-1">
-                <span class="block text-[13px] font-bold text-[#0F172A]">Invite your trusted contractor</span>
-                <span class="block text-[11px] text-[#64748B] truncate">They join Landlord HQ to receive jobs, chat, and send invoices.</span>
-            </span>
-            <span class="text-[12px] font-bold text-[#2563EB] shrink-0 flex items-center gap-0.5">Invite <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
-        </button>
     </div>`;
 }
 
