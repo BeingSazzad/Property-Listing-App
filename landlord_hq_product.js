@@ -529,18 +529,25 @@ function renderDocFolderToolbar(contextKey, opts = {}) {
 
 function renderDocumentRowCompact(doc, propertyId, folder) {
     const upload = typeof isUserUploadedDoc === 'function' ? isUserUploadedDoc(doc) : false;
-    const visual = typeof documentRowVisual === 'function' ? documentRowVisual(doc) : { icon: 'file-text', color: folder?.color || '#64748B', bg: folder?.bg || '#F1F5F9' };
     const sub = typeof documentRowSubtitle === 'function' ? documentRowSubtitle(doc) : (doc.date || '');
     return `
-    <button type="button" data-go="document-preview" data-doc="${doc.id}" class="doc-row-compact w-full text-left">
-        <span class="doc-row-compact-icon" style="background:${folder?.bg || visual.bg};color:${folder?.color || visual.color}">
-            <i data-lucide="${visual.icon}" class="w-4 h-4"></i>
+    <button type="button" data-go="document-preview" data-doc="${doc.id}" class="py-3 px-1 w-full text-left cursor-pointer flex items-center justify-between gap-3 group hover:bg-[#F8FAFC] rounded-xl transition-colors">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0">
+                <p class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0${upload ? ' underline decoration-dotted' : ''}">${escapeHtml(doc.name)}</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-[11px] font-medium text-[#64748B]">${escapeHtml(sub)}</span>
+                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">PDF Document</span>
+                </div>
+            </div>
+        </div>
+        <span class="text-[#2563EB] text-[12px] font-bold flex items-center gap-0.5 shrink-0 opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+            <span>View</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
         </span>
-        <span class="doc-row-compact-copy min-w-0 flex-1">
-            <span class="doc-row-compact-name${upload ? ' doc-row-compact-name--upload' : ''}">${escapeHtml(doc.name)}</span>
-            <span class="doc-row-compact-sub">${escapeHtml(sub)}</span>
-        </span>
-        <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
     </button>`;
 }
 
@@ -677,24 +684,47 @@ function renderTenantDocFolderBrowser(tenantId) {
         if (!files.length) return null;
         const open = STATE.docFolderOpen[`${contextKey}-${folder.id}`] !== false;
         return `
-        <div class="doc-folder card">
-            <button type="button" data-action="toggle-doc-folder" data-folder="${folder.id}" data-ctx="${contextKey}" class="doc-folder-head w-full text-left">
-                <span class="doc-folder-icon" style="background:${folder.bg};color:${folder.color}"><i data-lucide="${folder.icon}" class="w-5 h-5"></i></span>
-                <span class="doc-folder-meta min-w-0 flex-1">
-                    <span class="doc-folder-name">${folder.label}</span>
-                    <span class="doc-folder-sub">${files.length} file${files.length === 1 ? '' : 's'}</span>
-                </span>
-                <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5 text-[#94A3B8]"></i>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm mb-3 text-left">
+            <button type="button" data-action="toggle-doc-folder" data-folder="${folder.id}" data-ctx="${contextKey}" class="flex items-center justify-between w-full text-left gap-3 group cursor-pointer">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:${folder.bg};color:${folder.color}">
+                        <i data-lucide="${folder.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="text-[14.5px] font-extrabold text-[#0F172A] m-0 tracking-tight">${folder.label}</h4>
+                        <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5">${files.length} file${files.length === 1 ? '' : 's'}</p>
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-[#F8FAFC] flex items-center justify-center text-[#64748B] group-hover:bg-[#EFF6FF] group-hover:text-[#2563EB] transition-colors shrink-0">
+                    <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" class="w-4 h-4"></i>
+                </div>
             </button>
-            ${open ? `<div class="doc-folder-body doc-list">${files.map((f, fIdx) => {
-                const docMatch = typeof findDocumentByName === 'function' ? findDocumentByName(f.name) : null;
-                const goAttr = docMatch ? `data-go="document-preview" data-doc="${docMatch.id}"` : `data-go="document-preview" data-preview-source="tenant" data-preview-idx="${fIdx}" data-tid="${tenantId}"`;
-                return `
-            <button type="button" ${goAttr} class="doc-row w-full text-left cursor-pointer">
-                <span class="doc-row-icon" style="color:${folder.color};background:${folder.bg}"><i data-lucide="file-text" class="w-4 h-4"></i></span>
-                <span class="doc-row-text min-w-0"><p class="doc-row-name">${escapeHtml(f.name)}</p><p class="doc-row-sub">${escapeHtml(f.date)}</p></span>
-            </button>`;
-            }).join('')}</div>` : ''}
+            ${open ? `
+            <div class="pt-2 mt-3 border-t border-[#F1F5F9] divide-y divide-[#F1F5F9]">
+                ${files.map((f, fIdx) => {
+                    const docMatch = typeof findDocumentByName === 'function' ? findDocumentByName(f.name) : null;
+                    const goAttr = docMatch ? `data-go="document-preview" data-doc="${docMatch.id}"` : `data-go="document-preview" data-preview-source="tenant" data-preview-idx="${fIdx}" data-tid="${tenantId}"`;
+                    return `
+                <button type="button" ${goAttr} class="py-3 px-1 w-full text-left cursor-pointer flex items-center justify-between gap-3 group hover:bg-[#F8FAFC] rounded-xl transition-colors">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${escapeHtml(f.name)}</p>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[11px] font-medium text-[#64748B]">${escapeHtml(f.date)}</span>
+                                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">PDF Document</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-[#2563EB] text-[12px] font-bold flex items-center gap-0.5 shrink-0 opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                        <span>View</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </span>
+                </button>`;
+                }).join('')}
+            </div>` : ''}
         </div>`;
     }).filter(Boolean);
 
