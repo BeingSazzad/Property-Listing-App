@@ -2840,21 +2840,27 @@ function screenTenantDocuments() {
 function screenTenantReferencing() {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : 0;
     const ref = typeof getTenantReferencing === 'function' ? getTenantReferencing(tid) : {};
-    return `${topBar('Tenant referencing', { back: true, sub: 'Application & verification' })}
-    <div class="screen-content screen-enter stack-sm">
-        <p class="text-[13px] text-[#64748B]">Documents and details collected during your application. Upload missing items for landlord review.</p>
+    return `${topBar('Tenant referencing', { back: true })}
+    <div class="screen-content screen-enter space-y-3 text-left">
+        <p class="text-[12.5px] font-medium text-[#64748B] m-0 mb-3 leading-relaxed">Documents and details collected during your application. Upload missing items for landlord review.</p>
         ${(typeof TENANT_REF_SECTIONS !== 'undefined' ? TENANT_REF_SECTIONS : []).map(sec => {
             const data = ref[sec.key] || { status: 'missing' };
             const [label, bg, color] = typeof tenantRefStatusLabel === 'function' ? tenantRefStatusLabel(data.status) : ['Pending', '#FEF3C7', '#D97706'];
             return `
-        <button type="button" data-go="tenant-ref-detail" data-ref-key="${sec.key}" class="tnt-ref-row card w-full text-left p-4">
-            <span class="tnt-ref-icon"><i data-lucide="${sec.icon}" class="w-5 h-5"></i></span>
-            <span class="min-w-0 flex-1">
-                <p class="tnt-ref-title">${sec.label}</p>
-                <p class="tnt-ref-hint">${sec.hint || ''}</p>
-            </span>
-            <span class="badge shrink-0" style="background:${bg};color:${color}">${label}</span>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+        <button type="button" data-go="tenant-ref-detail" data-ref-key="${sec.key}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm w-full text-left flex items-center justify-between gap-3 min-h-[72px] hover:border-[#BFDBFE] transition-all cursor-pointer group">
+            <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-[#DBEAFE] group-hover:bg-[#DBEAFE] transition-colors">
+                    <i data-lucide="${sec.icon}" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h4 class="text-[14px] font-extrabold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${sec.label}</h4>
+                    <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${sec.hint || 'Verification & details'}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0" style="background:${bg};color:${color}">${label}</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:translate-x-0.5 transition-transform shrink-0"></i>
+            </div>
         </button>`;
         }).join('')}
     </div>`;

@@ -8457,9 +8457,9 @@ const TENANT_REF_SECTIONS = [
     { key: 'rightToRent', label: 'Right to Rent', icon: 'shield-check', type: 'upload', hint: 'Share code or document from Home Office check' },
     { key: 'proofOfAddress', label: 'Proof of Address', icon: 'map-pin', type: 'upload', hint: 'Utility bill or bank statement (last 3 months)' },
     { key: 'proofOfIncome', label: 'Proof of Income', icon: 'banknote', type: 'upload', hint: 'Recent payslips or bank statements' },
-    { key: 'employment', label: 'Employment Details', icon: 'briefcase', type: 'form' },
-    { key: 'previousLandlord', label: 'Previous Landlord', icon: 'home', type: 'form' },
-    { key: 'guarantor', label: 'Guarantor Details', icon: 'user-check', type: 'form' },
+    { key: 'employment', label: 'Employment Details', icon: 'briefcase', type: 'form', hint: 'Employer name, role & salary verification' },
+    { key: 'previousLandlord', label: 'Previous Landlord', icon: 'home', type: 'form', hint: 'Reference check from previous tenancy' },
+    { key: 'guarantor', label: 'Guarantor Details', icon: 'user-check', type: 'form', hint: 'Guarantor agreement & income check' },
 ];
 
 const TENANT_CHECKOUT_CHECKLIST = [
