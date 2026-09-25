@@ -3797,38 +3797,53 @@ function screenContractorJobDetail() {
     const reviewsBlock = typeof renderContractorJobReviewsReadonly === 'function'
         ? renderContractorJobReviewsReadonly(maintItem, job) : '';
     return `${topBar('Job details', { back: true })}
-    <div class="screen-content screen-enter ctr-compact-page ctr-compact-page--footer space-y-3.5 pb-12">
-        <div class="ctr-compact-head">
-            <span class="ctr-v2-job-badge" style="background:${st.bg};color:${st.color}">${st.label}</span>
-            <span class="ctr-compact-id">#JOB-${1000 + job.id}</span>
-        </div>
-        <h1 class="ctr-compact-title">${esc(job.issue)}</h1>
-        <div class="ctr-compact-meta">
-            <span><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>${esc(job.address)}</span>
-            <span><i data-lucide="calendar" class="w-3.5 h-3.5"></i>${esc(job.visitDate || 'Not scheduled')}</span>
+    <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-16">
+        <!-- Top Hero Card with Status, Job ID, Title, Address & Schedule -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5 text-left">
+            <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase shadow-2xs" style="background:${st.bg};color:${st.color}">
+                    ${st.label}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-lg bg-[#F8FAFC] text-[#475569] text-[11px] font-mono font-bold tracking-wider border border-[#E2E8F0]">
+                    #JOB-${1000 + job.id}
+                </span>
+            </div>
+
+            <h1 class="text-[22px] font-black text-[#0F172A] tracking-tight leading-snug m-0 pt-0.5">${esc(job.issue)}</h1>
+
+            <div class="flex flex-wrap items-center gap-2 pt-0.5 text-[12.5px] font-semibold text-[#64748B]">
+                <span class="flex items-center gap-1.5 bg-[#F8FAFC] px-2.5 py-1 rounded-xl border border-[#E2E8F0] text-[#475569]">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    ${esc(job.address)}
+                </span>
+                <span class="flex items-center gap-1.5 bg-[#EFF6FF] px-2.5 py-1 rounded-xl border border-[#DBEAFE] text-[#2563EB]">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    ${esc(job.visitDate || 'Not scheduled')}
+                </span>
+            </div>
         </div>
 
-        <!-- Site Access & Emergency Shutoff Location -->
+        <!-- Site Access & Emergency Shutoff Location Hero Banner -->
         ${isPlumbing ? `
-        <div class="card ctr-compact-block p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#DBEAFE] space-y-1 text-left">
+        <div class="card p-3.5 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD] shadow-2xs space-y-1 text-left relative overflow-hidden group hover:border-[#0284C7] transition-all">
             <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-lg bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center shrink-0">
-                    <i data-lucide="droplet" class="w-3.5 h-3.5"></i>
+                <div class="w-7 h-7 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shrink-0">
+                    <i data-lucide="droplet" class="w-4 h-4"></i>
                 </div>
-                <span class="text-[11px] font-bold text-[#1E40AF] uppercase tracking-wider">Main Water Stopcock</span>
+                <span class="text-[11px] font-extrabold text-[#0369A1] uppercase tracking-wider">Main Water Stopcock</span>
             </div>
-            <p class="text-[12.5px] font-bold text-[#0F172A] m-0 pl-8">${esc(waterStopcock)}</p>
+            <p class="text-[13px] font-bold text-[#0F172A] m-0 pl-9 leading-snug">${esc(waterStopcock)}</p>
         </div>` : ''}
 
         ${isElectrical ? `
-        <div class="card ctr-compact-block p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] space-y-1 text-left">
+        <div class="card p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] shadow-2xs space-y-1 text-left relative overflow-hidden group hover:border-[#D97706] transition-all">
             <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-lg bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0">
-                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                <div class="w-7 h-7 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
                 </div>
-                <span class="text-[11px] font-bold text-[#92400E] uppercase tracking-wider">Fuse Box / Breaker Location</span>
+                <span class="text-[11px] font-extrabold text-[#92400E] uppercase tracking-wider">Fuse Box / Breaker Location</span>
             </div>
-            <p class="text-[12.5px] font-bold text-[#0F172A] m-0 pl-8">${esc(elecLocation)}</p>
+            <p class="text-[13px] font-bold text-[#0F172A] m-0 pl-9 leading-snug">${esc(elecLocation)}</p>
         </div>` : ''}
 
         <div class="card ctr-compact-block">
