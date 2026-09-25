@@ -4237,6 +4237,11 @@ function screenContractorJobInvoice() {
                 </button>
             </div>` : `
             <div class="space-y-3 pt-1">
+                <div class="p-3 rounded-[12px] bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between">
+                    <span class="text-[12px] font-bold text-[#64748B]">Job issue</span>
+                    <span class="text-[13px] font-extrabold text-[#0F172A] truncate max-w-[210px]">${esc(job.issue)}</span>
+                </div>
+
                 <div>
                     <label class="block text-[12px] font-bold text-[#475569] mb-1">Invoice amount (£)</label>
                     <div class="relative flex items-center">
@@ -4246,16 +4251,11 @@ function screenContractorJobInvoice() {
                 </div>
 
                 <div>
-                    <label class="block text-[12px] font-bold text-[#475569] mb-1">Description</label>
-                    <input type="text" data-field="invoiceDesc" value="${esc(job.issue)}" class="w-full px-3.5 py-2.5 rounded-[12px] border border-[#CBD5E1] text-[13.5px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="Kitchen sink leaking">
-                </div>
-
-                <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="text-[12px] font-bold text-[#475569]">Notes (optional)</label>
+                        <label class="text-[12px] font-bold text-[#475569]">Notes / Breakdown (optional)</label>
                         <span class="text-[11px] text-[#94A3B8]">0/500</span>
                     </div>
-                    <textarea data-field="invoiceNotes" rows="3" class="w-full p-3 rounded-[12px] border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="Parts, labour breakdown..."></textarea>
+                    <textarea data-field="invoiceNotes" rows="2" class="w-full p-3 rounded-[12px] border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="Parts or labour breakdown (optional)..."></textarea>
                 </div>
 
                 <button type="button" data-action="generate-contractor-invoice" class="w-full py-3 rounded-[12px] bg-[#2563EB] text-white text-[13.5px] font-bold hover:bg-[#1D4ED8] transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-xs">
