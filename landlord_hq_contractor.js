@@ -3853,13 +3853,14 @@ function screenContractorJobDetail() {
     const reviewsBlock = typeof renderContractorJobReviewsReadonly === 'function'
         ? renderContractorJobReviewsReadonly(maintItem, job) : '';
 
-    return `${topBar('Job details', { back: true, rightIcon: 'more-horizontal' })}
-    <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-20">
+    return `${topBar('Job details', { back: true })}
+    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-24">
         
-        <!-- 1. Job Hero Header -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5 text-left">
+        <!-- Unified Main Job Card (Clean cohesive layout, no fragmented box clutter) -->
+        <div class="card p-4.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5 text-left">
+            <!-- Status & Job Ref Badge -->
             <div class="flex items-center justify-between">
-                <span class="px-2.5 py-1 rounded-full text-[10.5px] font-extrabold tracking-wide uppercase shadow-2xs" style="background:${st.bg};color:${st.color}">
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase" style="background:${st.bg};color:${st.color}">
                     <i data-lucide="clock" class="w-3 h-3 inline-block -mt-0.5 mr-0.5"></i> ${st.label}
                 </span>
                 <span class="px-2.5 py-0.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-mono font-extrabold tracking-wider border border-[#DBEAFE]">
@@ -3867,179 +3868,70 @@ function screenContractorJobDetail() {
                 </span>
             </div>
 
-            <div class="flex items-start justify-between gap-3 pt-0.5">
+            <!-- Title & Meta Information -->
+            <div>
                 <h1 class="text-[20px] font-black text-[#0F172A] tracking-tight leading-snug m-0">${esc(job.issue)}</h1>
-                <div class="flex items-center gap-1.5 shrink-0 pt-0.5">
-                    <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Call">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-medium text-[#64748B] mt-2">
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                        ${esc(job.address)}
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                        ${esc(job.visitDate || 'Today, 4:30 PM')}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Attached Photo (Clean single media banner, no duplicate media boxes) -->
+            ${mainFeaturedPhoto ? `
+            <div class="rounded-xl overflow-hidden border border-[#E2E8F0] h-[190px] relative cursor-pointer" data-action="preview-maint-media" data-kind="photo" data-src="${String(mainFeaturedPhoto).replace(/"/g, '&quot;')}">
+                <img src="${mainFeaturedPhoto}" alt="${esc(job.issue)}" class="w-full h-full object-cover">
+                ${totalMediaCount > 1 ? `<span class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-xs text-white text-[11px] font-bold flex items-center gap-1"><i data-lucide="image" class="w-3.5 h-3.5"></i> ${totalMediaCount} photos</span>` : ''}
+            </div>` : ''}
+
+            <!-- Utility Location Note (Inline info banner, not a giant card) -->
+            ${(isPlumbing && waterStopcock) || (isElectrical && elecLocation) ? `
+            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-2.5 text-[12px]">
+                <i data-lucide="${isPlumbing ? 'droplet' : 'zap'}" class="w-4 h-4 ${isPlumbing ? 'text-[#0284C7]' : 'text-[#D97706]'} shrink-0"></i>
+                <div class="min-w-0">
+                    <span class="text-[#64748B] font-semibold">${isPlumbing ? 'Water Stopcock:' : 'Fuse Box:'}</span>
+                    <span class="text-[#0F172A] font-bold ml-1">${esc(isPlumbing ? waterStopcock : elecLocation)}</span>
+                </div>
+            </div>` : ''}
+
+            <!-- Description -->
+            <div class="space-y-1 pt-1 border-t border-[#F1F5F9]">
+                <h3 class="text-[12px] font-extrabold text-[#64748B] uppercase tracking-wider m-0">Job Description</h3>
+                <p class="text-[13px] font-medium text-[#334155] leading-relaxed m-0">${esc(job.desc)}</p>
+            </div>
+
+            <!-- Contact Row (Seamlessly integrated at the bottom of the card) -->
+            <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                        ${contactInitials}
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${esc(contactName)}</p>
+                        <p class="text-[11px] font-medium text-[#64748B] m-0">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-8.5 h-8.5 rounded-xl bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0] flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer" title="Call">
                         <i data-lucide="phone" class="w-4 h-4"></i>
                     </button>
-                    <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
+                    <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-8.5 h-8.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
                         <i data-lucide="message-square" class="w-4 h-4"></i>
                     </button>
                 </div>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-[#64748B] pt-0.5">
-                <span class="flex items-center gap-1.5">
-                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                    ${esc(job.address)}
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                    ${esc(job.visitDate || 'Fri 14 Mar, 11:30 AM')}
-                </span>
-            </div>
-        </div>
-
-        <!-- 2. Featured Photo Banner -->
-        ${mainFeaturedPhoto ? `
-        <div class="rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-2xs bg-white h-[180px] relative">
-            <img src="${mainFeaturedPhoto}" alt="${esc(job.issue)}" class="w-full h-full object-cover">
-        </div>` : ''}
-
-        <!-- 3. Utility Alert Card (Water Stopcock / Fuse Box) -->
-        ${isPlumbing ? `
-        <div class="card p-3.5 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD] shadow-2xs flex items-center justify-between gap-3 group hover:border-[#0284C7] transition-all cursor-pointer">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shrink-0 border border-[#BAE6FD]">
-                    <i data-lucide="droplet" class="w-4.5 h-4.5"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="text-[10.5px] font-extrabold text-[#0369A1] uppercase tracking-wider block">MAIN WATER STOPCOCK</span>
-                    <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate mt-0.5">${esc(waterStopcock)}</p>
-                </div>
-            </div>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#0284C7] shrink-0"></i>
-        </div>` : ''}
-
-        ${isElectrical ? `
-        <div class="card p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] shadow-2xs flex items-center justify-between gap-3 group hover:border-[#D97706] transition-all cursor-pointer">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0 border border-[#FDE68A]">
-                    <i data-lucide="zap" class="w-4.5 h-4.5"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="text-[10.5px] font-extrabold text-[#92400E] uppercase tracking-wider block">FUSE BOX / BREAKER LOCATION</span>
-                    <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate mt-0.5">${esc(elecLocation)}</p>
-                </div>
-            </div>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-[#D97706] shrink-0"></i>
-        </div>` : ''}
-
-        <!-- 4. Job Description Block -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2 text-left">
-            <div class="flex items-center gap-2 text-[#0F172A]">
-                <div class="w-7 h-7 rounded-lg bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0">
-                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                </div>
-                <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Job description</h3>
-            </div>
-            <p class="text-[13px] font-medium text-[#475569] leading-relaxed m-0 pl-9">${esc(job.desc)}</p>
-        </div>
-
-        <!-- 5. Evidence Media Grid -->
-        ${(photos.length || videos.length) ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 text-[#0F172A]">
-                    <div class="w-7 h-7 rounded-lg bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0">
-                        <i data-lucide="image" class="w-4 h-4"></i>
-                    </div>
-                    <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Evidence media (${totalMediaCount})</h3>
-                </div>
-                <span class="text-[12px] font-bold text-[#2563EB] flex items-center gap-1 cursor-pointer">
-                    Tap to inspect <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                </span>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2.5 pt-1">
-                ${videos.map((v, i) => `
-                <button type="button" class="relative aspect-video rounded-xl overflow-hidden border border-[#CBD5E1] shadow-2xs group cursor-pointer bg-black" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
-                    <img src="${v.poster || photos[0] || IMG.maint[0]}" alt="" class="w-full h-full object-cover">
-                    <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white group-hover:scale-110 transition-transform"><i data-lucide="play" class="w-6 h-6 fill-white"></i></span>
-                    <span class="absolute bottom-1 right-1 text-[8px] font-black bg-black/80 text-white px-1 py-0.2 rounded">VIDEO</span>
-                </button>`).join('')}
-
-                ${photos.slice(0, 3 - videos.length).map((src, i) => {
-                    const isLast = i === (2 - videos.length) && photos.length > (3 - videos.length);
-                    const remaining = photos.length - (3 - videos.length);
-                    return `
-                    <button type="button" class="relative aspect-video rounded-xl overflow-hidden border border-[#E2E8F0] shadow-2xs group cursor-pointer bg-[#F8FAFC]" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
-                        <img src="${src}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
-                        ${isLast ? `<span class="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[14px] font-extrabold">+${remaining}</span>` : ''}
-                    </button>`;
-                }).join('')}
-            </div>
-        </div>` : ''}
-
-        <!-- 6. Agreed Payout Card -->
-        ${(() => {
-            const hasAgreedPrice = ['in_progress', 'waiting_approval', 'approved', 'completed', 'paid'].includes(job.status) || job.quoteAmount != null;
-            const priceDisplay = contractorJobEstimate(job);
-            if (hasAgreedPrice) {
-                return `
-                <div class="card p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
-                            <i data-lucide="wallet" class="w-5 h-5"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider block">AGREED PAYOUT</span>
-                            <h3 class="text-[22px] font-black text-[#2563EB] m-0 mt-0.5 leading-none">${priceDisplay}</h3>
-                            <p class="text-[11px] font-medium text-[#64748B] m-0 mt-1">${paymentStatus}</p>
-                        </div>
-                    </div>
-
-                    <button type="button" data-jtab="invoice" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] text-[12px] font-bold flex items-center gap-1 hover:bg-[#DBEAFE] transition-colors cursor-pointer shrink-0">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Breakdown &amp; Invoice <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>`;
-            }
-            return `
-            <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Quote &amp; Pricing</span>
-                        <h3 class="text-[20px] font-black text-[#0F172A] m-0 mt-0.5">Quote Pending</h3>
-                    </div>
-                    <span class="px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold border border-[#DBEAFE]">
-                        Inspection Required
-                    </span>
-                </div>
-                <p class="text-[12px] text-[#64748B] m-0 leading-relaxed">
-                    No automatic pricing. Contractor inspects site, discusses scope with landlord &amp; tenant, then submits a formal quote for approval.
-                </p>
-                <button type="button" data-action="open-contractor-quote-modal" class="w-full py-3 rounded-xl bg-[#2563EB] text-white text-[13px] font-bold hover:bg-[#1D4ED8] transition-colors cursor-pointer text-center shadow-xs flex items-center justify-center gap-1.5">
-                    <i data-lucide="file-text" class="w-4 h-4"></i> Submit Quote / Price Estimate
-                </button>
-            </div>`;
-        })()}
-
-        <!-- 7. Tenant / Contact Card -->
-        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-full bg-[#DBEAFE] text-[#1D4ED8] font-black text-[13px] flex items-center justify-center shrink-0 border border-[#BFDBFE]">
-                    ${contactInitials}
-                </div>
-                <div class="min-w-0">
-                    <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate">${esc(contactName)}</h4>
-                    <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-9 h-9 rounded-full bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0] flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer" title="Call">
-                    <i data-lucide="phone" class="w-4 h-4"></i>
-                </button>
-                <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
-                    <i data-lucide="message-square" class="w-4 h-4"></i>
-                </button>
             </div>
         </div>
 
         ${reviewsBlock}
 
-        <!-- 8. Sticky Bottom Primary Action -->
+        <!-- Sticky Bottom Primary Action -->
         <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-[#E2E8F0] z-40 max-w-[430px] mx-auto">
             ${primaryAction}
         </div>
