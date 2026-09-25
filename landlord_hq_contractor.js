@@ -3796,21 +3796,29 @@ function screenContractorJobs() {
 
 function screenContractorJobDetail() {
     const job = contractorJob(STATE.contractorJobId);
+    if (!job) return `${topBar('Job details', { back: true })}<div class="screen-content p-4"><p class="text-[13px] text-[#64748B]">Job not found.</p></div>`;
+
     const st = contractorJobDisplayStatus(job);
     const tab = STATE.contractorJobTab || 'overview';
     if (tab === 'work') return screenContractorCompleteJob();
     if (tab === 'invoice') return screenContractorJobInvoice();
+
     const canMessageTenant = job.tenant && job.tenant !== '—' && job.tenantChatId != null;
     const contactName = canMessageTenant ? job.tenant : job.landlord;
     const contactInitials = contactName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
     const maintItem = job.maintId != null && typeof MAINTENANCE_ITEMS !== 'undefined'
         ? MAINTENANCE_ITEMS.find(m => m.id === job.maintId)
         : null;
+
     const photos = [...(job.reportPhotos || []), ...(job.photos?.before || [])];
+    const mainFeaturedPhoto = photos[0] || (typeof IMG !== 'undefined' && IMG.maint ? IMG.maint[job.id % IMG.maint.length] : 'assets/plumber.png');
+
     const rawVideos = typeof getMaintReportVideos === 'function'
         ? getMaintReportVideos(job || maintItem)
         : (job.reportVideos || maintItem?.videos || []);
     const videos = rawVideos.map(v => typeof normalizeMaintVideo === 'function' ? normalizeMaintVideo(v) : v);
+    const totalMediaCount = photos.length + videos.length;
+
     const price = contractorJobEstimate(job);
     const paymentStatus = ['paid', 'approved'].includes(job.status) ? 'Paid' : (job.status === 'waiting_approval' ? 'Awaiting approval' : 'Upon completion');
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
@@ -3819,114 +3827,166 @@ function screenContractorJobDetail() {
     const pid = job.propertyId ?? maintItem?.propertyId ?? 0;
     const meta = typeof AppStore !== 'undefined' ? AppStore.meta(pid) : {};
     const utils = meta?.utilities || {};
-    const waterStopcock = utils.water?.shutOff || utils.water?.meterLocation || 'Under kitchen sink';
+    const waterStopcock = utils.water?.shutOff || utils.water?.meterLocation || 'Pavement outside front boundary';
     const elecLocation = utils.elec?.meterLocation || utils.elec?.meter || 'Hallway intake / meter box';
     const isPlumbing = /sink|pipe|water|tap|toilet|leak|basin|drain/i.test(job.issue || '') || (maintItem?.categoryId === 'plumbing');
     const isElectrical = /power|plug|light|fuse|electric|breaker|wire/i.test(job.issue || '') || (maintItem?.categoryId === 'electrical');
+
     const primaryAction = {
-        assigned: `<button data-contractor-action="accept" data-msg="Job accepted" class="btn-primary ctr-compact-cta">Accept job</button>`,
-        accepted: `<button data-contractor-action="schedule" class="btn-primary ctr-compact-cta">Schedule visit</button>`,
-        scheduled: `<button data-contractor-action="start" data-msg="Work started" class="btn-primary ctr-compact-cta">Start job</button>`,
-        in_progress: `<button data-contractor-action="work" class="btn-primary ctr-compact-cta">Finish &amp; invoice</button>`,
-        waiting_approval: `<div class="ctr-compact-banner ctr-compact-banner--purple">Invoice submitted — awaiting landlord review</div>`,
-        approved: `<div class="ctr-compact-banner ctr-compact-banner--blue">Approved — payment via Stripe</div>`,
-        completed: `<div class="ctr-compact-banner ctr-compact-banner--blue">Job completed</div>`,
-        paid: `<div class="ctr-compact-banner ctr-compact-banner--blue">Payment received</div>`,
+        assigned: `<button type="button" data-contractor-action="accept" data-msg="Job accepted" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer">Accept job</button>`,
+        accepted: `<button type="button" data-contractor-action="schedule" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer">Schedule visit</button>`,
+        scheduled: `<button type="button" data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer">Start job</button>`,
+        in_progress: `<button type="button" data-contractor-action="work" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-2xl shadow-md cursor-pointer"><i data-lucide="file-text" class="w-4 h-4"></i> Finish &amp; invoice</button>`,
+        waiting_approval: `<div class="p-3.5 rounded-2xl bg-[#F3E8FF] text-[#7E22CE] text-[13px] font-bold text-center border border-[#E9D5FF]">Invoice submitted — awaiting landlord review</div>`,
+        approved: `<div class="p-3.5 rounded-2xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Approved — payment via Stripe</div>`,
+        completed: `<div class="p-3.5 rounded-2xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Job completed</div>`,
+        paid: `<div class="p-3.5 rounded-2xl bg-[#ECFDF5] text-[#047857] text-[13px] font-bold text-center border border-[#A7F3D0]">Payment received</div>`,
     }[job.status] || '';
+
     const reviewsBlock = typeof renderContractorJobReviewsReadonly === 'function'
         ? renderContractorJobReviewsReadonly(maintItem, job) : '';
-    return `${topBar('Job details', { back: true })}
-    <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-16">
-        <!-- Top Hero Card with Status, Job ID, Title, Address & Schedule -->
+
+    return `${topBar('Job details', { back: true, rightIcon: 'more-horizontal' })}
+    <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-20">
+        
+        <!-- 1. Job Hero Header -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5 text-left">
             <div class="flex items-center justify-between">
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase shadow-2xs" style="background:${st.bg};color:${st.color}">
-                    ${st.label}
+                <span class="px-2.5 py-1 rounded-full text-[10.5px] font-extrabold tracking-wide uppercase shadow-2xs" style="background:${st.bg};color:${st.color}">
+                    <i data-lucide="clock" class="w-3 h-3 inline-block -mt-0.5 mr-0.5"></i> ${st.label}
                 </span>
-                <span class="px-2.5 py-0.5 rounded-lg bg-[#F8FAFC] text-[#475569] text-[11px] font-mono font-bold tracking-wider border border-[#E2E8F0]">
+                <span class="px-2.5 py-0.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-mono font-extrabold tracking-wider border border-[#DBEAFE]">
                     #JOB-${1000 + job.id}
                 </span>
             </div>
 
-            <h1 class="text-[22px] font-black text-[#0F172A] tracking-tight leading-snug m-0 pt-0.5">${esc(job.issue)}</h1>
+            <div class="flex items-start justify-between gap-3 pt-0.5">
+                <h1 class="text-[20px] font-black text-[#0F172A] tracking-tight leading-snug m-0">${esc(job.issue)}</h1>
+                <div class="flex items-center gap-1.5 shrink-0 pt-0.5">
+                    <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Call">
+                        <i data-lucide="phone" class="w-4 h-4"></i>
+                    </button>
+                    <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
+                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
 
-            <div class="flex flex-wrap items-center gap-2 pt-0.5 text-[12.5px] font-semibold text-[#64748B]">
-                <span class="flex items-center gap-1.5 bg-[#F8FAFC] px-2.5 py-1 rounded-xl border border-[#E2E8F0] text-[#475569]">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] font-semibold text-[#64748B] pt-0.5">
+                <span class="flex items-center gap-1.5">
                     <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB]"></i>
                     ${esc(job.address)}
                 </span>
-                <span class="flex items-center gap-1.5 bg-[#EFF6FF] px-2.5 py-1 rounded-xl border border-[#DBEAFE] text-[#2563EB]">
+                <span class="flex items-center gap-1.5">
                     <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                    ${esc(job.visitDate || 'Not scheduled')}
+                    ${esc(job.visitDate || 'Fri 14 Mar, 11:30 AM')}
                 </span>
             </div>
         </div>
 
-        <!-- Site Access & Emergency Shutoff Location Hero Banner -->
+        <!-- 2. Featured Photo Banner -->
+        ${mainFeaturedPhoto ? `
+        <div class="rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-2xs bg-white h-[180px] relative">
+            <img src="${mainFeaturedPhoto}" alt="${esc(job.issue)}" class="w-full h-full object-cover">
+        </div>` : ''}
+
+        <!-- 3. Utility Alert Card (Water Stopcock / Fuse Box) -->
         ${isPlumbing ? `
-        <div class="card p-3.5 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD] shadow-2xs space-y-1 text-left relative overflow-hidden group hover:border-[#0284C7] transition-all">
-            <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shrink-0">
-                    <i data-lucide="droplet" class="w-4 h-4"></i>
+        <div class="card p-3.5 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD] shadow-2xs flex items-center justify-between gap-3 group hover:border-[#0284C7] transition-all cursor-pointer">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shrink-0 border border-[#BAE6FD]">
+                    <i data-lucide="droplet" class="w-4.5 h-4.5"></i>
                 </div>
-                <span class="text-[11px] font-extrabold text-[#0369A1] uppercase tracking-wider">Main Water Stopcock</span>
+                <div class="min-w-0">
+                    <span class="text-[10.5px] font-extrabold text-[#0369A1] uppercase tracking-wider block">MAIN WATER STOPCOCK</span>
+                    <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate mt-0.5">${esc(waterStopcock)}</p>
+                </div>
             </div>
-            <p class="text-[13px] font-bold text-[#0F172A] m-0 pl-9 leading-snug">${esc(waterStopcock)}</p>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#0284C7] shrink-0"></i>
         </div>` : ''}
 
         ${isElectrical ? `
-        <div class="card p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] shadow-2xs space-y-1 text-left relative overflow-hidden group hover:border-[#D97706] transition-all">
-            <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0">
-                    <i data-lucide="zap" class="w-4 h-4"></i>
+        <div class="card p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] shadow-2xs flex items-center justify-between gap-3 group hover:border-[#D97706] transition-all cursor-pointer">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center shrink-0 border border-[#FDE68A]">
+                    <i data-lucide="zap" class="w-4.5 h-4.5"></i>
                 </div>
-                <span class="text-[11px] font-extrabold text-[#92400E] uppercase tracking-wider">Fuse Box / Breaker Location</span>
+                <div class="min-w-0">
+                    <span class="text-[10.5px] font-extrabold text-[#92400E] uppercase tracking-wider block">FUSE BOX / BREAKER LOCATION</span>
+                    <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate mt-0.5">${esc(elecLocation)}</p>
+                </div>
             </div>
-            <p class="text-[13px] font-bold text-[#0F172A] m-0 pl-9 leading-snug">${esc(elecLocation)}</p>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-[#D97706] shrink-0"></i>
         </div>` : ''}
 
-        <div class="card ctr-compact-block">
-            <p class="ctr-compact-label">Job description</p>
-            <p class="ctr-compact-text">${esc(job.desc)}</p>
+        <!-- 4. Job Description Block -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2 text-left">
+            <div class="flex items-center gap-2 text-[#0F172A]">
+                <div class="w-7 h-7 rounded-lg bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                </div>
+                <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Job description</h3>
+            </div>
+            <p class="text-[13px] font-medium text-[#475569] leading-relaxed m-0 pl-9">${esc(job.desc)}</p>
         </div>
 
-        <!-- Evidence Media: Photos & Videos with Lightbox & Player -->
+        <!-- 5. Evidence Media Grid -->
         ${(photos.length || videos.length) ? `
-        <div class="card ctr-compact-block space-y-2.5">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
             <div class="flex items-center justify-between">
-                <p class="ctr-compact-label m-0">Evidence Media (${photos.length + videos.length})</p>
-                <span class="text-[11px] text-[#64748B] font-medium">Tap to inspect</span>
+                <div class="flex items-center gap-2 text-[#0F172A]">
+                    <div class="w-7 h-7 rounded-lg bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Evidence media (${totalMediaCount})</h3>
+                </div>
+                <span class="text-[12px] font-bold text-[#2563EB] flex items-center gap-1 cursor-pointer">
+                    Tap to inspect <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </span>
             </div>
-            <div class="flex items-center gap-2.5 overflow-x-auto py-1">
+
+            <div class="grid grid-cols-3 gap-2.5 pt-1">
                 ${videos.map((v, i) => `
-                <button type="button" class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#CBD5E1] shadow-2xs group cursor-pointer" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
+                <button type="button" class="relative aspect-video rounded-xl overflow-hidden border border-[#CBD5E1] shadow-2xs group cursor-pointer bg-black" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
                     <img src="${v.poster || photos[0] || IMG.maint[0]}" alt="" class="w-full h-full object-cover">
-                    <span class="absolute inset-0 bg-black/40 flex items-center justify-center text-white group-hover:scale-110 transition-transform"><i data-lucide="play" class="w-5 h-5 fill-white"></i></span>
+                    <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white group-hover:scale-110 transition-transform"><i data-lucide="play" class="w-6 h-6 fill-white"></i></span>
                     <span class="absolute bottom-1 right-1 text-[8px] font-black bg-black/80 text-white px-1 py-0.2 rounded">VIDEO</span>
                 </button>`).join('')}
-                ${photos.map((src, i) => `
-                <button type="button" class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-2xs group cursor-pointer" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
-                    <img src="${src}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
-                </button>`).join('')}
+
+                ${photos.slice(0, 3 - videos.length).map((src, i) => {
+                    const isLast = i === (2 - videos.length) && photos.length > (3 - videos.length);
+                    const remaining = photos.length - (3 - videos.length);
+                    return `
+                    <button type="button" class="relative aspect-video rounded-xl overflow-hidden border border-[#E2E8F0] shadow-2xs group cursor-pointer bg-[#F8FAFC]" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
+                        <img src="${src}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                        ${isLast ? `<span class="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[14px] font-extrabold">+${remaining}</span>` : ''}
+                    </button>`;
+                }).join('')}
             </div>
         </div>` : ''}
+
+        <!-- 6. Agreed Payout Card -->
         ${(() => {
             const hasAgreedPrice = ['in_progress', 'waiting_approval', 'approved', 'completed', 'paid'].includes(job.status) || job.quoteAmount != null;
             const priceDisplay = contractorJobEstimate(job);
             if (hasAgreedPrice) {
                 return `
-                <button type="button" data-jtab="invoice" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm w-full text-left space-y-1.5 group hover:border-[#2563EB] transition-colors cursor-pointer">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Agreed Payout</span>
-                            <h3 class="text-[22px] font-black text-[#2563EB] m-0 mt-0.5">${priceDisplay}</h3>
+                <div class="card p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                            <i data-lucide="wallet" class="w-5 h-5"></i>
                         </div>
-                        <span class="text-[#2563EB] text-[12px] font-bold group-hover:underline flex items-center gap-1">
-                            Breakdown &amp; Invoice <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </span>
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider block">AGREED PAYOUT</span>
+                            <h3 class="text-[22px] font-black text-[#2563EB] m-0 mt-0.5 leading-none">${priceDisplay}</h3>
+                            <p class="text-[11px] font-medium text-[#64748B] m-0 mt-1">${paymentStatus}</p>
+                        </div>
                     </div>
-                    <p class="text-[12px] text-[#64748B] m-0">${paymentStatus}</p>
-                </button>`;
+
+                    <button type="button" data-jtab="invoice" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] text-[12px] font-bold flex items-center gap-1 hover:bg-[#DBEAFE] transition-colors cursor-pointer shrink-0">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Breakdown &amp; Invoice <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>`;
             }
             return `
             <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
@@ -3947,19 +4007,35 @@ function screenContractorJobDetail() {
                 </button>
             </div>`;
         })()}
-        <div class="card ctr-compact-block ctr-compact-owner">
-            <div class="ctr-compact-owner-avatar">${contactInitials}</div>
-            <div class="ctr-compact-owner-body">
-                <p class="ctr-compact-owner-name">${contactName}</p>
-                <p class="ctr-compact-muted">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
+
+        <!-- 7. Tenant / Contact Card -->
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-full bg-[#DBEAFE] text-[#1D4ED8] font-black text-[13px] flex items-center justify-center shrink-0 border border-[#BFDBFE]">
+                    ${contactInitials}
+                </div>
+                <div class="min-w-0">
+                    <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate">${esc(contactName)}</h4>
+                    <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
+                </div>
             </div>
-            <div class="ctr-compact-owner-actions">
-                <button type="button" data-action="toast" data-msg="Calling ${contactName}…" class="ctr-compact-icon-btn" aria-label="Call"><i data-lucide="phone" class="w-4 h-4"></i></button>
-                <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="ctr-compact-icon-btn" aria-label="Message"><i data-lucide="message-square" class="w-4 h-4"></i></button>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-9 h-9 rounded-full bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0] flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer" title="Call">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                </button>
             </div>
         </div>
+
         ${reviewsBlock}
-        <div class="ctr-compact-footer">${primaryAction}</div>
+
+        <!-- 8. Sticky Bottom Primary Action -->
+        <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-[#E2E8F0] z-40 max-w-[430px] mx-auto">
+            ${primaryAction}
+        </div>
     </div>
     ${typeof renderMaintMediaPreviewModal === 'function' ? renderMaintMediaPreviewModal() : ''}
     ${renderContractorQuoteModal()}`;
