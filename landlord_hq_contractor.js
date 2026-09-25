@@ -4519,7 +4519,6 @@ function screenContractorProfile() {
     const group1 = [
         ['user', 'Personal Information', 'personal-info'],
         ['building-2', 'Company Information', 'contractor-company'],
-        ['users', 'Organisation & Sub-accounts', 'contractor-org', 'Master + field teams'],
         ['shield-check', 'Certifications', 'contractor-certifications', `${certCount} on file`],
         ['bell', 'Notification Settings', 'notifications-settings'],
         ['key-round', 'Change Password', 'password'],
