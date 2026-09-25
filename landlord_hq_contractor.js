@@ -4201,12 +4201,6 @@ function screenContractorEarnings() {
             ${renderCtrEarnPeriodPills()}
         </div>
 
-        <!-- Earnings Trend Bar Chart Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-            <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider m-0">Earnings Trend</h3>
-            ${renderContractorEarningsTrendChart(chartData)}
-        </div>
-
         <!-- Recent Payout Ledger -->
         <div class="space-y-2">
             <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider px-1 m-0">Recent Payouts</h3>
