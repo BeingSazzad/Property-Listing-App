@@ -7610,7 +7610,9 @@ function requestContractorMilestone() {
 function sendContractorInvite() {
     const name = fieldVal('invite_contractor_name')?.trim();
     const email = fieldVal('invite_contractor_email')?.trim();
-    const trade = fieldVal('invite_contractor_trade')?.trim() || 'General maintenance';
+    const trade = (STATE.selectedInviteTrades && STATE.selectedInviteTrades.length)
+        ? STATE.selectedInviteTrades.join(', ')
+        : (fieldVal('invite_contractor_trade')?.trim() || 'General Maintenance');
     if (!name) { toast('Enter company or contractor name'); return; }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Enter a valid email address'); return; }
     if (!AppStore.contractorInvites) AppStore.contractorInvites = [];
@@ -7622,6 +7624,7 @@ function sendContractorInvite() {
     };
     AppStore.contractorInvites.unshift(invite);
     STATE.lastContractorInviteId = invite.id;
+    STATE.tradeDropdownOpen = false;
     AppStore.save();
     go('contractor-invite-sent');
 }
@@ -7664,21 +7667,56 @@ function backfillMaintGroupChats() {
 }
 
 function screenInviteContractor() {
-    const tradeLabels = typeof CONTRACTOR_TRADE_CATALOG !== 'undefined'
+    if (!STATE.selectedInviteTrades || !Array.isArray(STATE.selectedInviteTrades)) {
+        STATE.selectedInviteTrades = ['Plumbing & Heating'];
+    }
+    const tradeCatalog = typeof CONTRACTOR_TRADE_CATALOG !== 'undefined'
         ? CONTRACTOR_TRADE_CATALOG.map(t => t.label)
-        : ['Plumbing & Heating', 'Electrical', 'General maintenance'];
+        : ['Plumbing & Heating', 'Heating & Gas', 'Electrical', 'General Maintenance', 'Roofing', 'Painting & Decorating', 'Locksmith & Security', 'Carpentry', 'Appliance Repair'];
+
+    const isOpen = !!STATE.tradeDropdownOpen;
+    const selected = STATE.selectedInviteTrades;
+    const summaryText = selected.length ? selected.join(', ') : 'Select trade(s)...';
+
     return `${topBar('Invite Contractor', { back: true })}
-    <div class="screen-content screen-enter">
-        <p class="text-[13px] text-[#64748B] mb-4">Send an email invite so they can join Landlord HQ and receive maintenance jobs.</p>
+    <div class="screen-content screen-enter space-y-4">
+        <p class="text-[13px] text-[#64748B] mb-2">Send an email invite so they can join Landlord HQ and receive maintenance jobs.</p>
         ${formFieldReq('Company / name', 'invite_contractor_name', '', 'text', 'e.g. Plumber Pro Ltd')}
         ${formFieldReq('Email', 'invite_contractor_email', '', 'email', 'contractor@email.com')}
-        <div class="form-group">
-            <label class="form-label">Trade</label>
-            <select data-field="invite_contractor_trade" class="form-input form-select">
-                ${tradeLabels.map(t => `<option value="${t}">${t}</option>`).join('')}
-            </select>
+        
+        <div class="form-group space-y-1.5">
+            <label class="form-label text-[13px] font-bold text-[#0F172A] flex items-center justify-between">
+                <span>Trade</span>
+                <span class="text-[11px] font-semibold text-[#64748B]">Select multiple if applicable</span>
+            </label>
+
+            <!-- Dropdown Trigger Button -->
+            <button type="button" data-action="toggle-trade-dropdown" class="w-full min-h-[46px] p-2.5 rounded-xl bg-white border ${isOpen ? 'border-[#2563EB] ring-2 ring-[#2563EB]/10' : 'border-[#CBD5E1]'} text-left flex items-center justify-between gap-2 shadow-2xs hover:border-[#94A3B8] transition-all cursor-pointer">
+                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                    ${selected.map(t => `<span class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold flex items-center gap-1">${t}</span>`).join('')}
+                    ${!selected.length ? `<span class="text-[#94A3B8] text-[13px]">${summaryText}</span>` : ''}
+                </div>
+                <i data-lucide="${isOpen ? 'chevron-up' : 'chevron-down'}" class="w-4 h-4 text-[#64748B] shrink-0"></i>
+            </button>
+
+            <!-- Multi-select Dropdown List -->
+            ${isOpen ? `
+            <div class="card p-2 rounded-2xl bg-white border border-[#CBD5E1] shadow-lg space-y-1 max-h-60 overflow-y-auto mt-1">
+                <p class="text-[10.5px] font-bold text-[#94A3B8] px-3 py-1 m-0 uppercase tracking-wider">Tap items to select / deselect</p>
+                ${tradeCatalog.map(t => {
+                    const isChecked = selected.includes(t);
+                    return `
+                    <button type="button" data-action="toggle-trade-option" data-trade="${t}" class="w-full px-3 py-2.5 rounded-xl text-left flex items-center justify-between text-[13px] font-bold transition-all cursor-pointer ${isChecked ? 'bg-[#2563EB] text-white shadow-2xs' : 'text-[#0F172A] hover:bg-[#F8FAFC]'}">
+                        <span>${t}</span>
+                        ${isChecked ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : '<div class="w-4 h-4 rounded-md border border-[#CBD5E1]"></div>'}
+                    </button>`;
+                }).join('')}
+            </div>` : ''}
+
+            <input type="hidden" data-field="invite_contractor_trade" value="${selected.join(', ')}">
         </div>
-        <button type="button" data-action="send-contractor-invite" class="btn-primary w-full py-3.5 text-[14px]">Send invite</button>
+
+        <button type="button" data-action="send-contractor-invite" class="btn-primary w-full py-3.5 text-[14px] font-bold shadow-xs">Send invite</button>
     </div>`;
 }
 
@@ -24996,6 +25034,27 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="sort-contractors"]').forEach(el => {
         el.onchange = (e) => { STATE.contractorSort = e.target.value; render(); };
+    });
+    app.querySelectorAll('[data-action="toggle-trade-dropdown"]').forEach(el => {
+        el.onclick = () => { STATE.tradeDropdownOpen = !STATE.tradeDropdownOpen; render(); };
+    });
+    app.querySelectorAll('[data-action="toggle-trade-option"]').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            const trade = el.dataset.trade;
+            if (!STATE.selectedInviteTrades) STATE.selectedInviteTrades = [];
+            const idx = STATE.selectedInviteTrades.indexOf(trade);
+            if (idx >= 0) {
+                if (STATE.selectedInviteTrades.length > 1) {
+                    STATE.selectedInviteTrades.splice(idx, 1);
+                } else {
+                    toast('At least one trade must be selected');
+                }
+            } else {
+                STATE.selectedInviteTrades.push(trade);
+            }
+            render();
+        };
     });
     app.querySelectorAll('[data-action="edit-reminder"]').forEach(el => {
         el.onclick = (e) => { e.stopPropagation(); go('edit-reminder', { reminderId: +el.dataset.rid }); };
