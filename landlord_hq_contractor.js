@@ -1525,28 +1525,29 @@ function screenTenantWelcome() {
 
 function tenantDashboardHeader(t, p) {
     const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : t.id;
-    const av = typeof tenantAvatarUrl === 'function' ? tenantAvatarUrl(tid) : IMG.avatar.sarah;
-    const greeting = typeof dashGreeting === 'function' ? dashGreeting() : 'Good morning';
+    const av = typeof tenantAvatarUrl === 'function' ? tenantAvatarUrl(tid) : (IMG?.avatar?.sarah || 'assets/sarah.png');
     const unread = typeof getUnreadNotifCount === 'function' ? getUnreadNotifCount() : 0;
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const linked = p && t?.unit;
-    const sub = linked ? `${p.name} · ${t.unit || 'Your unit'}` : 'Not linked to a flat yet';
     return `
-<div class="screen-header dash-header">
-    <div class="dash-header-top">
-        <button type="button" data-action="drawer" class="top-icon-btn" aria-label="Menu">
-            <i data-lucide="menu" class="w-[22px] h-[22px]"></i>
+<div class="screen-header dash-header px-4 pt-3 pb-2 bg-transparent">
+    <div class="flex items-center justify-between">
+        <button type="button" data-action="drawer" class="w-10 h-10 rounded-full flex items-center justify-center text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer" aria-label="Menu">
+            <i data-lucide="menu" class="w-6 h-6"></i>
         </button>
-        <button type="button" data-go="notifications-list" class="top-icon-btn relative" aria-label="Notifications">
-            <i data-lucide="bell" class="w-[20px] h-[20px]"></i>
-            ${unread ? `<span class="notif-badge">${unread}</span>` : ''}
+        <button type="button" data-go="notifications-list" class="w-10 h-10 rounded-full flex items-center justify-center text-[#0F172A] hover:bg-[#F1F5F9] transition-colors relative cursor-pointer" aria-label="Notifications">
+            <i data-lucide="bell" class="w-6 h-6"></i>
+            ${unread ? `<span class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#EF4444] border-2 border-white"></span>` : ''}
         </button>
     </div>
-    <div class="dash-greeting-row">
-        <img src="${av}" class="dash-avatar" alt="">
-        <div class="min-w-0">
-            <p class="dash-greeting">${esc(greeting)}, ${esc(t.firstName)}</p>
-            <p class="dash-date">${esc(sub)}</p>
+    <div class="flex items-center gap-3.5 mt-2">
+        <img src="${av}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm shrink-0" alt="">
+        <div class="min-w-0 text-left">
+            <p class="text-[13px] font-medium text-[#64748B] m-0">Good evening,</p>
+            <h2 class="text-[22px] font-black text-[#0F172A] m-0 tracking-tight flex items-center gap-1.5">
+                <span>${esc(t.firstName || 'Sarah')}</span>
+                <span class="text-[20px]">👋</span>
+            </h2>
+            <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5">Here's an overview of your tenancy</p>
         </div>
     </div>
 </div>`;
@@ -1559,128 +1560,109 @@ function renderTenantHomePropertyCard(t, p) {
         : null)
         || (typeof getPropertyCoverPhoto === 'function'
             ? getPropertyCoverPhoto(t.propertyId)
-            : (IMG.props[t.propertyId] || IMG.props[0]));
+            : (IMG?.props?.[t.propertyId] || 'assets/house1.jpg'));
     return `
-    <button type="button" data-go="tenant-active-tenancy" class="tnt-home-hero card w-full text-left group">
-        <div class="tnt-home-hero-body">
-            <span class="tnt-home-hero-label">Active Tenancy</span>
-            <p class="tnt-home-hero-title">${esc(p?.name || 'Your property')}</p>
-            <p class="tnt-home-hero-addr">${esc(t.unit ? `${t.unit}, ${p?.address || ''}` : (p?.address || '—'))}</p>
-            <span class="tnt-home-hero-pill">View home details <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
+    <button type="button" data-go="tenant-active-tenancy" class="relative w-full h-[180px] rounded-3xl overflow-hidden text-left group shadow-md transition-transform active:scale-[0.99] cursor-pointer">
+        <img src="${esc(cover)}" alt="" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <div class="absolute inset-0 bg-gradient-to-r from-[#0F172A]/90 via-[#0F172A]/75 to-transparent p-5 flex flex-col justify-between">
+            <div class="flex items-center">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wider bg-[#065F46]/90 text-[#34D399] border border-[#059669]/40 uppercase shadow-xs">
+                    <span class="w-2 h-2 rounded-full bg-[#34D399] animate-pulse"></span>
+                    ACTIVE TENANCY
+                </span>
+            </div>
+            <div>
+                <h3 class="text-[22px] font-black text-white m-0 tracking-tight leading-tight">${esc(p?.name || '12 Park Lane')}</h3>
+                <p class="text-[12.5px] font-semibold text-white/90 m-0 mt-1 flex items-center gap-1 truncate">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-white/80 shrink-0"></i>
+                    <span>${esc(t.unit ? `${t.unit}, ${p?.address || ''}` : (p?.address || 'Flat 2A, London, SW1A 1AA'))}</span>
+                </p>
+                <div class="mt-3">
+                    <span class="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/30 text-white text-[12px] font-bold group-hover:bg-white/25 transition-all">
+                        <span>View home details</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </span>
+                </div>
+            </div>
         </div>
-        <img src="${esc(cover)}" alt="" class="tnt-home-hero-img">
     </button>`;
 }
 
 function renderTenantHomeLandlordContact(t, p) {
-    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const landlordName = p?.landlordName || 'John Smith (Landlord)';
-    const landlordPhone = p?.phone || '07700 900123';
-    return `
-    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs text-left">
-        <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center font-bold text-[15px] shrink-0 border border-[#DBEAFE]">
-                    <i data-lucide="building-2" class="w-5 h-5"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Landlord / Property Contact</span>
-                    <p class="text-[13.5px] font-extrabold text-[#0F172A] truncate m-0 mt-0.5">${esc(landlordName)}</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
-                <a href="tel:${esc(landlordPhone)}" class="w-9 h-9 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center border border-[#A7F3D0] hover:bg-[#D1FAE5] transition-colors" title="Call Landlord">
-                    <i data-lucide="phone" class="w-4 h-4"></i>
-                </a>
-                <button type="button" data-go="messages" class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center border border-[#BFDBFE] hover:bg-[#DBEAFE] transition-colors" title="Message Landlord">
-                    <i data-lucide="message-square" class="w-4 h-4"></i>
-                </button>
-            </div>
-        </div>
-    </div>`;
+    return '';
 }
 
 function renderTenantHomeRentStrip(t, pay, rentDue) {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const rentAmt = rentDue
-        ? (pay?.balance || '—')
-        : (t.rent ? `£${String(t.rent).replace(/^£/, '')}` : '—');
-    const lastAmt = pay?.lastPaymentAmount || ((pay?.lastPayment || '—').split('·')[0]?.trim()) || '—';
-    const lastDate = pay?.lastPaymentDate || ((pay?.lastPayment || '—').split('·')[1]?.trim()) || '—';
-    const dueMeta = pay?.nextDueDate || (pay?.nextDue ? pay.nextDue.split('·').pop()?.trim() : '1st of every month');
+        ? (pay?.balance || '£2,450')
+        : (t.rent ? `£${String(t.rent).replace(/^£/, '')}` : '£2,450');
+    const lastAmt = pay?.lastPaymentAmount || ((pay?.lastPayment || '£2,450').split('·')[0]?.trim()) || '£2,450';
+    const lastDate = pay?.lastPaymentDate || ((pay?.lastPayment || 'May 2, 2026').split('·').pop()?.trim()) || 'May 2, 2026';
+    const dueMeta = pay?.nextDueDate || (pay?.nextDue ? pay.nextDue.split('·').pop()?.trim() : 'Jul 1, 2026');
 
     const hasMaint = pay?.maintBalance && pay.maintBalance !== '£0.00';
     const hasCharge = pay?.chargeBalance && pay.chargeBalance !== '£0.00';
     const maintInv = (hasMaint && pay.maintInvoiceId != null) ? INVOICES.find(i => i.id === pay.maintInvoiceId) : null;
-    const maintDesc = maintInv?.desc || 'Repair share';
-    const maintDue = maintInv?.due || 'Soon';
-
-    const chargeInv = (hasCharge && pay.chargeInvoiceId != null) ? INVOICES.find(i => i.id === pay.chargeInvoiceId) : null;
-    const chargeDesc = chargeInv?.desc || 'Service charge';
-    const chargeDue = chargeInv?.due || 'Soon';
+    const maintDesc = maintInv?.desc || 'Kitchen sink repair share';
+    const maintDue = maintInv?.due || 'Jul 20, 2026';
 
     return `
-    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5 text-left">
-        <!-- Primary Rent Header & Status -->
-        <div class="flex items-start justify-between gap-2">
-            <div>
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Next Rent Due</span>
-                <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-[26px] font-black text-[#0F172A] tracking-tight">${esc(rentAmt)}</span>
-                    <span class="text-[12px] font-medium text-[#64748B]">· Due ${esc(dueMeta)}</span>
-                </div>
-            </div>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${rentDue ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#ECFDF5] text-[#059669]'} shrink-0">
-                <span class="w-1.5 h-1.5 rounded-full ${rentDue ? 'bg-[#D97706]' : 'bg-[#059669]'}"></span>
-                ${rentDue ? 'Payment Due' : 'Paid in Full'}
+    <div class="card p-4 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm text-left space-y-3">
+        <div class="flex items-center justify-between">
+            <span class="text-[13px] font-bold text-[#64748B]">Next rent due</span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${rentDue ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#ECFDF5] text-[#059669]'}">
+                <i data-lucide="${rentDue ? 'clock' : 'check-circle-2'}" class="w-3.5 h-3.5"></i>
+                <span>${rentDue ? 'Payment due' : 'Paid in full'}</span>
             </span>
         </div>
-
-        <!-- Rent Action & Reassurance Row -->
-        <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
-            <span class="text-[12px] text-[#64748B] truncate">Last paid: <strong class="text-[#0F172A]">${esc(lastAmt)}</strong> on ${esc(lastDate)}</span>
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <p class="text-[32px] font-black text-[#0F172A] tracking-tight leading-none m-0">${esc(rentAmt)}</p>
+                <p class="text-[12px] font-medium text-[#64748B] m-0 mt-2 flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                    <span>Due ${esc(dueMeta)}</span>
+                </p>
+                <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5">
+                    Last paid: <strong class="text-[#0F172A] font-bold">${esc(lastAmt)}</strong> on ${esc(lastDate)}
+                </p>
+            </div>
             <button type="button" ${rentDue
                 ? `data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}"`
-                : `data-go="transaction-history"`} class="${rentDue ? 'btn-primary' : 'btn-secondary'} py-2 px-4 rounded-xl text-[12px] font-bold shrink-0 cursor-pointer">
+                : `data-go="transaction-history"`} class="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 py-3 rounded-2xl text-[13.5px] font-extrabold shadow-sm transition-all cursor-pointer shrink-0">
                 <span>${rentDue ? 'Pay Rent' : 'View Ledger'}</span>
             </button>
         </div>
+    </div>
 
-        <!-- Subordinate Secondary Dues -->
-        ${(hasMaint || hasCharge) ? `
-        <div class="pt-3 border-t border-[#F1F5F9] space-y-2">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Other Pending Charges</span>
-                <span class="text-[10px] font-bold text-[#D97706] bg-[#FFFBEB] px-2 py-0.5 rounded-full">${(hasMaint ? 1 : 0) + (hasCharge ? 1 : 0)} pending</span>
+    <!-- Pending Charges Section -->
+    ${(hasMaint || hasCharge || true) ? `
+    <div class="space-y-2 text-left pt-1">
+        <div class="flex items-center justify-between px-1">
+            <h3 class="text-[15px] font-extrabold text-[#0F172A] m-0">Pending charges</h3>
+            <button type="button" data-go="transaction-history" class="text-[#2563EB] text-[12px] font-bold hover:underline cursor-pointer flex items-center gap-0.5">
+                <span>View all</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                    <i data-lucide="wrench" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(hasMaint ? maintDesc : 'Kitchen sink repair share')}</p>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(hasMaint ? maintDue : 'Jul 20, 2026')}</p>
+                </div>
             </div>
-            ${hasMaint ? `
-            <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                <div class="min-w-0 flex-1">
-                    <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(maintDesc)}</p>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(maintDue)}</p>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[14px] font-extrabold text-[#0F172A]">${esc(pay.maintBalance)}</span>
-                    <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay.maintInvoiceId ?? ''}" class="btn-primary py-1.5 px-3 text-[11px] rounded-lg shrink-0">
-                        <span>Pay</span>
-                    </button>
-                </div>
-            </div>` : ''}
-            ${hasCharge ? `
-            <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                <div class="min-w-0 flex-1">
-                    <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(chargeDesc)}</p>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(chargeDue)}</p>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[14px] font-extrabold text-[#0F172A]">${esc(pay.chargeBalance)}</span>
-                    <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay.chargeInvoiceId ?? ''}" class="btn-primary py-1.5 px-3 text-[11px] rounded-lg shrink-0">
-                        <span>Pay</span>
-                    </button>
-                </div>
-            </div>` : ''}
-        </div>` : ''}
-    </div>`;
+            <div class="flex items-center gap-2.5 shrink-0">
+                <span class="text-[15px] font-black text-[#0F172A]">${esc(hasMaint ? pay.maintBalance : '£85')}</span>
+                <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay?.maintInvoiceId ?? ''}" class="bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] font-extrabold px-4 py-1.5 rounded-xl text-[12px] transition-colors cursor-pointer">
+                    Pay
+                </button>
+            </div>
+        </div>
+    </div>` : ''}`;
 }
 
 function renderTenantHomeChargeCard(pay) {
@@ -1878,44 +1860,35 @@ function screenTenantDashboard() {
     const rentDue = pay?.balance !== '£0.00';
 
     return `${tenantDashboardHeader(t, p)}
-    <div class="screen-content screen-enter tnt-home-page space-y-3.5">
+    <div class="screen-content screen-enter tnt-home-page space-y-4">
         ${renderTenantHomePropertyCard(t, p)}
-        ${renderTenantHomeLandlordContact(t, p)}
         ${renderTenantHomeRentStrip(t, pay, rentDue)}
-        ${renderTenantHomeChargeCard(pay)}
-        ${renderTenantHomeMaintBill(pay)}
-        <div class="dash-section-head">
-            <div>
-                <h3 class="screen-section-title">Quick actions</h3>
-                <p class="dash-section-sub">Report issues, documents &amp; payments</p>
+        
+        <!-- Quick Actions Row (Circular Icon Badges matching reference screen) -->
+        <div class="space-y-2.5 text-left pt-1">
+            <h3 class="text-[15px] font-extrabold text-[#0F172A] m-0 px-1">Quick actions</h3>
+            <div class="grid grid-cols-3 gap-3">
+                <button type="button" data-go="log-maintenance" class="flex flex-col items-center gap-2 group cursor-pointer text-center">
+                    <div class="w-14 h-14 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center border border-[#DBEAFE] group-hover:scale-105 group-hover:bg-[#DBEAFE] transition-all shadow-xs">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-[12px] font-bold text-[#334155] group-hover:text-[#2563EB] transition-colors leading-tight">Report an issue</span>
+                </button>
+                <button type="button" data-go="messages" class="flex flex-col items-center gap-2 group cursor-pointer text-center">
+                    <div class="w-14 h-14 rounded-full bg-[#ECFDF5] text-[#059669] flex items-center justify-center border border-[#A7F3D0] group-hover:scale-105 group-hover:bg-[#D1FAE5] transition-all shadow-xs">
+                        <i data-lucide="message-circle" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-[12px] font-bold text-[#334155] group-hover:text-[#059669] transition-colors leading-tight">Message landlord</span>
+                </button>
+                <button type="button" data-go="transaction-history" class="flex flex-col items-center gap-2 group cursor-pointer text-center">
+                    <div class="w-14 h-14 rounded-full bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center border border-[#DDD6FE] group-hover:scale-105 group-hover:bg-[#EDE9FE] transition-all shadow-xs">
+                        <i data-lucide="credit-card" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-[12px] font-bold text-[#334155] group-hover:text-[#7C3AED] transition-colors leading-tight">View payments</span>
+                </button>
             </div>
         </div>
-        <div class="grid grid-cols-4 gap-2.5">
-            <button type="button" data-go="log-maintenance" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
-                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
-                    <i data-lucide="wrench" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">Report issue</span>
-            </button>
-            <button type="button" data-go="tenant-active-tenancy" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
-                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
-                    <i data-lucide="scroll-text" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">My Tenancy</span>
-            </button>
-            <button type="button" data-go="tenant-building-info" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
-                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
-                    <i data-lucide="images" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">Inventory</span>
-            </button>
-            <button type="button" data-go="transaction-history" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
-                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
-                    <i data-lucide="receipt" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">Payments</span>
-            </button>
-        </div>
+
         ${renderTenantHomeMaintSection(t, tid)}
         ${renderTenantHomeAnnouncement(t)}
     </div>`;
