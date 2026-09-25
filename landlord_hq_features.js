@@ -3743,6 +3743,7 @@ function saveAddDocumentAction() {
             });
         });
     }
+    if (typeof syncSmartReminders === 'function') syncSmartReminders();
     AppStore.save();
     const savedFolderId = STATE.docFolderId;
     const wasReplace = replaceId != null;
@@ -3776,62 +3777,65 @@ const addDocumentModal = () => {
                     <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1]"></i>
                 </button>`).join('')}
             </div>`
-        : step === 'file'
-            ? `<p class="modal-body">Upload a PDF or image for <strong>${escapeHtml(typeOpt?.label || 'this document')}</strong> · ${escapeHtml(contextLabel)}.</p>
-                <button type="button" data-action="pick-add-document-file" class="doc-upload-zone doc-upload-zone--modal">
-                    <i data-lucide="upload" class="w-5 h-5"></i>
-                    <span class="doc-upload-label">Choose file</span>
-                    <span class="doc-upload-hint">PDF, JPG or PNG</span>
-                </button>`
-            : `<p class="modal-body">Verify and fill in certificate metadata for <strong>${escapeHtml(contextLabel)}</strong>.</p>
-                <div class="add-doc-review card p-3.5 mb-3 bg-[#F8FAFC]">
-                    <div class="add-doc-review-type">
-                        <span class="add-doc-type-icon" style="color:${typeOpt.color};background:${typeOpt.bg}"><i data-lucide="${typeOpt.icon}" class="w-5 h-5"></i></span>
-                        <div class="min-w-0">
-                            <p class="add-doc-review-kind font-bold text-[#0F172A] text-[13px]">${escapeHtml(typeOpt.label)}</p>
-                            <p class="add-doc-review-file text-[11px] text-[#64748B]">${escapeHtml(STATE.addDocumentFile?.name || '')}</p>
-                        </div>
+        : `<p class="modal-body text-left text-[12.5px] text-[#64748B] mb-3">Upload document and fill in certificate details for <strong>${escapeHtml(contextLabel)}</strong>.</p>
+            <div class="space-y-3.5 text-left">
+                <div class="form-group">
+                    <label class="form-label">Document / Certificate Name <span class="form-required">*</span></label>
+                    <input type="text" data-add-doc-name class="form-input" value="${escapeHtml(STATE.addDocumentDisplayName || typeOpt?.label || '')}" placeholder="e.g. Gas Safety Certificate 2026">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="form-group">
+                        <label class="form-label">Issue Date</label>
+                        <input type="date" data-add-doc-issued class="form-input" value="${STATE.addDocumentIssueDate || formatDocUploadDate()}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expiry Date <span class="form-required">*</span></label>
+                        <input type="date" data-add-doc-expiry class="form-input" value="${STATE.addDocumentExpiryDate || ''}">
                     </div>
                 </div>
-                <div class="space-y-3">
-                    <div class="form-field">
-                        <label class="form-label text-[12px] font-bold text-[#334155]">Document / Certificate Name</label>
-                        <input type="text" data-add-doc-name class="form-input" value="${escapeHtml(STATE.addDocumentDisplayName || '')}" placeholder="e.g. Gas Safety Certificate 2026">
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="form-group">
+                        <label class="form-label">Certificate / Ref No.</label>
+                        <input type="text" data-add-doc-cert-num class="form-input" value="${escapeHtml(STATE.addDocumentCertNum || '')}" placeholder="e.g. GSR-592811">
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="form-field">
-                            <label class="form-label text-[12px] font-bold text-[#334155]">Certificate / Ref No.</label>
-                            <input type="text" data-add-doc-cert-num class="form-input" placeholder="e.g. GSR-592811">
-                        </div>
-                        <div class="form-field">
-                            <label class="form-label text-[12px] font-bold text-[#334155]">Issued By / Engineer</label>
-                            <input type="text" data-add-doc-issued-by class="form-input" placeholder="e.g. EcoPlumb Ltd">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="form-field">
-                            <label class="form-label text-[12px] font-bold text-[#334155]">Issue Date</label>
-                            <input type="text" data-add-doc-issued class="form-input" value="${formatDocUploadDate()}" placeholder="e.g. 15 Mar 2025">
-                        </div>
-                        <div class="form-field">
-                            <label class="form-label text-[12px] font-bold text-[#334155]">Expiry Date</label>
-                            <input type="text" data-add-doc-expiry class="form-input" placeholder="e.g. 14 Mar 2026">
-                        </div>
-                    </div>
-                    ${units.length > 1 ? `
-                    <div class="form-field">
-                        <label class="form-label text-[12px] font-bold text-[#334155]">Applies to Unit / Flat</label>
-                        <select data-add-doc-unit class="form-input">
-                            <option value="">Building-wide / All units</option>
-                            ${units.map(u => `<option value="${escapeHtml(unitName(u))}"${STATE.addDocumentUnit === unitName(u) ? ' selected' : ''}>${escapeHtml(unitName(u))}</option>`).join('')}
-                        </select>
-                    </div>` : ''}
-                    <div class="form-field">
-                        <label class="form-label text-[12px] font-bold text-[#334155]">Notes &amp; Details</label>
-                        <textarea data-add-doc-notes class="form-input" rows="2" placeholder="e.g. Combi boiler model, £5M liability cover, inspection notes…"></textarea>
+                    <div class="form-group">
+                        <label class="form-label">Issued By / Engineer</label>
+                        <input type="text" data-add-doc-issued-by class="form-input" value="${escapeHtml(STATE.addDocumentIssuedBy || '')}" placeholder="e.g. HeatSafe Ltd">
                     </div>
                 </div>
-                <button type="button" data-action="save-add-document" class="btn-primary w-full py-3.5 text-[14px] mt-4 font-bold shadow-xs">Save Document</button>`;
+
+                ${units.length > 1 ? `
+                <div class="form-group">
+                    <label class="form-label">Applies to Unit / Flat</label>
+                    <select data-add-doc-unit class="form-input form-select">
+                        <option value="">Building-wide / All units</option>
+                        ${units.map(u => `<option value="${escapeHtml(unitName(u))}"${STATE.addDocumentUnit === unitName(u) ? ' selected' : ''}>${escapeHtml(unitName(u))}</option>`).join('')}
+                    </select>
+                </div>` : ''}
+
+                <div class="form-group">
+                    <label class="form-label">Upload File / PDF / Photo</label>
+                    <button type="button" data-action="pick-add-document-file" class="doc-upload-zone doc-upload-zone--modal w-full">
+                        <i data-lucide="${STATE.addDocumentFile ? 'file-check' : 'upload'}" class="w-5 h-5 text-[#2563EB]"></i>
+                        <span class="doc-upload-label font-bold text-[#0F172A]">${STATE.addDocumentFile ? escapeHtml(STATE.addDocumentFile.name) : 'Choose file from device'}</span>
+                        <span class="doc-upload-hint text-[#64748B]">${STATE.addDocumentFile ? 'File attached · Tap to change' : 'PDF, JPG or PNG (up to 10MB)'}</span>
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notes &amp; Details</label>
+                    <textarea data-add-doc-notes class="form-input h-20 resize-none" placeholder="e.g. Combi boiler model, £5M liability cover, inspection notes…">${escapeHtml(STATE.addDocumentNotes || '')}</textarea>
+                </div>
+            </div>
+            
+            <div class="p-3 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center gap-2.5 text-left text-[12px] text-[#1E40AF] mt-3">
+                <i data-lucide="bell-ring" class="w-4 h-4 shrink-0 text-[#2563EB]"></i>
+                <span>Smart Reminders automatically update to alert you 30 days before expiry date!</span>
+            </div>
+
+            <button type="button" data-action="save-add-document" class="btn-primary w-full py-3.5 text-[14px] mt-4 font-bold shadow-xs cursor-pointer">Save Document &amp; Sync Reminder</button>`;
     return `<div class="modal-overlay open" data-action="close-add-document">
         <div class="modal-sheet modal-sheet--tall">
             <div class="add-doc-modal-head">
