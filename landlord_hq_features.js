@@ -20045,19 +20045,6 @@ function screenEditFlatKeys() {
     <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
         ${editScopeSelector}
 
-        <!-- Quick Preset Chips -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
-            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Fast Presets (+ Add One-Click)</span>
-            <div class="flex items-center gap-1.5 flex-wrap">
-                <button type="button" data-action="add-key-preset" data-preset-label="Front entrance key" data-preset-location="Flat entrance" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Front Door</button>
-                <button type="button" data-action="add-key-preset" data-preset-label="Building electronic fob" data-preset-location="Lobby & gate" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Building Fob</button>
-                <button type="button" data-action="add-key-preset" data-preset-label="Mailbox key" data-preset-location="Ground floor post room" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Mailbox</button>
-                <button type="button" data-action="add-key-preset" data-preset-label="Bedroom door key" data-preset-location="Bedroom entrance" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Bedroom</button>
-                <button type="button" data-action="add-key-preset" data-preset-label="Window lock key" data-preset-location="Window handles" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Window Key</button>
-                <button type="button" data-action="add-key-preset" data-preset-label="Master key (Landlord)" data-preset-location="Office safe" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Master Key</button>
-            </div>
-        </div>
-
         <div class="space-y-3">
         ${keys.map((k, i) => `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3" data-flat-key-row>
