@@ -879,26 +879,23 @@ function renderContractorCertSlot(certType) {
         return `
         <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
             <div class="flex items-center gap-3.5 min-w-0">
-                <div class="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style="color:${opt.color};background:${opt.bg}">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="color:${opt.color};background:${opt.bg}">
                     <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
                 </div>
                 <div class="min-w-0 space-y-0.5">
                     <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate">${esc(opt.label)}</h4>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-[11.5px] font-semibold text-[#64748B] truncate">${esc(cert.fileName)}</span>
-                        ${cert.validUntil ? `<span class="px-2 py-0.2 rounded-md bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] font-bold text-[10.5px]">Valid until ${esc(cert.validUntil)}</span>` : `<span class="px-2 py-0.2 rounded-md bg-[#F1F5F9] text-[#475569] font-bold text-[10.5px]">Uploaded</span>`}
-                    </div>
+                    <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate">
+                        ${esc(cert.fileName)}
+                        ${cert.validUntil ? ` · <span class="font-bold text-[#059669]">Expires ${esc(cert.validUntil)}</span>` : ''}
+                    </p>
                 </div>
             </div>
 
             <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="View Certificate">
-                    <i data-lucide="eye" class="w-4 h-4"></i>
+                <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer">
+                    View
                 </button>
-                <button type="button" data-action="replace-contractor-cert" data-cert-type="${certType}" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0] flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer" title="Replace File">
-                    <i data-lucide="upload" class="w-4 h-4"></i>
-                </button>
-                <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2] flex items-center justify-center hover:bg-[#FEE2E2] transition-colors cursor-pointer" title="Delete">
+                <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-[#F8FAFC] text-[#94A3B8] hover:text-[#DC2626] border border-[#E2E8F0] flex items-center justify-center transition-colors cursor-pointer" title="Delete">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -908,12 +905,12 @@ function renderContractorCertSlot(certType) {
     return `
     <button type="button" data-action="open-contractor-cert-slot" data-cert-type="${certType}" class="card p-3.5 rounded-2xl bg-[#F8FAFC] border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] hover:bg-[#EFF6FF] transition-all flex items-center justify-between gap-3 text-left w-full cursor-pointer group">
         <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${opt.color};background:${opt.bg}">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${opt.color};background:${opt.bg}">
                 <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
                 <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate">${esc(opt.label)}</h4>
-                <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate mt-0.5">Required document — Tap to upload</p>
+                <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate mt-0.5">Required document</p>
             </div>
         </div>
         <span class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white font-bold text-[12px] flex items-center gap-1 shrink-0 shadow-2xs group-hover:bg-[#1D4ED8]">
@@ -1119,12 +1116,8 @@ function screenContractorCertifications() {
     const slotTypes = CONTRACTOR_CERT_TYPES.filter(t => t.type !== 'other');
     const otherCerts = certs.filter(c => c.type === 'other');
 
-    return `${topBar('Certifications', { back: true, sub: `${certs.length} active certificates` })}
-    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-12">
-        <p class="text-[12.5px] font-medium text-[#64748B] leading-relaxed m-0 px-1">
-            Upload your trade &amp; safety certificates. Verified documents are displayed on your public profile for landlords &amp; tenants.
-        </p>
-
+    return `${topBar('Certifications', { back: true })}
+    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-16">
         <!-- Primary Certificate Slots List -->
         <div class="space-y-2.5">
             ${slotTypes.map(t => renderContractorCertSlot(t.type)).join('')}
@@ -1132,11 +1125,11 @@ function screenContractorCertifications() {
 
         <!-- Additional Certificates -->
         <div class="pt-2 space-y-2.5">
-            <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider m-0 px-1">Additional Safety &amp; Trade Docs</h3>
+            <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0 px-1">Additional Certificates</h3>
             ${otherCerts.length ? renderContractorCertList({ ...CONTRACTOR_USER, id: getContractorDirectoryEntry(CONTRACTOR_USER.email || CONTRACTOR_USER.company)?.id }) : ''}
             
-            <button type="button" data-action="open-contractor-cert-slot" data-cert-type="other" class="btn-secondary w-full py-3 text-[13px] font-bold flex items-center justify-center gap-2 rounded-2xl border border-[#E2E8F0]">
-                <i data-lucide="plus" class="w-4 h-4"></i> Add Other Certificate
+            <button type="button" data-action="open-contractor-cert-slot" data-cert-type="other" class="btn-secondary w-full py-3 text-[13px] font-bold flex items-center justify-center gap-1.5 rounded-2xl border border-[#E2E8F0] bg-white shadow-2xs hover:border-[#2563EB] transition-colors cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i> Add Certificate
             </button>
         </div>
     </div>
