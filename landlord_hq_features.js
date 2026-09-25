@@ -18438,9 +18438,14 @@ function screenReminders() {
             ${list.map(r => {
         const p = PROPERTIES[r.propertyId];
         const rt = reminderTypeMeta(r.type);
+        const daysLeft = r.daysLeft ?? daysUntil(r.due) ?? 999;
+        const isWithinMonth = daysLeft <= 30;
         const badge = reminderStatusBadge(r);
         const dueLabel = formatReminderDue(r.due);
-        const subline = isSingleProp ? `Due ${esc(dueLabel)}` : `${esc(p?.name || 'All Properties')} · Due ${esc(dueLabel)}`;
+        const propName = esc(p?.name || 'All Properties');
+        const subline = isWithinMonth
+            ? (isSingleProp ? `Due ${esc(dueLabel)}` : `${propName} · Due ${esc(dueLabel)}`)
+            : propName;
         return `
             <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="card w-full p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 text-left cursor-pointer group">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background:${rt[3]};color:${rt[4]}">
@@ -18448,10 +18453,10 @@ function screenReminders() {
                 </div>
                 <div class="flex-1 min-w-0">
                     <h4 class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">${esc(r.title)}</h4>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${subline}</p>
+                    ${subline ? `<p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${subline}</p>` : ''}
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-2xs" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>
+                    ${isWithinMonth ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-2xs" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>` : ''}
                     <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#64748B] transition-colors"></i>
                 </div>
             </button>`;
