@@ -16056,7 +16056,6 @@ function filteredReminders(filter, propFilter) {
     }
     if (f === 'soon') return list.filter(r => (r.daysLeft ?? 99) <= 30 && (r.daysLeft ?? -99) >= 0);
     if (f === 'overdue') return list.filter(r => (r.daysLeft ?? 0) < 0);
-    if (f === 'custom') return list.filter(r => !r.auto);
     return list;
 }
 
