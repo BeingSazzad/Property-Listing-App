@@ -4136,57 +4136,70 @@ function screenContractorReviews() {
 
 function screenContractorProfile() {
     const u = CONTRACTOR_USER;
-    const name = typeof fullNameFromParts === 'function' ? fullNameFromParts(u.firstName, u.lastName) : `${u.firstName} ${u.lastName}`.trim();
+    const displayName = typeof fullNameFromParts === 'function' ? fullNameFromParts(u.firstName, u.lastName) : `${u.firstName} ${u.lastName}`.trim();
     const trade = contractorTradeFromLabel(u.trade);
-    const certCount = ensureContractorCertificates(u).length;
-    const reviewSummary = typeof contractorReviewSummary === 'function' ? contractorReviewSummary() : { avg: '—', count: 0 };
+    const av = typeof getContractorProfilePhoto === 'function' ? getContractorProfilePhoto() : (IMG?.avatar?.plumber || 'assets/plumber.png');
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const subLabel = `${trade.shortLabel || 'Contractor'} · ${u.company || 'Service Pro'}`;
+
+    const group1 = [
+        ['user', 'Personal information', 'personal-info'],
+        ['building-2', 'Company information', 'contractor-company'],
+        ['bell', 'Notification Settings', 'notifications-settings'],
+        ['key-round', 'Change Password', 'password'],
+        ['shield-check', 'Certifications', 'contractor-certifications'],
+        ['star', 'Reviews & Ratings', 'contractor-reviews'],
+    ];
+
+    const group2 = [
+        ['circle-help', 'Help & Support', 'help-support'],
+        ['info', 'About', 'about'],
+        ['shield-check', 'Privacy Policy', 'privacy'],
+        ['file-text', 'Terms & Conditions', 'terms'],
+    ];
+
     return `${topBar('Profile', { hideBell: true })}
-    <div class="screen-content screen-content-sm screen-enter profile-page">
-        <button type="button" data-go="personal-info" class="profile-card">
-            <img src="${typeof getContractorProfilePhoto === 'function' ? getContractorProfilePhoto() : IMG.avatar.plumber}" class="profile-card-avatar" alt="">
-            <div class="profile-card-body">
-                <p class="profile-card-name">${name}</p>
-                <p class="profile-card-email">${u.email}</p>
-                ${u.phone ? `<p class="profile-card-phone">${u.phone}</p>` : ''}
-                <p class="profile-card-hint">${trade.shortLabel} · ${u.company || 'Contractor'}</p>
-                <span class="free-account-pill free-account-pill--inline"><i data-lucide="gift" class="w-3 h-3"></i> Always free</span>
+    <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-8">
+        <!-- Top Profile User Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <img src="${av}" class="w-12 h-12 rounded-full object-cover shrink-0 border border-[#E2E8F0]" alt="">
+                <div class="min-w-0">
+                    <h3 class="text-[16px] font-extrabold text-[#0F172A] truncate m-0">${esc(displayName)}</h3>
+                    <p class="text-[12.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(subLabel)}</p>
+                </div>
             </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-[#CBD5E1] shrink-0"></i>
+            <button type="button" data-go="personal-info" class="text-[#2563EB] text-[12px] font-bold hover:underline cursor-pointer shrink-0">Edit</button>
+        </div>
+
+        <!-- Inset Group 1: Business & Account Settings -->
+        <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden text-left">
+            ${group1.map(([icon, label, targetGo]) => `
+            <button type="button" data-go="${targetGo}" class="w-full p-4 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left group">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <i data-lucide="${icon}" class="w-5 h-5 text-[#334155] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
+                    <span class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">${label}</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:translate-x-0.5 transition-transform shrink-0"></i>
+            </button>`).join('')}
+        </div>
+
+        <!-- Inset Group 2: Support & Policies -->
+        <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden text-left">
+            ${group2.map(([icon, label, targetGo]) => `
+            <button type="button" data-go="${targetGo}" class="w-full p-4 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left group">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <i data-lucide="${icon}" class="w-5 h-5 text-[#334155] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
+                    <span class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">${label}</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:translate-x-0.5 transition-transform shrink-0"></i>
+            </button>`).join('')}
+        </div>
+
+        <!-- Red Outline Log Out Button -->
+        <button type="button" data-action="logout" class="w-full py-3.5 rounded-2xl border border-[#FCA5A5] bg-white text-[#EF4444] font-extrabold text-[14px] hover:bg-[#FEF2F2] transition-colors cursor-pointer text-center shadow-xs mt-2">
+            Log out
         </button>
-        <div class="profile-section">
-            <p class="section-title">Your account</p>
-            ${menuList([
-                ['bell', 'Notification settings', 'notifications-settings'],
-                ['key-round', 'Change password', 'password'],
-                ['shield', 'Security', 'security'],
-            ])}
-        </div>
-        <div class="profile-section">
-            <p class="section-title">Business</p>
-            ${menuList([
-                ['building-2', 'Company information', 'contractor-company'],
-                ['users', 'Organisation & sub-accounts', 'contractor-org', 'Master + field teams'],
-                ['folder-open', 'Certifications', 'contractor-certifications', `${certCount} on file`],
-            ])}
-        </div>
-        <div class="profile-section">
-            <p class="section-title">Work</p>
-            ${menuList([
-                ['banknote', 'Earnings', 'contractor-earnings'],
-                ['star', 'Reviews', 'contractor-reviews', reviewSummary.count ? `${reviewSummary.avg} · ${reviewSummary.count}` : '—'],
-            ])}
-        </div>
-        <div class="profile-section">
-            <p class="section-title">Support</p>
-            ${menuList([
-                ['help-circle', 'Help & support', 'help-support'],
-                ['shield', 'Privacy policy', 'privacy'],
-                ['file-text', 'Terms & conditions', 'terms'],
-            ])}
-        </div>
-        <button data-action="logout" class="profile-logout">Log out</button>
-        <button type="button" data-go="delete-account" class="profile-delete-link">Delete account</button>
-        <p class="profile-version">Contractor portal · Demo build</p>
     </div>`;
 }
 
