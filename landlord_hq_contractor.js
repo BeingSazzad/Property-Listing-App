@@ -1651,11 +1651,11 @@ function renderTenantHomePropertyCard(t, p) {
             ? getPropertyCoverPhoto(t.propertyId)
             : (IMG?.props?.[t.propertyId] || 'assets/house1.jpg'));
     return `
-    <button type="button" data-go="tenant-active-tenancy" class="relative w-full h-[180px] rounded-3xl overflow-hidden text-left group shadow-md transition-transform active:scale-[0.99] cursor-pointer">
+    <button type="button" data-go="tenant-active-tenancy" class="relative w-full h-[180px] rounded-2xl overflow-hidden text-left group shadow-md transition-transform active:scale-[0.99] cursor-pointer">
         <img src="${esc(cover)}" alt="" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
         <div class="absolute inset-0 bg-gradient-to-r from-[#0F172A]/90 via-[#0F172A]/75 to-transparent p-5 flex flex-col justify-between">
             <div class="flex items-center">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wider bg-[#065F46]/90 text-[#34D399] border border-[#059669]/40 uppercase shadow-xs">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-extrabold tracking-wider bg-[#065F46]/90 text-[#34D399] border border-[#059669]/40 uppercase shadow-xs">
                     <span class="w-2 h-2 rounded-full bg-[#34D399] animate-pulse"></span>
                     ACTIVE TENANCY
                 </span>
@@ -1667,7 +1667,7 @@ function renderTenantHomePropertyCard(t, p) {
                     <span>${esc(t.unit ? `${t.unit}, ${p?.address || ''}` : (p?.address || 'Flat 2A, London, SW1A 1AA'))}</span>
                 </p>
                 <div class="mt-3">
-                    <span class="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/30 text-white text-[12px] font-bold group-hover:bg-white/25 transition-all">
+                    <span class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/30 text-white text-[12px] font-bold group-hover:bg-white/25 transition-all">
                         <span>View home details</span>
                         <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                     </span>
@@ -1697,7 +1697,7 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
     const maintDue = maintInv?.due || 'Jul 20, 2026';
 
     return `
-    <div class="card p-4 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm text-left space-y-3">
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-left space-y-3">
         <div class="flex items-center justify-between">
             <span class="text-[13px] font-bold text-[#64748B]">Next rent due</span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${rentDue ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#ECFDF5] text-[#059669]'}">

@@ -10227,7 +10227,7 @@ function renderAddRoomModal(propertyId) {
     if (!STATE.showAddRoomModal) return '';
     return `
     <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-        <div class="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+        <div class="w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div>
                     <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Add Room / Area</h3>
@@ -10403,7 +10403,7 @@ function openAddApplianceModal(propertyId) {
 
     const modalHtml = `
     <div id="add-appliance-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('add-appliance-modal')?.remove()">
-        <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-2xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -10515,7 +10515,7 @@ function openAddAlarmModal(propertyId) {
 
     const modalHtml = `
     <div id="add-alarm-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('add-alarm-modal')?.remove()">
-        <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-2xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -10746,7 +10746,7 @@ function openApplianceItemModal(applianceId) {
 
         const html = `
         <div id="appliance-item-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('appliance-item-modal')?.remove()">
-            <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
+            <div class="bg-white rounded-2xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -10923,7 +10923,7 @@ function openAlarmItemModal(alarmId) {
 
         const html = `
         <div id="alarm-item-modal" class="modal-overlay open" style="position:absolute;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;" onclick="document.getElementById('alarm-item-modal')?.remove()">
-            <div class="bg-white rounded-3xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
+            <div class="bg-white rounded-2xl w-full max-w-[390px] p-5 shadow-2xl space-y-3.5 text-left border border-slate-100 animate-scaleUp max-h-[92%] overflow-y-auto box-border" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -17566,7 +17566,7 @@ function renderMaintInboxCard(item, opts = {}) {
         : '';
 
     return `
-    <div class="card p-3.5 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm mb-3 text-left transition-all hover:border-[#BFDBFE]">
+    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm mb-3 text-left transition-all hover:border-[#BFDBFE]">
         <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="w-full text-left cursor-pointer group">
             <div class="flex items-start gap-3">
                 ${thumb}
