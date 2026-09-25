@@ -917,6 +917,50 @@ function renderContractorCertSlot(certType) {
     </button>`;
 }
 
+function renderExtraWorkModal() {
+    if (!STATE.extraWorkModal?.open) return '';
+    return `
+    <div class="modal-overlay" data-action="close-extra-work-modal">
+        <div class="modal-card max-w-[360px] p-5 rounded-2xl bg-white space-y-4 text-left shadow-xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                <h3 class="text-[16px] font-black text-[#0F172A] m-0">Add extra work</h3>
+                <button type="button" data-action="close-extra-work-modal" class="text-[#94A3B8] hover:text-[#0F172A] cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[12px] font-bold text-[#475569] mb-1">What extra work was done?</label>
+                    <input type="text" data-field="extraWorkDesc" placeholder="e.g. Replaced leaking valve / trap" class="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-[12px] font-bold text-[#475569] mb-1">Additional amount (£)</label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3.5 text-[14px] font-bold text-[#64748B]">£</span>
+                        <input type="number" step="any" data-field="extraWorkAmount" placeholder="45.00" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-[#CBD5E1] text-[14px] font-bold text-[#0F172A] focus:border-[#2563EB] focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[12px] font-bold text-[#475569] mb-1">Notes / Breakdown (optional)</label>
+                    <textarea data-field="extraWorkNotes" rows="2" placeholder="Explain why extra parts or labour were required..." class="w-full p-3 rounded-xl border border-[#CBD5E1] text-[12.5px] font-medium text-[#0F172A] focus:border-[#2563EB] focus:outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <button type="button" data-action="close-extra-work-modal" class="btn-secondary flex-1 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" data-action="save-extra-work" class="btn-primary flex-1 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer">
+                    Add to invoice
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
 function renderContractorCertUploadModal() {
     const upload = STATE.contractorCertUpload;
     if (!upload?.open) return '';
@@ -4259,8 +4303,20 @@ function screenContractorJobInvoice() {
                     </button>
                 </div>
                 ${job.extraWork?.length ? `
-                <div class="divide-y divide-[#F1F5F9] text-[12.5px] bg-[#F8FAFC] rounded-lg p-2.5 border border-[#E2E8F0]">
-                    ${job.extraWork.map(w => `<div class="py-1 flex justify-between"><span>${esc(w.desc)}</span><span class="font-bold text-[#16A34A]">+${esc(w.amount)}</span></div>`).join('')}
+                <div class="divide-y divide-[#F1F5F9] text-[12.5px] bg-[#F8FAFC] rounded-xl p-2.5 border border-[#E2E8F0] space-y-1">
+                    ${job.extraWork.map((w, idx) => `
+                    <div class="py-1.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="font-bold text-[#0F172A] m-0 truncate">${esc(w.desc)}</p>
+                            ${w.notes ? `<p class="text-[11px] text-[#64748B] m-0 truncate">${esc(w.notes)}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="font-black text-[#16A34A]">+£${String(w.amount).replace(/[^\d.]/g, '')}</span>
+                            <button type="button" data-action="delete-extra-work" data-index="${idx}" class="w-6 h-6 rounded-lg hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] transition-colors flex items-center justify-center cursor-pointer" title="Remove">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>`).join('')}
                 </div>` : ''}
 
                 <!-- Certificates -->
@@ -4295,7 +4351,8 @@ function screenContractorJobInvoice() {
             </p>
         </div>
     </div>
-    ${typeof renderContractorCertUploadModal === 'function' ? renderContractorCertUploadModal() : ''}`;
+    ${typeof renderContractorCertUploadModal === 'function' ? renderContractorCertUploadModal() : ''}
+    ${typeof renderExtraWorkModal === 'function' ? renderExtraWorkModal() : ''}`;
 }
 
 function screenContractorSchedule() {
@@ -4940,18 +4997,63 @@ function bindContractorEvents() {
         el.onclick = (e) => { e.preventDefault(); saveContractorCertUpload(); };
     });
     app.querySelectorAll('[data-action="add-extra-work"]').forEach(el => {
-        el.onclick = () => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            STATE.extraWorkModal = { open: true };
+            render();
+            setTimeout(() => {
+                document.querySelector('[data-field="extraWorkDesc"]')?.focus();
+            }, 50);
+        };
+    });
+    app.querySelectorAll('[data-action="close-extra-work-modal"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            STATE.extraWorkModal = { open: false };
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="save-extra-work"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            const desc = document.querySelector('[data-field="extraWorkDesc"]')?.value?.trim();
+            const rawAmt = document.querySelector('[data-field="extraWorkAmount"]')?.value?.trim();
+            const notes = document.querySelector('[data-field="extraWorkNotes"]')?.value?.trim() || '';
+            const num = parseFloat(rawAmt);
+            if (!desc) {
+                toast('Please describe what extra work was done');
+                return;
+            }
+            if (!rawAmt || Number.isNaN(num) || num <= 0) {
+                toast('Please enter a valid extra amount');
+                return;
+            }
             const job = contractorJob(STATE.contractorJobId);
             if (!job) return;
             if (!job.extraWork) job.extraWork = [];
             job.extraWork.push({
-                desc: 'Approved extra work',
-                amount: '£75',
-                at: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+                desc,
+                amount: num.toFixed(2),
+                notes,
+                at: 'Today',
                 status: 'pending_approval',
             });
             if (typeof saveContractorJobs === 'function') saveContractorJobs();
-            toast('Extra work request sent to landlord for approval');
+            STATE.extraWorkModal = { open: false };
+            toast('Extra work added: ' + desc);
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="delete-extra-work"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const idx = parseInt(el.dataset.index, 10);
+            const job = contractorJob(STATE.contractorJobId);
+            if (!job || !job.extraWork || Number.isNaN(idx)) return;
+            job.extraWork.splice(idx, 1);
+            if (typeof saveContractorJobs === 'function') saveContractorJobs();
+            toast('Extra work item removed');
             render();
         };
     });
