@@ -4340,21 +4340,24 @@ function toggleContractorTradeHandler(trade) {
 }
 
 function screenContractorCompany() {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const tradesList = CONTRACTOR_USER.trades || [CONTRACTOR_USER.trade];
     return `${topBar('Company Information', { back: true })}
-    <div class="screen-content screen-enter">
-        ${formField('Company Name', CONTRACTOR_USER.company || '', 'text', 'Plumber Pro Ltd', 'companyName')}
-        ${renderContractorMultiTradesPicker()}
-        <div class="ctr-signup-trade-hint card p-3" style="margin-bottom:16px">
-            <p class="ctr-signup-trade-hint-label">Categories shown to landlords</p>
-            <div class="flex flex-wrap gap-2 mt-2">
-                ${(CONTRACTOR_USER.trades || [CONTRACTOR_USER.trade]).map(tr => `<span class="badge bg-[#EFF6FF] text-[#2563EB] font-bold text-[11px] px-2.5 py-1 rounded-lg">${escapeHtml(tr)}</span>`).join('')}
+    <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-8">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
+            ${formField('Company Name', CONTRACTOR_USER.company || '', 'text', 'Plumber Pro Ltd', 'companyName')}
+            ${renderContractorMultiTradesPicker()}
+            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5">
+                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Trade Categories</span>
+                <div class="flex flex-wrap gap-1.5">
+                    ${tradesList.map(tr => `<span class="px-2.5 py-0.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] font-bold text-[11px]">${esc(tr)}</span>`).join('')}
+                </div>
             </div>
+            ${formField('Company Reg. No.', CONTRACTOR_USER.companyReg || '', 'text', '12345678', 'companyReg')}
+            ${formField('VAT Number', CONTRACTOR_USER.vatNumber || '', 'text', 'GB123456789', 'vatNumber')}
+            ${formField('Phone', CONTRACTOR_USER.phone || '', 'tel', '', 'phone')}
+            ${formField('Email', CONTRACTOR_USER.email || '', 'email', '', 'email')}
         </div>
-        ${formField('Company Reg. No.', CONTRACTOR_USER.companyReg || '', 'text', '12345678', 'companyReg')}
-        ${formField('VAT Number', CONTRACTOR_USER.vatNumber || '', 'text', 'GB123456789', 'vatNumber')}
-        ${formField('Phone', CONTRACTOR_USER.phone || '', 'tel', '', 'phone')}
-        ${formField('Email', CONTRACTOR_USER.email || '', 'email', '', 'email')}
-        <p class="section-title">Certifications</p>
         ${saveBtn('Save Changes', 'Company info updated')}
     </div>`;
 }
