@@ -893,7 +893,7 @@ function renderContractorCertSlot(certType) {
 
     if (cert) {
         return `
-        <div data-action="view-contractor-cert" data-cert="${cert.id}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left cursor-pointer hover:border-[#2563EB] transition-all group">
+        <div data-action="view-contractor-cert" data-cert="${cert.id}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left cursor-pointer hover:border-[#2563EB] transition-all group">
             <div class="flex items-center gap-3.5 min-w-0">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${opt.color};background:${opt.bg}">
                     <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
@@ -927,7 +927,7 @@ function renderContractorCertSlot(certType) {
                 <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate mt-0.5">Required document</p>
             </div>
         </div>
-        <span class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white font-bold text-[12px] flex items-center gap-1 shrink-0 shadow-2xs group-hover:bg-[#1D4ED8]">
+        <span class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white font-bold text-[12px] flex items-center gap-1 shrink-0 shadow-sm group-hover:bg-[#1D4ED8]">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i> Upload
         </span>
     </button>`;
@@ -1130,7 +1130,7 @@ function screenContractorPublicProfile() {
             ${(isLandlord || isTenant) ? `
             <div class="grid grid-cols-3 gap-2 mt-4 pt-3.5 border-t border-[#F1F5F9]">
                 ${chatId != null ? `
-                <button type="button" data-go="chat" data-chat="${chatId}" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-[13px] shadow-2xs transition-all active:scale-95 cursor-pointer">
+                <button type="button" data-go="chat" data-chat="${chatId}" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-[13px] shadow-sm transition-all active:scale-95 cursor-pointer">
                     <i data-lucide="message-square" class="w-4 h-4"></i>
                     <span>Message</span>
                 </button>` : '<div></div>'}
@@ -1150,7 +1150,7 @@ function screenContractorPublicProfile() {
         </div>
 
         ${(isLandlord || isTenant) && (profile.phone || profile.email) ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Contact Details</p>
             ${profile.phone ? `
             <div class="flex items-center justify-between py-1 text-[13px]">
@@ -1186,7 +1186,7 @@ function screenContractorCertifications() {
             <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0 px-1">Additional Certificates</h3>
             ${otherCerts.length ? renderContractorCertList({ ...CONTRACTOR_USER, id: getContractorDirectoryEntry(CONTRACTOR_USER.email || CONTRACTOR_USER.company)?.id }) : ''}
             
-            <button type="button" data-action="open-contractor-cert-slot" data-cert-type="other" class="btn-secondary w-full py-3 text-[13px] font-bold flex items-center justify-center gap-1.5 rounded-2xl border border-[#E2E8F0] bg-white shadow-2xs hover:border-[#2563EB] transition-colors cursor-pointer">
+            <button type="button" data-action="open-contractor-cert-slot" data-cert-type="other" class="btn-secondary w-full py-3 text-[13px] font-bold flex items-center justify-center gap-1.5 rounded-2xl border border-[#E2E8F0] bg-white shadow-sm hover:border-[#2563EB] transition-colors cursor-pointer">
                 <i data-lucide="plus" class="w-4 h-4"></i> Add Certificate
             </button>
         </div>
@@ -2165,7 +2165,7 @@ function screenTenantBuildingInfo() {
                         <span>${esc(p?.address || '')}</span>
                     </p>
                 </div>
-                <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-2xs">
+                <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-sm">
                     <img src="${esc(cover)}" alt="" class="w-full h-full object-cover">
                 </div>
             </div>
@@ -2230,7 +2230,7 @@ function screenTenantBuildingInfo() {
                         <p class="text-[13px] font-bold text-[#0F172A] m-0">${esc(landlordPhone)}</p>
                     </div>
                 </div>
-                <a href="tel:${esc(landlordPhone)}" class="px-3 py-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-[12px] font-bold shadow-2xs flex items-center gap-1.5 transition-colors shrink-0">
+                <a href="tel:${esc(landlordPhone)}" class="px-3 py-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 transition-colors shrink-0">
                     <i data-lucide="phone" class="w-3.5 h-3.5"></i>
                     <span>Call</span>
                 </a>
@@ -2496,7 +2496,7 @@ function screenTenantInventory() {
             ${roomCards.length ? roomCards.map(r => `
             <button type="button" data-go="tenant-inventory-room" data-room="${r.idx}" class="card w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all text-left flex items-start justify-between gap-3 group cursor-pointer">
                 <div class="flex items-start gap-3.5 min-w-0 flex-1">
-                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs mt-0.5">
+                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-sm mt-0.5">
                         <i data-lucide="${r.icon || 'package'}" class="w-5 h-5"></i>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -2612,7 +2612,7 @@ function screenTenantInventoryRoom() {
                                 <span class="w-1.5 h-1.5 rounded-full ${cond === 'Good' ? 'bg-[#10B981]' : (cond === 'Fair' ? 'bg-[#F59E0B]' : 'bg-[#EF4444]')} shrink-0"></span>
                                 <span class="text-[13.5px] font-bold text-[#0F172A] truncate">${esc(itemName)}</span>
                             </div>
-                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs ${badgeClass} shrink-0">
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm ${badgeClass} shrink-0">
                                 ${esc(cond)}
                             </span>
                         </div>
@@ -2620,7 +2620,7 @@ function screenTenantInventoryRoom() {
                         <div class="flex items-center gap-2 pl-4 overflow-x-auto py-1">
                             ${itemPhotos.map((pUrl) => `
                             <div class="relative group/photo shrink-0">
-                                <img src="${esc(pUrl)}" alt="${esc(itemName)}" class="w-14 h-14 object-cover rounded-xl border border-[#E2E8F0] shadow-2xs">
+                                <img src="${esc(pUrl)}" alt="${esc(itemName)}" class="w-14 h-14 object-cover rounded-xl border border-[#E2E8F0] shadow-sm">
                             </div>`).join('')}
                         </div>` : ''}
                     </div>`;
@@ -2751,7 +2751,7 @@ function screenTenantPaymentHistory() {
                         ${dueTotal > 0 ? `<span>Next payment due <strong class="text-[#0F172A]">${esc(nextDue)}</strong></span>` : `<span class="text-[#059669] font-medium">All payments up to date</span>`}
                     </p>
                 </div>
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-2xs ${dueTotal > 0 ? 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]' : 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]'}">
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-sm ${dueTotal > 0 ? 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]' : 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]'}">
                     ${dueTotal > 0 ? `${unpaid.length} Bill${unpaid.length === 1 ? '' : 's'} Outstanding` : 'Settled'}
                 </span>
             </div>
@@ -2867,7 +2867,7 @@ function renderTenantIssueCard(item) {
 
     return `
     <button type="button" data-go="maintenance-detail" data-mid="${item.id}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-sm hover:border-[#CBD5E1] transition-all flex items-start gap-3.5 w-full text-left group cursor-pointer">
-        <div class="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-2xs">
+        <div class="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-sm">
             <img src="${esc(photoSrc)}" alt="" class="w-full h-full object-cover">
             ${hasVideo ? `<span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white"><i data-lucide="play" class="w-4 h-4 fill-white"></i></span>` : ''}
         </div>
@@ -3657,7 +3657,7 @@ function renderCtrScheduleHero(job) {
                 <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
                     <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
                 </span>
-                <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold text-white inline-flex items-center gap-1.5">
+                <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-[11px] font-bold text-white inline-flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-[#4ADE80]"></span> On duty
                 </span>
             </div>
@@ -3677,7 +3677,7 @@ function renderCtrScheduleHero(job) {
             <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
                 <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
             </span>
-            <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold text-white inline-flex items-center gap-1.5">
+            <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-[11px] font-bold text-white inline-flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse"></span> On duty
             </span>
         </div>
@@ -3704,7 +3704,7 @@ function renderCtrOverviewCard(icon, label, value, sub) {
     }[icon] || 'bg-[#EFF6FF] text-[#2563EB]';
 
     return `
-    <button type="button" data-go="contractor-jobs" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] transition-all text-left flex flex-col justify-between h-[92px] group cursor-pointer relative">
+    <button type="button" data-go="contractor-jobs" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#2563EB] transition-all text-left flex flex-col justify-between h-[92px] group cursor-pointer relative">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span class="w-8 h-8 rounded-full ${badgeStyles} flex items-center justify-center shrink-0">
@@ -3728,7 +3728,7 @@ function renderCtrHomeJobRow(job) {
     const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
     const location = contractorJobLocation(job);
     return `
-    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left hover:border-[#2563EB] transition-all cursor-pointer group w-full">
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left hover:border-[#2563EB] transition-all cursor-pointer group w-full">
         <div class="flex items-center gap-3 min-w-0">
             <img src="${thumb}" alt="" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#E2E8F0]">
             <div class="min-w-0">
@@ -3841,7 +3841,7 @@ function screenContractorJobs() {
 
             <!-- Status Dropdown Filter -->
             <div class="relative shrink-0">
-                <select data-action="filter-contractor-jobs-select" class="appearance-none bg-white border border-[#CBD5E1] text-[#0F172A] text-[12.5px] font-bold rounded-xl pl-3.5 pr-8 py-2.5 shadow-2xs hover:border-[#2563EB] focus:border-[#2563EB] focus:outline-none cursor-pointer">
+                <select data-action="filter-contractor-jobs-select" class="appearance-none bg-white border border-[#CBD5E1] text-[#0F172A] text-[12.5px] font-bold rounded-xl pl-3.5 pr-8 py-2.5 shadow-sm hover:border-[#2563EB] focus:border-[#2563EB] focus:outline-none cursor-pointer">
                     <option value="all" ${f === 'all' ? 'selected' : ''}>All (${counts.all})</option>
                     <option value="pending" ${f === 'pending' ? 'selected' : ''}>Pending (${counts.pending})</option>
                     <option value="in_progress" ${f === 'in_progress' ? 'selected' : ''}>In progress (${counts.inProgress})</option>
@@ -3950,7 +3950,7 @@ function screenContractorJobDetail() {
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-16">
         
         <!-- Unified Main Job Card (Clean cohesive layout, no fragmented box clutter) -->
-        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-4 text-left">
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-4 text-left">
             <!-- Status & Job Ref Badge -->
             <div class="flex items-center justify-between">
                 <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase" style="background:${st.bg};color:${st.color}">
@@ -4055,7 +4055,7 @@ function renderContractorQuoteModal() {
     if (!STATE.showContractorQuoteModal || !job) return '';
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 screen-enter">
         <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xl w-full max-w-md space-y-4 text-left">
             <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
                 <div>
@@ -4273,12 +4273,12 @@ function screenContractorEarnings() {
         <div class="space-y-2.5">
             <h3 class="text-[14px] font-extrabold text-[#0F172A] uppercase tracking-wider px-1 m-0">Recent Payouts</h3>
             ${summary.jobs.length ? `
-            <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs divide-y divide-[#F1F5F9] overflow-hidden">
+            <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
                 ${summary.jobs.map(j => `
                 <div data-go="contractor-job-detail" data-job="${j.id}" class="p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] transition-colors cursor-pointer group">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="w-10 h-10 rounded-full bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0 border border-[#A7F3D0]">
-                            <i data-lucide="arrow-down-left" class="w-4.5 h-4.5"></i>
+                            <i data-lucide="arrow-down-left" class="w-5 h-5"></i>
                         </div>
                         <div class="min-w-0">
                             <p class="text-[14px] font-bold text-[#0F172A] truncate m-0 group-hover:text-[#2563EB] transition-colors">${esc(j.issue)}</p>
@@ -4313,7 +4313,7 @@ function screenContractorJobInvoice() {
     <div class="screen-content screen-enter ctr-compact-page space-y-4 text-left pb-16">
         
         <!-- Single Unified Normal Card (No box-in-a-box clutter) -->
-        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-4 text-left">
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-4 text-left">
             
             <!-- Invoice Header & Amount -->
             <div class="flex items-center justify-between pb-3.5 border-b border-[#F1F5F9]">
@@ -4433,19 +4433,19 @@ function screenContractorJobInvoice() {
                 ${['paid', 'completed'].includes(job.status) ? `
                 <div class="card p-4 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] text-center space-y-1">
                     <span class="inline-flex items-center gap-1.5 text-[14px] font-extrabold text-[#047857]">
-                        <i data-lucide="check-circle" class="w-4.5 h-4.5"></i> Job Completed &amp; Payout Settled
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Job Completed &amp; Payout Settled
                     </span>
                     <p class="text-[12px] font-medium text-[#065F46] m-0">This job has been completed and payment has been issued.</p>
                 </div>` : job.status === 'approved' ? `
                 <div class="card p-4 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] text-center space-y-1">
                     <span class="inline-flex items-center gap-1.5 text-[14px] font-extrabold text-[#1D4ED8]">
-                        <i data-lucide="check-circle-2" class="w-4.5 h-4.5"></i> Approved by Landlord
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> Approved by Landlord
                     </span>
                     <p class="text-[12px] font-medium text-[#1E40AF] m-0">Payment processing via Stripe.</p>
                 </div>` : `
                 <div class="card p-4 rounded-xl bg-[#FAF5FF] border border-[#E9D5FF] text-center space-y-1">
                     <span class="inline-flex items-center gap-1.5 text-[14px] font-extrabold text-[#7E22CE]">
-                        <i data-lucide="clock" class="w-4.5 h-4.5"></i> Invoice Submitted
+                        <i data-lucide="clock" class="w-4 h-4"></i> Invoice Submitted
                     </span>
                     <p class="text-[12px] font-medium text-[#6B21A8] m-0">Awaiting landlord approval and payout release.</p>
                 </div>`}
@@ -4473,7 +4473,7 @@ function screenContractorSchedule() {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     return `${topBar('Schedule visit', { back: true, sub: job.issue })}
     <div class="screen-content screen-enter space-y-4 text-left pb-16">
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div class="min-w-0 flex-1">
                     <h3 class="text-[15px] font-black text-[#0F172A] m-0 truncate">${esc(job.issue)}</h3>
@@ -4534,7 +4534,7 @@ function screenContractorReviews() {
     return `${topBar('Reviews', { back: true })}
     <div class="screen-content screen-enter space-y-4 text-left pb-16">
         <!-- Rating Overview Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-5 text-left">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-5 text-left">
             <div class="flex flex-col items-center justify-center shrink-0 px-2">
                 <span class="text-[34px] font-black text-[#0F172A] tracking-tight leading-none">${summary.avg}</span>
                 <div class="flex items-center gap-0.5 text-[#F59E0B] text-[14px] mt-2">
@@ -4567,7 +4567,7 @@ function screenContractorReviews() {
                 const initials = (r.from || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
                 const isLandlord = (r.role === 'landlord' || (r.from && r.from.includes('Landlord')));
                 return `
-            <article class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5 text-left">
+            <article class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5 text-left">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] font-black text-[13px] flex items-center justify-center shrink-0">
@@ -4633,7 +4633,7 @@ function screenContractorProfile() {
     return `${topBar('Profile', { hideBell: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-8">
         <!-- Top Profile User Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center gap-3.5 text-left">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5 text-left">
             <img src="${av}" class="w-13 h-13 rounded-full object-cover shrink-0 border border-[#E2E8F0]" alt="">
             <div class="min-w-0 flex-1">
                 <h3 class="text-[16.5px] font-extrabold text-[#0F172A] truncate m-0">${esc(displayName)}</h3>

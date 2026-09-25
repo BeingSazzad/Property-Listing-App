@@ -4376,7 +4376,7 @@ function renderPropertyInventoryTab(propertyId) {
                 <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Choose Unit</span>
             </label>
             <div class="relative">
-                <select data-action="select-inventory-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                <select data-action="select-inventory-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-sm hover:border-[#94A3B8] transition-colors cursor-pointer">
                     ${units.map(u => {
         const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
         const isSel = activeUnit === name;
@@ -4404,7 +4404,7 @@ function renderPropertyInventoryTab(propertyId) {
         ${rooms.map(([r, n, icon, idx, condSum]) => `
         <button data-go="inventory-room" data-pid="${propertyId}" data-room="${idx}" class="card w-full p-3.5 flex items-center justify-between card-hover text-left rounded-2xl bg-white border border-[#E2E8F0] shadow-xs cursor-pointer group">
             <div class="flex items-center gap-3.5 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform"><i data-lucide="${icon || 'package'}" class="w-5 h-5"></i></div>
                 <div class="min-w-0">
                     <p class="text-[14px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors">${escapeHtml(r)}</p>
                     <p class="text-[11.5px] text-[#64748B] truncate mt-0.5 m-0">${escapeHtml(n)}</p>
@@ -4724,7 +4724,7 @@ function screenInventoryRoomEnhanced() {
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Details</span>
                     <h3 class="text-[17px] font-bold text-[#0F172A] m-0 mt-0.5">${escapeHtml(roomName)}</h3>
                 </div>
-                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                     <span>Edit Room</span>
                 </button>
@@ -4747,7 +4747,7 @@ function screenInventoryRoomEnhanced() {
             </div>
             ${photoPreview}
             <input type="file" id="inventoryRoomPhotoInput" accept="image/*" class="hidden">
-            <button type="button" data-action="trigger-room-photo-upload" class="w-full py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-bold text-[12.5px] shadow-2xs hover:bg-[#F8FAFC] transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <button type="button" data-action="trigger-room-photo-upload" class="w-full py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-bold text-[12.5px] shadow-sm hover:bg-[#F8FAFC] transition-all flex items-center justify-center gap-2 cursor-pointer">
                 <i data-lucide="camera" class="w-4 h-4 text-[#2563EB]"></i>
                 <span>${roomPhotos.length ? 'Add Another Photo' : 'Add Room Photos'}</span>
             </button>
@@ -4778,11 +4778,11 @@ function screenInventoryRoomEnhanced() {
                                 <span class="text-[13px] font-bold text-[#0F172A] truncate">${escapeHtml(itemName)}</span>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" data-action="trigger-item-photo-upload" data-item-idx="${idx}" class="px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs ${itemPhotos.length ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] hover:bg-[#DBEAFE]' : 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] hover:bg-[#F1F5F9]'}" title="Attach photo to ${escapeHtml(itemName)}">
+                                <button type="button" data-action="trigger-item-photo-upload" data-item-idx="${idx}" class="px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm ${itemPhotos.length ? 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] hover:bg-[#DBEAFE]' : 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] hover:bg-[#F1F5F9]'}" title="Attach photo to ${escapeHtml(itemName)}">
                                     <i data-lucide="camera" class="w-3.5 h-3.5 ${itemPhotos.length ? 'text-[#2563EB]' : 'text-[#64748B]'}"></i>
                                     <span>${itemPhotos.length ? `${itemPhotos.length}` : '+ Photo'}</span>
                                 </button>
-                                <button type="button" data-action="toggle-inventory-item-condition" data-item-idx="${idx}" class="text-[11px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-colors shadow-2xs ${badgeClass}" title="Tap to change condition">
+                                <button type="button" data-action="toggle-inventory-item-condition" data-item-idx="${idx}" class="text-[11px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-colors shadow-sm ${badgeClass}" title="Tap to change condition">
                                     ${escapeHtml(cond)}
                                 </button>
                                 <button type="button" data-action="inline-remove-inventory-item" data-item-idx="${idx}" class="w-7 h-7 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer shrink-0" aria-label="Delete item">
@@ -4795,7 +4795,7 @@ function screenInventoryRoomEnhanced() {
                         <div class="flex items-center gap-2 pl-3.5 overflow-x-auto py-1">
                             ${itemPhotos.map((pUrl, pIdx) => `
                             <div class="relative group/photo shrink-0">
-                                <img src="${escapeHtml(pUrl)}" alt="${escapeHtml(itemName)}" class="w-12 h-12 object-cover rounded-xl border border-[#E2E8F0] shadow-2xs">
+                                <img src="${escapeHtml(pUrl)}" alt="${escapeHtml(itemName)}" class="w-12 h-12 object-cover rounded-xl border border-[#E2E8F0] shadow-sm">
                                 <button type="button" data-action="remove-item-photo" data-item-idx="${idx}" data-photo-idx="${pIdx}" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EF4444] text-white flex items-center justify-center text-[9px] font-bold shadow-xs hover:bg-[#DC2626] cursor-pointer" title="Remove photo">
                                     <i data-lucide="x" class="w-2.5 h-2.5"></i>
                                 </button>
@@ -4944,7 +4944,7 @@ function screenEditInventoryRoomEnhanced() {
             ${items.length ? items.map((item, i) => {
         const itemObj = inventoryItemObject(item);
         return `
-            <div class="p-1.5 pl-3 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors flex items-center gap-2.5 shadow-2xs" data-inventory-item-row data-item-condition="${escapeHtml(itemObj.condition)}">
+            <div class="p-1.5 pl-3 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors flex items-center gap-2.5 shadow-sm" data-inventory-item-row data-item-condition="${escapeHtml(itemObj.condition)}">
                 <span class="text-[11px] font-bold text-[#94A3B8] w-4 text-center shrink-0">${i + 1}</span>
                 <input type="text" data-inventory-item-name class="form-input flex-1 text-[13px] py-1.5 px-2 border-0 bg-transparent focus:bg-[#F8FAFC] rounded-lg font-medium text-[#0F172A]" value="${escapeHtml(itemObj.name)}" placeholder="Item or fixture name">
                 <button type="button" data-action="remove-inventory-item" data-item-idx="${i}" class="w-8 h-8 rounded-lg text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] flex items-center justify-center transition-colors cursor-pointer shrink-0" aria-label="Remove item">
@@ -7707,7 +7707,7 @@ function screenInviteContractor() {
             </label>
 
             <!-- Dropdown Trigger Button -->
-            <button type="button" data-action="toggle-trade-dropdown" class="w-full min-h-[46px] p-2.5 rounded-xl bg-white border ${isOpen ? 'border-[#2563EB] ring-2 ring-[#2563EB]/10' : 'border-[#CBD5E1]'} text-left flex items-center justify-between gap-2 shadow-2xs hover:border-[#94A3B8] transition-all cursor-pointer">
+            <button type="button" data-action="toggle-trade-dropdown" class="w-full min-h-[46px] p-2.5 rounded-xl bg-white border ${isOpen ? 'border-[#2563EB] ring-2 ring-[#2563EB]/10' : 'border-[#CBD5E1]'} text-left flex items-center justify-between gap-2 shadow-sm hover:border-[#94A3B8] transition-all cursor-pointer">
                 <div class="flex items-center gap-1.5 flex-wrap min-w-0">
                     ${selected.map(t => `<span class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold flex items-center gap-1">${t}</span>`).join('')}
                     ${!selected.length ? `<span class="text-[#94A3B8] text-[13px]">${summaryText}</span>` : ''}
@@ -7722,7 +7722,7 @@ function screenInviteContractor() {
                 ${tradeCatalog.map(t => {
                     const isChecked = selected.includes(t);
                     return `
-                    <button type="button" data-action="toggle-trade-option" data-trade="${t}" class="w-full px-3 py-2.5 rounded-xl text-left flex items-center justify-between text-[13px] font-bold transition-all cursor-pointer ${isChecked ? 'bg-[#2563EB] text-white shadow-2xs' : 'text-[#0F172A] hover:bg-[#F8FAFC]'}">
+                    <button type="button" data-action="toggle-trade-option" data-trade="${t}" class="w-full px-3 py-2.5 rounded-xl text-left flex items-center justify-between text-[13px] font-bold transition-all cursor-pointer ${isChecked ? 'bg-[#2563EB] text-white shadow-sm' : 'text-[#0F172A] hover:bg-[#F8FAFC]'}">
                         <span>${t}</span>
                         ${isChecked ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : '<div class="w-4 h-4 rounded-md border border-[#CBD5E1]"></div>'}
                     </button>`;
@@ -7798,7 +7798,7 @@ function contractorRow(c) {
     const rating = typeof contractorDisplayRating === 'function' ? contractorDisplayRating(c) : '4.8';
     const verified = (c.certificates?.length || c.gasSafe || c.liabilityInsurance);
     return `
-    <article class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 text-left cursor-pointer group mb-2.5" data-action="view-contractor-profile" data-cid="${c.id}">
+    <article class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 text-left cursor-pointer group mb-2.5" data-action="view-contractor-profile" data-cid="${c.id}">
         <div class="relative shrink-0">
             <img src="${c.img}" class="w-11 h-11 rounded-full object-cover" alt="">
             <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#16A34A] border-2 border-white" title="Active"></span>
@@ -7848,11 +7848,11 @@ function screenContractors() {
         </button>` : ''}
 
         <div class="ctr-search-row flex items-center gap-2">
-            <div class="search-bar ctr-search flex-1 flex items-center bg-white px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] shadow-2xs">
+            <div class="search-bar ctr-search flex-1 flex items-center bg-white px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] shadow-sm">
                 <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0 mr-2"></i>
                 <input data-search="contractors" type="text" value="${esc(STATE.search.contractors || '')}" placeholder="Search contractors…" class="w-full text-[13px] font-medium bg-transparent border-none outline-none text-[#0F172A] placeholder:text-[#94A3B8]">
             </div>
-            <div class="relative flex items-center bg-white px-3 py-2.5 rounded-xl border border-[#CBD5E1] shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer shrink-0">
+            <div class="relative flex items-center bg-white px-3 py-2.5 rounded-xl border border-[#CBD5E1] shadow-sm hover:border-[#94A3B8] transition-colors cursor-pointer shrink-0">
                 <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-[#64748B] shrink-0 mr-1.5 pointer-events-none"></i>
                 <select data-action="filter-contractor-trade" class="bg-transparent text-[12.5px] font-bold text-[#0F172A] border-0 p-0 pr-5 outline-none cursor-pointer" style="appearance:none;-webkit-appearance:none;">
                     <option value="all" ${tradeF === 'all' ? 'selected' : ''}>All Trades (${CONTRACTORS.length})</option>
@@ -8032,7 +8032,7 @@ function screenPropertyHouseRules() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
 
-    const editBtn = `<button type="button" data-go="edit-property-house-rules" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"><i data-lucide="pencil" class="w-3.5 h-3.5"></i><span>Edit</span></button>`;
+    const editBtn = `<button type="button" data-go="edit-property-house-rules" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"><i data-lucide="pencil" class="w-3.5 h-3.5"></i><span>Edit</span></button>`;
 
     return `${topBar('House Rules & Policies', { back: true, sub: p.name || '', rightBtn: editBtn })}
     <div class="screen-content screen-enter space-y-4 text-left pb-10">
@@ -8078,10 +8078,10 @@ function screenEditPropertyHouseRules() {
                 <span class="w-px h-5 bg-[#CBD5E1] mx-1"></span>
 
                 <!-- Color chips -->
-                <button type="button" data-editor-color="#2563EB" title="Blue text" class="w-5 h-5 rounded-md bg-[#2563EB] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
-                <button type="button" data-editor-color="#16A34A" title="Green text" class="w-5 h-5 rounded-md bg-[#16A34A] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
-                <button type="button" data-editor-color="#DC2626" title="Red text" class="w-5 h-5 rounded-md bg-[#DC2626] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
-                <button type="button" data-editor-color="#0F172A" title="Dark text" class="w-5 h-5 rounded-md bg-[#0F172A] hover:scale-110 transition-transform cursor-pointer shadow-2xs"></button>
+                <button type="button" data-editor-color="#2563EB" title="Blue text" class="w-5 h-5 rounded-md bg-[#2563EB] hover:scale-110 transition-transform cursor-pointer shadow-sm"></button>
+                <button type="button" data-editor-color="#16A34A" title="Green text" class="w-5 h-5 rounded-md bg-[#16A34A] hover:scale-110 transition-transform cursor-pointer shadow-sm"></button>
+                <button type="button" data-editor-color="#DC2626" title="Red text" class="w-5 h-5 rounded-md bg-[#DC2626] hover:scale-110 transition-transform cursor-pointer shadow-sm"></button>
+                <button type="button" data-editor-color="#0F172A" title="Dark text" class="w-5 h-5 rounded-md bg-[#0F172A] hover:scale-110 transition-transform cursor-pointer shadow-sm"></button>
 
                 <span class="w-px h-5 bg-[#CBD5E1] mx-1"></span>
 
@@ -9975,7 +9975,7 @@ function renderBuildingCertTiles(propertyId) {
         return `
                 <button type="button" ${routeAction} class="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] transition-colors cursor-pointer group">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-xl ${def.iconColor || 'bg-[#F8FAFC] text-[#334155]'} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                        <div class="w-10 h-10 rounded-xl ${def.iconColor || 'bg-[#F8FAFC] text-[#334155]'} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-sm">
                             <i data-lucide="${def.icon}" class="w-5 h-5"></i>
                         </div>
                         <div class="min-w-0">
@@ -10119,7 +10119,7 @@ function screenPropertyDocumentVault() {
         return matchesQuery;
     });
 
-    const uploadBtn = `<button type="button" data-action="open-add-document-flow" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+    const uploadBtn = `<button type="button" data-action="open-add-document-flow" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
         <span>Upload</span>
     </button>`;
@@ -10146,7 +10146,7 @@ function screenPropertyDocumentVault() {
         <!-- Top Search Bar -->
         <div class="relative">
             <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input id="otherDocSearchInput" type="text" placeholder="Search documents..." value="${escapeHtml(STATE.otherDocSearch || '')}" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 placeholder:text-[#94A3B8] shadow-2xs">
+            <input id="otherDocSearchInput" type="text" placeholder="Search documents..." value="${escapeHtml(STATE.otherDocSearch || '')}" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] font-medium text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 placeholder:text-[#94A3B8] shadow-sm">
         </div>
 
         <!-- Direct Document List -->
@@ -10158,7 +10158,7 @@ function screenPropertyDocumentVault() {
         return `
                 <div data-doc-row="true" data-doc-text="${escapeHtml(docText)}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3 hover:border-[#CBD5E1] transition-all group">
                     <button type="button" data-go="document-preview" data-doc="${doc.id}" class="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer">
-                        <div class="w-10 h-10 rounded-xl ${style.color} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        <div class="w-10 h-10 rounded-xl ${style.color} border flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                             <i data-lucide="${style.icon}" class="w-5 h-5"></i>
                         </div>
                         <div class="min-w-0 flex-1">
@@ -10214,7 +10214,7 @@ function screenPropertyInventory() {
     const propertyId = STATE.propertyId ?? 0;
     const p = PROPERTIES[propertyId];
     const sub = p?.name?.split(',')[0] || '';
-    const addRoomBtn = `<button type="button" data-action="open-add-room-modal" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+    const addRoomBtn = `<button type="button" data-action="open-add-room-modal" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
         <span>Add Room</span>
     </button>`;
@@ -10226,7 +10226,7 @@ function screenPropertyInventory() {
 function renderAddRoomModal(propertyId) {
     if (!STATE.showAddRoomModal) return '';
     return `
-    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
         <div class="w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div>
@@ -10690,7 +10690,7 @@ function openApplianceItemModal(applianceId) {
                </div>`
             : `<div class="relative overflow-hidden rounded-2xl border border-slate-100 shadow-sm bg-slate-50 mb-3">
                 <img src="${photoSrc}" alt="${escapeHtml(item.name)}" class="w-full h-48 object-cover">
-                <div class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-slate-900/75 backdrop-blur-xs text-white text-[11px] font-semibold flex items-center gap-1.5">
+                <div class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-slate-900/75 backdrop-blur-sm text-white text-[11px] font-semibold flex items-center gap-1.5">
                     <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
                     <span>${escapeHtml(item.tag || 'Recorded')}</span>
                 </div>
@@ -10865,7 +10865,7 @@ function openAlarmItemModal(alarmId) {
                </div>`
             : `<div class="relative overflow-hidden rounded-2xl border border-slate-100 shadow-sm bg-slate-50 mb-3">
                 <img src="${photoSrc}" alt="${escapeHtml(al.name)}" class="w-full h-48 object-cover">
-                <div class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-slate-900/75 backdrop-blur-xs text-white text-[11px] font-semibold flex items-center gap-1.5">
+                <div class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-slate-900/75 backdrop-blur-sm text-white text-[11px] font-semibold flex items-center gap-1.5">
                     <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
                     <span>Compliance Verified</span>
                 </div>
@@ -11043,7 +11043,7 @@ function screenPropertyAppliances() {
                 <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Filter Unit</span>
             </label>
             <div class="relative">
-                <select data-action="select-appliance-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                <select data-action="select-appliance-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-sm hover:border-[#94A3B8] transition-colors cursor-pointer">
                     <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units (${allAppliances.length})</option>
                     ${units.map(u => {
         const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
@@ -11127,7 +11127,7 @@ function screenPropertyAlarms() {
                 <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Filter Unit</span>
             </label>
             <div class="relative">
-                <select data-action="select-alarm-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                <select data-action="select-alarm-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-sm hover:border-[#94A3B8] transition-colors cursor-pointer">
                     <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Locations (${allAlarms.length})</option>
                     ${units.map(u => {
         const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
@@ -11290,7 +11290,7 @@ function renderPropertyRecordsHub(propertyId) {
             ${cards.map(c => `
             <button type="button" data-go="${c.route}" data-pid="${propertyId}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#2563EB]/40 active:scale-[0.98] transition-all text-left flex flex-col justify-between h-[116px] cursor-pointer group relative">
                 <div class="flex items-center justify-between w-full">
-                    <div class="w-10 h-10 rounded-xl ${c.iconColor} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <div class="w-10 h-10 rounded-xl ${c.iconColor} border flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                         <i data-lucide="${c.icon}" class="w-5 h-5"></i>
                     </div>
                     <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
@@ -17150,7 +17150,7 @@ function inspReportRow(report) {
     return `
     <button type="button" data-go="inspection-detail" data-insp="${report.id}" data-pid="${report.propertyId}" class="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors cursor-pointer group">
         <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-sm">
                 <i data-lucide="${isCommunal ? 'building-2' : 'door-closed'}" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
@@ -17197,7 +17197,7 @@ function screenInspectionDetail() {
 
     return `${topBar(report.type || 'Inspection', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left">
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div>
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${dateLabel}</span>
@@ -17205,10 +17205,10 @@ function screenInspectionDetail() {
                     ${isTenantUploadInspection(report) ? `<p class="text-[12px] text-[#2563EB] font-semibold mt-1">Tenant photo request${report.scheduled ? ' · open' : ''}</p>` : ''}
                 </div>
                 ${defectCount > 0
-                    ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5] shadow-2xs">Defect Flagged</span>`
+                    ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5] shadow-sm">Defect Flagged</span>`
                     : (fairCount > 0
-                        ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] shadow-2xs">Fair Condition</span>`
-                        : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] shadow-2xs">Passed</span>`)}
+                        ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] shadow-sm">Fair Condition</span>`
+                        : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] shadow-sm">Passed</span>`)}
             </div>
             ${report.notes?.trim() ? `
             <div>
@@ -17218,7 +17218,7 @@ function screenInspectionDetail() {
         </div>
 
         <!-- Room Walkthrough & Status Results Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
                 <div>
                     <h4 class="text-[14px] font-bold text-[#0F172A] m-0">Room Checklist &amp; Status</h4>
@@ -17262,21 +17262,21 @@ function screenInspectionDetail() {
         </div>
 
         ${tenantPhotos.length ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Tenant Uploaded Photos (${tenantPhotos.length})</p>
             <div class="grid grid-cols-2 gap-2">
                 ${tenantPhotos.map(url => `<img src="${url}" class="w-full h-28 object-cover rounded-xl border border-[#E2E8F0]">`).join('')}
             </div>
         </div>` : ''}
         ${photos.length ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
             <p class="text-[12px] font-bold text-[#0F172A] mb-2.5">${tenantPhotos.length ? 'Inspector Photos' : 'Inspection Photos'} (${photos.length})</p>
             <div class="grid grid-cols-2 gap-2">
                 ${photos.map(src => `<img src="${src}" class="w-full h-28 object-cover rounded-xl border border-[#E2E8F0]" alt="">`).join('')}
             </div>
         </div>` : ''}
         ${report.report ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0"><i data-lucide="file-text" class="w-5 h-5"></i></div>
                 <div class="min-w-0">
@@ -18591,7 +18591,7 @@ function screenReminders() {
                     ${subline ? `<p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${subline}</p>` : ''}
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    ${isWithinMonth ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-2xs" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>` : ''}
+                    ${isWithinMonth ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>` : ''}
                     <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#64748B] transition-colors"></i>
                 </div>
             </button>`;
@@ -18638,7 +18638,7 @@ function screenReminderDetail() {
     return `${topBar('Smart Reminder', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-enter space-y-3">
         <!-- Minimal Hero Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs text-left space-y-4">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-left space-y-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background:${rt[3]};color:${rt[4]}">
@@ -18649,7 +18649,7 @@ function screenReminderDetail() {
                         <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(p?.name || 'Property')}</p>
                     </div>
                 </div>
-                ${isWithinMonth ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-2xs" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>` : ''}
+                ${isWithinMonth ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-sm" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>` : ''}
             </div>
 
             <div class="pt-3 border-t border-[#F1F5F9] grid grid-cols-2 gap-3 text-left">
@@ -18666,7 +18666,7 @@ function screenReminderDetail() {
 
         <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full py-3.5 text-[14px] font-bold shadow-xs">${esc(action.label)}</button>
 
-        <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs overflow-hidden">
+        <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
             ${row('calendar', 'Change due date', `data-go="edit-reminder" data-rid="${r.id}"`)}
             ${row('folder', 'Property records', `data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="${recordsView}"`)}
             ${row('trash-2', r.auto ? 'Remove from list' : 'Delete', `data-action="delete-reminder" data-rid="${r.id}"`, true)}
@@ -18952,7 +18952,7 @@ function screenConductInspection() {
                     <span class="text-[11px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">Choose Unit</span>
                 </label>
                 <div class="relative">
-                    <select data-action="select-conduct-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                    <select data-action="select-conduct-unit-dropdown" class="form-input form-select w-full text-[13.5px] font-bold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3.5 py-2.5 shadow-sm hover:border-[#94A3B8] transition-colors cursor-pointer">
                         ${units.map(u => {
         const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
         const isSel = !isCommunal && effectiveUnit === name;
@@ -18973,7 +18973,7 @@ function screenConductInspection() {
                         <span>Inspection Type</span>
                     </label>
                     <div class="relative">
-                        <select data-field="inspType" data-action="select-conduct-type-dropdown" class="form-input form-select w-full text-[13px] font-semibold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                        <select data-field="inspType" data-action="select-conduct-type-dropdown" class="form-input form-select w-full text-[13px] font-semibold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 shadow-sm hover:border-[#94A3B8] transition-colors cursor-pointer">
                             ${activeTypesList.map(t => `<option value="${escapeHtml(t.id)}" ${selectedType === t.id ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
                         </select>
                     </div>
@@ -18984,7 +18984,7 @@ function screenConductInspection() {
                         <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i>
                         <span>Date</span>
                     </label>
-                    <input type="date" data-field="inspDate" value="${dateVal}" class="form-input w-full text-[13px] font-semibold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 shadow-2xs hover:border-[#94A3B8] transition-colors cursor-pointer">
+                    <input type="date" data-field="inspDate" value="${dateVal}" class="form-input w-full text-[13px] font-semibold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2.5 shadow-sm hover:border-[#94A3B8] transition-colors cursor-pointer">
                 </div>
             </div>
         </div>
@@ -20036,7 +20036,7 @@ function screenFlatKeys() {
 
     // Streamlined Unit Scope Dropdown Bar (minimal & clean)
     const scopeCard = units.length > 1 ? `
-    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3">
+    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3">
         <div class="flex items-center gap-2.5 min-w-0 flex-1">
             <div class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                 <i data-lucide="door-closed" class="w-4 h-4"></i>
@@ -20092,7 +20092,7 @@ function screenFlatKeys() {
     // Missing Alert Banner (if any)
     const missingBanner = displayStats.missing > 0 ? `
     <div class="p-3 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] flex items-center gap-2.5">
-        <div class="w-7 h-7 rounded-lg bg-white text-[#DC2626] flex items-center justify-center shrink-0 shadow-2xs">
+        <div class="w-7 h-7 rounded-lg bg-white text-[#DC2626] flex items-center justify-center shrink-0 shadow-sm">
             <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
         </div>
         <div class="min-w-0 flex-1">
@@ -20124,7 +20124,7 @@ function screenFlatKeys() {
                 ${filteredKeys.map((k, i) => {
             const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
             return `
-                    <div data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
+                    <div data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                                 <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
@@ -20153,7 +20153,7 @@ function screenFlatKeys() {
                 ${filteredKeys.map((k, i) => {
             const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
             return `
-                    <div data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
+                    <div data-action="view-key-modal" data-unit="${escapeHtml(k.unitName)}" data-key-idx="${k.keyIdxInUnit}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                                 <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
@@ -20210,7 +20210,7 @@ function screenFlatKeys() {
 
             if (isEditingModal) {
                 keyViewModalHtml = `
-                <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
+                <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
                     <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xl max-w-[390px] w-full space-y-4 text-left animate-slide-up" onclick="event.stopPropagation()">
                         <div class="flex items-center justify-between">
                             <div>
@@ -20257,7 +20257,7 @@ function screenFlatKeys() {
                 </div>`;
             } else {
                 keyViewModalHtml = `
-                <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
+                <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
                     <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xl max-w-[390px] w-full space-y-4 text-left animate-slide-up" onclick="event.stopPropagation()">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0">
@@ -20353,7 +20353,7 @@ function screenEditFlatKeys() {
     const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
 
     const editScopeSelector = units.length > 1 ? `
-    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3">
+    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3">
         <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Editing Unit:</span>
         <div class="relative flex-1 min-w-0">
             <select data-action="select-edit-keys-unit-dropdown" class="figma-hold-select w-full text-[14px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5 text-right">
@@ -20372,7 +20372,7 @@ function screenEditFlatKeys() {
 
         <div class="space-y-3">
         ${keys.map((k, i) => `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3" data-flat-key-row>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3" data-flat-key-row>
             <div class="flex items-center justify-between">
                 <span class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider">Key Set #${i + 1}</span>
                 <button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="text-[12px] font-bold text-[#DC2626] hover:text-[#B91C1C] cursor-pointer flex items-center gap-1">

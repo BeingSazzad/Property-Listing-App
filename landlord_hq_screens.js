@@ -5883,7 +5883,7 @@ function screenInvoiceDetail() {
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
             <!-- Compact Hero Banner -->
             <div class="text-center pt-1 pb-1">
-                <div class="w-11 h-11 rounded-full ${paid ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FFFBEB] text-[#D97706]'} flex items-center justify-center mx-auto mb-2 shadow-2xs">
+                <div class="w-11 h-11 rounded-full ${paid ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#FFFBEB] text-[#D97706]'} flex items-center justify-center mx-auto mb-2 shadow-sm">
                     <i data-lucide="${paid ? 'check-circle-2' : 'clock'}" class="w-5 h-5"></i>
                 </div>
                 <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
@@ -5892,7 +5892,7 @@ function screenInvoiceDetail() {
                 <div class="text-[28px] font-black text-[#0F172A] tracking-tight leading-none mt-1">
                     ${esc(inv.amount)}
                 </div>
-                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold mt-2 shadow-2xs ${paid ? 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]' : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]'}">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold mt-2 shadow-sm ${paid ? 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]' : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]'}">
                     <span class="w-1.5 h-1.5 rounded-full ${paid ? 'bg-[#059669]' : 'bg-[#D97706]'}"></span>
                     <span>${esc(inv.status)}</span>
                 </div>
@@ -6162,7 +6162,7 @@ function screenRenewCompliance() {
     return `${topBar('Renew Certificate', { back: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4">
         <!-- Scope Context Header Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center gap-3.5 text-left">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5 text-left">
             <div class="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 font-bold">
                 <i data-lucide="${item[0] || 'shield-check'}" class="w-5.5 h-5.5"></i>
             </div>
@@ -6172,7 +6172,7 @@ function screenRenewCompliance() {
             </div>
         </div>
 
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5 text-left">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5 text-left">
             <div class="form-group">
                 <label class="form-label">Certificate / Reference Number</label>
                 <input type="text" data-field="certNumber" class="form-input" value="${escapeHtml(cert.certNumber || '')}" placeholder="e.g. GS-2025-114">
