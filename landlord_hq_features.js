@@ -18584,11 +18584,10 @@ function screenReminderDetail() {
                     <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Due Date</span>
                     <span class="text-[13px] font-bold text-[#0F172A] mt-0.5 block">${esc(dueLabel)}</span>
                 </div>
-                ${r.expiryDate ? `
                 <div>
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Expiry Date</span>
-                    <span class="text-[13px] font-bold text-[#0F172A] mt-0.5 block">${esc(formatReminderDue(r.expiryDate))}</span>
-                </div>` : ''}
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Property</span>
+                    <span class="text-[13px] font-bold text-[#0F172A] mt-0.5 block truncate">${esc(p?.name || 'All Properties')}</span>
+                </div>
             </div>
         </div>
 
