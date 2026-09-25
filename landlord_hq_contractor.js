@@ -1555,17 +1555,17 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
     const chargeDue = chargeInv?.due || 'Soon';
 
     return `
-    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5 text-left">
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3.5 text-left">
         <!-- Primary Rent Header & Status -->
         <div class="flex items-start justify-between gap-2">
             <div>
                 <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Next Rent Due</span>
                 <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-[28px] font-black text-[#0F172A] tracking-tight">${esc(rentAmt)}</span>
+                    <span class="text-[26px] font-black text-[#0F172A] tracking-tight">${esc(rentAmt)}</span>
                     <span class="text-[12px] font-medium text-[#64748B]">· Due ${esc(dueMeta)}</span>
                 </div>
             </div>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${rentDue ? 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]' : 'bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]'} shrink-0 shadow-2xs">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${rentDue ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#ECFDF5] text-[#059669]'} shrink-0">
                 <span class="w-1.5 h-1.5 rounded-full ${rentDue ? 'bg-[#D97706]' : 'bg-[#059669]'}"></span>
                 ${rentDue ? 'Payment Due' : 'Paid in Full'}
             </span>
@@ -1573,61 +1573,43 @@ function renderTenantHomeRentStrip(t, pay, rentDue) {
 
         <!-- Rent Action & Reassurance Row -->
         <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-[12px] text-[#64748B] min-w-0">
-                <div class="w-6 h-6 rounded-full bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0">
-                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                </div>
-                <span class="truncate">Last paid: <strong class="text-[#0F172A]">${esc(lastAmt)}</strong> on ${esc(lastDate)}</span>
-            </div>
+            <span class="text-[12px] text-[#64748B] truncate">Last paid: <strong class="text-[#0F172A]">${esc(lastAmt)}</strong> on ${esc(lastDate)}</span>
             <button type="button" ${rentDue
                 ? `data-action="tenant-pay" data-kind="rent" data-iid="${pay?.rentInvoiceId ?? ''}"`
-                : `data-go="transaction-history"`} class="${rentDue ? 'btn-primary' : 'btn-secondary'} py-2 px-4 rounded-xl text-[12px] font-bold shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer">
-                <i data-lucide="${rentDue ? 'credit-card' : 'receipt'}" class="w-4 h-4"></i>
+                : `data-go="transaction-history"`} class="${rentDue ? 'btn-primary' : 'btn-secondary'} py-2 px-4 rounded-xl text-[12px] font-bold shrink-0 cursor-pointer">
                 <span>${rentDue ? 'Pay Rent' : 'View Ledger'}</span>
             </button>
         </div>
 
-        <!-- Subordinate Secondary Dues (Clean, Integrated & No Duplicate Text) -->
+        <!-- Subordinate Secondary Dues -->
         ${(hasMaint || hasCharge) ? `
         <div class="pt-3 border-t border-[#F1F5F9] space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Other Pending Charges</span>
-                <span class="text-[10px] font-bold text-[#D97706] bg-[#FFFBEB] px-2 py-0.5 rounded-full border border-[#FDE68A]">${(hasMaint ? 1 : 0) + (hasCharge ? 1 : 0)} pending</span>
+                <span class="text-[10px] font-bold text-[#D97706] bg-[#FFFBEB] px-2 py-0.5 rounded-full">${(hasMaint ? 1 : 0) + (hasCharge ? 1 : 0)} pending</span>
             </div>
             ${hasMaint ? `
             <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="w-8 h-8 rounded-lg bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center shrink-0">
-                        <i data-lucide="wrench" class="w-4 h-4"></i>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(maintDesc)}</p>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(maintDue)}</p>
-                    </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(maintDesc)}</p>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(maintDue)}</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="text-[14px] font-extrabold text-[#0F172A]">${esc(pay.maintBalance)}</span>
-                    <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay.maintInvoiceId ?? ''}" class="py-1.5 px-3 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold shadow-2xs cursor-pointer transition-colors flex items-center gap-1">
-                        <i data-lucide="credit-card" class="w-3 h-3"></i>
+                    <button type="button" data-action="tenant-pay" data-kind="maintenance" data-iid="${pay.maintInvoiceId ?? ''}" class="btn-primary py-1.5 px-3 text-[11px] rounded-lg shrink-0">
                         <span>Pay</span>
                     </button>
                 </div>
             </div>` : ''}
             ${hasCharge ? `
             <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                        <i data-lucide="receipt" class="w-4 h-4"></i>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(chargeDesc)}</p>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(chargeDue)}</p>
-                    </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[13px] font-bold text-[#0F172A] truncate m-0">${esc(chargeDesc)}</p>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Due ${esc(chargeDue)}</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="text-[14px] font-extrabold text-[#0F172A]">${esc(pay.chargeBalance)}</span>
-                    <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay.chargeInvoiceId ?? ''}" class="py-1.5 px-3 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold shadow-2xs cursor-pointer transition-colors flex items-center gap-1">
-                        <i data-lucide="credit-card" class="w-3 h-3"></i>
+                    <button type="button" data-action="tenant-pay" data-kind="charges" data-iid="${pay.chargeInvoiceId ?? ''}" class="btn-primary py-1.5 px-3 text-[11px] rounded-lg shrink-0">
                         <span>Pay</span>
                     </button>
                 </div>
@@ -1842,33 +1824,30 @@ function screenTenantDashboard() {
                 <p class="dash-section-sub">Report issues, documents &amp; payments</p>
             </div>
         </div>
-        <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-around">
-            <button type="button" data-go="log-maintenance" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
-                <div class="w-10 h-10 rounded-xl bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
-                    <i data-lucide="wrench" class="w-4 h-4"></i>
+        <div class="grid grid-cols-4 gap-2.5">
+            <button type="button" data-go="log-maintenance" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
+                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
+                    <i data-lucide="wrench" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#EA580C] transition-colors truncate max-w-full">Report issue</span>
+                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">Report issue</span>
             </button>
-            <div class="w-px h-7 bg-[#F1F5F9] shrink-0" aria-hidden="true"></div>
-            <button type="button" data-go="tenant-active-tenancy" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
-                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
-                    <i data-lucide="scroll-text" class="w-4 h-4"></i>
+            <button type="button" data-go="tenant-active-tenancy" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
+                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
+                    <i data-lucide="scroll-text" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#2563EB] transition-colors truncate max-w-full">My Tenancy</span>
+                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">My Tenancy</span>
             </button>
-            <div class="w-px h-7 bg-[#F1F5F9] shrink-0" aria-hidden="true"></div>
-            <button type="button" data-go="tenant-building-info" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
-                <div class="w-10 h-10 rounded-xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
-                    <i data-lucide="images" class="w-4 h-4"></i>
+            <button type="button" data-go="tenant-building-info" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
+                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
+                    <i data-lucide="images" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#7C3AED] transition-colors truncate max-w-full">Inventory</span>
+                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">Inventory</span>
             </button>
-            <div class="w-px h-7 bg-[#F1F5F9] shrink-0" aria-hidden="true"></div>
-            <button type="button" data-go="transaction-history" class="flex flex-col items-center gap-1.5 p-1 text-center group cursor-pointer min-w-0 flex-1">
-                <div class="w-10 h-10 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center transition-transform group-hover:scale-105 shadow-2xs">
-                    <i data-lucide="receipt" class="w-4 h-4"></i>
+            <button type="button" data-go="transaction-history" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
+                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
+                    <i data-lucide="receipt" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[11px] font-bold text-[#334155] group-hover:text-[#059669] transition-colors truncate max-w-full">Payments</span>
+                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">Payments</span>
             </button>
         </div>
         ${renderTenantHomeMaintSection(t, tid)}
@@ -3610,16 +3589,18 @@ function screenContractorDashboard() {
                 <p class="dash-section-sub">Jobs, schedule &amp; earnings</p>
             </div>
         </div>
-        <div class="ctr-tools-grid">
+        <div class="grid grid-cols-4 gap-2.5">
             ${[
-                ['clipboard-list', 'My jobs', 'contractor-jobs', 'blue'],
-                ['calendar', 'Schedule', 'contractor-schedule-hub', 'green'],
-                ['banknote', 'Earnings', 'contractor-earnings', 'purple'],
-                ['message-square', 'Messages', 'messages', 'orange'],
-            ].map(([ic, label, go, tone]) => `
-            <button type="button" data-go="${go}" class="ctr-tool-btn ctr-tool-btn--${tone}">
-                <span class="ctr-tool-icon"><i data-lucide="${ic}" class="w-5 h-5"></i></span>
-                <span>${label}</span>
+                ['clipboard-list', 'My jobs', 'contractor-jobs'],
+                ['calendar', 'Schedule', 'contractor-schedule-hub'],
+                ['banknote', 'Earnings', 'contractor-earnings'],
+                ['message-square', 'Messages', 'messages'],
+            ].map(([ic, label, go]) => `
+            <button type="button" data-go="${go}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#2563EB] flex flex-col items-center gap-2 text-center group cursor-pointer transition-all">
+                <div class="w-10 h-10 rounded-xl bg-[#F8FAFC] text-[#2563EB] flex items-center justify-center group-hover:bg-[#EFF6FF] transition-colors">
+                    <i data-lucide="${ic}" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[11.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate w-full">${label}</span>
             </button>`).join('')}
         </div>
         <div class="dash-section-head">
