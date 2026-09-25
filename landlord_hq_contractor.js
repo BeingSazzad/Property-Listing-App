@@ -2042,9 +2042,27 @@ function screenTenantBuildingInfo() {
     const yearBuilt = building.yearBuilt || info.built || '2019';
     const landlordPhone = LANDLORD_USER.phone || '+44 7700 900123';
 
+    const activeTab = STATE.buildingInfoTab || 'overview';
+
+    const tabBtn = (tabKey, label, icon) => `
+    <button type="button" data-action="set-building-tab" data-tab="${tabKey}" class="flex-1 py-2 px-2 rounded-xl text-[11.5px] font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeTab === tabKey ? 'bg-white text-[#2563EB] shadow-xs border border-[#DBEAFE]' : 'text-[#64748B] hover:text-[#0F172A]'}">
+        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+        <span>${label}</span>
+    </button>`;
+
     return `${topBar('Your building', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-12">
-        <!-- 1. Building Passport Hero Card (Replaces redundant table with modern passport) -->
+        <!-- Sticky Top Category Segmented Control -->
+        <div class="card p-1 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] flex items-center gap-1 shadow-inner">
+            ${tabBtn('overview', 'Overview', 'building-2')}
+            ${tabBtn('safety', 'Safety &amp; Meters', 'shield-alert')}
+            ${tabBtn('appliances', 'Appliances', 'plug')}
+            ${tabBtn('gallery', 'Photos &amp; Rules', 'image')}
+        </div>
+
+        ${activeTab === 'overview' ? `
+        <!-- TAB 1: OVERVIEW -->
+        <!-- 1. Building Passport Hero Card -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
@@ -2062,8 +2080,6 @@ function screenTenantBuildingInfo() {
                     <img src="${esc(cover)}" alt="" class="w-full h-full object-cover">
                 </div>
             </div>
-
-            <!-- Home Unit & Lease Strip -->
             <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[#059669]"></span>
@@ -2073,7 +2089,7 @@ function screenTenantBuildingInfo() {
             </div>
         </div>
 
-        <!-- 2. Modern 2x2 Bento Vitals Grid (Replaces outdated raw table) -->
+        <!-- 2. Modern 2x2 Bento Vitals Grid -->
         <div class="grid grid-cols-2 gap-2.5">
             <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
@@ -2113,7 +2129,7 @@ function screenTenantBuildingInfo() {
             </div>
         </div>
 
-        <!-- 3. Dedicated Emergency Assistance Card with Direct Call -->
+        <!-- 3. Dedicated Emergency Assistance Card -->
         <div class="card p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] shadow-xs space-y-2.5">
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -2173,36 +2189,9 @@ function screenTenantBuildingInfo() {
                 </div>
             </div>
         </div>` : ''}
-
-        <!-- 6. Appliances & Manuals -->
-        ${appliances.length ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-center justify-between gap-2">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Appliances &amp; Manuals</p>
-                <span class="text-[11px] font-semibold text-[#64748B]">${appliances.length} Recorded</span>
-            </div>
-            <div class="space-y-2">
-                ${appliances.map(a => {
-                    const photo = typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '';
-                    const icon = typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug';
-                    return `
-                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
-                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-11 h-11 rounded-lg object-cover shrink-0 border border-[#E2E8F0]">`
-                            : `<div class="w-10 h-10 rounded-xl bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center justify-between gap-2">
-                                <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${esc(a.name || 'Appliance')}</p>
-                                ${a.warranty ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] shrink-0">${esc(a.warranty)}</span>` : ''}
-                            </div>
-                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5 m-0 font-medium">${esc(a.brand)}</p>` : ''}
-                            ${a.description ? `<p class="text-[11px] text-[#475569] mt-0.5 m-0 leading-relaxed">${esc(a.description)}</p>` : ''}
-                        </div>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>` : ''}
-
-        <!-- 7. Safety & Smoke Alarms -->
+        ` : activeTab === 'safety' ? `
+        <!-- TAB 2: SAFETY & METERS -->
+        <!-- Safety & Smoke Alarms -->
         ${alarmEntries.length ? `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between gap-2">
@@ -2229,7 +2218,7 @@ function screenTenantBuildingInfo() {
             </div>
         </div>` : ''}
 
-        <!-- 8. Meters & Emergency Isolation -->
+        <!-- Meters & Emergency Isolation -->
         ${(utils.water || utils.elec || utils.gas) ? `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between gap-2">
@@ -2280,8 +2269,36 @@ function screenTenantBuildingInfo() {
                 </div>` : ''}
             </div>
         </div>` : ''}
-
-        <!-- 9. Property & Unit Photos -->
+        ` : activeTab === 'appliances' ? `
+        <!-- TAB 3: APPLIANCES -->
+        ${appliances.length ? `
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Appliances &amp; Manuals</p>
+                <span class="text-[11px] font-semibold text-[#64748B]">${appliances.length} Recorded</span>
+            </div>
+            <div class="space-y-2">
+                ${appliances.map(a => {
+                    const photo = typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '';
+                    const icon = typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug';
+                    return `
+                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
+                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-11 h-11 rounded-lg object-cover shrink-0 border border-[#E2E8F0]">`
+                            : `<div class="w-10 h-10 rounded-xl bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${esc(a.name || 'Appliance')}</p>
+                                ${a.warranty ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] shrink-0">${esc(a.warranty)}</span>` : ''}
+                            </div>
+                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5 m-0 font-medium">${esc(a.brand)}</p>` : ''}
+                            ${a.description ? `<p class="text-[11px] text-[#475569] mt-0.5 m-0 leading-relaxed">${esc(a.description)}</p>` : ''}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>` : `<div class="card p-6 rounded-2xl bg-white border border-[#E2E8F0] text-center"><p class="text-[13px] text-[#64748B]">No appliances recorded yet.</p></div>`}
+        ` : `
+        <!-- TAB 4: GALLERY & RULES -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between gap-2">
                 <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Property Photos</p>
@@ -2306,7 +2323,6 @@ function screenTenantBuildingInfo() {
             ${photoGrid(floorPlans, { empty: 'No floor plans yet.' })}
         </div>` : ''}
 
-        <!-- 9. House Rules & Building Notes -->
         ${info.notes ? `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Building Notes</p>
@@ -2317,6 +2333,7 @@ function screenTenantBuildingInfo() {
             <i data-lucide="scroll-text" class="w-4 h-4 text-[#2563EB]"></i>
             <span>House Rules &amp; Regulations</span>
         </button>
+        `}
     </div>`;
 }
 
@@ -4635,6 +4652,13 @@ function bindContractorEvents() {
         el.onclick = (e) => {
             e.preventDefault();
             if (typeof closeMaintMediaPreview === 'function') closeMaintMediaPreview();
+        };
+    });
+    app.querySelectorAll('[data-action="set-building-tab"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            STATE.buildingInfoTab = el.dataset.tab || 'overview';
+            if (typeof render === 'function') render();
         };
     });
 }
