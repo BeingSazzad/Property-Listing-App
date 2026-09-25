@@ -19961,15 +19961,11 @@ function screenFlatKeys() {
                             <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                                 <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
                             </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2">
-                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate group-hover:text-[#2563EB] transition-colors">${escapeHtml(k.label || 'Key Set')}</h4>
-                                    <span class="px-1.5 py-0.25 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
-                                </div>
-                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(k.location || 'Flat entrance')}</p>
-                            </div>
+                            <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate group-hover:text-[#2563EB] transition-colors flex-1 min-w-0">${escapeHtml(k.label || 'Key Set')}</h4>
                         </div>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
+                        <button type="button" data-action="view-key-modal" data-key-idx="${i}" class="w-8 h-8 rounded-full hover:bg-[#F1F5F9] text-[#64748B] flex items-center justify-center cursor-pointer shrink-0 transition-colors" title="Options">
+                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                        </button>
                     </div>`;
         }).join('')}
             </div>` : `
@@ -19994,56 +19990,121 @@ function screenFlatKeys() {
         if (selectedKey) {
             const custody = resolveKeyCustody(selectedKey, propertyId, activeUnit);
             const isFob = /fob|electronic|card|rfid/i.test(selectedKey.label || '');
-            keyViewModalHtml = `
-            <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
-                <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xl w-full max-w-md space-y-4 text-left animate-slide-up" onclick="event.stopPropagation()">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-11 h-11 rounded-2xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0">
-                                <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-5.5 h-5.5"></i>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <h3 class="text-[16px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(selectedKey.label || 'Key Set')}</h3>
-                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${escapeHtml(activeUnit === 'all' ? 'Key Details' : displayUnit)}</p>
-                            </div>
-                        </div>
-                        <button type="button" data-action="close-key-view-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center cursor-pointer shrink-0">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                        </button>
-                    </div>
+            const isEditingModal = STATE.editingKeyModal === true;
 
-                    <div class="space-y-2 pt-2 border-t border-[#F1F5F9]">
-                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
-                            <span class="text-[12px] font-bold text-[#64748B]">Key Type / Tag</span>
-                            <span class="text-[12px] font-bold text-[#0F172A] truncate">${escapeHtml(selectedKey.label || 'Standard Key')}</span>
-                        </div>
-                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
-                            <span class="text-[12px] font-bold text-[#64748B]">Quantity</span>
-                            <span class="text-[12px] font-bold text-[#0F172A]">${escapeHtml(String(selectedKey.qty || '1'))} Sets</span>
-                        </div>
-                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
-                            <span class="text-[12px] font-bold text-[#64748B]">Location / Access</span>
-                            <span class="text-[12px] font-bold text-[#0F172A] truncate">${escapeHtml(selectedKey.location || 'Flat entrance')}</span>
-                        </div>
-                        <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
-                            <span class="text-[12px] font-bold text-[#64748B]">Current Custody</span>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${custody.badgeClass}">
-                                ${escapeHtml(custody.holderDisplay)} (${custody.isTenant ? 'With Tenant' : 'In Safe'})
-                            </span>
-                        </div>
-                    </div>
+            const { members } = getFlatMemberRoster(propertyId, activeUnit !== 'all' ? activeUnit : '');
+            const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+                t.propertyId === propertyId && (activeUnit === 'all' || t.unit === activeUnit)
+            );
+            const holderOptions = [
+                ...members.map(m => m.name),
+                ...occupants.map(t => t.name),
+                'Key Safe (Office)',
+                'Key Safe #1 (Hallway)',
+                'Landlord Office',
+                'Spare Key',
+                ...landlordKeyHolderNames()
+            ].filter(Boolean).filter((n, idx, arr) => arr.findIndex(x => normKeyName(x) === normKeyName(n)) === idx);
 
-                    <div class="pt-2 flex items-center gap-2">
-                        <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="btn-primary flex-1 py-3 text-[14px] flex items-center justify-center gap-2 cursor-pointer">
-                            <i data-lucide="edit-3" class="w-4 h-4"></i>
-                            <span>Edit Key Register</span>
-                        </button>
-                        <button type="button" data-action="close-key-view-modal" class="btn-secondary py-3 px-4 text-[14px] cursor-pointer">
-                            Close
-                        </button>
+            if (isEditingModal) {
+                keyViewModalHtml = `
+                <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
+                    <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xl max-w-[390px] w-full space-y-4 text-left animate-slide-up" onclick="event.stopPropagation()">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Edit Key Set</h3>
+                            <button type="button" data-action="close-key-view-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center cursor-pointer shrink-0">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-3 pt-1">
+                            <div class="form-field">
+                                <label class="form-label">Key Name / Description</label>
+                                <input id="modal-single-key-label" class="form-input" value="${escapeHtml(selectedKey.label || '')}" placeholder="e.g. Front entrance key">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="form-field">
+                                    <label class="form-label">Quantity</label>
+                                    <input id="modal-single-key-qty" type="number" min="1" class="form-input" value="${escapeHtml(String(selectedKey.qty || '1'))}">
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">Location / Tag</label>
+                                    <input id="modal-single-key-location" class="form-input" value="${escapeHtml(selectedKey.location || '')}" placeholder="e.g. Flat entrance">
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label">Held By (Custody)</label>
+                                <input id="modal-single-key-holder" class="form-input" list="modal-key-holders" value="${escapeHtml(selectedKey.holder || '')}" placeholder="Select tenant or Key Safe">
+                                ${holderOptions.length ? `<datalist id="modal-key-holders">${holderOptions.map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex items-center gap-2">
+                            <button type="button" data-action="save-single-key-modal" data-key-idx="${STATE.viewKeyModalIdx}" data-unit="${escapeHtml(activeUnit)}" class="btn-primary flex-1 py-3 text-[14px] flex items-center justify-center gap-1.5 cursor-pointer">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                                <span>Save Changes</span>
+                            </button>
+                            <button type="button" data-action="cancel-edit-single-key" class="btn-secondary py-3 px-4 text-[14px] cursor-pointer">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </div>`;
+                </div>`;
+            } else {
+                keyViewModalHtml = `
+                <div class="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fade-in" data-action="close-key-view-modal">
+                    <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xl max-w-[390px] w-full space-y-4 text-left animate-slide-up" onclick="event.stopPropagation()">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-11 h-11 rounded-2xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0">
+                                    <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-5.5 h-5.5"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="text-[16px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(selectedKey.label || 'Key Set')}</h3>
+                                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${escapeHtml(activeUnit === 'all' ? 'Key Details' : displayUnit)}</p>
+                                </div>
+                            </div>
+                            <button type="button" data-action="close-key-view-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center cursor-pointer shrink-0">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-[#F1F5F9]">
+                            <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                                <span class="text-[12px] font-bold text-[#64748B]">Key Type / Tag</span>
+                                <span class="text-[12px] font-bold text-[#0F172A] truncate">${escapeHtml(selectedKey.label || 'Standard Key')}</span>
+                            </div>
+                            <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                                <span class="text-[12px] font-bold text-[#64748B]">Quantity</span>
+                                <span class="text-[12px] font-bold text-[#0F172A]">${escapeHtml(String(selectedKey.qty || '1'))} Sets</span>
+                            </div>
+                            <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                                <span class="text-[12px] font-bold text-[#64748B]">Location / Access</span>
+                                <span class="text-[12px] font-bold text-[#0F172A] truncate">${escapeHtml(selectedKey.location || 'Flat entrance')}</span>
+                            </div>
+                            <div class="p-3 rounded-2xl bg-[#F8FAFC] flex items-center justify-between gap-2">
+                                <span class="text-[12px] font-bold text-[#64748B]">Current Custody</span>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${custody.badgeClass}">
+                                    ${escapeHtml(custody.holderDisplay)} (${custody.isTenant ? 'With Tenant' : 'In Safe'})
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex items-center gap-2">
+                            <button type="button" data-action="start-edit-single-key" class="btn-primary flex-1 py-3 text-[14px] flex items-center justify-center gap-2 cursor-pointer">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                <span>Edit Key</span>
+                            </button>
+                            <button type="button" data-action="delete-single-key-modal" data-key-idx="${STATE.viewKeyModalIdx}" data-unit="${escapeHtml(activeUnit)}" class="px-3.5 py-3 rounded-xl bg-[#FEF2F2] text-[#DC2626] font-bold text-[14px] hover:bg-[#FEE2E2] cursor-pointer flex items-center justify-center" title="Delete Key Set">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                            <button type="button" data-action="close-key-view-modal" class="btn-secondary py-3 px-3.5 text-[14px] cursor-pointer">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }
         }
     }
 
@@ -25010,6 +25071,70 @@ function bindFeatureEvents() {
     });
     app.querySelectorAll('[data-action="close-key-view-modal"]').forEach(el => {
         el.onclick = () => {
+            STATE.viewKeyModalIdx = null;
+            STATE.editingKeyModal = false;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="start-edit-single-key"]').forEach(el => {
+        el.onclick = () => {
+            STATE.editingKeyModal = true;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="cancel-edit-single-key"]').forEach(el => {
+        el.onclick = () => {
+            STATE.editingKeyModal = false;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="save-single-key-modal"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.keyIdx;
+            let unit = el.dataset.unit || STATE.selectedUnit || '';
+            const pid = STATE.propertyId ?? 0;
+            if (!unit || unit === 'all') {
+                const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
+                unit = units.length ? (typeof unitName === 'function' ? unitName(units[0]) : (units[0].name || String(units[0]))) : '';
+            }
+            const keys = getUnitKeys(pid, unit);
+            if (keys && keys[idx]) {
+                const labelInput = document.getElementById('modal-single-key-label');
+                const qtyInput = document.getElementById('modal-single-key-qty');
+                const locInput = document.getElementById('modal-single-key-location');
+                const holderInput = document.getElementById('modal-single-key-holder');
+
+                if (labelInput) keys[idx].label = labelInput.value.trim() || keys[idx].label;
+                if (qtyInput) keys[idx].qty = qtyInput.value || '1';
+                if (locInput) keys[idx].location = locInput.value.trim();
+                if (holderInput) keys[idx].holder = holderInput.value.trim();
+
+                setUnitKeys(pid, unit, keys);
+                if (typeof AppStore !== 'undefined') AppStore.save();
+                toast('Key set updated successfully');
+            }
+            STATE.editingKeyModal = false;
+            STATE.viewKeyModalIdx = null;
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="delete-single-key-modal"]').forEach(el => {
+        el.onclick = () => {
+            const idx = +el.dataset.keyIdx;
+            let unit = el.dataset.unit || STATE.selectedUnit || '';
+            const pid = STATE.propertyId ?? 0;
+            if (!unit || unit === 'all') {
+                const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
+                unit = units.length ? (typeof unitName === 'function' ? unitName(units[0]) : (units[0].name || String(units[0]))) : '';
+            }
+            const keys = getUnitKeys(pid, unit);
+            if (keys && keys[idx]) {
+                keys.splice(idx, 1);
+                setUnitKeys(pid, unit, keys);
+                if (typeof AppStore !== 'undefined') AppStore.save();
+                toast('Key set deleted');
+            }
+            STATE.editingKeyModal = false;
             STATE.viewKeyModalIdx = null;
             render();
         };
