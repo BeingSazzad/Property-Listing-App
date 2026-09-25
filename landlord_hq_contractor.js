@@ -4228,16 +4228,22 @@ function screenContractorEarnings() {
         <!-- Recent Payout Ledger -->
         <div class="space-y-2">
             <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider px-1 m-0">Recent Payouts</h3>
-            <div class="space-y-2">
-                ${summary.jobs.length ? summary.jobs.map(j => `
-                <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
-                    <div class="min-w-0">
-                        <p class="text-[13.5px] font-bold text-[#0F172A] truncate m-0">${j.issue}</p>
-                        <p class="text-[11.5px] font-medium text-[#64748B] truncate m-0 mt-0.5">${j.visitDate || j.assignedDate || 'Completed'}</p>
+            ${summary.jobs.length ? `
+            <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
+                ${summary.jobs.map(j => `
+                <div class="p-3.5 flex items-center justify-between gap-3 text-left hover:bg-[#F8FAFC] transition-colors">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0 border border-[#A7F3D0]">
+                            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[13.5px] font-bold text-[#0F172A] truncate m-0">${j.issue}</p>
+                            <p class="text-[11.5px] font-medium text-[#64748B] truncate m-0 mt-0.5">${j.visitDate || j.assignedDate || 'Completed'}</p>
+                        </div>
                     </div>
-                    <span class="px-2.5 py-1 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] text-[13px] font-extrabold shrink-0">+${contractorJobEstimate(j)}</span>
-                </div>`).join('') : `<p class="text-[12.5px] font-medium text-[#64748B] px-1">Completed jobs will appear here.</p>`}
-            </div>
+                    <span class="text-[13.5px] font-extrabold text-[#059669] shrink-0">+${contractorJobEstimate(j)}</span>
+                </div>`).join('')}
+            </div>` : `<p class="text-[12.5px] font-medium text-[#64748B] px-1">Completed jobs will appear here.</p>`}
         </div>
     </div>`;
 }
