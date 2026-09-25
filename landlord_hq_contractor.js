@@ -73,6 +73,7 @@ function ensureContractorJob(job) {
     if (!job.notes) job.notes = [];
     if (!job.reportPhotos) job.reportPhotos = [];
     if (!job.reportVideos) job.reportVideos = [];
+    if (!job.extraWork) job.extraWork = [];
     if (job.maintId != null && typeof MAINTENANCE_ITEMS !== 'undefined' && typeof syncMaintMediaToContractorJob === 'function') {
         const item = MAINTENANCE_ITEMS.find(m => m.id === job.maintId);
         if (item && !job.reportPhotos.length && !job.reportVideos.length) syncMaintMediaToContractorJob(job, item);
@@ -4236,7 +4237,11 @@ function screenContractorJobInvoice() {
     if (!job) return `${topBar('Payout', { back: true })}<div class="screen-content p-4"><p class="text-[13px] text-[#64748B]">No job selected.</p></div>`;
     
     const certs = job.certificates || [];
-    const agreedAmount = job.quoteAmount ? String(job.quoteAmount) : (job.invoice?.amount ? String(job.invoice.amount).replace(/[^\d.]/g, '') : '185');
+    const baseNum = parseFloat(String(job.quoteAmount || (job.invoice?.amount ? String(job.invoice.amount).replace(/[^\d.]/g, '') : '185')).replace(/[^\d.]/g, '')) || 185;
+    const extraNum = (job.extraWork || []).reduce((sum, w) => sum + (parseFloat(String(w.amount).replace(/[^\d.]/g, '')) || 0), 0);
+    const totalNum = baseNum + extraNum;
+    const totalFormatted = `£${totalNum.toFixed(2)}`;
+    const baseFormatted = `£${baseNum.toFixed(2)}`;
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
     return `${topBar('Payout', { back: true, sub: 'Invoice & submission' })}
@@ -4248,11 +4253,14 @@ function screenContractorJobInvoice() {
             <!-- Invoice Header & Amount -->
             <div class="flex items-center justify-between pb-3.5 border-b border-[#F1F5F9]">
                 <div>
-                    <span class="text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider block">Invoice Payout</span>
-                    <h2 class="text-[26px] font-black text-[#0F172A] m-0 mt-0.5 leading-none">
-                        ${job.invoice ? job.invoice.amount : (agreedAmount ? `£${agreedAmount}` : '£185')}
+                    <span class="text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider block">Total Payout</span>
+                    <h2 class="text-[28px] font-black text-[#0F172A] m-0 mt-0.5 leading-none">
+                        ${job.invoice ? job.invoice.amount : totalFormatted}
                     </h2>
-                    <p class="text-[12px] font-medium text-[#64748B] m-0 mt-1.5">${esc(job.issue)} · #JOB-${1000 + job.id}</p>
+                    <p class="text-[12px] font-medium text-[#64748B] m-0 mt-1.5">
+                        ${esc(job.issue)} · #JOB-${1000 + job.id}
+                        ${extraNum > 0 ? ` <span class="text-[#16A34A] font-bold">(${baseFormatted} base + £${extraNum.toFixed(2)} extra)</span>` : ''}
+                    </p>
                 </div>
                 ${job.invoice ? `
                 <span class="px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#15803D] text-[11px] font-bold self-start">
@@ -4276,7 +4284,7 @@ function screenContractorJobInvoice() {
                     <label class="block text-[12px] font-bold text-[#475569] mb-1">Invoice amount (£)</label>
                     <div class="relative flex items-center">
                         <span class="absolute left-3.5 text-[14px] font-bold text-[#64748B]">£</span>
-                        <input type="number" data-field="invoiceAmount" value="${agreedAmount}" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-[#CBD5E1] text-[14px] font-bold text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="185">
+                        <input type="number" step="0.01" data-field="invoiceAmount" value="${totalNum.toFixed(2)}" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-[#CBD5E1] text-[14px] font-bold text-[#0F172A] focus:border-[#2563EB] focus:outline-none" placeholder="185.00">
                     </div>
                 </div>
 
