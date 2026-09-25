@@ -17115,43 +17115,106 @@ function screenInspectionDetail() {
     const dateLabel = typeof formatDisplayDate === 'function' ? formatDisplayDate(report.date) || report.date : report.date;
     const photos = report.photoUrls?.length ? report.photoUrls : (report.photos ? IMG.interior.slice(0, Math.min(report.photos, 4)) : []);
     const tenantPhotos = report.tenantPhotoUrls || [];
-    const rating = report.rating ? String(report.rating) : null;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const roomChecks = report.roomChecks || {
+        'Kitchen': 'fair',
+        'Living room': 'good',
+        'Bedroom 1': 'good',
+        'Bedroom 2': 'issue',
+        'Bathroom': 'good',
+        'Hallway': 'good',
+    };
+    const roomEntries = Object.entries(roomChecks);
+    const passCount = roomEntries.filter(([_, st]) => st === 'good' || st === 'pass').length;
+    const fairCount = roomEntries.filter(([_, st]) => st === 'fair').length;
+    const defectCount = roomEntries.filter(([_, st]) => st === 'issue' || st === 'defect').length;
+
     return `${topBar(report.type || 'Inspection', { back: true, sub: p?.name || '' })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left">
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3">
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div>
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">${dateLabel}</span>
                     <h3 class="text-[16px] font-bold text-[#0F172A] m-0 mt-0.5">${p?.address || p?.name || 'Property'}</h3>
                     ${isTenantUploadInspection(report) ? `<p class="text-[12px] text-[#2563EB] font-semibold mt-1">Tenant photo request${report.scheduled ? ' · open' : ''}</p>` : ''}
                 </div>
+                ${defectCount > 0
+                    ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5] shadow-2xs">Defect Flagged</span>`
+                    : (fairCount > 0
+                        ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] shadow-2xs">Fair Condition</span>`
+                        : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] shadow-2xs">Passed</span>`)}
             </div>
             ${report.notes?.trim() ? `
-            <div class="pt-3">
+            <div>
                 <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Inspector Notes</p>
-                <p class="text-[13px] text-[#334155] mt-1 leading-relaxed m-0">${report.notes}</p>
+                <p class="text-[13px] text-[#334155] mt-1 leading-relaxed m-0">${esc(report.notes)}</p>
             </div>` : ''}
         </div>
+
+        <!-- Room Walkthrough & Status Results Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3">
+            <div class="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
+                <div>
+                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0">Room Checklist &amp; Status</h4>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">${roomEntries.length} areas inspected</p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    ${passCount > 0 ? `<span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">${passCount} Pass</span>` : ''}
+                    ${fairCount > 0 ? `<span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]">${fairCount} Fair</span>` : ''}
+                    ${defectCount > 0 ? `<span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5]">${defectCount} Defect</span>` : ''}
+                </div>
+            </div>
+
+            <div class="divide-y divide-[#F1F5F9] text-[13px]">
+                ${roomEntries.map(([roomName, status]) => {
+                    let badgeBg = 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]';
+                    let badgeText = 'Pass';
+                    if (status === 'fair') {
+                        badgeBg = 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]';
+                        badgeText = 'Fair';
+                    } else if (status === 'issue' || status === 'defect') {
+                        badgeBg = 'bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5]';
+                        badgeText = 'Defect';
+                    }
+                    const isDefect = status === 'issue' || status === 'defect';
+                    return `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i data-lucide="${isDefect ? 'alert-triangle' : status === 'fair' ? 'info' : 'check-circle-2'}" class="w-4 h-4 ${isDefect ? 'text-[#DC2626]' : status === 'fair' ? 'text-[#D97706]' : 'text-[#059669]'} shrink-0"></i>
+                            <span class="font-bold text-[#0F172A] text-[13px] truncate">${esc(roomName)}</span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${badgeBg}">${badgeText}</span>
+                            ${isDefect ? `
+                            <button type="button" data-go="log-maintenance" class="px-2 py-0.5 rounded-lg bg-[#DC2626] text-white text-[10.5px] font-bold hover:bg-[#B91C1C] transition-colors cursor-pointer">
+                                + Log Repair
+                            </button>` : ''}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>
+
         ${tenantPhotos.length ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Tenant Uploaded Photos (${tenantPhotos.length})</p>
             <div class="grid grid-cols-2 gap-2">
                 ${tenantPhotos.map(url => `<img src="${url}" class="w-full h-28 object-cover rounded-xl border border-[#E2E8F0]">`).join('')}
             </div>
         </div>` : ''}
         ${photos.length ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
             <p class="text-[12px] font-bold text-[#0F172A] mb-2.5">${tenantPhotos.length ? 'Inspector Photos' : 'Inspection Photos'} (${photos.length})</p>
             <div class="grid grid-cols-2 gap-2">
                 ${photos.map(src => `<img src="${src}" class="w-full h-28 object-cover rounded-xl border border-[#E2E8F0]" alt="">`).join('')}
             </div>
         </div>` : ''}
         ${report.report ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0"><i data-lucide="file-text" class="w-5 h-5"></i></div>
                 <div class="min-w-0">
-                    <p class="text-[14px] font-bold text-[#0F172A] truncate m-0">${report.report}</p>
+                    <p class="text-[14px] font-bold text-[#0F172A] truncate m-0">${esc(report.report)}</p>
                     <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Signed PDF inspection report</p>
                 </div>
             </div>
