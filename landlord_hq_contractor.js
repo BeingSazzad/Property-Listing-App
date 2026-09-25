@@ -877,13 +877,13 @@ function renderContractorCertSlot(certType) {
 
     if (cert) {
         return `
-        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
+        <div data-action="view-contractor-cert" data-cert="${cert.id}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left cursor-pointer hover:border-[#2563EB] transition-all group">
             <div class="flex items-center gap-3.5 min-w-0">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="color:${opt.color};background:${opt.bg}">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${opt.color};background:${opt.bg}">
                     <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
                 </div>
                 <div class="min-w-0 space-y-0.5">
-                    <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate">${esc(opt.label)}</h4>
+                    <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate group-hover:text-[#2563EB] transition-colors">${esc(opt.label)}</h4>
                     <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate">
                         ${esc(cert.fileName)}
                         ${cert.validUntil ? ` · <span class="font-bold text-[#059669]">Expires ${esc(cert.validUntil)}</span>` : ''}
@@ -891,13 +891,11 @@ function renderContractorCertSlot(certType) {
                 </div>
             </div>
 
-            <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer">
-                    View
-                </button>
-                <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-[#F8FAFC] text-[#94A3B8] hover:text-[#DC2626] border border-[#E2E8F0] flex items-center justify-center transition-colors cursor-pointer" title="Delete">
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-[#F8FAFC] text-[#94A3B8] hover:text-[#DC2626] hover:bg-[#FEF2F2] border border-[#E2E8F0] flex items-center justify-center transition-colors cursor-pointer" title="Delete Certificate">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] transition-colors"></i>
             </div>
         </div>`;
     }
@@ -5094,7 +5092,11 @@ function bindContractorEvents() {
         el.onclick = (e) => { e.preventDefault(); closeContractorCertUpload(); };
     });
     app.querySelectorAll('[data-action="delete-contractor-cert"]').forEach(el => {
-        el.onclick = (e) => { e.preventDefault(); deleteContractorCert(+el.dataset.cert); };
+        el.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteContractorCert(+el.dataset.cert);
+        };
     });
     app.querySelectorAll('[data-action="view-contractor-cert"]').forEach(el => {
         el.onclick = (e) => {
