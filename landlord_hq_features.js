@@ -19743,9 +19743,18 @@ function resolveKeyCustody(k, propertyId, unitName) {
 }
 
 function initFlatKeysEdit() {
-    const unit = STATE.selectedUnit || '';
+    let unit = STATE.selectedUnit || '';
+    if (!unit || unit === 'all') {
+        const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(STATE.propertyId) : [];
+        if (units.length) {
+            unit = typeof unitName === 'function' ? unitName(units[0]) : (units[0].name || String(units[0]));
+            STATE.selectedUnit = unit;
+        }
+    }
     STATE.flatKeysEdit = getUnitKeys(STATE.propertyId, unit).map(k => ({ ...k }));
-    if (!STATE.flatKeysEdit.length) STATE.flatKeysEdit = [{ label: 'Front entrance key', qty: '1', location: 'Flat entrance', holder: 'Key Safe (Office)' }];
+    if (!STATE.flatKeysEdit.length) {
+        STATE.flatKeysEdit = [{ label: 'Front entrance key', qty: '1', location: 'Flat entrance', holder: 'Key Safe (Office)' }];
+    }
 }
 
 function screenFlatKeys() {
@@ -19990,7 +19999,15 @@ function screenFlatKeys() {
 }
 
 function screenEditFlatKeys() {
-    const unit = STATE.selectedUnit || '';
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(STATE.propertyId) : [];
+    let unit = STATE.selectedUnit || '';
+    if (!unit || unit === 'all') {
+        if (units.length) {
+            unit = typeof unitName === 'function' ? unitName(units[0]) : (units[0].name || String(units[0]));
+            STATE.selectedUnit = unit;
+        }
+    }
+
     const p = PROPERTIES[STATE.propertyId];
     if (!STATE.flatKeysEdit) initFlatKeysEdit();
     const keys = STATE.flatKeysEdit;
@@ -20010,10 +20027,26 @@ function screenEditFlatKeys() {
 
     const displayUnit = typeof formatUnitDisplayName === 'function' ? formatUnitDisplayName(unit, STATE.propertyId) : unit;
 
+    const editScopeSelector = units.length > 1 ? `
+    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3">
+        <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Editing Unit:</span>
+        <div class="relative flex-1 min-w-0">
+            <select data-action="select-edit-keys-unit-dropdown" class="figma-hold-select w-full text-[13px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5 text-right">
+                ${units.map(u => {
+                    const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
+                    return `<option value="${escapeHtml(name)}" ${unit === name ? 'selected' : ''}>${escapeHtml(name)}</option>`;
+                }).join('')}
+            </select>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-[#64748B] absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </div>
+    </div>` : '';
+
     return `${topBar('Edit Keys', { back: true, sub: `${p?.name || ''} · ${displayUnit}` })}
     <div class="screen-content screen-content-sm space-y-4 text-left pb-8">
+        ${editScopeSelector}
+
         <!-- Quick Preset Chips -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+        <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs">
             <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2">Fast Presets (+ Add One-Click)</span>
             <div class="flex items-center gap-1.5 flex-wrap">
                 <button type="button" data-action="add-key-preset" data-preset-label="Front entrance key" data-preset-location="Flat entrance" class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer">+ Front Door</button>
@@ -20027,7 +20060,7 @@ function screenEditFlatKeys() {
 
         <div class="space-y-3">
         ${keys.map((k, i) => `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-3" data-flat-key-row>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3" data-flat-key-row>
             <div class="flex items-center justify-between">
                 <span class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider">Key Set #${i + 1}</span>
                 ${keys.length > 1 ? `<button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="text-[11.5px] font-bold text-[#DC2626] hover:text-[#B91C1C] cursor-pointer">Remove</button>` : ''}
@@ -20063,8 +20096,12 @@ function screenEditFlatKeys() {
 }
 
 function saveFlatKeys() {
-    const unit = STATE.selectedUnit || '';
-    if (!unit || unit === 'all') { toast('Please select a specific unit to save'); return; }
+    let unit = STATE.selectedUnit || '';
+    const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(STATE.propertyId) : [];
+    if (!unit || unit === 'all') {
+        if (units.length) unit = typeof unitName === 'function' ? unitName(units[0]) : (units[0].name || String(units[0]));
+    }
+    if (!unit) { toast('Please select a unit to save'); return; }
     const rows = [...document.querySelectorAll('[data-flat-key-row]')];
     const keys = rows.map(row => ({
         label: row.querySelector('[data-flat-key-label]')?.value?.trim() || 'Key',
@@ -20076,7 +20113,7 @@ function saveFlatKeys() {
     STATE.flatKeysEdit = null;
     withLoading(() => {
         AppStore.save();
-        toast('Keys saved');
+        toast('Keys saved for ' + unit);
         go('flat-keys', { propertyId: STATE.propertyId, unit });
     });
 }
@@ -24936,14 +24973,24 @@ function bindFeatureEvents() {
             }
         };
     });
+    app.querySelectorAll('[data-action="select-edit-keys-unit-dropdown"]').forEach(el => {
+        el.onchange = () => {
+            STATE.selectedUnit = el.value;
+            initFlatKeysEdit();
+            render();
+        };
+    });
     app.querySelectorAll('[data-action="quick-assign-key"]').forEach(el => {
         el.onclick = () => {
             const unit = el.dataset.unit;
             const idx = +el.dataset.keyIdx;
             const pid = STATE.propertyId ?? 0;
             const keys = typeof getUnitFlatKeys === 'function' ? getUnitFlatKeys(pid, unit) : null;
+            const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+                t.propertyId === pid && t.unit === unit
+            );
             const { members } = typeof getFlatMemberRoster === 'function' ? getFlatMemberRoster(pid, unit) : { members: [] };
-            const tenantName = members[0]?.name || 'Tenant';
+            const tenantName = occupants[0]?.name || members[0]?.name || 'Tenant';
             if (keys && keys[idx]) {
                 keys[idx].holder = tenantName;
                 if (typeof AppStore !== 'undefined') AppStore.save();
