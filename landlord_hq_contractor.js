@@ -3864,6 +3864,26 @@ function screenContractorJobs() {
     </div>`;
 }
 
+function getContractorJobAccessInfo(job) {
+    if (!job) return 'Access arranged';
+    if (job.scope === 'communal' || job.unit === 'Communal') {
+        return 'Communal access · Main entrance';
+    }
+    if (/safe box|key safe|code:\s*\d+/i.test(job.desc || '')) {
+        const match = (job.desc || '').match(/code:\s*(\d+)/i);
+        return match ? `Key Safe (Code: ${match[1]})` : 'Key Safe Box';
+    }
+    if (job.tenant && job.tenant !== '—') {
+        return `Tenant at home · ${job.tenant}`;
+    }
+    if (job.propertyId != null && job.unit && typeof getUnitKeys === 'function') {
+        const keys = getUnitKeys(job.propertyId, job.unit);
+        const holder = keys[0]?.holder;
+        if (holder) return holder;
+    }
+    return 'Key in Office Safe';
+}
+
 function screenContractorJobDetail() {
     const job = contractorJob(STATE.contractorJobId);
     if (!job) return `${topBar('Job details', { back: true })}<div class="screen-content p-4"><p class="text-[13px] text-[#64748B]">Job not found.</p></div>`;
@@ -3892,6 +3912,7 @@ function screenContractorJobDetail() {
     const price = contractorJobEstimate(job);
     const paymentStatus = ['paid', 'approved'].includes(job.status) ? 'Paid' : (job.status === 'waiting_approval' ? 'Awaiting approval' : 'Upon completion');
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const accessInfo = getContractorJobAccessInfo(job);
 
     // Check utilities for emergency shutoff / stopcock / fusebox
     const pid = job.propertyId ?? maintItem?.propertyId ?? 0;
@@ -3959,6 +3980,10 @@ function screenContractorJobDetail() {
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11.5px] font-bold" style="background:${contractorPriorityStyle(job.priority)[0]};color:${contractorPriorityStyle(job.priority)[1]}">
                         <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i>
                         ${esc(job.priority)}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]" title="Property Access / Key">
+                        <i data-lucide="key" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
+                        ${esc(accessInfo)}
                     </span>
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
                         <i data-lucide="user" class="w-3.5 h-3.5 text-[#64748B] shrink-0"></i>
