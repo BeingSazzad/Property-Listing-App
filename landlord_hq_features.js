@@ -524,6 +524,11 @@ const AppStore = {
                     { name: 'Washing Machine', brand: 'LG AI DirectDrive 9kg', warranty: '10-year motor', description: 'Quiet inverter washer with steam cycle' },
                 ],
                 unitKeys: {
+                    'Flat 1': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat 1 entrance', holder: 'Key Safe (Office)' },
+                        { label: 'Building electronic fob', qty: '2', location: 'Lobby & underground gate', holder: 'Key Safe (Office)' },
+                        { label: 'Mailbox key', qty: '1', location: 'Ground floor post room', holder: 'Key Safe (Office)' },
+                    ],
                     'Flat 2A': [
                         { label: 'Front entrance key', qty: '2', location: 'Flat entrance', holder: 'Sarah Johnson' },
                         { label: 'Building electronic fob', qty: '2', location: 'Lobby & underground gate', holder: 'Sarah Johnson' },
@@ -535,6 +540,11 @@ const AppStore = {
                         { label: 'Building electronic fob', qty: '1', location: 'Lobby & gate', holder: 'Priya Sharma' },
                         { label: 'Mailbox key', qty: '1', location: 'Ground floor', holder: 'Priya Sharma' },
                         { label: 'Building electronic fob', qty: '1', location: 'Lobby & gate', holder: 'James Chen' },
+                    ],
+                    'Flat 3': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat 3 entrance', holder: 'Key Safe (Office)' },
+                        { label: 'Building electronic fob', qty: '2', location: 'Lobby & underground gate', holder: 'Key Safe (Office)' },
+                        { label: 'Mailbox key', qty: '1', location: 'Ground floor post room', holder: 'Key Safe (Office)' },
                     ],
                 },
                 utilities: {
@@ -638,9 +648,17 @@ const AppStore = {
                         { label: 'Room key', qty: '1', location: 'Room 1 door', holder: 'Emma Roberts' },
                         { label: 'Front door key', qty: '1', location: 'Street entrance', holder: 'Emma Roberts' },
                     ],
+                    'Room 2': [
+                        { label: 'Room key', qty: '1', location: 'Room 2 door', holder: 'Key Safe (Office)' },
+                        { label: 'Front door key', qty: '1', location: 'Street entrance', holder: 'Key Safe (Office)' },
+                    ],
                     'Room 3': [
                         { label: 'Room key', qty: '1', location: 'Room 3 door', holder: 'Mark Davis' },
                         { label: 'Front door key', qty: '1', location: 'Street entrance', holder: 'Mark Davis' },
+                    ],
+                    'Room 4': [
+                        { label: 'Room key', qty: '1', location: 'Room 4 door', holder: 'Key Safe (Office)' },
+                        { label: 'Front door key', qty: '1', location: 'Street entrance', holder: 'Key Safe (Office)' },
                     ],
                 },
                 utilities: {
@@ -686,6 +704,11 @@ const AppStore = {
                     { name: 'Washing Machine', brand: 'Indesit Innex 8kg', warranty: 'Active', description: 'Front loading washing machine' },
                 ],
                 unitKeys: {
+                    'Flat 1': [
+                        { label: 'Front entrance key', qty: '2', location: 'Flat 1 entrance', holder: 'Key Safe (Office)' },
+                        { label: 'Street door key', qty: '2', location: 'Main building porch', holder: 'Key Safe (Office)' },
+                        { label: 'Mailbox key', qty: '1', location: 'Front porch mail slot', holder: 'Key Safe (Office)' },
+                    ],
                     'Flat 2A': [
                         { label: 'Front entrance key', qty: '2', location: 'Flat 2A entrance', holder: 'Michael Lee' },
                         { label: 'Street door key', qty: '2', location: 'Main building porch', holder: 'Michael Lee' },
@@ -4595,9 +4618,25 @@ function renderTenantKeysCard(propertyId, unitName, tenantName, opts = {}) {
 }
 
 function getUnitKeys(propertyId, unitName) {
+    if (!unitName || unitName === 'all') return [];
     const meta = AppStore.meta(propertyId);
     if (!meta.unitKeys) meta.unitKeys = {};
-    if (!meta.unitKeys[unitName]) meta.unitKeys[unitName] = [];
+    if (!meta.unitKeys[unitName] || !meta.unitKeys[unitName].length) {
+        const occupants = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST : []).filter(t =>
+            t.propertyId === propertyId && t.unit === unitName
+        );
+        const roster = typeof getFlatMemberRoster === 'function'
+            ? (getFlatMemberRoster(propertyId, unitName).members || [])
+            : [];
+        const primaryTenant = occupants[0]?.name || roster[0]?.name;
+        const holder = primaryTenant || 'Key Safe (Office)';
+
+        meta.unitKeys[unitName] = [
+            { label: 'Front entrance key', qty: '2', location: `${unitName} entrance`, holder },
+            { label: 'Building electronic fob', qty: '2', location: 'Lobby & gate access', holder },
+            { label: 'Mailbox key', qty: '1', location: 'Ground floor post box', holder }
+        ];
+    }
     return meta.unitKeys[unitName];
 }
 
@@ -19710,7 +19749,7 @@ function resolveKeyCustody(k, propertyId, unitName) {
     if (k.missing || h === 'missing' || h === 'lost') {
         return {
             status: 'missing',
-            label: 'Missing / Lost',
+            label: 'Missing',
             holderDisplay: 'Unaccounted',
             badgeClass: 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]',
             dotClass: 'bg-[#DC2626]',
@@ -19722,7 +19761,7 @@ function resolveKeyCustody(k, propertyId, unitName) {
         const holderDisplay = k.holder || (occupants[0]?.name || 'Active Tenant');
         return {
             status: 'tenant',
-            label: `With Tenant (${holderDisplay})`,
+            label: 'With Tenant',
             holderDisplay,
             badgeClass: 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]',
             dotClass: 'bg-[#059669]',
@@ -19733,7 +19772,7 @@ function resolveKeyCustody(k, propertyId, unitName) {
     const holderDisplay = k.holder || 'Key Safe (Office)';
     return {
         status: 'safe',
-        label: `In Safe (${holderDisplay})`,
+        label: 'In Safe',
         holderDisplay,
         badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
         dotClass: 'bg-[#2563EB]',
@@ -19918,45 +19957,30 @@ function screenFlatKeys() {
             const custody = resolveKeyCustody(k, propertyId, activeUnit);
             const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
             return `
-                    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-start gap-3 min-w-0">
-                                <div class="w-9 h-9 rounded-xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0 shadow-2xs">
-                                    <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 leading-snug">${escapeHtml(k.label || 'Key Set')}</h4>
-                                        <span class="px-1.5 py-0.5 rounded-md text-[10.5px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
-                                    </div>
-                                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 truncate">
-                                        <i data-lucide="map-pin" class="w-3 h-3 shrink-0 text-[#94A3B8]"></i>
-                                        <span class="truncate">${escapeHtml(k.location || 'Location on file')}</span>
-                                    </p>
-                                </div>
+                    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <div class="w-9 h-9 rounded-xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0">
+                                <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
                             </div>
-                            <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border shrink-0 flex items-center gap-1.5 ${custody.badgeClass}">
-                                <span class="w-1.5 h-1.5 rounded-full ${custody.dotClass}"></span>
-                                <span class="truncate max-w-[120px]">${custody.label}</span>
-                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(k.label || 'Key Set')}</h4>
+                                    <span class="px-1.5 py-0.25 rounded-md text-[10.5px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
+                                </div>
+                                <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 truncate">
+                                    <span class="truncate">${escapeHtml(k.location || 'Location on file')}</span>
+                                    <span class="text-[#CBD5E1]">•</span>
+                                    <span class="truncate text-[#475569] font-medium">${escapeHtml(custody.holderDisplay)}</span>
+                                </p>
+                            </div>
                         </div>
-
-                        <!-- 1-Tap Quick Actions Bar -->
-                        <div class="pt-2 border-t border-[#F1F5F9] flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5">
-                                ${custody.isTenant ? `
-                                <button type="button" data-action="quick-return-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[11px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
-                                    <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i>
-                                    <span>Return to Safe</span>
-                                </button>` : `
-                                <button type="button" data-action="quick-assign-key" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-xl bg-[#ECFDF5] text-[#059669] hover:bg-[#D1FAE5] text-[11px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer">
-                                    <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-                                    <span>Hand over to Tenant</span>
-                                </button>`}
-                            </div>
-                            <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-2 py-1 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer">
-                                <i data-lucide="edit-2" class="w-3 h-3"></i>
-                                <span>Edit Set</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" data-action="${custody.isTenant ? 'quick-return-key' : 'quick-assign-key'}" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-2xs ${custody.badgeClass}" title="Tap to change custody">
+                                <span class="w-1.5 h-1.5 rounded-full ${custody.dotClass}"></span>
+                                <span>${custody.isTenant ? 'With Tenant' : 'In Safe'}</span>
+                            </button>
+                            <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="w-7 h-7 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] flex items-center justify-center transition-colors cursor-pointer" title="Edit key set">
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
                     </div>`;
