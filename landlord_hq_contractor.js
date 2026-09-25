@@ -384,8 +384,13 @@ function contractorJobFilterCounts() {
 }
 
 function contractorJobEstimate(job) {
+    if (!job) return 'Quote Pending';
+    if (job.quoteAmount != null) return `£${job.quoteAmount}`;
     if (job.invoice?.amount) return job.invoice.amount;
-    return ({ High: '£185', Medium: '£120', Low: '£85' })[job.priority] || '£120';
+    if (['in_progress', 'waiting_approval', 'approved', 'completed', 'paid'].includes(job.status)) {
+        return ({ High: '£185', Medium: '£120', Low: '£85' })[job.priority] || '£120';
+    }
+    return 'Quote Pending';
 }
 
 function contractorJobDisplayStatus(job) {
@@ -402,6 +407,8 @@ function contractorJobListCard(job) {
     const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
     const disp = contractorJobDisplayStatus(job);
     const location = `${job.property}${job.unit && job.unit !== '—' ? ` · ${job.unit}` : ''}`;
+    const hasPrice = ['in_progress', 'waiting_approval', 'approved', 'completed', 'paid'].includes(job.status) || job.quoteAmount != null;
+    const priceTag = contractorJobEstimate(job);
     return `
     <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-v2-job-card card w-full text-left">
         <img src="${thumb}" alt="" class="ctr-v2-job-thumb">
@@ -412,7 +419,7 @@ function contractorJobListCard(job) {
                 <span class="ctr-v2-job-badge" style="background:${disp.bg};color:${disp.color}">${disp.label}</span>
                 <span class="ctr-v2-job-time"><i data-lucide="clock" class="w-3 h-3"></i>${job.visitDate || '—'}</span>
             </div>
-            <p class="ctr-v2-job-price">Est. ${contractorJobEstimate(job)}</p>
+            <p class="ctr-v2-job-price">${hasPrice ? `Agreed: ${priceTag}` : priceTag}</p>
         </div>
         <i data-lucide="chevron-right" class="ctr-v2-job-chevron"></i>
     </button>`;
@@ -3853,16 +3860,43 @@ function screenContractorJobDetail() {
             </div>
         </div>` : ''}
         ${renderCtrProgressChecklist(job)}
-        <button type="button" data-jtab="invoice" class="card ctr-compact-block w-full text-left">
-            <div class="ctr-compact-payout-top">
-                <div>
-                    <p class="ctr-compact-label">Payout</p>
-                    <p class="ctr-compact-payout-amt">${price}</p>
+        ${(() => {
+            const hasAgreedPrice = ['in_progress', 'waiting_approval', 'approved', 'completed', 'paid'].includes(job.status) || job.quoteAmount != null;
+            const priceDisplay = contractorJobEstimate(job);
+            if (hasAgreedPrice) {
+                return `
+                <button type="button" data-jtab="invoice" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm w-full text-left space-y-1.5 group hover:border-[#2563EB] transition-colors cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Agreed Payout</span>
+                            <h3 class="text-[22px] font-black text-[#2563EB] m-0 mt-0.5">${priceDisplay}</h3>
+                        </div>
+                        <span class="text-[#2563EB] text-[12px] font-bold group-hover:underline flex items-center gap-1">
+                            Breakdown &amp; Invoice <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </span>
+                    </div>
+                    <p class="text-[12px] text-[#64748B] m-0">${paymentStatus}</p>
+                </button>`;
+            }
+            return `
+            <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Quote &amp; Pricing</span>
+                        <h3 class="text-[20px] font-black text-[#0F172A] m-0 mt-0.5">Quote Pending</h3>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold border border-[#DBEAFE]">
+                        Inspection Required
+                    </span>
                 </div>
-                <span class="ctr-compact-link">Breakdown</span>
-            </div>
-            <p class="ctr-compact-muted">${paymentStatus}</p>
-        </button>
+                <p class="text-[12px] text-[#64748B] m-0 leading-relaxed">
+                    No automatic pricing. Contractor inspects site, discusses scope with landlord &amp; tenant, then submits a formal quote for approval.
+                </p>
+                <button type="button" data-action="open-contractor-quote-modal" class="w-full py-3 rounded-xl bg-[#2563EB] text-white text-[13px] font-bold hover:bg-[#1D4ED8] transition-colors cursor-pointer text-center shadow-xs flex items-center justify-center gap-1.5">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> Submit Quote / Price Estimate
+                </button>
+            </div>`;
+        })()}
         <div class="card ctr-compact-block ctr-compact-owner">
             <div class="ctr-compact-owner-avatar">${contactInitials}</div>
             <div class="ctr-compact-owner-body">
@@ -3877,7 +3911,55 @@ function screenContractorJobDetail() {
         ${reviewsBlock}
         <div class="ctr-compact-footer">${primaryAction}</div>
     </div>
-    ${typeof renderMaintMediaPreviewModal === 'function' ? renderMaintMediaPreviewModal() : ''}`;
+    ${typeof renderMaintMediaPreviewModal === 'function' ? renderMaintMediaPreviewModal() : ''}
+    ${renderContractorQuoteModal()}`;
+}
+
+function renderContractorQuoteModal() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!STATE.showContractorQuoteModal || !job) return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    return `
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter">
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xl w-full max-w-md space-y-4 text-left">
+            <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                <div>
+                    <h3 class="text-[16px] font-extrabold text-[#0F172A] m-0">Submit Price Quote</h3>
+                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5">#JOB-${1000 + job.id} · ${esc(job.issue)}</p>
+                </div>
+                <button type="button" data-action="close-contractor-quote-modal" class="text-[#94A3B8] hover:text-[#0F172A] p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                ${formFieldReq('Quoted Amount (£)', 'ctr_quote_amount', job.quoteAmount || '185', 'number', 'e.g. 185')}
+                ${formTextarea('Scope of Work & Notes', 'ctr_quote_notes', job.quoteNotes || 'Inspected site. Replaced worn washer and pipe fitting under kitchen sink.', 'e.g. Parts breakdown and labor estimate')}
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+                <button type="button" data-action="close-contractor-quote-modal" class="btn-secondary flex-1 py-3 text-[13px] font-bold">Cancel</button>
+                <button type="button" data-action="submit-contractor-quote" class="btn-primary flex-1 py-3 text-[13px] font-bold">Send Quote</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function submitContractorQuote() {
+    const job = contractorJob(STATE.contractorJobId);
+    const amt = fieldVal('ctr_quote_amount')?.trim();
+    const notes = fieldVal('ctr_quote_notes')?.trim();
+    if (!amt || isNaN(parseFloat(amt))) {
+        toast('Please enter a valid quoted amount');
+        return;
+    }
+    if (job) {
+        job.quoteAmount = parseFloat(amt);
+        job.quoteNotes = notes || '';
+        job.status = 'scheduled';
+        AppStore?.save();
+    }
+    STATE.showContractorQuoteModal = false;
+    toast(`Quote of £${amt} submitted to landlord`);
+    render();
 }
 
 function screenContractorCompleteJob() {
@@ -4721,6 +4803,15 @@ function bindContractorEvents() {
     app.querySelectorAll('[data-action="confirm-contractor-schedule"]').forEach(el => { el.onclick = confirmContractorSchedule; });
     app.querySelectorAll('[data-action="save-contractor-note"]').forEach(el => { el.onclick = saveContractorNote; });
     app.querySelectorAll('[data-action="mark-contractor-complete"]').forEach(el => { el.onclick = markContractorJobComplete; });
+    app.querySelectorAll('[data-action="open-contractor-quote-modal"]').forEach(el => {
+        el.onclick = () => { STATE.showContractorQuoteModal = true; render(); };
+    });
+    app.querySelectorAll('[data-action="close-contractor-quote-modal"]').forEach(el => {
+        el.onclick = () => { STATE.showContractorQuoteModal = false; render(); };
+    });
+    app.querySelectorAll('[data-action="submit-contractor-quote"]').forEach(el => {
+        el.onclick = submitContractorQuote;
+    });
     app.querySelectorAll('[data-action="request-milestone"]').forEach(el => {
         el.onclick = () => {
             if (typeof requestContractorMilestone === 'function') requestContractorMilestone();
