@@ -3807,34 +3807,37 @@ function contractorDashboardHeader(name, sub) {
 function screenContractorJobs() {
     const f = STATE.contractorJobFilter || 'all';
     const counts = contractorJobFilterCounts();
-    const tabs = [
-        ['all', 'All', counts.all],
-        ['pending', 'Pending', counts.pending],
-        ['in_progress', 'In progress', counts.inProgress],
-        ['completed', 'Completed', counts.completed],
-    ];
     const jobs = contractorFilterJobs();
     return `${topBar('Jobs', { hideBell: true })}
-    <div class="screen-content screen-enter ctr-compact-page ctr-v2-jobs-page">
+    <div class="screen-content screen-enter ctr-compact-page ctr-v2-jobs-page space-y-3 text-left">
         <div class="dash-section-head">
             <div>
                 <h3 class="screen-section-title">Your jobs</h3>
                 <p class="dash-section-sub">${counts.all} total · filter by status</p>
             </div>
         </div>
-        <div class="grid grid-cols-4 gap-1 p-1 rounded-[12px] bg-[#F1F5F9] border border-[#E2E8F0] text-center my-3">
-            ${tabs.map(([k, l, n]) => {
-                const isActive = f === k;
-                return `
-                <button type="button" data-contractor-filter="${k}" class="py-1.5 px-1.5 rounded-[8px] text-[11.5px] font-bold transition-all cursor-pointer truncate ${isActive ? 'bg-[#2563EB] text-white shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
-                    ${l} <span class="text-[10.5px] opacity-80">(${n})</span>
-                </button>`;
-            }).join('')}
+
+        <!-- Search & Dropdown Filter Row -->
+        <div class="flex items-center gap-2.5">
+            <div class="search-bar ctr-jobs-search flex-1 m-0">
+                <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+                <input data-search="contractorJobs" type="text" value="${STATE.search.contractorJobs || ''}" placeholder="Search jobs…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
+            </div>
+
+            <!-- Status Dropdown Filter -->
+            <div class="relative shrink-0">
+                <select data-action="filter-contractor-jobs-select" class="appearance-none bg-white border border-[#CBD5E1] text-[#0F172A] text-[12.5px] font-bold rounded-xl pl-3.5 pr-8 py-2.5 shadow-2xs hover:border-[#2563EB] focus:border-[#2563EB] focus:outline-none cursor-pointer">
+                    <option value="all" ${f === 'all' ? 'selected' : ''}>All (${counts.all})</option>
+                    <option value="pending" ${f === 'pending' ? 'selected' : ''}>Pending (${counts.pending})</option>
+                    <option value="in_progress" ${f === 'in_progress' ? 'selected' : ''}>In progress (${counts.inProgress})</option>
+                    <option value="completed" ${f === 'completed' ? 'selected' : ''}>Completed (${counts.completed})</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-[#64748B]">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </div>
+            </div>
         </div>
-        <div class="search-bar ctr-jobs-search">
-            <i data-lucide="search" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
-            <input data-search="contractorJobs" type="text" value="${STATE.search.contractorJobs || ''}" placeholder="Search jobs…" class="flex-1 text-[13px] bg-transparent border-none outline-none">
-        </div>
+
         <div class="ctr-v2-jobs-list">
             ${jobs.length ? jobs.map(j => contractorJobListCard(j)).join('') : `
             <div class="empty-state card">
@@ -5016,6 +5019,12 @@ function bindContractorEvents() {
     });
     app.querySelectorAll('[data-action="save-contractor-cert"]').forEach(el => {
         el.onclick = (e) => { e.preventDefault(); saveContractorCertUpload(); };
+    });
+    app.querySelectorAll('[data-action="filter-contractor-jobs-select"]').forEach(el => {
+        el.onchange = () => {
+            STATE.contractorJobFilter = el.value;
+            render();
+        };
     });
     app.querySelectorAll('[data-action="add-extra-work"]').forEach(el => {
         el.onclick = (e) => {
