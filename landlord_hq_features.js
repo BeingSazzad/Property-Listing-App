@@ -21815,7 +21815,7 @@ function saveEditProperty() {
     p.address = fieldVal('address') || p.address;
     const meta = AppStore.meta(STATE.propertyId);
     if (!meta.info) meta.info = {};
-    meta.info.notes = fieldVal('notes');
+    meta.info.notes = fieldVal('notes') || fieldVal('info_notes') || meta.info.notes || '';
     const building = getPropertyBuilding(STATE.propertyId);
     building.flatCount = getPropertyUnits(STATE.propertyId).length;
     meta.building = building;
