@@ -2621,8 +2621,10 @@ function go(screen, opts = {}) {
     if (screen === 'checkout-tenancy') STATE.tenantId = opts.tenantId ?? STATE.tenantId;
     if (screen === 'share-document') STATE.shareDocId = opts.shareDocId ?? STATE.shareDocId;
     if (screen === 'assign-contractor') STATE.assignMaintId = opts.maintId ?? STATE.maintId;
-    if (screen === 'contractor-job-detail') STATE.contractorJobId = opts.jobId ?? STATE.contractorJobId ?? 0;
-    if (opts.jobTab) STATE.contractorJobTab = opts.jobTab;
+    if (screen === 'contractor-job-detail') {
+        STATE.contractorJobId = opts.jobId ?? STATE.contractorJobId ?? 0;
+        STATE.contractorJobTab = opts.jobTab || 'overview';
+    }
     if (screen === 'tenant-detail') {
         STATE.tenantId = opts.tenantId ?? STATE.tenantId;
         const sectionTab = opts.tenantTab || opts.tab;
@@ -2885,6 +2887,13 @@ function navigateBackFallback() {
 }
 
 function back() {
+    if (STATE.screen === 'contractor-job-detail') {
+        if (STATE.contractorJobTab && STATE.contractorJobTab !== 'overview') {
+            STATE.contractorJobTab = 'overview';
+            render();
+            return;
+        }
+    }
     if (STATE.screen === 'invite-tenant') {
         if (typeof retreatInviteWizard === 'function' && (STATE.inviteStep || 1) > 1) {
             retreatInviteWizard();

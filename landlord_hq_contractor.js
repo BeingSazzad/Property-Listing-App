@@ -4281,6 +4281,7 @@ function screenContractorJobInvoice() {
     const totalNum = baseNum + extraNum;
     const totalFormatted = `£${totalNum.toFixed(2)}`;
     const baseFormatted = `£${baseNum.toFixed(2)}`;
+    const isSettled = ['completed', 'paid', 'approved', 'waiting_approval'].includes(job.status);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
     return `${topBar('Payout', { back: true, sub: 'Invoice & submission' })}
@@ -4308,7 +4309,18 @@ function screenContractorJobInvoice() {
             </div>
 
             <!-- Invoice Status / Inputs -->
-            ${job.invoice ? `
+            ${isSettled ? `
+            <div class="flex items-center justify-between py-2.5 px-3 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] text-[13px]">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="file-check" class="w-4 h-4 text-[#16A34A]"></i>
+                    <span class="font-bold text-[#0F172A]">${job.invoice?.number || job.invoice?.file || ('INV-JOB-' + (1000 + job.id))}</span>
+                </div>
+                <button type="button" data-action="preview-contractor-invoice" class="text-[#2563EB] font-bold text-[12.5px] hover:underline flex items-center gap-1 cursor-pointer">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Download PDF
+                </button>
+            </div>
+            ${job.invoice?.notes ? `<p class="text-[12px] text-[#64748B] m-0 pt-1"><strong>Notes:</strong> ${esc(job.invoice.notes)}</p>` : ''}
+            ` : job.invoice ? `
             <div class="flex items-center justify-between py-1 text-[13px]">
                 <div class="flex items-center gap-2">
                     <i data-lucide="file-check" class="w-4 h-4 text-[#16A34A]"></i>
@@ -4345,9 +4357,10 @@ function screenContractorJobInvoice() {
                         <p class="text-[13.5px] font-bold text-[#0F172A] m-0">Extra work</p>
                         <p class="text-[11.5px] text-[#64748B] m-0">${job.extraWork?.length ? `${job.extraWork.length} item(s) recorded` : 'Any additional work done?'}</p>
                     </div>
+                    ${!isSettled ? `
                     <button type="button" data-action="add-extra-work" class="px-3 py-1.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[12px] font-bold hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i> ${job.extraWork?.length ? 'Add more' : 'Request extra'}
-                    </button>
+                    </button>` : ''}
                 </div>
                 ${job.extraWork?.length ? `
                 <div class="divide-y divide-[#F1F5F9] text-[12.5px] bg-[#F8FAFC] rounded-xl p-2.5 border border-[#E2E8F0] space-y-1">
@@ -4359,9 +4372,10 @@ function screenContractorJobInvoice() {
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <span class="font-black text-[#16A34A]">+£${String(w.amount).replace(/[^\d.]/g, '')}</span>
+                            ${!isSettled ? `
                             <button type="button" data-action="delete-extra-work" data-index="${idx}" class="w-6 h-6 rounded-lg hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] transition-colors flex items-center justify-center cursor-pointer" title="Remove">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                            </button>
+                            </button>` : ''}
                         </div>
                     </div>`).join('')}
                 </div>` : ''}
@@ -4372,9 +4386,10 @@ function screenContractorJobInvoice() {
                         <p class="text-[13.5px] font-bold text-[#0F172A] m-0">Certificates</p>
                         <p class="text-[11.5px] text-[#64748B] m-0">${certs.length ? `${certs.length} certificate(s) uploaded` : 'Gas or safety certificate (optional)'}</p>
                     </div>
+                    ${!isSettled ? `
                     <button type="button" data-contractor-upload="certificate" class="px-3 py-1.5 rounded-lg bg-[#F8FAFC] text-[#475569] border border-[#CBD5E1] text-[12px] font-bold hover:bg-[#F1F5F9] transition-colors cursor-pointer flex items-center gap-1">
                         <i data-lucide="upload" class="w-3.5 h-3.5"></i> ${certs.length ? 'Add' : 'Upload'}
-                    </button>
+                    </button>` : ''}
                 </div>
                 ${certs.length ? `
                 <div class="space-y-1.5 pt-1">
@@ -4387,15 +4402,40 @@ function screenContractorJobInvoice() {
             </div>
         </div>
 
-        <!-- Final Submission Button -->
+        <!-- Settled State / Final Submission Button -->
         <div class="space-y-2 pt-1">
-            <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-3.5 rounded-xl text-[14px] font-extrabold flex items-center justify-center gap-2 shadow-md cursor-pointer">
-                <i data-lucide="send" class="w-4 h-4"></i> Submit for approval
-            </button>
-            <p class="text-[11.5px] font-medium text-[#64748B] text-center flex items-center justify-center gap-1">
-                <i data-lucide="info" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
-                Photos optional · System invoice required
-            </p>
+            ${isSettled ? `
+                ${['paid', 'completed'].includes(job.status) ? `
+                <div class="card p-4 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] text-center space-y-1">
+                    <span class="inline-flex items-center gap-1.5 text-[14px] font-extrabold text-[#047857]">
+                        <i data-lucide="check-circle" class="w-4.5 h-4.5"></i> Job Completed &amp; Payout Settled
+                    </span>
+                    <p class="text-[12px] font-medium text-[#065F46] m-0">This job has been completed and payment has been issued.</p>
+                </div>` : job.status === 'approved' ? `
+                <div class="card p-4 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] text-center space-y-1">
+                    <span class="inline-flex items-center gap-1.5 text-[14px] font-extrabold text-[#1D4ED8]">
+                        <i data-lucide="check-circle-2" class="w-4.5 h-4.5"></i> Approved by Landlord
+                    </span>
+                    <p class="text-[12px] font-medium text-[#1E40AF] m-0">Payment processing via Stripe.</p>
+                </div>` : `
+                <div class="card p-4 rounded-xl bg-[#FAF5FF] border border-[#E9D5FF] text-center space-y-1">
+                    <span class="inline-flex items-center gap-1.5 text-[14px] font-extrabold text-[#7E22CE]">
+                        <i data-lucide="clock" class="w-4.5 h-4.5"></i> Invoice Submitted
+                    </span>
+                    <p class="text-[12px] font-medium text-[#6B21A8] m-0">Awaiting landlord approval and payout release.</p>
+                </div>`}
+                <button type="button" data-action="back" class="btn-secondary w-full py-3 rounded-xl text-[13px] font-bold cursor-pointer">
+                    Back to job details
+                </button>
+            ` : `
+                <button type="button" data-action="mark-contractor-complete" class="btn-primary w-full py-3.5 rounded-xl text-[14px] font-extrabold flex items-center justify-center gap-2 shadow-md cursor-pointer">
+                    <i data-lucide="send" class="w-4 h-4"></i> Submit for approval
+                </button>
+                <p class="text-[11.5px] font-medium text-[#64748B] text-center flex items-center justify-center gap-1">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                    Photos optional · System invoice required
+                </p>
+            `}
         </div>
     </div>
     ${typeof renderContractorCertUploadModal === 'function' ? renderContractorCertUploadModal() : ''}
