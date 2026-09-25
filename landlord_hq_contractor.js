@@ -1572,6 +1572,34 @@ function renderTenantHomePropertyCard(t, p) {
     </button>`;
 }
 
+function renderTenantHomeLandlordContact(t, p) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const landlordName = p?.landlordName || 'John Smith (Landlord)';
+    const landlordPhone = p?.phone || '07700 900123';
+    return `
+    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs text-left">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center font-bold text-[15px] shrink-0 border border-[#DBEAFE]">
+                    <i data-lucide="building-2" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Landlord / Property Contact</span>
+                    <p class="text-[13.5px] font-extrabold text-[#0F172A] truncate m-0 mt-0.5">${esc(landlordName)}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="tel:${esc(landlordPhone)}" class="w-9 h-9 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center border border-[#A7F3D0] hover:bg-[#D1FAE5] transition-colors" title="Call Landlord">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                </a>
+                <button type="button" data-go="messages" class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center border border-[#BFDBFE] hover:bg-[#DBEAFE] transition-colors" title="Message Landlord">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
 function renderTenantHomeRentStrip(t, pay, rentDue) {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const rentAmt = rentDue
@@ -1850,8 +1878,9 @@ function screenTenantDashboard() {
     const rentDue = pay?.balance !== '£0.00';
 
     return `${tenantDashboardHeader(t, p)}
-    <div class="screen-content screen-enter tnt-home-page">
+    <div class="screen-content screen-enter tnt-home-page space-y-3.5">
         ${renderTenantHomePropertyCard(t, p)}
+        ${renderTenantHomeLandlordContact(t, p)}
         ${renderTenantHomeRentStrip(t, pay, rentDue)}
         ${renderTenantHomeChargeCard(pay)}
         ${renderTenantHomeMaintBill(pay)}
