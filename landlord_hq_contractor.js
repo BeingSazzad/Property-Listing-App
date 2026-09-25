@@ -4717,12 +4717,6 @@ function screenContractorCompany() {
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
             ${formField('Company Name', CONTRACTOR_USER.company || '', 'text', 'Plumber Pro Ltd', 'companyName')}
             ${renderContractorMultiTradesPicker()}
-            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5">
-                <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Trade Categories</span>
-                <div class="flex flex-wrap gap-1.5">
-                    ${tradesList.map(tr => `<span class="px-2.5 py-0.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] font-bold text-[11px]">${esc(tr)}</span>`).join('')}
-                </div>
-            </div>
             ${formField('Company Reg. No.', CONTRACTOR_USER.companyReg || '', 'text', '12345678', 'companyReg')}
             ${formField('VAT Number', CONTRACTOR_USER.vatNumber || '', 'text', 'GB123456789', 'vatNumber')}
             ${formField('Phone', CONTRACTOR_USER.phone || '', 'tel', '', 'phone')}
