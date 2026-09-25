@@ -14156,8 +14156,30 @@ function appendFlatToProperty(propertyId, flatData) {
         yearBuilt: flatData.yearBuilt || '',
     };
     meta.units.push(newUnit);
+    meta.unitCount = meta.units.length;
+
     const building = getPropertyBuilding(propertyId);
     building.flatCount = meta.units.length;
+    building.unitsCount = meta.units.length;
+
+    if (!meta.unitKeys) meta.unitKeys = {};
+    if (!meta.unitKeys[flatData.name]) {
+        meta.unitKeys[flatData.name] = [
+            { label: 'Front entrance key', qty: '2', location: `${flatData.name} entrance`, holder: 'Key Safe (Office)' },
+            { label: 'Building electronic fob', qty: '2', location: 'Lobby & gate access', holder: 'Key Safe (Office)' },
+            { label: 'Mailbox key', qty: '1', location: 'Ground floor post box', holder: 'Key Safe (Office)' }
+        ];
+    }
+    if (!meta.unitUtilities) meta.unitUtilities = {};
+    if (!meta.unitUtilities[flatData.name]) {
+        meta.unitUtilities[flatData.name] = {
+            responsibility: 'tenant',
+            includedBills: [],
+            monthlyAllowance: '',
+            customUtilities: []
+        };
+    }
+
     ensureFlatPhotos(propertyId);
     syncPropertyStatus(propertyId);
     return newUnit;
@@ -14372,7 +14394,9 @@ function getUnitNames(propertyId) {
 }
 
 function getUnitByName(propertyId, name) {
-    return getPropertyUnits(propertyId).find(u => unitName(u) === name) || null;
+    if (!name) return null;
+    const norm = String(name).trim().toLowerCase();
+    return getPropertyUnits(propertyId).find(u => String(unitName(u)).trim().toLowerCase() === norm) || null;
 }
 
 function getActiveTenanciesForProperty(propertyId) {
@@ -19382,6 +19406,11 @@ function saveAddFlat() {
             if (!meta.unitUtilities) meta.unitUtilities = {};
             meta.unitUtilities[name] = JSON.parse(JSON.stringify(srcUtil));
         }
+        const srcKeys = meta.unitKeys?.[dupSource];
+        if (srcKeys) {
+            if (!meta.unitKeys) meta.unitKeys = {};
+            meta.unitKeys[name] = srcKeys.map(k => ({ ...k, holder: 'Key Safe (Office)' }));
+        }
     }
     STATE.flatDuplicateFrom = null;
     STATE.pendingFlatPhotos = [];
@@ -19479,6 +19508,7 @@ function saveFlatDetails() {
     if (newName !== oldName) {
         renameUnitReferences(STATE.propertyId, oldName, newName);
     }
+    syncUnitRentAcrossRecords(STATE.propertyId, newName, rentFormatted);
     STATE.selectedUnit = newName;
     syncPropertyStatus(STATE.propertyId);
     withLoading(() => { AppStore.save(); toast('Unit updated'); go('flat-detail', { propertyId: STATE.propertyId, unit: newName }); });
