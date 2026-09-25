@@ -4207,29 +4207,6 @@ function screenContractorEarnings() {
             ${renderContractorEarningsTrendChart(chartData)}
         </div>
 
-        <!-- Financial Breakdown Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-            <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider m-0">Financial Summary</h3>
-            <div class="divide-y divide-[#F1F5F9] text-[13px]">
-                <div class="py-2 flex items-center justify-between text-[#0F172A]">
-                    <span class="font-medium text-[#64748B]">Gross revenue</span>
-                    <span class="font-bold">£${chartData.total.toLocaleString()}</span>
-                </div>
-                <div class="py-2 flex items-center justify-between text-[#0F172A]">
-                    <span class="font-medium text-[#64748B]">Platform fee (5%)</span>
-                    <span class="font-bold text-[#DC2626]">−£${fee.toLocaleString()}</span>
-                </div>
-                <div class="py-2 flex items-center justify-between text-[#0F172A]">
-                    <span class="font-medium text-[#64748B]">Avg. job value</span>
-                    <span class="font-bold text-[#2563EB]">£${avgJob.toLocaleString()}</span>
-                </div>
-                <div class="pt-2.5 flex items-center justify-between text-[14px] font-extrabold text-[#0F172A]">
-                    <span>Net earnings</span>
-                    <span class="text-[#16A34A]">£${net.toLocaleString()}</span>
-                </div>
-            </div>
-        </div>
-
         <!-- Recent Payout Ledger -->
         <div class="space-y-2">
             <h3 class="text-[13px] font-extrabold text-[#0F172A] uppercase tracking-wider px-1 m-0">Recent Payouts</h3>
