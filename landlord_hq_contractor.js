@@ -4464,18 +4464,12 @@ function screenContractorProfile() {
     return `${topBar('Profile', { hideBell: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-8">
         <!-- Top Profile User Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left">
-            <div class="flex items-center gap-3.5 min-w-0">
-                <img src="${av}" class="w-12 h-12 rounded-full object-cover shrink-0 border border-[#E2E8F0]" alt="">
-                <div class="min-w-0">
-                    <h3 class="text-[16px] font-extrabold text-[#0F172A] truncate m-0">${esc(displayName)}</h3>
-                    <p class="text-[12.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(subLabel)}</p>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] mt-1">
-                        <i data-lucide="gift" class="w-3 h-3"></i> Always free
-                    </span>
-                </div>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center gap-3.5 text-left">
+            <img src="${av}" class="w-13 h-13 rounded-full object-cover shrink-0 border border-[#E2E8F0]" alt="">
+            <div class="min-w-0 flex-1">
+                <h3 class="text-[16.5px] font-extrabold text-[#0F172A] truncate m-0">${esc(displayName)}</h3>
+                <p class="text-[13px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(subLabel)}</p>
             </div>
-            <button type="button" data-go="personal-info" class="text-[#2563EB] text-[12px] font-bold hover:underline cursor-pointer shrink-0">Edit</button>
         </div>
 
         <!-- Inset Group 1: Business & Account Settings -->
