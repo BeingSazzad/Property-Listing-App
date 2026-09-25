@@ -19832,7 +19832,7 @@ function screenFlatKeys() {
                 <i data-lucide="door-closed" class="w-4 h-4"></i>
             </div>
             <div class="relative flex-1 min-w-0">
-                <select data-action="select-keys-unit-dropdown" class="figma-hold-select w-full text-[13px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5">
+                <select data-action="select-keys-unit-dropdown" class="figma-hold-select w-full text-[14px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5">
                     <option value="all" ${activeUnit === 'all' ? 'selected' : ''}>All Units Audit (${propStats.totalPhysicalKeys} keys)</option>
                     ${units.map(u => {
         const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
@@ -19854,7 +19854,7 @@ function screenFlatKeys() {
                 <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'all' ? 'text-[#DBEAFE]' : 'text-[#64748B]'}">Total</span>
                 <i data-lucide="key-round" class="w-3.5 h-3.5 ${filterCustody === 'all' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}"></i>
             </div>
-            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'all' ? 'text-white' : 'text-[#0F172A]'}">${displayStats.totalPhysicalKeys}</p>
+            <p class="text-[20px] font-black m-0 leading-none ${filterCustody === 'all' ? 'text-white' : 'text-[#0F172A]'}">${displayStats.totalPhysicalKeys}</p>
             <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'all' ? 'text-[#DBEAFE]' : 'text-[#64748B]'}">${displayStats.totalSets} set${displayStats.totalSets === 1 ? '' : 's'}</span>
         </button>
 
@@ -19864,7 +19864,7 @@ function screenFlatKeys() {
                 <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'tenant' ? 'text-[#DBEAFE]' : 'text-[#059669]'}">Tenant</span>
                 <i data-lucide="user-check" class="w-3.5 h-3.5 ${filterCustody === 'tenant' ? 'text-[#DBEAFE]' : 'text-[#059669]'}"></i>
             </div>
-            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'tenant' ? 'text-white' : 'text-[#059669]'}">${displayStats.withTenants}</p>
+            <p class="text-[20px] font-black m-0 leading-none ${filterCustody === 'tenant' ? 'text-white' : 'text-[#059669]'}">${displayStats.withTenants}</p>
             <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'tenant' ? 'text-[#DBEAFE]' : 'text-[#059669]'}">Issued</span>
         </button>
 
@@ -19874,7 +19874,7 @@ function screenFlatKeys() {
                 <span class="text-[10px] font-bold uppercase tracking-wider ${filterCustody === 'safe' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}">In Safe</span>
                 <i data-lucide="shield" class="w-3.5 h-3.5 ${filterCustody === 'safe' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}"></i>
             </div>
-            <p class="text-[19px] font-black m-0 leading-none ${filterCustody === 'safe' ? 'text-white' : 'text-[#2563EB]'}">${displayStats.inSafe}</p>
+            <p class="text-[20px] font-black m-0 leading-none ${filterCustody === 'safe' ? 'text-white' : 'text-[#2563EB]'}">${displayStats.inSafe}</p>
             <span class="text-[10px] font-medium block mt-1 truncate ${filterCustody === 'safe' ? 'text-[#DBEAFE]' : 'text-[#2563EB]'}">Office</span>
         </button>
     </div>`;
@@ -19886,7 +19886,7 @@ function screenFlatKeys() {
             <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
         </div>
         <div class="min-w-0 flex-1">
-            <p class="text-[12.5px] font-bold text-[#991B1B] m-0">${displayStats.missing} key${displayStats.missing === 1 ? '' : 's'} reported missing</p>
+            <p class="text-[12px] font-bold text-[#991B1B] m-0">${displayStats.missing} key${displayStats.missing === 1 ? '' : 's'} reported missing</p>
         </div>
     </div>` : '';
 
@@ -19894,7 +19894,7 @@ function screenFlatKeys() {
     if (activeUnit === 'all') {
         contentBody = `
         <div class="space-y-2.5">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0 px-1">Unit Key Registers (${units.length} Units)</p>
+            <p class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider m-0 px-1">Unit Key Registers (${units.length} Units)</p>
             <div class="space-y-2.5">
                 ${units.map(u => {
             const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
@@ -19911,27 +19911,27 @@ function screenFlatKeys() {
                                     <i data-lucide="door-closed" class="w-4 h-4"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 leading-tight">${escapeHtml(name)}</h4>
-                                    <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(tenantName)}</p>
+                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight">${escapeHtml(name)}</h4>
+                                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(tenantName)}</p>
                                 </div>
                             </div>
-                            <button type="button" data-action="filter-keys-unit" data-unit="${escapeHtml(name)}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[11.5px] font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0">
+                            <button type="button" data-action="filter-keys-unit" data-unit="${escapeHtml(name)}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] hover:bg-[#DBEAFE] text-[12px] font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0">
                                 <span>Manage</span>
                                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
                         <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-[#F1F5F9] text-center">
                             <div class="p-1.5 rounded-xl bg-[#F8FAFC]">
-                                <span class="block text-[9.5px] font-bold text-[#64748B] uppercase">Total</span>
-                                <span class="block text-[13px] font-bold text-[#0F172A] mt-0.5">${uStats.totalPhysicalKeys}</span>
+                                <span class="block text-[10px] font-bold text-[#64748B] uppercase">Total</span>
+                                <span class="block text-[14px] font-bold text-[#0F172A] mt-0.5">${uStats.totalPhysicalKeys}</span>
                             </div>
                             <div class="p-1.5 rounded-xl bg-[#ECFDF5]">
-                                <span class="block text-[9.5px] font-bold text-[#059669] uppercase">Tenant</span>
-                                <span class="block text-[13px] font-bold text-[#059669] mt-0.5">${uStats.withTenants}</span>
+                                <span class="block text-[10px] font-bold text-[#059669] uppercase">Tenant</span>
+                                <span class="block text-[14px] font-bold text-[#059669] mt-0.5">${uStats.withTenants}</span>
                             </div>
                             <div class="p-1.5 rounded-xl bg-[#EFF6FF]">
-                                <span class="block text-[9.5px] font-bold text-[#2563EB] uppercase">Safe</span>
-                                <span class="block text-[13px] font-bold text-[#2563EB] mt-0.5">${uStats.inSafe}</span>
+                                <span class="block text-[10px] font-bold text-[#2563EB] uppercase">Safe</span>
+                                <span class="block text-[14px] font-bold text-[#2563EB] mt-0.5">${uStats.inSafe}</span>
                             </div>
                         </div>
                     </div>`;
@@ -19964,10 +19964,10 @@ function screenFlatKeys() {
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2">
-                                    <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(k.label || 'Key Set')}</h4>
-                                    <span class="px-1.5 py-0.25 rounded-md text-[10.5px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
+                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(k.label || 'Key Set')}</h4>
+                                    <span class="px-1.5 py-0.25 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
                                 </div>
-                                <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 truncate">
+                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 truncate">
                                     <span class="truncate">${escapeHtml(k.location || 'Location on file')}</span>
                                     <span class="text-[#CBD5E1]">•</span>
                                     <span class="truncate text-[#475569] font-medium">${escapeHtml(custody.holderDisplay)}</span>
@@ -19975,7 +19975,7 @@ function screenFlatKeys() {
                             </div>
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
-                            <button type="button" data-action="${custody.isTenant ? 'quick-return-key' : 'quick-assign-key'}" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-2xs ${custody.badgeClass}" title="Tap to change custody">
+                            <button type="button" data-action="${custody.isTenant ? 'quick-return-key' : 'quick-assign-key'}" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-2xs ${custody.badgeClass}" title="Tap to change custody">
                                 <span class="w-1.5 h-1.5 rounded-full ${custody.dotClass}"></span>
                                 <span>${custody.isTenant ? 'With Tenant' : 'In Safe'}</span>
                             </button>
@@ -19990,8 +19990,8 @@ function screenFlatKeys() {
                 <div class="w-10 h-10 rounded-full bg-[#F1F5F9] text-[#94A3B8] flex items-center justify-center mx-auto mb-2">
                     <i data-lucide="key-round" class="w-5 h-5"></i>
                 </div>
-                <p class="text-[13px] font-bold text-[#0F172A] m-0">No key sets for this filter</p>
-                <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0">Add front door, postbox, or fob records for ${escapeHtml(activeUnit)}.</p>
+                <p class="text-[14px] font-bold text-[#0F172A] m-0">No key sets for this filter</p>
+                <p class="text-[12px] text-[#64748B] mt-0.5 m-0">Add front door, postbox, or fob records for ${escapeHtml(activeUnit)}.</p>
                 <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-colors inline-flex items-center gap-1.5 cursor-pointer mt-3">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                     <span>Add Key Set</span>
@@ -20040,9 +20040,9 @@ function screenEditFlatKeys() {
 
     const editScopeSelector = units.length > 1 ? `
     <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3">
-        <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Editing Unit:</span>
+        <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Editing Unit:</span>
         <div class="relative flex-1 min-w-0">
-            <select data-action="select-edit-keys-unit-dropdown" class="figma-hold-select w-full text-[13px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5 text-right">
+            <select data-action="select-edit-keys-unit-dropdown" class="figma-hold-select w-full text-[14px] font-bold text-[#0F172A] bg-transparent border-0 outline-none appearance-none cursor-pointer pr-6 truncate py-0.5 text-right">
                 ${units.map(u => {
                     const name = typeof unitName === 'function' ? unitName(u) : (u.name || String(u));
                     return `<option value="${escapeHtml(name)}" ${unit === name ? 'selected' : ''}>${escapeHtml(name)}</option>`;
@@ -20061,7 +20061,7 @@ function screenEditFlatKeys() {
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3" data-flat-key-row>
             <div class="flex items-center justify-between">
                 <span class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider">Key Set #${i + 1}</span>
-                ${keys.length > 1 ? `<button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="text-[11.5px] font-bold text-[#DC2626] hover:text-[#B91C1C] cursor-pointer">Remove</button>` : ''}
+                ${keys.length > 1 ? `<button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="text-[12px] font-bold text-[#DC2626] hover:text-[#B91C1C] cursor-pointer">Remove</button>` : ''}
             </div>
             <div class="form-field">
                 <label class="form-label">Key Type / Description</label>
@@ -20085,7 +20085,7 @@ function screenEditFlatKeys() {
         </div>`).join('')}
         </div>
 
-        <button type="button" data-action="add-flat-key" class="btn-secondary w-full py-3 text-[13px] flex items-center justify-center gap-1.5 cursor-pointer">
+        <button type="button" data-action="add-flat-key" class="btn-secondary w-full py-3 text-[14px] flex items-center justify-center gap-1.5 cursor-pointer">
             <i data-lucide="plus" class="w-4 h-4"></i>
             <span>Add Custom Key Set</span>
         </button>
