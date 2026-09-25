@@ -19954,13 +19954,11 @@ function screenFlatKeys() {
             ${filteredKeys.length ? `
             <div class="space-y-2.5">
                 ${filteredKeys.map((k, i) => {
-            const custody = resolveKeyCustody(k, propertyId, activeUnit);
             const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
-            const cleanSub = custody.isTenant ? `Tenant: ${custody.holderDisplay}` : (k.location || custody.holderDisplay);
             return `
-                    <div data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
+                    <div data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <div class="w-9 h-9 rounded-xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0">
+                            <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
                                 <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
                             </div>
                             <div class="min-w-0 flex-1">
@@ -19968,16 +19966,10 @@ function screenFlatKeys() {
                                     <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate group-hover:text-[#2563EB] transition-colors">${escapeHtml(k.label || 'Key Set')}</h4>
                                     <span class="px-1.5 py-0.25 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
                                 </div>
-                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(cleanSub)}</p>
+                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(k.location || 'Flat entrance')}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button type="button" data-action="${custody.isTenant ? 'quick-return-key' : 'quick-assign-key'}" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-2xs ${custody.badgeClass}" title="Tap to toggle custody">
-                                <span class="w-1.5 h-1.5 rounded-full ${custody.dotClass}"></span>
-                                <span>${custody.isTenant ? 'With Tenant' : 'In Safe'}</span>
-                            </button>
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors"></i>
-                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors shrink-0"></i>
                     </div>`;
         }).join('')}
             </div>` : `
@@ -20056,7 +20048,10 @@ function screenEditFlatKeys() {
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-3" data-flat-key-row>
             <div class="flex items-center justify-between">
                 <span class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider">Key Set #${i + 1}</span>
-                ${keys.length > 1 ? `<button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="text-[12px] font-bold text-[#DC2626] hover:text-[#B91C1C] cursor-pointer">Remove</button>` : ''}
+                <button type="button" data-action="remove-flat-key" data-key-idx="${i}" class="text-[12px] font-bold text-[#DC2626] hover:text-[#B91C1C] cursor-pointer flex items-center gap-1">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Delete</span>
+                </button>
             </div>
             <div class="form-field">
                 <label class="form-label">Key Type / Description</label>
