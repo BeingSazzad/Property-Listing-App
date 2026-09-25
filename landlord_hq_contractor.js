@@ -407,8 +407,6 @@ function contractorJobListCard(job) {
     const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
     const disp = contractorJobDisplayStatus(job);
     const location = `${job.property}${job.unit && job.unit !== '—' ? ` · ${job.unit}` : ''}`;
-    const hasPrice = ['in_progress', 'waiting_approval', 'approved', 'completed', 'paid'].includes(job.status) || job.quoteAmount != null;
-    const priceTag = contractorJobEstimate(job);
     return `
     <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-v2-job-card card w-full text-left">
         <img src="${thumb}" alt="" class="ctr-v2-job-thumb">
@@ -419,7 +417,6 @@ function contractorJobListCard(job) {
                 <span class="ctr-v2-job-badge" style="background:${disp.bg};color:${disp.color}">${disp.label}</span>
                 <span class="ctr-v2-job-time"><i data-lucide="clock" class="w-3 h-3"></i>${job.visitDate || '—'}</span>
             </div>
-            <p class="ctr-v2-job-price">${hasPrice ? `Agreed: ${priceTag}` : priceTag}</p>
         </div>
         <i data-lucide="chevron-right" class="ctr-v2-job-chevron"></i>
     </button>`;
