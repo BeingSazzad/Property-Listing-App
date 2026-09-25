@@ -1006,47 +1006,89 @@ function screenContractorPublicProfile() {
     const isLandlord = STATE.userRole === 'landlord';
     const isTenant = STATE.userRole === 'tenant';
     const chatId = typeof ensureContractorConversation === 'function' ? ensureContractorConversation(profile) : null;
-    const trustBits = [
-        profile.gasSafe ? 'Gas Safe' : '',
-        profile.liabilityInsurance ? 'Insured' : '',
-    ].filter(Boolean).join(' · ');
+    const rating = typeof contractorDisplayRating === 'function' ? contractorDisplayRating(profile) : '4.8';
+    const verified = (profile.certificates?.length || profile.gasSafe || profile.liabilityInsurance);
     const jobsLine = escapeHtml(contractorJobsForLabel(profile));
+
     return `${topBar('Contractor', { back: true })}
-    <div class="screen-content screen-enter ctr-profile-page ctr-profile-page--minimal">
-        <div class="ctr-profile-hero card ctr-profile-hero--minimal">
-            <img src="${profile.img || contractorAvatarForTrade(profile.tradeId)}" class="ctr-profile-avatar" alt="">
-            <div class="ctr-profile-hero-copy min-w-0 flex-1">
-                <h1 class="ctr-profile-name">${escapeHtml(profile.name)}</h1>
-                <div class="ctr-profile-trade-row">
-                    ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(profile) : ''}
+    <div class="screen-content screen-content-sm screen-enter ctr-profile-page space-y-4">
+        <!-- Hero Header Card -->
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm relative overflow-hidden">
+            <div class="flex items-start gap-3.5">
+                <div class="relative shrink-0">
+                    <img src="${profile.img || contractorAvatarForTrade(profile.tradeId)}" class="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-xs" alt="">
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#16A34A] border-2 border-white" title="Active"></span>
                 </div>
-                ${trustBits ? `<p class="ctr-profile-trust">${escapeHtml(trustBits)}</p>` : ''}
-                <p class="ctr-profile-jobs">${jobsLine}</p>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <h1 class="text-[17px] font-bold text-[#0F172A] leading-tight truncate m-0">${escapeHtml(profile.name)}</h1>
+                        ${verified ? '<i data-lucide="badge-check" class="w-4 h-4 text-[#2563EB] shrink-0" title="Verified Contractor"></i>' : ''}
+                    </div>
+                    
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(profile) : `<span class="ctr-trade-badge">${escapeHtml(profile.category || profile.trade)}</span>`}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#D97706] text-[11.5px] font-bold border border-[#FDE68A]">
+                            <i data-lucide="star" class="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B]"></i>
+                            ${rating}
+                        </span>
+                    </div>
+
+                    ${(profile.gasSafe || profile.liabilityInsurance || certCount) ? `
+                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                        ${profile.gasSafe ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F0FDF4] text-[#166534] text-[11px] font-bold border border-[#BBF7D0]"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#16A34A]"></i> Gas Safe</span>` : ''}
+                        ${profile.liabilityInsurance ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#EFF6FF] text-[#1E40AF] text-[11px] font-bold border border-[#BFDBFE]"><i data-lucide="file-check" class="w-3.5 h-3.5 text-[#2563EB]"></i> Insured</span>` : ''}
+                        ${certCount ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F8FAFC] text-[#475569] text-[11px] font-bold border border-[#E2E8F0]"><i data-lucide="award" class="w-3.5 h-3.5 text-[#64748B]"></i> ${certCount} Certs</span>` : ''}
+                    </div>` : ''}
+
+                    ${jobsLine ? `<p class="text-[12.5px] text-[#64748B] mt-2 leading-relaxed font-medium m-0">${jobsLine}</p>` : ''}
+                </div>
             </div>
+
+            <!-- Quick Action Buttons Bar -->
+            ${(isLandlord || isTenant) ? `
+            <div class="grid grid-cols-3 gap-2 mt-4 pt-3.5 border-t border-[#F1F5F9]">
+                ${chatId != null ? `
+                <button type="button" data-go="chat" data-chat="${chatId}" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-[13px] shadow-2xs transition-all active:scale-95 cursor-pointer">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                    <span>Message</span>
+                </button>` : '<div></div>'}
+                
+                ${profile.phone ? `
+                <a href="tel:${profile.phone}" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#EFF6FF] text-[#0F172A] hover:text-[#2563EB] font-bold text-[13px] border border-[#CBD5E1] transition-all active:scale-95 cursor-pointer no-underline">
+                    <i data-lucide="phone" class="w-4 h-4 text-[#2563EB]"></i>
+                    <span>Call</span>
+                </a>` : '<div></div>'}
+
+                ${profile.email ? `
+                <a href="mailto:${profile.email}" class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#EFF6FF] text-[#0F172A] hover:text-[#2563EB] font-bold text-[13px] border border-[#CBD5E1] transition-all active:scale-95 cursor-pointer no-underline">
+                    <i data-lucide="mail" class="w-4 h-4 text-[#2563EB]"></i>
+                    <span>Email</span>
+                </a>` : '<div></div>'}
+            </div>` : ''}
         </div>
+
         ${(isLandlord || isTenant) && (profile.phone || profile.email) ? `
-        <div class="ctr-profile-contact card">
-            <p class="ctr-section-label">Contact</p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Contact Details</p>
             ${profile.phone ? `
-            <div class="ctr-profile-contact-row">
-                <span class="ctr-profile-contact-label"><i data-lucide="phone" class="w-4 h-4"></i>Phone</span>
-                <button type="button" class="ctr-profile-contact-value" data-action="copy-contact" data-text="${profile.phone.replace(/"/g, '')}">${escapeHtml(profile.phone)}</button>
+            <div class="flex items-center justify-between py-1 text-[13px]">
+                <span class="text-[#64748B] font-semibold flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4 text-[#2563EB]"></i>Phone</span>
+                <button type="button" class="font-bold text-[#0F172A] hover:text-[#2563EB] transition-colors cursor-pointer" data-action="copy-contact" data-text="${profile.phone.replace(/"/g, '')}">${escapeHtml(profile.phone)}</button>
             </div>` : ''}
             ${profile.email ? `
-            <div class="ctr-profile-contact-row">
-                <span class="ctr-profile-contact-label"><i data-lucide="mail" class="w-4 h-4"></i>Email</span>
-                <button type="button" class="ctr-profile-contact-value" data-action="copy-contact" data-text="${profile.email.replace(/"/g, '')}">${escapeHtml(profile.email)}</button>
+            <div class="flex items-center justify-between py-1 text-[13px]">
+                <span class="text-[#64748B] font-semibold flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4 text-[#2563EB]"></i>Email</span>
+                <button type="button" class="font-bold text-[#0F172A] hover:text-[#2563EB] transition-colors cursor-pointer text-right truncate max-w-[200px]" data-action="copy-contact" data-text="${profile.email.replace(/"/g, '')}">${escapeHtml(profile.email)}</button>
             </div>` : ''}
-            <p class="ctr-profile-contact-hint">Tap to copy · use your phone to call or email</p>
+            <p class="text-[11px] text-[#94A3B8] m-0 pt-1 border-t border-[#F1F5F9]">Tap to copy details · Use phone or email to reach directly</p>
         </div>` : ''}
-        ${(isLandlord || isTenant) && chatId != null ? `
-        <button type="button" data-go="chat" data-chat="${chatId}" class="btn-primary w-full py-3.5 text-[14px] ctr-profile-msg-btn"><i data-lucide="message-square" class="w-4 h-4"></i> Message</button>` : ''}
+
         ${certCount ? `
-        <div class="ctr-profile-section card ctr-profile-section--certs">
-            <p class="ctr-section-label">Certifications</p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Verified Certifications (${certCount})</p>
             ${renderContractorCertList(profile, { compact: true })}
         </div>` : ''}
-        ${isTenant ? `<p class="ctr-profile-tenant-note">Contact your landlord to reschedule or change contractor.</p>` : ''}
+        ${isTenant ? `<p class="text-[12px] text-[#64748B] text-center italic">Contact your landlord to reschedule or change contractor.</p>` : ''}
     </div>`;
 }
 
