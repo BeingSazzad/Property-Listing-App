@@ -1083,11 +1083,6 @@ function screenContractorPublicProfile() {
             <p class="text-[11px] text-[#94A3B8] m-0 pt-1 border-t border-[#F1F5F9]">Tap to copy details · Use phone or email to reach directly</p>
         </div>` : ''}
 
-        ${certCount ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Verified Certifications (${certCount})</p>
-            ${renderContractorCertList(profile, { compact: true })}
-        </div>` : ''}
         ${isTenant ? `<p class="text-[12px] text-[#64748B] text-center italic">Contact your landlord to reschedule or change contractor.</p>` : ''}
     </div>`;
 }
