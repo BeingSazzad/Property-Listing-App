@@ -19956,32 +19956,27 @@ function screenFlatKeys() {
                 ${filteredKeys.map((k, i) => {
             const custody = resolveKeyCustody(k, propertyId, activeUnit);
             const isFob = /fob|electronic|card|rfid/i.test(k.label || '');
+            const cleanSub = custody.isTenant ? `Tenant: ${custody.holderDisplay}` : (k.location || custody.holderDisplay);
             return `
-                    <div class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3">
+                    <div data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#BFDBFE] transition-all flex items-center justify-between gap-3 cursor-pointer group">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="w-9 h-9 rounded-xl ${custody.isTenant ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-[#EFF6FF] text-[#2563EB]'} flex items-center justify-center shrink-0">
                                 <i data-lucide="${isFob ? 'badge-check' : 'key-round'}" class="w-4 h-4"></i>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2">
-                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate">${escapeHtml(k.label || 'Key Set')}</h4>
+                                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 leading-tight truncate group-hover:text-[#2563EB] transition-colors">${escapeHtml(k.label || 'Key Set')}</h4>
                                     <span class="px-1.5 py-0.25 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] shrink-0">×${escapeHtml(String(k.qty || '1'))}</span>
                                 </div>
-                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 truncate">
-                                    <span class="truncate">${escapeHtml(k.location || 'Location on file')}</span>
-                                    <span class="text-[#CBD5E1]">•</span>
-                                    <span class="truncate text-[#475569] font-medium">${escapeHtml(custody.holderDisplay)}</span>
-                                </p>
+                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${escapeHtml(cleanSub)}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <button type="button" data-action="${custody.isTenant ? 'quick-return-key' : 'quick-assign-key'}" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-2xs ${custody.badgeClass}" title="Tap to change custody">
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" data-action="${custody.isTenant ? 'quick-return-key' : 'quick-assign-key'}" data-unit="${escapeHtml(activeUnit)}" data-key-idx="${i}" class="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-2xs ${custody.badgeClass}" title="Tap to toggle custody">
                                 <span class="w-1.5 h-1.5 rounded-full ${custody.dotClass}"></span>
                                 <span>${custody.isTenant ? 'With Tenant' : 'In Safe'}</span>
                             </button>
-                            <button type="button" data-go="edit-flat-keys" data-pid="${propertyId}" data-unit="${escapeHtml(activeUnit)}" class="w-7 h-7 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] flex items-center justify-center transition-colors cursor-pointer" title="Edit key set">
-                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                            </button>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#94A3B8] group-hover:text-[#2563EB] transition-colors"></i>
                         </div>
                     </div>`;
         }).join('')}
@@ -24958,7 +24953,8 @@ function bindFeatureEvents() {
         };
     });
     app.querySelectorAll('[data-action="quick-return-key"]').forEach(el => {
-        el.onclick = () => {
+        el.onclick = (e) => {
+            if (e) e.stopPropagation();
             const unit = el.dataset.unit;
             const idx = +el.dataset.keyIdx;
             const pid = STATE.propertyId ?? 0;
@@ -24979,7 +24975,8 @@ function bindFeatureEvents() {
         };
     });
     app.querySelectorAll('[data-action="quick-assign-key"]').forEach(el => {
-        el.onclick = () => {
+        el.onclick = (e) => {
+            if (e) e.stopPropagation();
             const unit = el.dataset.unit;
             const idx = +el.dataset.keyIdx;
             const pid = STATE.propertyId ?? 0;
