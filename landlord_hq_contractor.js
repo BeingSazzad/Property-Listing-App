@@ -1084,45 +1084,55 @@ function screenContractorPublicProfile() {
     if (!profile) {
         return `${topBar('Contractor', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Contractor not found</p></div>`;
     }
-    const certCount = ensureContractorCertificates(profile).length;
+    const certs = ensureContractorCertificates(profile);
+    const certCount = certs.length;
     const isLandlord = STATE.userRole === 'landlord';
     const isTenant = STATE.userRole === 'tenant';
     const chatId = typeof ensureContractorConversation === 'function' ? ensureContractorConversation(profile) : null;
-    const rating = typeof contractorDisplayRating === 'function' ? contractorDisplayRating(profile) : '4.8';
-    const verified = (profile.certificates?.length || profile.gasSafe || profile.liabilityInsurance);
+    const rating = typeof contractorDisplayRating === 'function' ? contractorDisplayRating(profile) : (profile.avgRating || '4.8');
+    const verified = (certs.length || profile.gasSafe || profile.liabilityInsurance);
     const jobsLine = escapeHtml(contractorJobsForLabel(profile));
+    const ratings = Array.isArray(profile.ratings) ? profile.ratings : [];
 
-    return `${topBar('Contractor', { back: true })}
-    <div class="screen-content screen-content-sm screen-enter ctr-profile-page space-y-4">
+    return `${topBar('Contractor Profile', { back: true })}
+    <div class="screen-content screen-content-sm screen-enter ctr-profile-page space-y-4 pb-12 text-left">
         <!-- Hero Header Card -->
-        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm relative overflow-hidden">
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm relative overflow-hidden text-left">
             <div class="flex items-start gap-3.5">
                 <div class="relative shrink-0">
                     <img src="${profile.img || contractorAvatarForTrade(profile.tradeId)}" class="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-xs" alt="">
-                    <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#16A34A] border-2 border-white" title="Active"></span>
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#16A34A] border-2 border-white" title="Active on Landlord HQ"></span>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
                         <h1 class="text-[17px] font-bold text-[#0F172A] leading-tight truncate m-0">${escapeHtml(profile.name)}</h1>
-                        ${verified ? '<i data-lucide="badge-check" class="w-4 h-4 text-[#2563EB] shrink-0" title="Verified Contractor"></i>' : ''}
+                        ${verified ? '<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] text-[10px] font-bold border border-[#BFDBFE] shrink-0"><i data-lucide="badge-check" class="w-3 h-3"></i> Verified</span>' : ''}
                     </div>
+
+                    ${(profile.contactPerson || profile.roleTitle) ? `
+                    <p class="text-[12.5px] font-semibold text-[#2563EB] m-0 mt-0.5 flex items-center gap-1 truncate">
+                        <i data-lucide="user" class="w-3.5 h-3.5 shrink-0 text-[#2563EB]"></i>
+                        <span>${escapeHtml(profile.contactPerson || profile.name)}</span>
+                        ${profile.roleTitle ? `<span class="text-[#64748B] font-normal text-[11.5px] truncate">· ${escapeHtml(profile.roleTitle)}</span>` : ''}
+                    </p>` : ''}
                     
-                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                    <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         ${typeof renderContractorTradeBadge === 'function' ? renderContractorTradeBadge(profile) : `<span class="ctr-trade-badge">${escapeHtml(profile.category || profile.trade)}</span>`}
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#D97706] text-[11.5px] font-bold border border-[#FDE68A]">
-                            <i data-lucide="star" class="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B]"></i>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#D97706] text-[11px] font-bold border border-[#FDE68A]">
+                            <i data-lucide="star" class="w-3 h-3 fill-[#F59E0B] text-[#F59E0B]"></i>
                             ${rating}
                         </span>
+                        ${profile.experience ? `<span class="px-2 py-0.5 rounded-md bg-[#F8FAFC] text-[#475569] text-[11px] font-semibold border border-[#E2E8F0]">${escapeHtml(profile.experience)}</span>` : ''}
                     </div>
 
                     ${(profile.gasSafe || profile.liabilityInsurance || certCount) ? `
                     <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-                        ${profile.gasSafe ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F0FDF4] text-[#166534] text-[11px] font-bold border border-[#BBF7D0]"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#16A34A]"></i> Gas Safe</span>` : ''}
-                        ${profile.liabilityInsurance ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#EFF6FF] text-[#1E40AF] text-[11px] font-bold border border-[#BFDBFE]"><i data-lucide="file-check" class="w-3.5 h-3.5 text-[#2563EB]"></i> Insured</span>` : ''}
-                        ${certCount ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F8FAFC] text-[#475569] text-[11px] font-bold border border-[#E2E8F0]"><i data-lucide="award" class="w-3.5 h-3.5 text-[#64748B]"></i> ${certCount} Certs</span>` : ''}
+                        ${profile.gasSafe ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F0FDF4] text-[#166534] text-[10.5px] font-bold border border-[#BBF7D0]"><i data-lucide="flame" class="w-3 h-3 text-[#16A34A]"></i> Gas Safe</span>` : ''}
+                        ${profile.liabilityInsurance ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#EFF6FF] text-[#1E40AF] text-[10.5px] font-bold border border-[#BFDBFE]"><i data-lucide="shield-check" class="w-3 h-3 text-[#2563EB]"></i> £5M Insured</span>` : ''}
+                        ${certCount ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F8FAFC] text-[#475569] text-[10.5px] font-bold border border-[#E2E8F0]"><i data-lucide="award" class="w-3 h-3 text-[#64748B]"></i> ${certCount} Certs</span>` : ''}
                     </div>` : ''}
 
-                    ${jobsLine ? `<p class="text-[12.5px] text-[#64748B] mt-2 leading-relaxed font-medium m-0">${jobsLine}</p>` : ''}
+                    ${jobsLine ? `<p class="text-[12px] text-[#64748B] mt-2 leading-relaxed font-medium m-0">${jobsLine}</p>` : ''}
                 </div>
             </div>
 
@@ -1149,9 +1159,130 @@ function screenContractorPublicProfile() {
             </div>` : ''}
         </div>
 
+        <!-- Submitted Certificates & Compliance Documents Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-[13.5px] font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                        <i data-lucide="award" class="w-4 h-4 text-[#2563EB]"></i>
+                        Submitted Certificates & Credentials
+                    </h3>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Documents & trade qualifications on file</p>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#166534] text-[11px] font-bold border border-[#BBF7D0] shrink-0">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#16A34A]"></i> ${certCount} Verified
+                </span>
+            </div>
+
+            ${certs.length ? `
+            <div class="space-y-2">
+                ${certs.map(cert => {
+                    const opt = contractorCertTypeOption(cert.type);
+                    return `
+                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#BFDBFE] transition-colors flex items-center justify-between gap-2.5">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style="background:${opt.bg};color:${opt.color}">
+                                <i data-lucide="${opt.icon}" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${escapeHtml(cert.name)}</p>
+                                    <span class="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-[#ECFDF5] text-[#166534]">Verified</span>
+                                </div>
+                                <p class="text-[11px] text-[#64748B] m-0 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                    ${cert.certNumber ? `<span class="font-medium text-[#334155] font-mono text-[10.5px] bg-white px-1.5 py-0.5 rounded border border-[#E2E8F0]">${escapeHtml(cert.certNumber)}</span> · ` : ''}
+                                    <span>${cert.validUntil ? `Expires: <strong class="text-[#0F172A]">${escapeHtml(cert.validUntil)}</strong>` : `Uploaded: ${escapeHtml(cert.uploadedAt || 'Recent')}`}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" data-contractor-view="${profile.id ?? ''}"
+                            class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold border border-[#CBD5E1] shadow-xs flex items-center gap-1 shrink-0 transition-all active:scale-95 cursor-pointer">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span>View</span>
+                        </button>
+                    </div>`;
+                }).join('')}
+            </div>` : `<p class="text-[12.5px] text-[#64748B] py-2 m-0 italic">No certificates submitted yet.</p>`}
+
+            <p class="text-[11px] text-[#94A3B8] m-0 pt-1 border-t border-[#F1F5F9] flex items-center gap-1.5">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-[#16A34A] shrink-0"></i>
+                All submitted licenses and insurance policies are verified by Landlord HQ.
+            </p>
+        </div>
+
+        <!-- Company & Business Details Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5 text-left">
+            <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-2">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Company & Business Information</p>
+                <span class="text-[10px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">UK Registered</span>
+            </div>
+            <div class="divide-y divide-[#F1F5F9] text-[12.5px]">
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">Trading Name</span>
+                    <span class="font-bold text-[#0F172A] text-right">${escapeHtml(profile.companyName || profile.name)}</span>
+                </div>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">Lead Contractor</span>
+                    <span class="font-bold text-[#2563EB] text-right">${escapeHtml(profile.contactPerson || profile.name)}</span>
+                </div>
+                ${profile.companyReg ? `
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">Company Number</span>
+                    <span class="font-bold text-[#0F172A] text-right font-mono bg-[#F8FAFC] px-1.5 py-0.5 rounded border border-[#E2E8F0]">${escapeHtml(profile.companyReg)}</span>
+                </div>` : ''}
+                ${profile.vatNumber ? `
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">VAT Registration</span>
+                    <span class="font-bold text-[#0F172A] text-right font-mono">${escapeHtml(profile.vatNumber)}</span>
+                </div>` : ''}
+                ${profile.address ? `
+                <div class="flex items-start justify-between py-2 gap-2">
+                    <span class="text-[#64748B] shrink-0">Business Address</span>
+                    <span class="font-medium text-[#0F172A] text-right max-w-[210px] leading-snug">${escapeHtml(profile.address)}</span>
+                </div>` : ''}
+                ${profile.serviceArea ? `
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">Service Area</span>
+                    <span class="font-medium text-[#0F172A] text-right">${escapeHtml(profile.serviceArea)}</span>
+                </div>` : ''}
+                ${profile.hourlyRate ? `
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">Hourly Rate</span>
+                    <span class="font-bold text-[#16A34A] text-right">${escapeHtml(profile.hourlyRate)}${profile.calloutFee ? ` · <span class="text-[11px] font-normal text-[#64748B]">${escapeHtml(profile.calloutFee)}</span>` : ''}</span>
+                </div>` : ''}
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">Completed Jobs</span>
+                    <span class="font-bold text-[#0F172A] text-right">${profile.completedJobs || 30}+ jobs on Landlord HQ</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insurance & Protection Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2 text-left">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[12.5px] font-bold text-[#0F172A] m-0">Public Liability Protection</h4>
+                        <p class="text-[11px] text-[#64748B] m-0">${escapeHtml(profile.insuranceCoverage || '£5,000,000')}</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#16A34A] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#BBF7D0]">
+                    <i data-lucide="check" class="w-3 h-3"></i> Active
+                </span>
+            </div>
+            <div class="bg-[#F8FAFC] rounded-xl p-2.5 text-[11.5px] text-[#64748B] flex items-center justify-between border border-[#E2E8F0]">
+                <span>Underwriter: <strong class="text-[#0F172A]">${escapeHtml(profile.insuranceProvider || 'AXA UK')}</strong></span>
+                ${profile.insurancePolicy ? `<span>Policy: <strong class="text-[#0F172A] font-mono text-[10.5px]">${escapeHtml(profile.insurancePolicy)}</strong></span>` : ''}
+            </div>
+        </div>
+
+        <!-- Contact Details Card -->
         ${(isLandlord || isTenant) && (profile.phone || profile.email) ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Contact Details</p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2.5 text-left">
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Direct Contact Information</p>
             ${profile.phone ? `
             <div class="flex items-center justify-between py-1 text-[13px]">
                 <span class="text-[#64748B] font-semibold flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4 text-[#2563EB]"></i>Phone</span>
@@ -1162,7 +1293,32 @@ function screenContractorPublicProfile() {
                 <span class="text-[#64748B] font-semibold flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4 text-[#2563EB]"></i>Email</span>
                 <button type="button" class="font-bold text-[#0F172A] hover:text-[#2563EB] transition-colors cursor-pointer text-right truncate max-w-[200px]" data-action="copy-contact" data-text="${profile.email.replace(/"/g, '')}">${escapeHtml(profile.email)}</button>
             </div>` : ''}
-            <p class="text-[11px] text-[#94A3B8] m-0 pt-1 border-t border-[#F1F5F9]">Tap to copy details · Use phone or email to reach directly</p>
+            <p class="text-[11px] text-[#94A3B8] m-0 pt-1 border-t border-[#F1F5F9]">Tap phone or email to copy · Average response under 45 mins</p>
+        </div>` : ''}
+
+        <!-- Verified Reviews Card -->
+        ${ratings.length ? `
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <div class="flex items-center justify-between">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Verified Reviews (${ratings.length})</p>
+                <span class="text-[11.5px] font-bold text-[#D97706] flex items-center gap-1"><i data-lucide="star" class="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B]"></i> ${rating} Average</span>
+            </div>
+            <div class="space-y-2.5">
+                ${ratings.slice(0, 3).map(r => `
+                <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5 text-left">
+                    <div class="flex items-center justify-between text-[11.5px]">
+                        <span class="font-bold text-[#0F172A]">${escapeHtml(r.from)} <span class="text-[10px] font-semibold text-[#64748B] uppercase px-1.5 py-0.5 rounded bg-white border border-[#E2E8F0] ml-1">${escapeHtml(r.role)}</span></span>
+                        <div class="flex items-center text-[#F59E0B]">
+                            ${Array.from({ length: r.stars || 5 }).map(() => '<i data-lucide="star" class="w-3 h-3 fill-[#F59E0B]"></i>').join('')}
+                        </div>
+                    </div>
+                    <p class="text-[12px] text-[#334155] m-0 leading-relaxed font-medium">"${escapeHtml(r.comment)}"</p>
+                    <p class="text-[10.5px] text-[#94A3B8] m-0 flex items-center justify-between">
+                        <span>Job: ${escapeHtml(r.job)}</span>
+                        <span>${escapeHtml(r.at)}</span>
+                    </p>
+                </div>`).join('')}
+            </div>
         </div>` : ''}
 
         ${isTenant ? `<p class="text-[12px] text-[#64748B] text-center italic">Contact your landlord to reschedule or change contractor.</p>` : ''}

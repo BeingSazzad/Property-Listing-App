@@ -2,25 +2,119 @@
 
 const CONTRACTORS = [
     {
-        id: 0, name: 'Plumber Pro', tradeId: 'plumbing', trade: 'Plumbing & Heating', category: 'Plumber', jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains', img: IMG.avatar.plumber, phone: '+44 7700 900201', email: 'jobs@plumberpro.co.uk', gasSafe: true, liabilityInsurance: true, avgRating: '4.8', ratings: [
+        id: 0,
+        name: 'Plumber Pro',
+        companyName: 'Plumber Pro Services Ltd',
+        contactPerson: 'David Evans',
+        roleTitle: 'Master Plumber & Gas Safe Engineer',
+        tradeId: 'plumbing',
+        trade: 'Plumbing & Heating',
+        category: 'Plumber',
+        jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains',
+        img: IMG.avatar.plumber,
+        phone: '+44 7700 900201',
+        email: 'jobs@plumberpro.co.uk',
+        companyReg: '12849201',
+        vatNumber: 'GB 342 9018 22',
+        address: 'Unit 3, Enterprise Way, London SE1 7PB',
+        serviceArea: 'Central & South London (Within 10 miles)',
+        hourlyRate: '£85 / hr',
+        calloutFee: 'No callout fee',
+        experience: '14+ years',
+        completedJobs: 48,
+        insuranceProvider: 'Hiscox Insurance UK',
+        insuranceCoverage: '£5,000,000 Public Liability',
+        insurancePolicy: 'PL-HISCOX-441209',
+        gasSafe: true,
+        gasSafeRegNo: '684920',
+        liabilityInsurance: true,
+        avgRating: '4.8',
+        ratings: [
             { stars: 5, comment: 'Fixed the leak quickly and left the kitchen spotless.', job: 'Kitchen sink leaking', at: 'Mar 8, 2025', from: 'Sarah Johnson', role: 'tenant' },
             { stars: 5, comment: 'Clear updates and fair pricing on the invoice.', job: 'Tap replacement', at: 'Mar 2, 2025', from: 'John Smith', role: 'landlord' },
             { stars: 4, comment: 'Good work — arrived a little later than planned.', job: 'Radiator bleed', at: 'Feb 20, 2025', from: 'Michael Lee', role: 'tenant' },
             { stars: 5, comment: 'Gas certificate uploaded same day. Very professional.', job: 'Annual gas check', at: 'Jan 30, 2025', from: 'John Smith', role: 'landlord' },
-        ], certificates: [
-            { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'gas-safe-reg-2026.pdf', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027' },
-            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'liability-insurance-2026.pdf', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026' },
+        ],
+        certificates: [
+            { id: 0, type: 'gas_safe', name: 'Gas Safe Registration (CP12 & Heating)', fileName: 'gas-safe-reg-2026.pdf', certNumber: 'GS-684920', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027', verified: true, issuer: 'Gas Safe Register UK' },
+            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance (£5M)', fileName: 'liability-insurance-2026.pdf', certNumber: 'PL-HISCOX-441209', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026', verified: true, issuer: 'Hiscox Insurance UK' },
+            { id: 2, type: 'trade_qualification', name: 'City & Guilds NVQ Level 3 Plumbing & Heating', fileName: 'city-guilds-nvq3.pdf', certNumber: 'CG-8821094', uploadedAt: 'Jun 10, 2024', validUntil: 'Lifetime', verified: true, issuer: 'City & Guilds of London Institute' },
         ]
     },
     {
-        id: 1, name: 'Heating Co.', tradeId: 'heating', trade: 'Heating & Gas', category: 'Heating engineer', jobsFor: 'Boilers, radiators, gas safety, hot water', img: IMG.avatar.heating, phone: '+44 7700 900202', email: 'service@heatingco.co.uk', gasSafe: true, liabilityInsurance: true, certificates: [
-            { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'heating-co-gas-safe.pdf', uploadedAt: 'Feb 2, 2026', validUntil: 'Feb 2027' },
+        id: 1,
+        name: 'Heating Co.',
+        companyName: 'Heating Co. London Ltd',
+        contactPerson: 'Robert Clarke',
+        roleTitle: 'Lead Gas Safe Heating Engineer',
+        tradeId: 'heating',
+        trade: 'Heating & Gas',
+        category: 'Heating engineer',
+        jobsFor: 'Boilers, radiators, gas safety, hot water',
+        img: IMG.avatar.heating,
+        phone: '+44 7700 900202',
+        email: 'service@heatingco.co.uk',
+        companyReg: '09812450',
+        vatNumber: 'GB 291 8472 10',
+        address: '14 Kingston Road, Wimbledon, London SW19 1JZ',
+        serviceArea: 'South West & Central London',
+        hourlyRate: '£90 / hr',
+        calloutFee: '£45 diagnostic fee',
+        experience: '12+ years',
+        completedJobs: 36,
+        insuranceProvider: 'Aviva UK',
+        insuranceCoverage: '£5,000,000 Public Liability',
+        insurancePolicy: 'PL-AVIVA-881294',
+        gasSafe: true,
+        gasSafeRegNo: '551940',
+        liabilityInsurance: true,
+        avgRating: '4.9',
+        ratings: [
+            { stars: 5, comment: 'Replaced the boiler pressure relief valve same day. Issued CP12 on the spot.', job: 'Boiler pressure drop', at: 'Mar 12, 2025', from: 'John Smith', role: 'landlord' },
+            { stars: 5, comment: 'Polite and explained everything clearly. Hot water is back!', job: 'No hot water', at: 'Feb 14, 2025', from: 'David Wilson', role: 'tenant' },
+        ],
+        certificates: [
+            { id: 0, type: 'gas_safe', name: 'Gas Safe Registration (CP12 & Boilers)', fileName: 'heating-co-gas-safe.pdf', certNumber: 'GS-551940', uploadedAt: 'Feb 2, 2026', validUntil: 'Feb 2027', verified: true, issuer: 'Gas Safe Register UK' },
+            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance (£5M)', fileName: 'heating-co-insurance.pdf', certNumber: 'PL-AVIVA-881294', uploadedAt: 'Jan 10, 2026', validUntil: 'Jan 2027', verified: true, issuer: 'Aviva Insurance UK' },
+            { id: 2, type: 'trade_qualification', name: 'Worcester Bosch Accredited Installer', fileName: 'worcester-accredited-cert.pdf', certNumber: 'WBA-40918', uploadedAt: 'May 14, 2025', validUntil: 'May 2027', verified: true, issuer: 'Worcester Bosch Group' },
         ]
     },
     {
-        id: 2, name: 'Electric Fix', tradeId: 'electrical', trade: 'Electrical', category: 'Electrician', jobsFor: 'Lights, sockets, wiring, fuse boxes', img: IMG.avatar.electric, phone: '+44 7700 900203', email: 'bookings@electricfix.co.uk', liabilityInsurance: true, certificates: [
-            { id: 0, type: 'trade_qualification', name: 'NICEIC Certification', fileName: 'niceic-cert-2026.pdf', uploadedAt: 'Jan 8, 2026', validUntil: 'Jan 2027' },
-            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'electric-fix-insurance.pdf', uploadedAt: 'Nov 12, 2025', validUntil: 'Nov 2026' },
+        id: 2,
+        name: 'Electric Fix',
+        companyName: 'Electric Fix Solutions Ltd',
+        contactPerson: 'James Wilson',
+        roleTitle: 'NICEIC Approved Contractor & Electrician',
+        tradeId: 'electrical',
+        trade: 'Electrical',
+        category: 'Electrician',
+        jobsFor: 'Lights, sockets, wiring, fuse boxes',
+        img: IMG.avatar.electric,
+        phone: '+44 7700 900203',
+        email: 'bookings@electricfix.co.uk',
+        companyReg: '11948201',
+        vatNumber: 'GB 384 9281 92',
+        address: 'Unit 4, Trade Park, Brixton, London SW9 8AA',
+        serviceArea: 'Greater London & Surrounds',
+        hourlyRate: '£75 / hr',
+        calloutFee: 'No callout fee',
+        experience: '10+ years',
+        completedJobs: 41,
+        insuranceProvider: 'AXA UK Insurance',
+        insuranceCoverage: '£5,000,000 Public Liability',
+        insurancePolicy: 'POL-AXA-992108',
+        tradeRegNo: 'NIC-884210',
+        liabilityInsurance: true,
+        avgRating: '4.8',
+        ratings: [
+            { stars: 5, comment: 'Diagnosed tripping fuse board in 20 minutes. Replaced RCD and tested all circuits.', job: 'Fuse board tripping', at: 'Mar 15, 2025', from: 'John Smith', role: 'landlord' },
+            { stars: 5, comment: 'Installed new LED spotlights in kitchen. Very neat wiring work.', job: 'Kitchen lighting replacement', at: 'Feb 26, 2025', from: 'Sarah Johnson', role: 'tenant' },
+            { stars: 4, comment: 'Prompt arrival and issued Minor Electrical Works Certificate.', job: 'Socket replacement', at: 'Jan 18, 2025', from: 'Michael Lee', role: 'tenant' },
+        ],
+        certificates: [
+            { id: 0, type: 'trade_qualification', name: 'NICEIC Approved Contractor Certification', fileName: 'niceic-cert-2026.pdf', certNumber: 'NIC-884210', uploadedAt: 'Jan 8, 2026', validUntil: 'Jan 2027', verified: true, issuer: 'NICEIC / Certsure LLP' },
+            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance (£5M)', fileName: 'electric-fix-insurance.pdf', certNumber: 'POL-AXA-992108', uploadedAt: 'Nov 12, 2025', validUntil: 'Nov 2026', verified: true, issuer: 'AXA Insurance UK' },
+            { id: 2, type: 'trade_qualification', name: '18th Edition IET Wiring Regulations (BS 7671)', fileName: '18th-edition-wiring-reg.pdf', certNumber: 'IET-7671-5502', uploadedAt: 'Sep 4, 2024', validUntil: 'Lifetime', verified: true, issuer: 'Institution of Engineering and Technology' },
         ]
     },
 ];
@@ -46,6 +140,15 @@ function normalizeContractorRecord(c) {
 }
 
 CONTRACTORS.forEach(normalizeContractorRecord);
+
+function getRelativeDateStr(daysOffset) {
+    const d = new Date();
+    d.setDate(d.getDate() + (daysOffset || 0));
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
 
 const REMINDER_TYPES = [
     ['gas', 'Gas Certificate Expiry', 'flame', '#FEE2E2', '#DC2626'],
@@ -174,10 +277,21 @@ const AppStore = {
                 this.seed.call(tempStore);
                 this.tenantCheckout = Object.assign({}, tempStore.tenantCheckout, this.tenantCheckout);
             }
-            if (!this.reminders || this.reminders.length < 5) {
+            const allRemindersLate = Array.isArray(this.reminders) && this.reminders.length > 2 && this.reminders.every(r => (daysUntil(r.due) ?? 0) < 0);
+            if (!this.reminders || this.reminders.length < 5 || allRemindersLate || !d._remindersRefreshedV5) {
                 const tempStore = {};
                 this.seed.call(tempStore);
                 this.reminders = tempStore.reminders;
+                this.complianceCerts = Object.assign({}, this.complianceCerts, tempStore.complianceCerts);
+                if (this.propertyMeta) {
+                    [0, 1, 2, 3].forEach(pid => {
+                        if (this.propertyMeta[pid] && tempStore.propertyMeta?.[pid]) {
+                            this.propertyMeta[pid].alarms = tempStore.propertyMeta[pid].alarms;
+                        }
+                    });
+                }
+                d._remindersRefreshedV5 = true;
+                if (typeof syncSmartReminders === 'function') syncSmartReminders(true);
             }
             if (this.propertyMeta) {
                 [0, 1, 2, 3].forEach(pid => {
@@ -240,16 +354,16 @@ const AppStore = {
     },
     seed() {
         this.reminders = [
-            { id: 0, type: 'gas', propertyId: 0, title: 'Gas Certificate Expiry', due: '2026-03-12', daysLeft: 3, urgency: 'high' },
-            { id: 1, type: 'gas', propertyId: 1, title: 'Gas Safety CP12 Inspection', due: '2026-03-25', daysLeft: 14, urgency: 'high' },
-            { id: 2, type: 'electrical', propertyId: 0, title: 'Electrical Certificate Expiry', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
-            { id: 3, type: 'inspection', propertyId: 1, title: 'Mid-term Inspection Due', due: '2026-08-15', daysLeft: 16, urgency: 'medium' },
-            { id: 4, type: 'rent-review', propertyId: 2, title: 'Annual Rent Review', due: '2026-09-01', daysLeft: 33, urgency: 'medium' },
-            { id: 5, type: 'smoke', propertyId: 0, title: 'Smoke & CO Alarm Test', due: '2026-09-10', daysLeft: 42, urgency: 'medium' },
-            { id: 6, type: 'epc', propertyId: 3, title: 'EPC Rating Renewal', due: '2026-10-01', daysLeft: 63, urgency: 'medium' },
-            { id: 7, type: 'insurance', propertyId: 0, title: 'Landlord Insurance Renewal', due: '2026-11-30', daysLeft: 123, urgency: 'low' },
-            { id: 8, type: 'leasehold', propertyId: 0, title: 'Leasehold Service Charge', due: '2026-12-01', daysLeft: 124, urgency: 'low' },
-            { id: 9, type: 'mortgage', propertyId: 1, title: 'Mortgage Fixed Rate Review', due: '2027-01-15', daysLeft: 169, urgency: 'low' },
+            { id: 0, type: 'gas', propertyId: 0, title: 'Gas Certificate Expiry', due: getRelativeDateStr(-5), daysLeft: -5, urgency: 'high' },
+            { id: 1, type: 'gas', propertyId: 1, title: 'Gas Safety CP12 Inspection', due: getRelativeDateStr(4), daysLeft: 4, urgency: 'high' },
+            { id: 2, type: 'electrical', propertyId: 0, title: 'Electrical Certificate Expiry', due: getRelativeDateStr(14), daysLeft: 14, urgency: 'medium' },
+            { id: 3, type: 'inspection', propertyId: 1, title: 'Mid-term Inspection Due', due: getRelativeDateStr(18), daysLeft: 18, urgency: 'medium' },
+            { id: 4, type: 'rent-review', propertyId: 2, title: 'Annual Rent Review', due: getRelativeDateStr(35), daysLeft: 35, urgency: 'medium' },
+            { id: 5, type: 'smoke', propertyId: 0, title: 'Smoke & CO Alarm Test', due: getRelativeDateStr(28), daysLeft: 28, urgency: 'medium' },
+            { id: 6, type: 'epc', propertyId: 3, title: 'EPC Rating Renewal', due: getRelativeDateStr(75), daysLeft: 75, urgency: 'low' },
+            { id: 7, type: 'insurance', propertyId: 0, title: 'Landlord Insurance Renewal', due: getRelativeDateStr(120), daysLeft: 120, urgency: 'low' },
+            { id: 8, type: 'leasehold', propertyId: 0, title: 'Leasehold Service Charge', due: getRelativeDateStr(160), daysLeft: 160, urgency: 'low' },
+            { id: 9, type: 'mortgage', propertyId: 1, title: 'Mortgage Fixed Rate Review', due: getRelativeDateStr(240), daysLeft: 240, urgency: 'low' },
         ];
         this.documents = [
             // Property 0 - 12 Park Lane
@@ -314,9 +428,9 @@ const AppStore = {
                     { name: 'Aisha Khan', email: 'aisha.k@email.com', phone: '+44 7700 900504', status: 'no-account', role: 'member' },
                 ]
             },
-            { id: 4, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 1', rent: '£1,400', start: '2023-09-01', end: '2026-08-31', status: 'active', leadName: 'Sarah Johnson' },
+            { id: 4, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 1', rent: '£1,400', start: '2023-09-01', end: getRelativeDateStr(35), status: 'active', leadName: 'Sarah Johnson' },
             { id: 5, propertyId: 0, tenantId: 0, type: 'solo', unit: 'Flat 3', rent: '£1,650', start: '2024-02-01', end: '2027-01-31', status: 'active', leadName: 'Sarah Johnson' },
-            { id: 6, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1B', rent: '£1,750', start: '2023-11-01', end: '2026-10-31', status: 'active', leadName: 'David Chen' },
+            { id: 6, propertyId: 1, tenantId: 1, type: 'solo', unit: 'Flat 1B', rent: '£1,750', start: '2023-11-01', end: getRelativeDateStr(50), status: 'active', leadName: 'David Chen' },
             { id: 7, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 1', rent: '£1,700', start: '2024-04-01', end: '2027-03-31', status: 'active', leadName: 'Michael Lee' },
             { id: 8, propertyId: 3, tenantId: 2, type: 'solo', unit: 'Flat 2B', rent: '£1,850', start: '2024-05-01', end: '2027-04-30', status: 'active', leadName: 'Michael Lee' },
             { id: 9, propertyId: 2, tenantId: 3, type: 'solo', unit: 'Room 1', rent: '£650', start: '2025-01-01', end: '2026-12-31', status: 'active', leadName: 'Emma Roberts' },
@@ -329,7 +443,7 @@ const AppStore = {
             { id: 8, propertyId: 0, unit: 'Flat 3', type: 'Routine Property Inspection', date: '2024-02-01', rating: '4.6', photos: 4, photoUrls: IMG.interior.slice(1, 3), notes: 'Routine check complete. Radiators bled and working well.', report: 'Inspection Flat 3.pdf', status: 'Passed' },
             { id: 9, propertyId: 0, unit: 'Communal', type: 'Building Safety Audit', date: '2025-01-10', rating: '4.9', photos: 4, photoUrls: IMG.interior.slice(0, 2), notes: 'Fire doors, emergency lighting, and communal stairways tested OK.', report: 'Building Safety Audit.pdf', status: 'Passed' },
 
-            { id: 2, propertyId: 1, unit: 'Flat 1A', type: 'Routine Property Inspection', date: '2026-08-15', rating: null, photos: 0, report: null, scheduled: true, notes: 'Tenant requested afternoon slot. Parking on street.' },
+            { id: 2, propertyId: 1, unit: 'Flat 1A', type: 'Routine Property Inspection', date: getRelativeDateStr(18), rating: null, photos: 0, report: null, scheduled: true, notes: 'Tenant requested afternoon slot. Parking on street.' },
             { id: 3, propertyId: 1, unit: 'Flat 1A', type: 'Move-in Tenancy Check', date: '2023-06-01', rating: '4.9', photos: 7, photoUrls: IMG.interior.slice(0, 2), notes: 'Move-in inspection complete. All appliances clean and tested.', report: 'Check-in 45 Queens Rd.pdf', status: 'Passed' },
             { id: 10, propertyId: 1, unit: 'Flat 1B', type: 'Routine Property Inspection', date: '2023-11-01', rating: '4.8', photos: 5, photoUrls: IMG.interior.slice(1, 3), notes: 'Routine safety check passed.', report: 'Inspection Flat 1B.pdf', status: 'Passed' },
 
@@ -338,27 +452,27 @@ const AppStore = {
             { id: 6, propertyId: 3, unit: 'Communal', type: 'Building Safety Audit', date: '2025-03-05', rating: '4.8', photos: 6, photoUrls: IMG.interior.slice(2, 3), notes: 'Routine check complete. Radiators bled, no signs of damp.', report: 'Annual Report 2025.pdf', status: 'Passed' },
         ];
         this.complianceCerts = {
-            '0-0': { certNumber: 'GS-2026-001', issueDate: '2025-03-15', expiryDate: '2026-03-15', issuedBy: 'SafeGas Ltd', notes: 'All 4 boilers passed safety inspection' },
-            '0-1': { certNumber: 'EICR-8821', issueDate: '2025-08-15', expiryDate: '2026-08-15', issuedBy: 'Spark Electrical Ltd', notes: 'Satisfactory condition rating' },
-            '0-2': { certNumber: 'SMK-2025-12', issueDate: '2025-01-15', expiryDate: '2026-01-15', issuedBy: 'FireGuard UK', notes: 'Mains interlinked alarms tested' },
-            '0-3': { certNumber: 'HT-2025-09', issueDate: '2025-01-15', expiryDate: '2026-01-15', issuedBy: 'FireGuard UK', notes: 'Kitchen heat detector tested' },
-            '0-4': { certNumber: 'CO-2025-44', issueDate: '2025-01-15', expiryDate: '2026-01-15', issuedBy: 'FireGuard UK', notes: 'CO sensor battery replaced' },
-            '0-5': { certNumber: 'POL-AXA-882', issueDate: '2024-06-01', expiryDate: '2027-06-01', issuedBy: 'AXA Landlord Direct', notes: '£5M public liability included' },
-            '0-6': { certNumber: 'MTG-NW-5519', issueDate: '2022-12-01', expiryDate: '2027-12-01', issuedBy: 'Nationwide BTL', notes: 'Fixed rate 3.49%' },
-            '0-7': { certNumber: 'EPC-B-4421', issueDate: '2022-06-15', expiryDate: '2027-06-15', issuedBy: 'Green Assessors Ltd', notes: 'Energy Rating B (84/100)' },
-            '0-8': { certNumber: 'LIC-WES-991', issueDate: '2024-09-01', expiryDate: '2029-09-01', issuedBy: 'Westminster City Council', notes: 'Selective Licence Approved' },
+            '0-0': { certNumber: 'GS-2026-001', issueDate: getRelativeDateStr(-340), expiryDate: getRelativeDateStr(25), issuedBy: 'SafeGas Ltd', notes: 'All 4 boilers passed safety inspection' },
+            '0-1': { certNumber: 'EICR-8821', issueDate: getRelativeDateStr(-320), expiryDate: getRelativeDateStr(44), issuedBy: 'Spark Electrical Ltd', notes: 'Satisfactory condition rating' },
+            '0-2': { certNumber: 'SMK-2025-12', issueDate: getRelativeDateStr(-300), expiryDate: getRelativeDateStr(58), issuedBy: 'FireGuard UK', notes: 'Mains interlinked alarms tested' },
+            '0-3': { certNumber: 'HT-2025-09', issueDate: getRelativeDateStr(-300), expiryDate: getRelativeDateStr(90), issuedBy: 'FireGuard UK', notes: 'Kitchen heat detector tested' },
+            '0-4': { certNumber: 'CO-2025-44', issueDate: getRelativeDateStr(-300), expiryDate: getRelativeDateStr(120), issuedBy: 'FireGuard UK', notes: 'CO sensor battery replaced' },
+            '0-5': { certNumber: 'POL-AXA-882', issueDate: getRelativeDateStr(-180), expiryDate: getRelativeDateStr(210), issuedBy: 'AXA Landlord Direct', notes: '£5M public liability included' },
+            '0-6': { certNumber: 'MTG-NW-5519', issueDate: getRelativeDateStr(-700), expiryDate: getRelativeDateStr(400), issuedBy: 'Nationwide BTL', notes: 'Fixed rate 3.49%' },
+            '0-7': { certNumber: 'EPC-B-4421', issueDate: getRelativeDateStr(-400), expiryDate: getRelativeDateStr(700), issuedBy: 'Green Assessors Ltd', notes: 'Energy Rating B (84/100)' },
+            '0-8': { certNumber: 'LIC-WES-991', issueDate: getRelativeDateStr(-300), expiryDate: getRelativeDateStr(800), issuedBy: 'Westminster City Council', notes: 'Selective Licence Approved' },
 
-            '1-0': { certNumber: 'GS-2025-114', issueDate: '2024-11-01', expiryDate: '2025-11-01', issuedBy: 'HeatSafe Heating Ltd', notes: 'CP12 issued for Worcester boiler' },
-            '1-1': { certNumber: 'EICR-9932', issueDate: '2023-07-20', expiryDate: '2028-07-20', issuedBy: 'BrightFix Electrics', notes: '5-year certificate valid' },
-            '1-7': { certNumber: 'EPC-C-5510', issueDate: '2023-09-14', expiryDate: '2028-09-14', issuedBy: 'EcoCheck London', notes: 'Rating C (72/100)' },
+            '1-0': { certNumber: 'GS-2025-114', issueDate: getRelativeDateStr(-330), expiryDate: getRelativeDateStr(34), issuedBy: 'HeatSafe Heating Ltd', notes: 'CP12 issued for Worcester boiler' },
+            '1-1': { certNumber: 'EICR-9932', issueDate: getRelativeDateStr(-400), expiryDate: getRelativeDateStr(600), issuedBy: 'BrightFix Electrics', notes: '5-year certificate valid' },
+            '1-7': { certNumber: 'EPC-C-5510', issueDate: getRelativeDateStr(-350), expiryDate: getRelativeDateStr(750), issuedBy: 'EcoCheck London', notes: 'Rating C (72/100)' },
 
-            '2-0': { certNumber: 'GS-2025-303', issueDate: '2025-01-10', expiryDate: '2026-01-10', issuedBy: 'Premier Gas Safe', notes: 'Combi boiler annual check passed' },
-            '2-1': { certNumber: 'EICR-10492', issueDate: '2024-01-15', expiryDate: '2029-01-15', issuedBy: 'Spark Electrical Ltd', notes: 'Full test passed — Rating: Satisfactory' },
-            '2-7': { certNumber: 'EPC-A-1082', issueDate: '2021-04-05', expiryDate: '2031-04-05', issuedBy: 'Green Assessors Ltd', notes: 'Energy Rating A (93/100)' },
+            '2-0': { certNumber: 'GS-2025-303', issueDate: getRelativeDateStr(-310), expiryDate: getRelativeDateStr(52), issuedBy: 'Premier Gas Safe', notes: 'Combi boiler annual check passed' },
+            '2-1': { certNumber: 'EICR-10492', issueDate: getRelativeDateStr(-500), expiryDate: getRelativeDateStr(600), issuedBy: 'Spark Electrical Ltd', notes: 'Full test passed — Rating: Satisfactory' },
+            '2-7': { certNumber: 'EPC-A-1082', issueDate: getRelativeDateStr(-800), expiryDate: getRelativeDateStr(1000), issuedBy: 'Green Assessors Ltd', notes: 'Energy Rating A (93/100)' },
 
-            '3-0': { certNumber: 'GS-2025-228', issueDate: '2025-01-20', expiryDate: '2026-01-20', issuedBy: 'HeatSafe Heating Ltd', notes: 'Annual safety certificate issued' },
-            '3-1': { certNumber: 'EICR-8411', issueDate: '2024-05-18', expiryDate: '2029-05-18', issuedBy: 'Electric Fix Ltd', notes: 'Full compliance verified' },
-            '3-7': { certNumber: 'EPC-C-3382', issueDate: '2022-03-20', expiryDate: '2027-03-20', issuedBy: 'EcoCheck London', notes: 'Rating C (70/100)' },
+            '3-0': { certNumber: 'GS-2025-228', issueDate: getRelativeDateStr(-320), expiryDate: getRelativeDateStr(38), issuedBy: 'HeatSafe Heating Ltd', notes: 'Annual safety certificate issued' },
+            '3-1': { certNumber: 'EICR-8411', issueDate: getRelativeDateStr(-400), expiryDate: getRelativeDateStr(700), issuedBy: 'Electric Fix Ltd', notes: 'Full compliance verified' },
+            '3-7': { certNumber: 'EPC-C-3382', issueDate: getRelativeDateStr(-600), expiryDate: getRelativeDateStr(800), issuedBy: 'EcoCheck London', notes: 'Rating C (70/100)' },
         };
         this.certHistory = {};
         this.inventory = {
@@ -512,9 +626,9 @@ const AppStore = {
                 photos: [IMG.props[0], IMG.interior[0], IMG.interior[1], IMG.interior[2]],
                 floorPlans: [IMG.interior[0], IMG.interior[1]],
                 alarms: {
-                    smoke: { expiry: '2026-01-15', location: 'Hallway (Mains interlinked)', reminderTiming: '30', reminderDate: '2025-12-16' },
-                    heat: { expiry: '2026-01-15', location: 'Kitchen', reminderTiming: '30', reminderDate: '2025-12-16' },
-                    co: { expiry: '2026-01-15', location: 'Boiler Cupboard', reminderTiming: '30', reminderDate: '2025-12-16' },
+                    smoke: { expiry: getRelativeDateStr(58), location: 'Hallway (Mains interlinked)', reminderTiming: '30' },
+                    heat: { expiry: getRelativeDateStr(90), location: 'Kitchen', reminderTiming: '30' },
+                    co: { expiry: getRelativeDateStr(120), location: 'Boiler Cupboard', reminderTiming: '30' },
                 },
                 appliances: [
                     { name: 'Boiler', brand: 'Worcester Bosch Greenstar 30i', warranty: 'Until Mar 2027', description: 'Combi boiler in kitchen cupboard' },
@@ -579,9 +693,9 @@ const AppStore = {
                 photos: [IMG.props[1], IMG.interior[0], IMG.interior[2]],
                 floorPlans: [IMG.interior[1]],
                 alarms: {
-                    smoke: { expiry: '2026-06-01', location: 'Hallway & Landing', reminderTiming: '30', reminderDate: '2026-05-02' },
-                    heat: { expiry: '2026-06-01', location: 'Kitchen', reminderTiming: '30', reminderDate: '2026-05-02' },
-                    co: { expiry: '2026-06-01', location: 'Boiler cupboard', reminderTiming: '30', reminderDate: '2026-05-02' },
+                    smoke: { expiry: getRelativeDateStr(48), location: 'Hallway & Landing', reminderTiming: '30' },
+                    heat: { expiry: getRelativeDateStr(180), location: 'Kitchen', reminderTiming: '30' },
+                    co: { expiry: getRelativeDateStr(210), location: 'Boiler cupboard', reminderTiming: '30' },
                 },
                 appliances: [
                     { name: 'Boiler', brand: 'Worcester Bosch 28i', warranty: 'Until Nov 2026', description: 'Combi gas boiler in kitchen' },
@@ -694,9 +808,9 @@ const AppStore = {
                 photos: [IMG.props[3], IMG.interior[0], IMG.interior[1]],
                 floorPlans: [IMG.interior[2]],
                 alarms: {
-                    smoke: { expiry: '2026-03-10', location: 'Hallway', reminderTiming: '30', reminderDate: '2026-02-08' },
-                    heat: { expiry: '2026-03-10', location: 'Kitchen', reminderTiming: '30', reminderDate: '2026-02-08' },
-                    co: { expiry: '2026-03-10', location: 'Boiler cupboard', reminderTiming: '30', reminderDate: '2026-02-08' },
+                    smoke: { expiry: getRelativeDateStr(240), location: 'Hallway', reminderTiming: '30' },
+                    heat: { expiry: getRelativeDateStr(240), location: 'Kitchen', reminderTiming: '30' },
+                    co: { expiry: getRelativeDateStr(240), location: 'Boiler cupboard', reminderTiming: '30' },
                 },
                 appliances: [
                     { name: 'Boiler', brand: 'Vaillant ecoTEC plus 832', warranty: 'Until May 2028', description: 'High efficiency condensing boiler' },
@@ -16044,12 +16158,30 @@ function recalcReminderMeta(r) {
 
 function reminderStatusBadge(r) {
     const left = r.daysLeft ?? daysUntil(r.due) ?? 0;
-    const rt = reminderTypeMeta(r.type);
-    let text;
-    if (left < 0) text = `${Math.abs(left)}d overdue`;
-    else if (left === 0) text = 'Today';
-    else text = `${left}d`;
-    return { text, bg: rt[3], color: rt[4] };
+    let text, bg, color;
+    if (left < 0) {
+        const days = Math.abs(left);
+        text = `${days} day${days === 1 ? '' : 's'} late`;
+        bg = '#FEE2E2';
+        color = '#DC2626';
+    } else if (left === 0) {
+        text = 'Due today';
+        bg = '#FEF3C7';
+        color = '#D97706';
+    } else if (left <= 7) {
+        text = `${left}d left`;
+        bg = '#FEF3C7';
+        color = '#D97706';
+    } else if (left <= 30) {
+        text = `${left}d left`;
+        bg = '#EFF6FF';
+        color = '#2563EB';
+    } else {
+        text = `${left}d left`;
+        bg = '#ECFDF5';
+        color = '#059669';
+    }
+    return { text, bg, color };
 }
 
 function reminderSourceLabel(r) {
@@ -16120,7 +16252,9 @@ function filteredReminders(filter, propFilter) {
         const targetPid = Number(pf);
         list = list.filter(r => r.propertyId === targetPid);
     }
-    if (f === 'soon') return list.filter(r => (r.daysLeft ?? 99) <= 30 && (r.daysLeft ?? -99) >= 0);
+    // শুধু overdue (expired) অথবা ≤30 দিন বাকি — 30 দিনের বেশি বাকি থাকলে দেখানোর দরকার নেই
+    list = list.filter(r => (r.daysLeft ?? 999) <= 30);
+    if (f === 'soon') return list.filter(r => (r.daysLeft ?? -99) >= 0);
     if (f === 'overdue') return list.filter(r => (r.daysLeft ?? 0) < 0);
     return list;
 }
@@ -18528,9 +18662,11 @@ function screenReminders() {
         ? allReminders.filter(r => r.propertyId === Number(propFilter))
         : allReminders;
 
-    const totalCount = propFilteredList.length;
-    const soonCount = propFilteredList.filter(r => r.urgency === 'soon' || r.urgency === 'warn' || ((r.daysLeft ?? 99) <= 30 && (r.daysLeft ?? -99) >= 0)).length;
-    const overdueCount = propFilteredList.filter(r => r.urgency === 'overdue' || (r.daysLeft ?? 0) < 0).length;
+    // শুধু ≤30 দিনের reminders count করব
+    const relevantList = propFilteredList.filter(r => (r.daysLeft ?? 999) <= 30);
+    const totalCount = relevantList.length;
+    const soonCount = relevantList.filter(r => (r.daysLeft ?? -99) >= 0).length;
+    const overdueCount = relevantList.filter(r => (r.daysLeft ?? 0) < 0).length;
 
     const tabs = [
         ['all', 'All', totalCount],
@@ -18549,9 +18685,9 @@ function screenReminders() {
         <div class="relative flex items-center bg-white px-3.5 py-2.5 rounded-xl border border-[#E2E8F0] shadow-xs">
             <i data-lucide="building-2" class="w-4 h-4 text-[#64748B] shrink-0 mr-2.5"></i>
             <select data-action="filter-reminder-property" class="w-full bg-transparent text-[13px] font-semibold text-[#0F172A] border-0 p-0 pr-6 outline-none cursor-pointer" style="appearance:none;-webkit-appearance:none;">
-                <option value="all" ${propFilter === 'all' ? 'selected' : ''}>All Properties (${allReminders.length})</option>
+                <option value="all" ${propFilter === 'all' ? 'selected' : ''}>All Properties (${relevantList.length})</option>
                 ${PROPERTIES.map(p => {
-        const count = allReminders.filter(r => r.propertyId === p.id).length;
+        const count = allReminders.filter(r => r.propertyId === p.id && (r.daysLeft ?? 999) <= 30).length;
         return `<option value="${p.id}" ${propFilter === String(p.id) ? 'selected' : ''}>${esc(p.name)} (${count})</option>`;
     }).join('')}
             </select>
@@ -18567,31 +18703,22 @@ function screenReminders() {
             </button>`).join('')}
         </div>
 
-        <!-- Clutter-Free, Minimal Reminder List -->
+        <!-- Card List -->
         ${list.length ? `
         <div class="space-y-2 pt-1">
             ${list.map(r => {
         const p = PROPERTIES[r.propertyId];
-        const rt = reminderTypeMeta(r.type);
-        const daysLeft = r.daysLeft ?? daysUntil(r.due) ?? 999;
-        const isWithinMonth = daysLeft <= 30;
         const badge = reminderStatusBadge(r);
-        const dueLabel = formatReminderDue(r.due);
-        const propName = esc(p?.name || 'All Properties');
-        const subline = isWithinMonth
-            ? (isSingleProp ? `Due ${esc(dueLabel)}` : `${propName} · Due ${esc(dueLabel)}`)
-            : propName;
         return `
-            <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="card w-full p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 text-left cursor-pointer group">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background:${rt[3]};color:${rt[4]}">
-                    <i data-lucide="${rt[2]}" class="w-5 h-5"></i>
+            <button type="button" data-go="reminder-detail" data-rid="${r.id}" class="card w-full p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all flex items-center gap-3 text-left cursor-pointer group">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#EFF6FF] group-hover:bg-[#DBEAFE] transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5 text-[#2563EB]"></i>
                 </div>
                 <div class="flex-1 min-w-0">
                     <h4 class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">${esc(r.title)}</h4>
-                    ${subline ? `<p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${subline}</p>` : ''}
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    ${isWithinMonth ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>` : ''}
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm" style="background:${badge.bg};color:${badge.color}">${badge.text}</span>
                     <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#64748B] transition-colors"></i>
                 </div>
             </button>`;
@@ -18624,52 +18751,42 @@ function screenReminderDetail() {
     const p = PROPERTIES[r.propertyId];
     const rt = reminderTypeMeta(r.type);
     const daysLeft = r.daysLeft ?? daysUntil(r.due) ?? 999;
-    const isWithinMonth = daysLeft <= 30;
     const badge = reminderStatusBadge(r);
-    const action = reminderPrimaryAction(r);
     const dueLabel = formatReminderDue(r.due);
-    const recordsView = ['gas', 'electrical', 'epc', 'smoke', 'heat', 'co2', 'insurance', 'mortgage'].includes(r.type) ? 'compliance' : r.type === 'inspection' ? 'inspections' : 'compliance';
-    const row = (icon, label, attrs, danger = false) => `
-            <button type="button" ${attrs} class="flat-records-nav-row w-full text-left">
-                <span class="flat-records-nav-icon"><i data-lucide="${icon}" class="w-4 h-4"></i></span>
-                <span class="flat-records-nav-body"><span class="flat-records-nav-label${danger ? ' text-[#DC2626]' : ''}">${label}</span></span>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
-            </button>`;
-    return `${topBar('Smart Reminder', { back: true, sub: p?.name || '' })}
-    <div class="screen-content screen-enter space-y-3">
-        <!-- Minimal Hero Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm text-left space-y-4">
-            <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background:${rt[3]};color:${rt[4]}">
-                        <i data-lucide="${rt[2]}" class="w-5 h-5"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h2 class="text-[16px] font-bold text-[#0F172A] m-0 truncate">${esc(r.title)}</h2>
-                        <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(p?.name || 'Property')}</p>
-                    </div>
-                </div>
-                ${isWithinMonth ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-sm" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>` : ''}
-            </div>
+    const flatInfo = r.unit ? esc(r.unit) : (r.flat ? esc(r.flat) : '');
 
-            <div class="pt-3 border-t border-[#F1F5F9] grid grid-cols-2 gap-3 text-left">
-                <div>
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Due Date</span>
-                    <span class="text-[13px] font-bold text-[#0F172A] mt-0.5 block">${esc(dueLabel)}</span>
-                </div>
-                <div>
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Property</span>
-                    <span class="text-[13px] font-bold text-[#0F172A] mt-0.5 block truncate">${esc(p?.name || 'All Properties')}</span>
-                </div>
-            </div>
+    // 3-dot dropdown menu — using app's built-in action menu system
+    const menuKey = `reminder-detail-${r.id}`;
+    const menuItems = [
+        { label: 'Edit', icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-reminder" data-rid="${r.id}"` },
+        { label: r.auto ? 'Remove from list' : 'Delete', icon: 'trash-2', action: 'delete-reminder', danger: true, attrs: `data-rid="${r.id}"` },
+    ];
+    const dotMenu = `<div class="relative shrink-0">
+        ${renderActionMenuButton(menuKey, 'Options', 'more-vertical')}
+        ${renderActionMenuPopover(menuKey, menuItems)}
+    </div>`;
+
+    const tableRow = (label, value) => `
+        <div class="flex items-center justify-between py-2.5 border-b border-[#F1F5F9] last:border-0">
+            <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider w-24 shrink-0">${label}</span>
+            <span class="text-[13px] font-semibold text-[#0F172A] text-right truncate">${value}</span>
+        </div>`;
+
+    return `${topBar('Smart Reminder', { back: true, rightBtn: dotMenu })}
+    <div class="screen-content screen-enter space-y-3">
+        <!-- Status Badge -->
+        <div class="flex items-center justify-between">
+            <h2 class="text-[16px] font-bold text-[#0F172A] m-0 flex-1 truncate pr-3">${esc(r.title)}</h2>
+            <span class="px-3 py-1 rounded-full text-[11px] font-bold shrink-0 shadow-sm whitespace-nowrap" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>
         </div>
 
-        <button type="button" ${reminderGoAttrs(action)} class="btn-primary w-full py-3.5 text-[14px] font-bold shadow-xs">${esc(action.label)}</button>
-
-        <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
-            ${row('calendar', 'Change due date', `data-go="edit-reminder" data-rid="${r.id}"`)}
-            ${row('folder', 'Property records', `data-go="property-detail" data-pid="${r.propertyId}" data-tab="records" data-records-view="${recordsView}"`)}
-            ${row('trash-2', r.auto ? 'Remove from list' : 'Delete', `data-action="delete-reminder" data-rid="${r.id}"`, true)}
+        <!-- Info Table -->
+        <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm px-4 py-1">
+            ${tableRow('Certificate', esc(r.title))}
+            ${tableRow('Property', esc(p?.name || 'All Properties'))}
+            ${tableRow('Flat', flatInfo || '—')}
+            ${tableRow('Expires', esc(dueLabel))}
+            ${tableRow('Status', `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold" style="background:${badge.bg};color:${badge.color}">${esc(badge.text)}</span>`)}
         </div>
     </div>`;
 }
@@ -18678,19 +18795,35 @@ function renderReminderFormFields(reminder = null) {
     const typeVal = reminder?.type || 'custom';
     const titleVal = reminder?.title || '';
     const propVal = reminder?.propertyId ?? PROPERTIES[0]?.id ?? 0;
+    const unitVal = reminder?.unit || '';
     const dueVal = reminder ? reminderDueInputValue(reminder.due) : '';
     const autoNote = reminder?.auto ? `
         <div class="card p-3 bg-[#EFF6FF] border border-[#DBEAFE]">
             <p class="text-[12px] text-[#1E40AF] leading-relaxed">Synced from property records. Saving updates the certificate, alarm, lease or inspection date behind this Smart Reminder.</p>
         </div>` : '';
+    // Build unit options for the currently selected property
+    const buildUnitOptions = (pid, selUnit) => {
+        const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
+        const opts = units.map(u => {
+            const name = typeof unitName === 'function' ? unitName(u) : (u.name || u.unit || u);
+            return `<option value="${esc(name)}"${name === selUnit ? ' selected' : ''}>${esc(name)}</option>`;
+        });
+        return `<option value="">— None —</option>${opts.join('')}`;
+    };
     return `
         ${autoNote}
-        <div><label class="form-label">${requiredLabel('Smart Reminder Type')}</label>
-        <select data-field="type" class="form-input form-select">${REMINDER_TYPES.map(t => `<option value="${t[0]}"${t[0] === typeVal ? ' selected' : ''}>${t[1]}</option>`).join('')}</select></div>
         ${formFieldReq('Title', 'title', titleVal, 'text', 'e.g. Gas certificate renewal')}
         <div><label class="form-label">${requiredLabel('Property')}</label>
-        <select data-field="propertyId" class="form-input form-select">${PROPERTIES.map(p => `<option value="${p.id}"${p.id === propVal ? ' selected' : ''}>${p.name}</option>`).join('')}</select></div>
-        ${formFieldReq('Due Date', 'due', dueVal, 'date')}`;
+        <select data-field="propertyId" class="form-input form-select" id="reminder-prop-select"
+            onchange="(function(sel){var pid=parseInt(sel.value);var uSel=document.getElementById('reminder-unit-select');if(!uSel)return;var units=typeof getPropertyUnits==='function'?getPropertyUnits(pid):[];var opts='<option value=\"\">— None —</option>';units.forEach(function(u){var n=typeof unitName==='function'?unitName(u):(u.name||u.unit||u);opts+='<option value=\"'+n+'\">'+n+'</option>';});uSel.innerHTML=opts;})(this)">
+            ${PROPERTIES.map(p => `<option value="${p.id}"${p.id === propVal ? ' selected' : ''}>${p.name}</option>`).join('')}
+        </select></div>
+        <div><label class="form-label" style="display:flex;align-items:center;gap:6px">Unit <span style="font-size:10px;font-weight:500;color:#94A3B8;background:#F1F5F9;padding:1px 7px;border-radius:99px">Optional</span></label>
+        <select data-field="unit" id="reminder-unit-select" class="form-input form-select">
+            ${buildUnitOptions(propVal, unitVal)}
+        </select></div>
+        ${formFieldReq('Due Date', 'due', dueVal, 'date')}
+        <input type="hidden" data-field="type" value="${typeVal}">`;
 }
 
 function screenAddReminder() {
