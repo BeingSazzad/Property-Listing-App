@@ -832,33 +832,38 @@
         }
 
         .dash-quick-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: transform .12s, background .12s;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         }
 
         .dash-quick-icon--primary {
             background: #EFF6FF;
             color: #2563EB;
+            border: 1px solid #DBEAFE;
         }
 
         .dash-quick-icon--warning {
-            background: var(--color-warning-light);
-            color: var(--color-accent);
+            background: #FFFBEB;
+            color: #D97706;
+            border: 1px solid #FDE68A;
         }
 
         .dash-quick-icon--success {
-            background: var(--color-success-surface);
-            color: var(--color-success-ui);
+            background: #ECFDF5;
+            color: #059669;
+            border: 1px solid #A7F3D0;
         }
 
         .dash-quick-icon--indigo {
-            background: var(--color-purple-light);
-            color: var(--color-purple);
+            background: #F5F3FF;
+            color: #7C3AED;
+            border: 1px solid #DDD6FE;
         }
 
         .dash-quick-btn:active .dash-quick-icon {
@@ -31549,6 +31554,98 @@
             white-space: nowrap;
         }
 
+        .nid-proof-single-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 2px dashed #CBD5E1;
+            background: #fff;
+            cursor: pointer;
+            text-align: left;
+            transition: all .15s ease;
+            box-sizing: border-box;
+        }
+
+        .nid-proof-single-box:hover {
+            border-color: #93C5FD;
+            background: #F8FAFC;
+        }
+
+        .nid-proof-single-box--done {
+            border-style: solid;
+            border-color: #BFDBFE;
+            background: #F8FAFC;
+        }
+
+        .nid-proof-single-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #EFF6FF;
+            color: #2563EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all .15s ease;
+        }
+
+        .nid-proof-single-box--done .nid-proof-single-icon {
+            background: #DCFCE7;
+            color: #16A34A;
+        }
+
+        .nid-proof-single-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .nid-proof-single-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #0F172A;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nid-proof-single-sub {
+            font-size: 11.5px;
+            font-weight: 500;
+            color: #64748B;
+            margin: 2px 0 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nid-proof-single-badge {
+            flex-shrink: 0;
+        }
+
+        .nid-proof-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 700;
+            background: #F1F5F9;
+            color: #475569;
+            border: 1px solid #E2E8F0;
+        }
+
+        .nid-proof-status-pill--done {
+            background: #DCFCE7;
+            color: #15803D;
+            border-color: #BBF7D0;
+        }
+
         .invite-review-nid {
             margin-top: 4px;
             padding-top: 12px;
@@ -32711,10 +32808,10 @@
 
 <body class="flex items-center justify-center p-6">
     <div id="app"></div>
-    <script src="landlord_hq_screens.js?v=563"></script>
-    <script src="landlord_hq_contractor.js?v=575"></script>
-    <script src="landlord_hq_features.js?v=575"></script>
-    <script src="landlord_hq_product.js?v=563"></script>
+    <script src="landlord_hq_screens.js?v=590"></script>
+    <script src="landlord_hq_contractor.js?v=590"></script>
+    <script src="landlord_hq_features.js?v=590"></script>
+    <script src="landlord_hq_product.js?v=590"></script>
     <script>
             (function () {
                 function showBootError(msg) {

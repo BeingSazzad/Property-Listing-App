@@ -1800,35 +1800,67 @@ function tenantDashboardHeader(t, p) {
 
 function renderTenantHomePropertyCard(t, p) {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const cover = (t.unit && typeof getFlatCoverPhoto === 'function'
-        ? getFlatCoverPhoto(t.propertyId, t.unit)
-        : null)
-        || (typeof getPropertyCoverPhoto === 'function'
-            ? getPropertyCoverPhoto(t.propertyId)
-            : (IMG?.props?.[t.propertyId] || 'assets/house1.jpg'));
+    const propName = p?.name || '12 Park Lane';
+    const flatName = t?.unit || 'Flat 2A';
+
+    // Look up unit details from AppStore metadata
+    let flatFloor = '2nd Floor';
+    let unitObj = null;
+    if (p && typeof getPropertyUnits === 'function') {
+        const units = getPropertyUnits(p.id) || [];
+        unitObj = units.find(u => (typeof unitName === 'function' ? unitName(u) : u.name) === flatName);
+    }
+    if (unitObj?.floor != null) {
+        flatFloor = unitObj.floor === 1 ? '1st Floor' : unitObj.floor === 2 ? '2nd Floor' : unitObj.floor === 3 ? '3rd Floor' : `Floor ${unitObj.floor}`;
+    }
+
+    // Full postal address: researched UK postal format e.g. "12 Park Lane, London, SW1A 1AA"
+    let fullAddress = '12 Park Lane, London, SW1A 1AA';
+    if (p?.address) {
+        if (p.name && !p.address.toLowerCase().includes(p.name.toLowerCase())) {
+            fullAddress = `${p.name}, ${p.address}`;
+        } else {
+            fullAddress = p.address;
+        }
+    }
+
     return `
-    <button type="button" data-go="tenant-active-tenancy" class="relative w-full h-[180px] rounded-2xl overflow-hidden text-left group shadow-md transition-transform active:scale-[0.99] cursor-pointer">
-        <img src="${esc(cover)}" alt="" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-        <div class="absolute inset-0 bg-gradient-to-r from-[#0F172A]/90 via-[#0F172A]/75 to-transparent p-5 flex flex-col justify-between">
-            <div class="flex items-center">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-extrabold tracking-wider bg-[#065F46]/90 text-[#34D399] border border-[#059669]/40 uppercase shadow-xs">
-                    <span class="w-2 h-2 rounded-full bg-[#34D399] animate-pulse"></span>
-                    ACTIVE TENANCY
-                </span>
-            </div>
+    <button type="button" data-go="tenant-active-tenancy" class="relative w-full rounded-2xl overflow-hidden text-left group shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" style="background: radial-gradient(circle at 90% 15%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 50%), linear-gradient(135deg, #1A56F0 0%, #1E60F8 50%, #1545D8 100%);">
+        <div class="relative z-10 p-5 pr-[130px] flex flex-col justify-between min-h-[185px]">
             <div>
-                <h3 class="text-[22px] font-black text-white m-0 tracking-tight leading-tight">${esc(p?.name || '12 Park Lane')}</h3>
-                <p class="text-[12.5px] font-semibold text-white/90 m-0 mt-1 flex items-center gap-1 truncate">
-                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-white/80 shrink-0"></i>
-                    <span>${esc(t.unit ? `${t.unit}, ${p?.address || ''}` : (p?.address || 'Flat 2A, London, SW1A 1AA'))}</span>
-                </p>
-                <div class="mt-3">
-                    <span class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/30 text-white text-[12px] font-bold group-hover:bg-white/25 transition-all">
-                        <span>View home details</span>
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                    </span>
+                <!-- Top Badge: Active Tenancy & Floor -->
+                <div class="flex items-center gap-1.5 mb-1.5">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white border border-white/30 backdrop-blur-sm">ACTIVE TENANCY</span>
+                    <span class="text-[11px] font-bold text-white/90 bg-black/15 px-2 py-0.5 rounded-full backdrop-blur-xs">${esc(flatFloor)}</span>
+                </div>
+
+                <!-- Flat Name (Hero Unit Heading with Home Icon) -->
+                <h3 class="text-[23px] font-black text-white m-0 tracking-tight leading-tight flex items-center gap-2">
+                    <i data-lucide="home" class="w-5 h-5 text-white shrink-0"></i>
+                    <span>${esc(flatName)}</span>
+                </h3>
+
+                <!-- Property Name & Full Postal Address -->
+                <div class="mt-2 space-y-1">
+                    <div class="flex items-center gap-1.5 text-white/95 text-[12.5px] font-bold">
+                        <i data-lucide="building-2" class="w-3.5 h-3.5 text-white/80 shrink-0"></i>
+                        <span>Property: <span class="font-extrabold text-white">${esc(propName)}</span></span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-white/80 text-[11.5px] font-medium">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-white/65 shrink-0"></i>
+                        <span class="truncate">${esc(fullAddress)}</span>
+                    </div>
                 </div>
             </div>
+            <div class="pt-3">
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/25 border border-white/30 text-white text-[12px] font-bold backdrop-blur-sm transition-all group-hover:bg-white/30 shadow-xs">
+                    <span>View home details</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </span>
+            </div>
+        </div>
+        <div class="absolute right-0 bottom-0 top-0 w-[44%] max-w-[170px] pointer-events-none flex items-end justify-end overflow-hidden">
+            <img src="assets/tenant-home-building.png" alt="" class="w-full h-auto max-h-[96%] object-contain object-bottom group-hover:scale-105 transition-transform duration-500" style="mask-image: linear-gradient(to left, black 65%, transparent 100%); -webkit-mask-image: linear-gradient(to left, black 65%, transparent 100%);">
         </div>
     </button>`;
 }
@@ -2109,27 +2141,34 @@ function screenTenantDashboard() {
         ${renderTenantHomePropertyCard(t, p)}
         ${renderTenantHomeRentStrip(t, pay, rentDue)}
         
-        <!-- Quick Actions Row (Circular Icon Badges matching reference screen) -->
-        <div class="space-y-2.5 text-left pt-1">
-            <h3 class="text-[15px] font-extrabold text-[#0F172A] m-0 px-1">Quick actions</h3>
-            <div class="grid grid-cols-3 gap-3">
-                <button type="button" data-go="log-maintenance" class="flex flex-col items-center gap-2 group cursor-pointer text-center">
-                    <div class="w-14 h-14 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center border border-[#DBEAFE] group-hover:scale-105 group-hover:bg-[#DBEAFE] transition-all shadow-xs">
-                        <i data-lucide="file-text" class="w-6 h-6"></i>
+        <!-- Quick Actions (Landlord-style unified action bar with squircle shapes) -->
+        <div class="space-y-2 text-left pt-1">
+            <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0 px-1">Quick actions</h3>
+            <div class="dash-quick card mt-0">
+                <button type="button" data-go="log-maintenance" class="dash-quick-btn group">
+                    <div class="dash-quick-icon dash-quick-icon--primary group-hover:scale-105 transition-transform">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
                     </div>
-                    <span class="text-[12px] font-bold text-[#334155] group-hover:text-[#2563EB] transition-colors leading-tight">Report an issue</span>
+                    <span>Report issue</span>
                 </button>
-                <button type="button" data-go="messages" class="flex flex-col items-center gap-2 group cursor-pointer text-center">
-                    <div class="w-14 h-14 rounded-full bg-[#ECFDF5] text-[#059669] flex items-center justify-center border border-[#A7F3D0] group-hover:scale-105 group-hover:bg-[#D1FAE5] transition-all shadow-xs">
-                        <i data-lucide="message-circle" class="w-6 h-6"></i>
+                <button type="button" data-go="messages" class="dash-quick-btn group">
+                    <div class="dash-quick-icon dash-quick-icon--success group-hover:scale-105 transition-transform">
+                        <i data-lucide="message-circle" class="w-5 h-5"></i>
                     </div>
-                    <span class="text-[12px] font-bold text-[#334155] group-hover:text-[#059669] transition-colors leading-tight">Message landlord</span>
+                    <span>Message landlord</span>
                 </button>
-                <button type="button" data-go="transaction-history" class="flex flex-col items-center gap-2 group cursor-pointer text-center">
-                    <div class="w-14 h-14 rounded-full bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center border border-[#DDD6FE] group-hover:scale-105 group-hover:bg-[#EDE9FE] transition-all shadow-xs">
-                        <i data-lucide="credit-card" class="w-6 h-6"></i>
+                <button type="button" data-go="transaction-history" class="dash-quick-btn group">
+                    <div class="dash-quick-icon dash-quick-icon--indigo group-hover:scale-105 transition-transform">
+                        <i data-lucide="credit-card" class="w-5 h-5"></i>
                     </div>
-                    <span class="text-[12px] font-bold text-[#334155] group-hover:text-[#7C3AED] transition-colors leading-tight">View payments</span>
+                    <span>View payments</span>
+                </button>
+                <button type="button" data-go="tenant-announcements" class="dash-quick-btn group">
+                    <div class="dash-quick-icon dash-quick-icon--warning group-hover:scale-105 transition-transform relative">
+                        <i data-lucide="megaphone" class="w-5 h-5"></i>
+                        ${(typeof unreadBroadcastCountForTenant === 'function' && unreadBroadcastCountForTenant(t) > 0) ? `<span class="absolute -top-1 -right-1 w-4 h-4 bg-[#EF4444] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">${unreadBroadcastCountForTenant(t)}</span>` : ''}
+                    </div>
+                    <span>Announcements</span>
                 </button>
             </div>
         </div>
@@ -2281,10 +2320,17 @@ function screenTenantBuildingInfo() {
         ? renderTenantReadonlyPhotoGrid
         : (photos) => `<div class="photo-gallery-grid">${(photos || []).map(src => `<img src="${esc(src)}" class="photo-gallery-img" alt="">`).join('')}</div>`;
 
-    const buildingType = building.type || info.type || 'Block of Flats';
-    const floorCount = building.floors != null ? String(building.floors) : (info.floors || '3');
-    const unitCount = building.flatCount != null ? String(building.flatCount) : '4';
-    const yearBuilt = building.yearBuilt || info.built || '2019';
+    const unitObj = p && typeof getPropertyUnits === 'function'
+        ? getPropertyUnits(p.id).find(u => (typeof unitName === 'function' ? unitName(u) : u.name) === t?.unit)
+        : null;
+    const flatFloor = unitObj?.floor != null ? `Floor ${unitObj.floor}` : '2nd Floor';
+    const flatLayout = unitObj?.beds ? `${unitObj.beds} Beds · ${unitObj.baths || 1} Baths` : 'Apartment';
+    const furnishedStatus = unitObj?.furnished || 'Furnished';
+    const councilTaxStr = info.councilTax || 'Band D';
+    const councilName = utils.council?.name ? utils.council.name.replace(' City Council', '') : 'Westminster';
+    const binSchedule = utils.council?.bins || 'Waste Tue · Recycling Fri';
+    const wifiProvider = utils.wifi?.provider || 'BT Full Fibre';
+    const epcBand = info.epc || 'B';
     const landlordPhone = LANDLORD_USER.phone || '+44 7700 900123';
 
     const activeTab = STATE.buildingInfoTab || 'overview';
@@ -2307,18 +2353,18 @@ function screenTenantBuildingInfo() {
 
         ${activeTab === 'overview' ? `
         <!-- TAB 1: OVERVIEW -->
-        <!-- 1. Building Passport Hero Card -->
+        <!-- 1. Residence & Home Hero Card -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] mb-1.5">
-                        <i data-lucide="building-2" class="w-3 h-3"></i>
-                        Building &amp; Estate
+                        <i data-lucide="home" class="w-3 h-3"></i>
+                        Your Residence
                     </span>
-                    <h2 class="text-[18px] font-extrabold text-[#0F172A] tracking-tight leading-snug m-0">${esc(p?.name || '')}</h2>
+                    <h2 class="text-[18px] font-extrabold text-[#0F172A] tracking-tight leading-snug m-0">${esc(p?.name || '12 Park Lane')}</h2>
                     <p class="text-[12px] text-[#64748B] mt-0.5 m-0 flex items-center gap-1 leading-normal">
                         <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#94A3B8] shrink-0"></i>
-                        <span>${esc(p?.address || '')}</span>
+                        <span>${esc(p ? (p.name && !p.address?.toLowerCase().includes(p.name.toLowerCase()) ? `${p.name}, ${p.address}` : (p.address || '12 Park Lane, London, SW1A 1AA')) : '12 Park Lane, London, SW1A 1AA')}</span>
                     </p>
                 </div>
                 <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#E2E8F0] shadow-sm">
@@ -2328,50 +2374,94 @@ function screenTenantBuildingInfo() {
             <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[#059669]"></span>
-                    <span class="text-[12.5px] font-bold text-[#0F172A]">Your Home: <span class="text-[#2563EB]">${esc(t.unit || 'Flat')}</span></span>
+                    <span class="text-[12.5px] font-bold text-[#0F172A]">Your Home: <span class="text-[#2563EB]">${esc(t.unit || 'Flat')}</span> (${esc(flatFloor)})</span>
                 </div>
                 <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">Active Tenancy</span>
             </div>
         </div>
 
-        <!-- 2. Modern 2x2 Bento Vitals Grid -->
-        <div class="grid grid-cols-2 gap-2.5">
-            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                    <i data-lucide="building-2" class="w-4 h-4"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Type</span>
-                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0 truncate">${esc(buildingType)}</p>
-                </div>
+        <!-- 2. Home & Building Details Table (Tenant-Centric View) -->
+        <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div class="px-4 py-2.5 bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-between">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="clipboard-list" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Home &amp; Residence Details
+                </span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">Tenant View</span>
             </div>
-            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] flex items-center justify-center shrink-0 border border-[#E2E8F0]">
-                    <i data-lucide="layers" class="w-4 h-4"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Floors</span>
-                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0">${esc(floorCount)} Storeys</p>
-                </div>
-            </div>
-            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] flex items-center justify-center shrink-0 border border-[#E2E8F0]">
-                    <i data-lucide="home" class="w-4 h-4"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Community</span>
-                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0">${esc(unitCount)} Flats</p>
-                </div>
-            </div>
-            <div class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] flex items-center justify-center shrink-0 border border-[#E2E8F0]">
-                    <i data-lucide="calendar" class="w-4 h-4"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Year Built</span>
-                    <p class="text-[12.5px] font-bold text-[#0F172A] m-0">${esc(yearBuilt)}</p>
-                </div>
-            </div>
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-[#F8FAFC]/50 border-b border-[#F1F5F9] text-[10.5px] uppercase font-bold text-[#64748B] tracking-wider">
+                    <tr>
+                        <th class="py-2 px-4 font-semibold">Information</th>
+                        <th class="py-2 px-4 text-right font-semibold">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#F1F5F9] text-[12.5px]">
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="building-2" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                                <span>Building / Property</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(p?.name || '12 Park Lane')}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="home" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                                <span>Your Flat</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(t.unit || 'Flat 2A')} · ${esc(flatFloor)}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="bed-double" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Layout &amp; Type</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(flatLayout)} (${esc(furnishedStatus)})</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="receipt" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Council Tax Band</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(councilTaxStr)} · ${esc(councilName)}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Bin &amp; Recycling</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(binSchedule)}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="wifi" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Broadband / WiFi</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(wifiProvider)}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Energy Efficiency</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#059669]">Band ${esc(epcBand)} (EPC)</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <!-- 3. Dedicated Emergency Assistance Card -->
@@ -2436,6 +2526,26 @@ function screenTenantBuildingInfo() {
         </div>` : ''}
         ` : activeTab === 'safety' ? `
         <!-- TAB 2: SAFETY & METERS -->
+        <!-- Services & Meters Hub Card -->
+        <button type="button" data-go="property-utilities" data-pid="${pid}" data-unit="${esc(t.unit)}" data-utilities-scope="${esc(t.unit)}" data-utilities-return="tenant-building-info" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all w-full text-left flex items-center justify-between gap-3 group cursor-pointer mb-3">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                        <h4 class="text-[14.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Services &amp; Meters</h4>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] shrink-0">6 Active</span>
+                    </div>
+                    <p class="text-[12px] text-[#64748B] m-0 truncate">Gas, electricity, water, Wi-Fi, council &amp; parking</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1 text-[#2563EB] text-[12px] font-bold shrink-0">
+                <span>View</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
+            </div>
+        </button>
+
         <!-- Safety & Smoke Alarms -->
         ${alarmEntries.length ? `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
@@ -2575,11 +2685,192 @@ function screenTenantBuildingInfo() {
         </div>` : ''}
 
         <button type="button" data-go="tenant-house-rules" class="btn-secondary w-full py-3.5 rounded-2xl text-[13px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="scroll-text" class="w-4 h-4 text-[#2563EB]"></i>
-            <span>House Rules &amp; Regulations</span>
+            <i data-lucide="book-open" class="w-4 h-4 text-[#2563EB]"></i>
+            <span>House Rules &amp; Policies</span>
         </button>
         `}
     </div>`;
+}
+
+const INVENTORY_ITEM_DEMO_PHOTOS = {
+    // Kitchen
+    'oven / hob': 'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'oven': 'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'hob': 'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'fridge freezer': 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'fridge': 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'freezer': 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'microwave': 'https://images.unsplash.com/photo-1585659722983-3a675dabf23d?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'extractor fan': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'extractor': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'worktops': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'sink': 'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'dishwasher': 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=85&fm=jpg',
+
+    // Living room
+    'sofa': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'coffee table': 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'curtains / blinds': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'flooring': 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'radiator': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=85&fm=jpg',
+
+    // Bedroom
+    'bed frame': 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'bed': 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'mattress': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'wardrobe': 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=800&q=85&fm=jpg',
+
+    // Bathroom
+    'bath / shower': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'toilet': 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'basin': 'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'tiles / grouting': 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=800&q=85&fm=jpg',
+
+    // Hallway
+    'smoke alarm': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'co alarm': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'doors': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'lighting': 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=800&q=85&fm=jpg',
+
+    // Utility & General
+    'washing machine': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'tumble dryer': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'boiler / controls': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'desk': 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'office chair': 'https://images.unsplash.com/photo-1580481077195-7798c8120b66?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'dining table': 'https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&w=800&q=85&fm=jpg',
+    'chairs': 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=800&q=85&fm=jpg',
+};
+
+const INVENTORY_DEFAULT_ROOM_SIZES = {
+    'Kitchen': '95',
+    'Living room': '180',
+    'Bedroom': '135',
+    'Bathroom': '50',
+    'Hallway': '45',
+    'Balcony': '60',
+    'Garden / Patio': '350',
+    'Dining Room': '140',
+    'Ensuite Bathroom': '40',
+    'Utility Room': '45',
+    'Study / Office': '90',
+    'Storage / Loft': '110',
+};
+
+const INVENTORY_ROOM_ICONS = {
+    'Kitchen': 'utensils',
+    'Living room': 'sofa',
+    'Bedroom': 'bed',
+    'Bathroom': 'bath',
+    'Hallway': 'door-closed',
+    'Balcony': 'sun',
+    'Garden / Patio': 'trees',
+    'Dining Room': 'utensils',
+    'Ensuite Bathroom': 'bath',
+    'Utility Room': 'wrench',
+    'Study / Office': 'briefcase',
+    'Storage / Loft': 'archive',
+};
+
+function getInventoryItemPhotoUrl(item, roomName = '') {
+    if (!item) return INVENTORY_ITEM_DEMO_PHOTOS['oven / hob'];
+    if (typeof item === 'object') {
+        if (Array.isArray(item.photos) && item.photos.length) return item.photos[0];
+        if (item.photo) return item.photo;
+    }
+    const name = (typeof item === 'object' ? item.name : String(item)).toLowerCase().trim();
+    if (INVENTORY_ITEM_DEMO_PHOTOS[name]) return INVENTORY_ITEM_DEMO_PHOTOS[name];
+    for (const [k, url] of Object.entries(INVENTORY_ITEM_DEMO_PHOTOS)) {
+        if (name.includes(k) || k.includes(name)) return url;
+    }
+    if (name.includes('oven') || name.includes('hob') || name.includes('cooker') || name.includes('stove')) return INVENTORY_ITEM_DEMO_PHOTOS['oven / hob'];
+    if (name.includes('fridge') || name.includes('freezer')) return INVENTORY_ITEM_DEMO_PHOTOS['fridge freezer'];
+    if (name.includes('micro')) return INVENTORY_ITEM_DEMO_PHOTOS['microwave'];
+    if (name.includes('extract') || name.includes('hood') || name.includes('fan')) return INVENTORY_ITEM_DEMO_PHOTOS['extractor fan'];
+    if (name.includes('worktop') || name.includes('counter')) return INVENTORY_ITEM_DEMO_PHOTOS['worktops'];
+    if (name.includes('sofa') || name.includes('couch')) return INVENTORY_ITEM_DEMO_PHOTOS['sofa'];
+    if (name.includes('table')) return INVENTORY_ITEM_DEMO_PHOTOS['coffee table'];
+    if (name.includes('curtain') || name.includes('blind')) return INVENTORY_ITEM_DEMO_PHOTOS['curtains / blinds'];
+    if (name.includes('floor')) return INVENTORY_ITEM_DEMO_PHOTOS['flooring'];
+    if (name.includes('radiator') || name.includes('heater')) return INVENTORY_ITEM_DEMO_PHOTOS['radiator'];
+    if (name.includes('bed')) return INVENTORY_ITEM_DEMO_PHOTOS['bed frame'];
+    if (name.includes('mattress')) return INVENTORY_ITEM_DEMO_PHOTOS['mattress'];
+    if (name.includes('wardrobe') || name.includes('closet')) return INVENTORY_ITEM_DEMO_PHOTOS['wardrobe'];
+    if (name.includes('bath') || name.includes('shower')) return INVENTORY_ITEM_DEMO_PHOTOS['bath / shower'];
+    if (name.includes('toilet') || name.includes('wc')) return INVENTORY_ITEM_DEMO_PHOTOS['toilet'];
+    if (name.includes('basin') || name.includes('sink')) return INVENTORY_ITEM_DEMO_PHOTOS['basin'];
+    if (name.includes('tile') || name.includes('grout')) return INVENTORY_ITEM_DEMO_PHOTOS['tiles / grouting'];
+    if (name.includes('smoke') || name.includes('alarm')) return INVENTORY_ITEM_DEMO_PHOTOS['smoke alarm'];
+    if (name.includes('door')) return INVENTORY_ITEM_DEMO_PHOTOS['doors'];
+    if (name.includes('light') || name.includes('lamp')) return INVENTORY_ITEM_DEMO_PHOTOS['lighting'];
+    return INVENTORY_ITEM_DEMO_PHOTOS['oven / hob'];
+}
+
+function openInventoryItemPhotoModal(el) {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const pid = t?.propertyId ?? (typeof STATE !== 'undefined' ? STATE.propertyId : 0) ?? 0;
+    const rid = el?.dataset?.room != null ? +el.dataset.room : (typeof STATE !== 'undefined' ? (STATE.roomId ?? 0) : 0);
+    const itemIdx = el?.dataset?.itemIdx != null ? +el.dataset.itemIdx : 0;
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
+    const room = rooms[rid] || rooms[0];
+    const roomName = room?.[0] || 'Room';
+    const storedSize = typeof getInventoryRoomSize === 'function' ? getInventoryRoomSize(pid, rid) : '';
+    const roomSize = storedSize || INVENTORY_DEFAULT_ROOM_SIZES[roomName] || '';
+    const items = typeof getInventoryItemObjects === 'function' ? getInventoryItemObjects(pid, rid) : [];
+    const item = items[itemIdx] || { name: 'Fixture', condition: 'Good' };
+    const itemName = item.name || 'Fixture';
+    const condition = item.condition || 'Good';
+    const photoUrl = getInventoryItemPhotoUrl(item, roomName);
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    const modalHtml = `
+    <div class="card p-5 space-y-4 text-left screen-enter bg-white rounded-2xl shadow-xl border border-[#E2E8F0] max-w-[370px] mx-auto">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                <h3 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight m-0 truncate">${esc(itemName)}</h3>
+                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${esc(roomName)}${roomSize ? ` · ${esc(roomSize)} sq ft` : ''}</p>
+            </div>
+            <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 transition-colors cursor-pointer" aria-label="Close">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] shadow-sm">
+            <img id="inventory-modal-img" src="${esc(photoUrl)}" alt="${esc(itemName)}" class="w-full h-60 object-cover block">
+            <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 text-[#059669] shadow-sm backdrop-blur-xs border border-[#D1FAE5]">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                    <span>${esc(condition)} Condition</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-black/60 text-white backdrop-blur-xs">
+                    <i data-lucide="camera" class="w-3 h-3"></i> Check-in Photo
+                </span>
+            </div>
+        </div>
+
+        ${item.photos && item.photos.length > 1 ? `
+        <div class="flex items-center gap-2 overflow-x-auto py-1">
+            ${item.photos.map((pUrl, pIdx) => `
+            <button type="button" onclick="const img = document.getElementById('inventory-modal-img'); if (img) img.src = '${esc(pUrl)}';" class="w-12 h-12 rounded-lg overflow-hidden border-2 border-transparent focus:border-[#2563EB] shrink-0 cursor-pointer">
+                <img src="${esc(pUrl)}" alt="Photo ${pIdx + 1}" class="w-full h-full object-cover">
+            </button>`).join('')}
+        </div>` : ''}
+
+        <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[12px] text-[#475569] leading-relaxed">
+            <span class="font-bold text-[#0F172A]">Inventory Record:</span> Handover condition verified and recorded under schedule of condition.
+        </div>
+
+        <button type="button" onclick="closeModal()" class="btn-primary w-full py-3 rounded-xl text-[13px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+            <span>Done</span>
+        </button>
+    </div>`;
+
+    if (typeof openModal === 'function') {
+        openModal(modalHtml);
+    }
+}
+if (typeof window !== 'undefined') {
+    window.openInventoryItemPhotoModal = openInventoryItemPhotoModal;
 }
 
 function screenTenantInventory() {
@@ -2588,247 +2879,140 @@ function screenTenantInventory() {
         return `${topBar('Inventory', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Join a flat first to view inventory.</p></div>`;
     }
     const pid = t.propertyId;
-    const p = PROPERTIES[pid];
-    const fin = typeof getTenantFinancials === 'function' ? getTenantFinancials(t.id) : null;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const depAmount = fin?.deposit || '£2,450';
 
-    let totalItems = 0;
-    let totalPhotos = 0;
-    const roomCards = rooms.map(([name, sub, icon, idx, condSum]) => {
+    const roomCards = rooms.map(([name, sub, icon, idx]) => {
         const itemObjs = typeof getInventoryItemObjects === 'function'
             ? getInventoryItemObjects(pid, idx)
             : (typeof getInventoryItems === 'function' ? getInventoryItems(pid, idx).map(n => ({ name: n })) : []);
-        totalItems += itemObjs.length;
-        const invKey = typeof inventoryKey === 'function' ? inventoryKey(pid, idx) : `${pid}-${idx}`;
-        const photos = AppStore.inventory?.[invKey]?.photos || [];
-        totalPhotos += photos.length;
-        const previewItems = itemObjs.slice(0, 3).map(it => it.name).join(' · ');
-        return { name, sub, icon, idx, condSum, itemCount: itemObjs.length, photoCount: photos.length, previewItems };
+        const itemCount = itemObjs.length || 5;
+        const storedSize = typeof getInventoryRoomSize === 'function' ? getInventoryRoomSize(pid, idx) : '';
+        const roomSize = storedSize || INVENTORY_DEFAULT_ROOM_SIZES[name] || '80';
+        const roomIcon = INVENTORY_ROOM_ICONS[name] || icon || 'package';
+        const subText = `${roomSize} sq ft · ${itemCount} items`;
+        return { name, roomIcon, idx, subText, roomSize, itemCount };
     });
 
-    return `${topBar('Inventory & Condition', { back: true, sub: [t?.unit, p?.name].filter(Boolean).join(' · ') })}
-    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
-        <!-- 1. Deposit & Legal Protection Passport Banner -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0 flex-1">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] mb-1.5">
-                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                        Deposit Protected
-                    </span>
-                    <h2 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight m-0">Check-in Schedule of Condition</h2>
-                    <p class="text-[12px] text-[#64748B] mt-1 m-0 leading-relaxed">
-                        Handover report recorded at move-in for <strong class="text-[#0F172A]">${esc(t.unit || 'your unit')}</strong>. Protects your <strong class="text-[#0F172A]">${esc(depAmount)}</strong> deposit from pre-existing wear.
-                    </p>
-                </div>
+    return `${topBar('Inventory', { back: true })}
+    <div class="screen-content screen-enter space-y-3 text-left pb-12 pt-1">
+        ${roomCards.length ? roomCards.map(r => `
+        <button type="button" data-go="tenant-inventory-room" data-room="${r.idx}" class="card w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all text-left flex items-center gap-3.5 group cursor-pointer">
+            <div class="w-11 h-11 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <i data-lucide="${r.roomIcon}" class="w-5 h-5"></i>
             </div>
-
-            <!-- 3-Column Balanced Vitals KPI Grid -->
-            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-[#F1F5F9]">
-                <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-center">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Rooms</span>
-                    <span class="text-[15px] font-black text-[#0F172A] mt-0.5 block">${rooms.length}</span>
-                </div>
-                <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-center">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Fixtures</span>
-                    <span class="text-[15px] font-black text-[#0F172A] mt-0.5 block">${totalItems}</span>
-                </div>
-                <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-center">
-                    <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Photos</span>
-                    <span class="text-[15px] font-black text-[#2563EB] mt-0.5 block">${totalPhotos}</span>
-                </div>
+            <div class="min-w-0 flex-1">
+                <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">${esc(r.name)}</h3>
+                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${esc(r.subText)}</p>
             </div>
-        </div>
-
-        <!-- 2. Room Checklists Section -->
-        <div class="flex items-center justify-between px-1 mt-1">
-            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Checklists (${rooms.length})</span>
-            <span class="text-[11px] text-[#64748B]">Tap room to inspect items</span>
-        </div>
-
-        <div class="space-y-2.5">
-            ${roomCards.length ? roomCards.map(r => `
-            <button type="button" data-go="tenant-inventory-room" data-room="${r.idx}" class="card w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all text-left flex items-start justify-between gap-3 group cursor-pointer">
-                <div class="flex items-start gap-3.5 min-w-0 flex-1">
-                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-sm mt-0.5">
-                        <i data-lucide="${r.icon || 'package'}" class="w-5 h-5"></i>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <h4 class="text-[14.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">${esc(r.name)}</h4>
-                            ${r.condSum ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.condSum.class}">${r.condSum.label}</span>` : ''}
-                        </div>
-                        <div class="flex items-center gap-2 text-[11.5px] text-[#64748B] mb-1.5 flex-wrap">
-                            <span class="font-medium">${r.itemCount} fixture${r.itemCount === 1 ? '' : 's'}</span>
-                            ${r.photoCount ? `<span>·</span><span class="text-[#2563EB] font-semibold">${r.photoCount} photo${r.photoCount === 1 ? '' : 's'}</span>` : ''}
-                        </div>
-                        ${r.previewItems ? `<p class="text-[11.5px] text-[#94A3B8] m-0 truncate leading-tight">${esc(r.previewItems)}</p>` : ''}
-                    </div>
-                </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0 mt-3"></i>
-            </button>`).join('') : `
-            <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
-                <i data-lucide="package" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
-                <p class="text-[14px] font-bold text-[#0F172A] m-0">No room inventory recorded</p>
-                <p class="text-[12px] text-[#64748B] m-0 mt-1">When your landlord finishes recording check-in condition, it will appear here.</p>
-            </div>`}
-        </div>
-
-        <!-- 3. Actions / Export -->
-        <div class="pt-2 space-y-2">
-            <button type="button" data-action="download-inventory-report" class="btn-primary w-full py-3.5 rounded-2xl text-[13px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
-                <i data-lucide="download" class="w-4 h-4"></i>
-                <span>Download Signed Report (PDF)</span>
-            </button>
-            <button type="button" data-go="log-maintenance" class="btn-secondary w-full py-3 rounded-2xl text-[12.5px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
-                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-[#D97706]"></i>
-                <span>Report Inventory Discrepancy</span>
-            </button>
-        </div>
+        </button>`).join('') : `
+        <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <i data-lucide="package" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
+            <p class="text-[14px] font-bold text-[#0F172A] m-0">No room inventory recorded</p>
+        </div>`}
     </div>`;
 }
 
 function screenTenantInventoryRoom() {
     const t = getActiveTenant();
     const pid = t?.propertyId;
-    const rid = STATE.roomId ?? 0;
+    const rid = typeof STATE !== 'undefined' ? (STATE.roomId ?? 0) : 0;
     if (pid == null) {
-        return `${topBar('Room', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Room not found.</p></div>`;
+        return `${topBar('Inventory', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Room not found.</p></div>`;
     }
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const room = rooms[rid] || rooms[0];
-    const roomName = room?.[0] || 'Room';
+    const roomName = room?.[0] || 'Kitchen';
     const items = typeof getInventoryItemObjects === 'function' ? getInventoryItemObjects(pid, rid) : [];
-    const notes = typeof getInventoryNotes === 'function' ? getInventoryNotes(pid, rid) : '';
-    const roomSize = typeof getInventoryRoomSize === 'function' ? getInventoryRoomSize(pid, rid) : '';
-    const invKey = typeof inventoryKey === 'function' ? inventoryKey(pid, rid) : `${pid}-${rid}`;
-    const roomPhotos = AppStore.inventory?.[invKey]?.photos || [];
+    const storedSize = typeof getInventoryRoomSize === 'function' ? getInventoryRoomSize(pid, rid) : '';
+    const roomSize = storedSize || INVENTORY_DEFAULT_ROOM_SIZES[roomName] || '95';
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    const photoGrid = typeof renderTenantReadonlyPhotoGrid === 'function'
-        ? renderTenantReadonlyPhotoGrid(roomPhotos, { coverBadge: true, empty: 'No photos for this room yet.' })
-        : '';
-    const condSum = room?.[4] || { label: 'All Good', class: 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]' };
 
-    return `${topBar(roomName, { back: true, sub: 'Room Inventory & Fixtures' })}
-    <div class="screen-content screen-content-sm space-y-3.5 text-left pb-12">
-        <!-- 1. Room Overview Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Details</span>
-                    <h3 class="text-[18px] font-extrabold text-[#0F172A] tracking-tight m-0 mt-0.5">${esc(roomName)}</h3>
-                </div>
-                <span class="text-[10.5px] font-bold px-2.5 py-1 rounded-full ${condSum.class} shrink-0">
-                    ${condSum.label}
-                </span>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-[#F1F5F9]">
-                ${roomSize ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-semibold text-[#334155]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#2563EB]"></i> ${esc(roomSize)} sq ft</span>` : ''}
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EFF6FF] text-[11.5px] font-semibold text-[#2563EB]"><i data-lucide="package" class="w-3.5 h-3.5"></i> ${items.length} ${items.length === 1 ? 'fixture' : 'fixtures'}</span>
-                ${roomPhotos.length ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#ECFDF5] text-[11.5px] font-semibold text-[#059669]"><i data-lucide="camera" class="w-3.5 h-3.5"></i> ${roomPhotos.length} ${roomPhotos.length === 1 ? 'photo' : 'photos'}</span>` : ''}
-            </div>
+    return `${topBar('Inventory', { back: true })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-12 pt-1">
+        <!-- Room Header Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+            <h2 class="text-[17px] font-bold text-[#0F172A] m-0">${esc(roomName)}</h2>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-[12px] font-semibold text-[#475569]">
+                <i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i>
+                <span>${esc(roomSize)} sq ft</span>
+            </span>
         </div>
 
-        <!-- 2. Room Inspection Photos Section -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Room Photos (${roomPhotos.length})</span>
-                    <span class="text-[11px] text-[#94A3B8]">Recorded at check-in handover</span>
-                </div>
-                <span class="text-[10px] font-bold text-[#059669] bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 rounded-full">Verified</span>
-            </div>
-            ${photoGrid || `<p class="text-[12px] text-[#94A3B8] m-0 italic">No room photos uploaded yet.</p>`}
-        </div>
-
-        <!-- 3. Fixtures & Condition Schedule -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                <div>
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Fixtures &amp; Condition (${items.length})</span>
-                    <span class="text-[11px] text-[#94A3B8]">Handover condition recorded</span>
-                </div>
-                <span class="text-[10.5px] text-[#64748B] font-semibold">Protected</span>
-            </div>
-
-            ${items.length ? `
-            <div class="divide-y divide-[#F1F5F9]">
-                ${items.map(item => {
+        <!-- ITEMS & FIXTURES Section -->
+        <div>
+            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 mb-2">ITEMS &amp; FIXTURES</p>
+            <div class="card p-2 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9]">
+                ${items.length ? items.map((item, itemIdx) => {
                     const itemName = item.name || 'Fixture';
-                    const cond = item.condition || 'Good';
-                    const itemPhotos = item.photos || [];
-                    const badgeClass = typeof inventoryConditionBadgeClass === 'function' ? inventoryConditionBadgeClass(cond) : 'bg-[#DCFCE7] text-[#16A34A]';
+                    const photoUrl = getInventoryItemPhotoUrl(item, roomName);
                     return `
-                    <div class="py-3 space-y-2">
-                        <div class="flex items-center justify-between gap-2.5">
-                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                                <span class="w-1.5 h-1.5 rounded-full ${cond === 'Good' ? 'bg-[#10B981]' : (cond === 'Fair' ? 'bg-[#F59E0B]' : 'bg-[#EF4444]')} shrink-0"></span>
-                                <span class="text-[13.5px] font-bold text-[#0F172A] truncate">${esc(itemName)}</span>
-                            </div>
-                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm ${badgeClass} shrink-0">
-                                ${esc(cond)}
-                            </span>
-                        </div>
-                        ${itemPhotos.length ? `
-                        <div class="flex items-center gap-2 pl-4 overflow-x-auto py-1">
-                            ${itemPhotos.map((pUrl) => `
-                            <div class="relative group/photo shrink-0">
-                                <img src="${esc(pUrl)}" alt="${esc(itemName)}" class="w-14 h-14 object-cover rounded-xl border border-[#E2E8F0] shadow-sm">
-                            </div>`).join('')}
-                        </div>` : ''}
-                    </div>`;
-                }).join('')}
-            </div>` : `
-            <div class="text-center py-4">
-                <p class="text-[13px] text-[#94A3B8] m-0">No items listed for this room.</p>
-            </div>`}
+                    <button type="button" data-action="view-inventory-item-photo" data-room="${rid}" data-item-idx="${itemIdx}" class="w-full p-2.5 flex items-center gap-3.5 hover:bg-[#F8FAFC] rounded-xl transition-colors cursor-pointer text-left group">
+                        <img src="${esc(photoUrl)}" alt="${esc(itemName)}" class="w-11 h-11 rounded-full object-cover shrink-0 border border-[#E2E8F0] shadow-xs">
+                        <span class="text-[14.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors flex-1">${esc(itemName)}</span>
+                    </button>`;
+                }).join('') : `
+                <div class="text-center py-4">
+                    <p class="text-[13px] text-[#94A3B8] m-0">No items listed for this room.</p>
+                </div>`}
+            </div>
         </div>
-
-        <!-- 4. Room Handover Notes -->
-        ${notes ? `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-2">
-            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Handover Notes &amp; Observations</span>
-            <p class="text-[13px] text-[#334155] leading-relaxed m-0 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">${esc(notes)}</p>
-        </div>` : ''}
-
-        <!-- 5. Action: Report Discrepancy -->
-        <button type="button" data-go="log-maintenance" class="btn-secondary w-full py-3 rounded-2xl text-[12.5px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-            <span>Report Discrepancy for ${esc(roomName)}</span>
-        </button>
     </div>`;
 }
-
 function screenTenantAnnouncements() {
     const t = getActiveTenant();
     if (typeof markBroadcastsReadForTenant === 'function') markBroadcastsReadForTenant(t);
     const items = typeof announcementsForTenant === 'function' ? announcementsForTenant(t) : [];
-    const audienceLabel = (a) => {
-        if (!a.units?.length || a.scope === 'all') return 'Building-wide';
-        if (a.units.length === 1) return a.units[0];
-        return `${a.units.length} flats`;
-    };
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
-    return `${topBar('Announcements', { back: true, sub: 'From your landlord' })}
-    <div class="screen-content screen-enter stack-sm">
-        ${items.length ? items.map(a => `
-        <button type="button" data-go="tenant-announcement-detail" data-bid="${a.id}" class="tnt-announce card w-full text-left">
-            ${a.image ? `<img src="${a.image}" alt="" class="tnt-announce-thumb">` : ''}
-            <div class="tnt-announce-head">
-                <p class="tnt-announce-title">${esc(a.title)}</p>
-                <span class="badge bg-[#EFF6FF] text-[#2563EB]">${audienceLabel(a)}</span>
+    const pid = t?.propertyId ?? 0;
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : null;
+    const propName = p?.name?.split(',')[0] || 'Your Building';
+
+    return `${topBar('Building Notices', { back: true, sub: propName })}
+    <div class="screen-content screen-enter space-y-3.5 text-left pb-10">
+        <div class="flex items-center justify-between px-1">
+            <span class="text-[12px] font-bold text-[#64748B] uppercase tracking-wider">Official Updates & Notices</span>
+            <span class="text-[11.5px] font-semibold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-0.5 rounded-full border border-[#DBEAFE]">${items.length} Notice${items.length === 1 ? '' : 's'}</span>
+        </div>
+        ${items.length ? items.map(a => {
+            const isMaint = /boiler|water|heating|repair|maintenance|inspection|electric/i.test(`${a.title} ${a.body}`);
+            const isUrgent = /urgent|emergency|fire|alarm|warning/i.test(`${a.title} ${a.body}`);
+            const categoryTag = isUrgent
+                ? '<span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2]">Important</span>'
+                : (isMaint
+                    ? '<span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">Maintenance</span>'
+                    : '<span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">Building Notice</span>');
+
+            return `
+            <button type="button" data-go="tenant-announcement-detail" data-bid="${a.id}" class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#93C5FD] hover:shadow-md transition-all w-full text-left cursor-pointer group">
+                ${a.image ? `<img src="${a.image}" alt="" class="w-full h-32 object-cover rounded-xl mb-3 border border-[#E2E8F0]">` : ''}
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    ${categoryTag}
+                    <span class="text-[11px] font-medium text-[#94A3B8] flex items-center gap-1">
+                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                        <span>${esc(a.date)}</span>
+                    </span>
+                </div>
+                <h3 class="text-[14.5px] font-extrabold text-[#0F172A] group-hover:text-[#2563EB] transition-colors leading-snug m-0">${esc(a.title)}</h3>
+                <p class="text-[12.5px] font-normal text-[#475569] leading-relaxed line-clamp-2 mt-1.5 m-0">${esc(a.body)}</p>
+                <div class="flex items-center justify-between pt-3 mt-3 border-t border-[#F1F5F9] text-[11.5px]">
+                    <span class="font-medium text-[#64748B] flex items-center gap-1.5">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                        <span>${esc(a.from || 'Landlord')}</span>
+                    </span>
+                    <span class="font-bold text-[#2563EB] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                        <span>Read notice</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </span>
+                </div>
+            </button>`;
+        }).join('') : `
+        <div class="card p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#2563EB] mx-auto flex items-center justify-center">
+                <i data-lucide="megaphone" class="w-6 h-6"></i>
             </div>
-            <p class="tnt-announce-body">${esc(a.body.length > 100 ? `${a.body.slice(0, 100)}…` : a.body)}</p>
-            <p class="tnt-announce-meta"><i data-lucide="calendar" class="w-3 h-3"></i>${esc(a.date)} · ${esc(a.from)}</p>
-            <i data-lucide="chevron-right" class="tnt-announce-chevron w-4 h-4"></i>
-        </button>`).join('') : `
-        <div class="empty-state card">
-            <i data-lucide="megaphone" class="w-10 h-10 text-[#CBD5E1]"></i>
-            <p class="empty-state-title">No announcements yet</p>
-            <p class="empty-state-desc">Your landlord will post building updates here.</p>
+            <h4 class="text-[14px] font-bold text-[#0F172A]">No notices posted</h4>
+            <p class="text-[12px] text-[#64748B] max-w-[240px] mx-auto">Your landlord hasn't posted any notices for your building yet.</p>
         </div>`}
     </div>`;
 }
@@ -2837,35 +3021,102 @@ function screenTenantAnnouncementDetail() {
     const t = getActiveTenant();
     const b = typeof broadcastById === 'function' ? broadcastById(STATE.broadcastId) : null;
     if (!b || !t || !broadcastVisibleToTenant(b, t)) {
-        return `${topBar('Announcement', { back: true })}
-        <div class="screen-content"><p class="text-[13px] text-[#64748B]">Announcement not found.</p></div>`;
+        return `${topBar('Notice', { back: true })}
+        <div class="screen-content"><p class="text-[13px] text-[#64748B]">Notice not found.</p></div>`;
     }
     if (typeof markBroadcastsReadForTenant === 'function') markBroadcastsReadForTenant(t);
-    const content = typeof renderBroadcastDetailContent === 'function'
-        ? renderBroadcastDetailContent(b)
-        : `<div class="card p-4"><p>${typeof escapeHtml === 'function' ? escapeHtml(b.body) : b.body}</p></div>`;
-    return `${topBar('Announcement', { back: true, sub: b.date })}
-    <div class="screen-content screen-enter broadcast-detail-page">
-        ${content}
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const pid = b.propertyId ?? t?.propertyId ?? 0;
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : null;
+    const propName = p?.name || 'Your Building';
+
+    const isMaint = /boiler|water|heating|repair|maintenance|inspection|electric/i.test(`${b.title} ${b.body}`);
+    const isUrgent = /urgent|emergency|fire|alarm|warning/i.test(`${b.title} ${b.body}`);
+    const categoryTag = isUrgent
+        ? '<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2]">Important Notice</span>'
+        : (isMaint
+            ? '<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">Maintenance Notice</span>'
+            : '<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">Building Notice</span>');
+
+    return `${topBar('Notice', { back: true, sub: b.date })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-12">
+        <!-- Main Notice Card -->
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-4">
+            <!-- Author / Sender Header -->
+            <div class="flex items-center justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] font-bold flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                        <i data-lucide="megaphone" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[13.5px] font-bold text-[#0F172A] truncate m-0">${esc(b.from || 'Landlord')}</p>
+                        <p class="text-[11.5px] font-medium text-[#64748B] truncate m-0 mt-0.5">Property Management · ${esc(propName.split(',')[0])}</p>
+                    </div>
+                </div>
+                ${categoryTag}
+            </div>
+
+            <!-- Optional Image Banner -->
+            ${b.image ? `
+            <div class="overflow-hidden rounded-xl border border-[#E2E8F0]">
+                <img src="${b.image}" alt="" class="w-full max-h-56 object-cover">
+            </div>` : ''}
+
+            <!-- Notice Headline -->
+            <div>
+                <h1 class="text-[17px] font-black text-[#0F172A] leading-snug tracking-tight m-0">${esc(b.title)}</h1>
+                <p class="text-[11.5px] text-[#94A3B8] font-medium mt-1 flex items-center gap-1.5">
+                    <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                    <span>Published on ${esc(b.date)}</span>
+                </p>
+            </div>
+
+            <!-- Notice Full Message Body -->
+            <div class="text-[13.5px] text-[#334155] leading-relaxed whitespace-pre-line bg-[#F8FAFC] p-4 rounded-xl border border-[#F1F5F9]">
+                ${esc(b.body)}
+            </div>
+        </div>
+
+        <!-- Tenant Assistance Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-[13px] font-bold text-[#0F172A] m-0">Have questions about this notice?</p>
+                <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5">Message your landlord directly for clarification.</p>
+            </div>
+            <button type="button" data-go="chat" class="px-3.5 py-2 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0 flex items-center gap-1.5">
+                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                <span>Chat</span>
+            </button>
+        </div>
     </div>`;
 }
 
 function screenTenantHouseRules() {
-    const t = getActiveTenant();
-    const rules = typeof houseRulesForTenant === 'function' ? houseRulesForTenant(t) : [];
-    const pid = t?.propertyId ?? 0;
-    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : { name: 'Your Building' };
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const pid = t?.propertyId ?? (STATE.propertyId ?? 0);
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : (typeof PROPERTIES !== 'undefined' && PROPERTIES[0] ? PROPERTIES[0] : { name: 'Your Building' });
+    const rules = typeof houseRulesForTenant === 'function' ? houseRulesForTenant(t) : (typeof getPropertyHouseRules === 'function' ? getPropertyHouseRules(pid) : []);
 
-    const badge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">${rules.length} Rules</span>`;
+    const badge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0] inline-flex items-center gap-1.5 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span><span>Active Policies</span></span>`;
 
-    return `${topBar('House rules', { back: true, sub: p.name || '', rightBtn: badge })}
-    <div class="screen-content screen-enter space-y-3 text-left pb-8">
-        <div class="space-y-2">
-            ${rules.map((r, i) => `
-            <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-start gap-3">
-                <span class="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold flex items-center justify-center shrink-0 mt-0.5 border border-[#DBEAFE]">${i + 1}</span>
-                <div class="text-[13.5px] font-normal text-[#334155] leading-relaxed flex-1 min-w-0">${typeof formatHouseRuleDisplay === 'function' ? formatHouseRuleDisplay(r) : (typeof escapeHtml === 'function' ? escapeHtml(r) : r)}</div>
-            </div>`).join('')}
+    const htmlContent = typeof getPropertyHouseRulesHtml === 'function'
+        ? getPropertyHouseRulesHtml(pid)
+        : `<ol class="list-decimal pl-5 space-y-2.5">${rules.map(r => `<li>${typeof formatHouseRuleDisplay === 'function' ? formatHouseRuleDisplay(r) : (typeof escapeHtml === 'function' ? escapeHtml(r) : r)}</li>`).join('')}</ol>`;
+
+    return `${topBar('House Rules & Policies', { back: true, sub: p.name || 'Your Building', rightBtn: badge })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-10">
+        <!-- Exact Same Unified Document Card matching Landlord Design with Rich Rendered HTML -->
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-[14px] text-[#334155] leading-relaxed [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:space-y-2.5 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2.5 [&>p]:mb-2.5 [&>h1]:text-[17px] [&>h1]:font-bold [&>h1]:text-[#0F172A] [&>h1]:mb-2 [&>h2]:text-[15px] [&>h2]:font-bold [&>h2]:text-[#0F172A] [&>h2]:mb-2 [&>h3]:text-[14px] [&>h3]:font-bold [&>h3]:text-[#0F172A] [&>h3]:mb-1.5">
+            ${htmlContent}
+        </div>
+
+        <!-- Resident Agreement Context Banner -->
+        <div class="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] shadow-xs text-left space-y-1.5">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-[#2563EB]"></i>
+                <span class="text-[12.5px] font-bold text-[#0F172A]">Resident Guidelines &amp; Tenancy Terms</span>
+            </div>
+            <p class="text-[12px] text-[#64748B] leading-relaxed m-0">These building rules and community guidelines form part of your tenancy agreement for <strong class="text-[#0F172A]">${typeof escapeHtml === 'function' ? escapeHtml(p.name || 'this property') : (p.name || 'this property')}</strong>. Please ensure all household members and guests observe them.</p>
         </div>
     </div>`;
 }
@@ -3210,10 +3461,12 @@ function screenTenantActiveTenancy() {
     const sqft = unitObj?.sqft ?? 1050;
     const rentAmount = fin?.rent || t?.rent || '£2,450';
     const isGroup = tenancy?.type === 'group';
+    const fullAddress = p ? (p.name && !p.address?.toLowerCase().includes(p.name.toLowerCase()) ? `${p.name}, ${p.address}` : (p.address || '12 Park Lane, London, SW1A 1AA')) : '12 Park Lane, London, SW1A 1AA';
 
     const more = [
+        ['zap', 'Services & meters', 'property-utilities'],
         ['file-text', 'Documents', 'tenant-documents'],
-        ['scroll-text', 'House rules', 'tenant-house-rules'],
+        ['book-open', 'House rules & policies', 'tenant-house-rules'],
         ['package', 'Inventory', 'tenant-inventory'],
         ['building-2', 'Building info', 'tenant-building-info'],
         ['shield-check', 'Compliance', 'tenant-compliance'],
@@ -3227,77 +3480,118 @@ function screenTenantActiveTenancy() {
 
     return `${topBar('Active tenancy', { back: true, sub: [t?.unit, p?.name].filter(Boolean).join(' · ') })}
     <div class="screen-content screen-enter space-y-3.5 text-left pb-6">
-        <!-- 1. Property & Home Hero Card (Balanced, cohesive, with photos & vitals) -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0 flex-1">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] mb-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>
-                        Currently living here
-                    </span>
-                    <h2 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight leading-snug m-0">${esc(t?.unit || 'Unit')} · ${esc(p?.name || 'Property')}</h2>
-                    <p class="text-[12px] text-[#64748B] mt-0.5 m-0 leading-normal">${esc(p?.address || '—')}</p>
-                </div>
-                <button type="button" data-go="tenant-building-info" class="relative rounded-xl overflow-hidden shrink-0 w-16 h-16 border border-[#E2E8F0] group cursor-pointer" title="View property photos">
-                    <img src="${esc(cover)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
-                    ${photoCount ? `<span class="absolute bottom-1 right-1 px-1.5 py-0.2 rounded-md bg-black/70 text-white text-[9px] font-bold">${photoCount}📷</span>` : ''}
-                </button>
-            </div>
-
-            <!-- Balanced Unit Vitals Chips (Clean flex-wrap layout - NO scrollbars) -->
-            <div class="pt-3 border-t border-[#F1F5F9] flex items-center flex-wrap gap-1.5 py-0.5">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
-                    <i data-lucide="bed-double" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                    <span>${beds} Beds</span>
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
-                    <i data-lucide="bath" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                    <span>${baths} Baths</span>
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
-                    <i data-lucide="ruler" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                    <span>${Number(sqft).toLocaleString()} sq ft</span>
-                </span>
-                ${unitObj?.furnished ? `
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] font-semibold text-[#334155] shrink-0">
-                    <i data-lucide="sofa" class="w-3.5 h-3.5 text-[#2563EB]"></i>
-                    <span>${esc(unitObj.furnished)}</span>
-                </span>` : ''}
-            </div>
-        </div>
-
-        <!-- 2. Lease & Financial Terms Card (High-hierarchy, 2-column balanced grid) -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5">
-            <div class="flex items-start justify-between">
-                <div>
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Lease Agreement</span>
-                    <div class="flex items-baseline gap-1.5 mt-1">
-                        <span class="text-[28px] font-black text-[#0F172A] tracking-tight">${esc(rentAmount)}</span>
-                        <span class="text-[12px] font-semibold text-[#64748B]">/ month</span>
+        <!-- Unified Active Tenancy & Home Details Table Card (All-in-one Box) -->
+        <div class="card p-0 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <!-- Header: Home Identity & Photo -->
+            <div class="p-4 bg-white border-b border-[#F1F5F9]">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] mb-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>
+                            Currently living here
+                        </span>
+                        <h2 class="text-[18px] font-extrabold text-[#0F172A] tracking-tight leading-snug m-0">${esc(t?.unit || 'Flat 2A')} · ${esc(p?.name || '12 Park Lane')}</h2>
+                        <p class="text-[12px] text-[#64748B] mt-0.5 m-0 leading-normal flex items-center gap-1">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#94A3B8] shrink-0"></i>
+                            <span>${esc(fullAddress)}</span>
+                        </p>
                     </div>
+                    <button type="button" data-go="tenant-building-info" class="relative rounded-xl overflow-hidden shrink-0 w-16 h-16 border border-[#E2E8F0] group cursor-pointer" title="View property photos">
+                        <img src="${esc(cover)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                        ${photoCount ? `<span class="absolute bottom-1 right-1 px-1.5 py-0.2 rounded-md bg-black/70 text-white text-[9px] font-bold">${photoCount}📷</span>` : ''}
+                    </button>
                 </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] shrink-0">
-                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                    <span>${isGroup ? 'Group Lease' : 'Solo Lease'}</span>
+            </div>
+
+            <!-- Table Header -->
+            <div class="px-4 py-2.5 bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-between">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="clipboard-list" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                    Tenancy &amp; Home Details
                 </span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-full border border-[#DBEAFE]">${isGroup ? 'Group Lease' : 'Solo Lease'}</span>
             </div>
 
-            <!-- Clean Key Dates Row (No inner background boxes) -->
-            <div class="grid grid-cols-2 gap-3 py-1 border-t border-[#F1F5F9] text-left">
-                <div>
-                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Move-in Date</span>
-                    <p class="text-[14px] font-extrabold text-[#0F172A] mt-0.5 m-0">${esc(moveInLabel)}</p>
-                </div>
-                <div>
-                    <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Lease Ends</span>
-                    <p class="text-[14px] font-extrabold text-[#0F172A] mt-0.5 m-0">${esc(leaseEndLabel)}</p>
-                </div>
-            </div>
+            <!-- Table of All Specifications & Terms -->
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-[#F8FAFC]/50 border-b border-[#F1F5F9] text-[10.5px] uppercase font-bold text-[#64748B] tracking-wider">
+                    <tr>
+                        <th class="py-2 px-4 font-semibold">Item</th>
+                        <th class="py-2 px-4 text-right font-semibold">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#F1F5F9] text-[12.5px]">
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="building-2" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                                <span>Property</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(p?.name || '12 Park Lane')}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="home" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                                <span>Unit / Flat</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(t?.unit || 'Flat 2A')}${unitObj?.floor != null ? ` · Floor ${unitObj.floor}` : ' · 2nd Floor'}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="bed-double" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                                <span>Flat Layout</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${beds} Beds · ${baths} Baths · ${Number(sqft).toLocaleString()} sq ft</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="sofa" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Furnishing</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(unitObj?.furnished || 'Furnished')}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="credit-card" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Monthly Rent</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-black text-[#0F172A] text-[13.5px]">${esc(rentAmount)} <span class="text-[11px] font-normal text-[#64748B]">/ month</span></td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#475569]"></i>
+                                <span>Tenancy Period</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(moveInLabel)} – ${esc(leaseEndLabel)}</td>
+                    </tr>
+                    <tr class="hover:bg-[#F8FAFC]/60 transition-colors">
+                        <td class="py-2.5 px-4 text-[#64748B] font-medium">
+                            <span class="inline-flex items-center gap-2">
+                                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#059669]"></i>
+                                <span>Tenancy Deposit</span>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-bold text-[#0F172A]">${esc(fin?.deposit || '£2,450')} · <span class="text-[#059669]">MyDeposits</span></td>
+                    </tr>
+                </tbody>
+            </table>
 
-            <div class="pt-2 border-t border-[#F1F5F9] flex items-center justify-between text-[11.5px] text-[#64748B]">
-                <span class="flex items-center gap-1.5">
-                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
-                    <span>Fixed term tenancy</span>
+            <!-- Footer: Agreement Link -->
+            <div class="px-4 py-2.5 bg-[#F8FAFC] border-t border-[#F1F5F9] flex items-center justify-between text-[11.5px]">
+                <span class="text-[#64748B] flex items-center gap-1.5">
+                    <i data-lucide="file-check-2" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                    <span>Fixed term AST agreement</span>
                 </span>
                 <button type="button" data-go="tenant-documents" class="text-[#2563EB] font-bold hover:underline cursor-pointer flex items-center gap-0.5">
                     <span>View Agreement</span>
@@ -3305,9 +3599,6 @@ function screenTenantActiveTenancy() {
                 </button>
             </div>
         </div>
-
-        <!-- 3. Deposit Section -->
-        ${typeof renderTenantDepositSection === 'function' ? renderTenantDepositSection(tid) : ''}
 
         <!-- 4. Group Members (if applicable) -->
         ${showHousehold && typeof renderTenantAccountMembers === 'function' ? renderTenantAccountMembers(tid) : ''}
@@ -3486,33 +3777,24 @@ function screenTenantInspectionUpload() {
 }
 
 function screenTenantCompliance() {
-    const t = getActiveTenant();
-    const rows = typeof tenantComplianceForTenant === 'function' ? tenantComplianceForTenant(t) : [];
-    return `${topBar('Compliance', { back: true, sub: 'Your building' })}
-    <div class="screen-content screen-enter space-y-3 text-left pb-8">
-        <div class="space-y-2.5">
-            ${rows.map(r => {
-                const ok = r.status === 'valid';
-                return `
-            <div class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                        <i data-lucide="${r.icon || 'shield-check'}" class="w-5 h-5"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${r.name}</p>
-                        <p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate">${r.certNumber} · Expires ${r.expiry}</p>
-                    </div>
-                </div>
-                <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold border shrink-0 ${ok ? 'bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]' : 'bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]'}">
-                    ${ok ? 'Valid' : 'Expired'}
-                </span>
-            </div>`;
-            }).join('')}
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const pid = t?.propertyId ?? (STATE.propertyId ?? 0);
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : (typeof PROPERTIES !== 'undefined' && PROPERTIES[0] ? PROPERTIES[0] : { name: 'Your Building' });
+    const sub = p?.name?.split(',')[0] || 'Your Building';
+
+    const badge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] inline-flex items-center gap-1.5 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span><span>Verified Safe</span></span>`;
+
+    return `${topBar('Certificates & Compliance', { back: true, sub, rightBtn: badge })}
+    <div class="screen-content screen-content-sm space-y-3 text-left pb-10">
+        <!-- Exact Same Unified Records & Certificates Container as Landlord -->
+        ${typeof renderBuildingCertTiles === 'function' ? renderBuildingCertTiles(pid) : ''}
+
+        <div class="pt-2">
+            <button type="button" data-go="tenant-documents" class="btn-primary w-full py-3.5 rounded-2xl text-[13.5px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+                <i data-lucide="folder-open" class="w-4 h-4"></i>
+                <span>View All Building &amp; Tenancy Documents</span>
+            </button>
         </div>
-        <button type="button" data-go="tenant-documents" class="w-full py-3.5 rounded-2xl bg-[#2563EB] text-white font-bold text-[13px] hover:bg-[#1D4ED8] transition-all shadow-xs cursor-pointer mt-4">
-            View Certificate Documents
-        </button>
     </div>`;
 }
 
@@ -3648,7 +3930,7 @@ function screenTenantEditProfile() {
     const nidDraft = {
         nidProofFrontName: rec?.nidProofFront || STATE.nidProofFrontName || '',
         nidProofBackName: rec?.nidProofBack || STATE.nidProofBackName || '',
-        nidProofName: (!rec?.nidProofFront && !rec?.nidProofBack && rec?.nidProof) ? rec.nidProof : (STATE.nidProofName || ''),
+        nidProofName: STATE.nidProofName || rec?.nidProof || rec?.nidProofFront || '',
     };
     return `${topBar('Personal Information', { back: true })}
     <div class="screen-content screen-content-sm profile-form-page screen-enter">

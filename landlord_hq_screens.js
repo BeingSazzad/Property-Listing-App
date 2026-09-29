@@ -2592,11 +2592,30 @@ function go(screen, opts = {}) {
         STATE.selectedUnit = null;
     }
     if (screen === 'conduct-inspection' || screen === 'create-tenancy' || screen === 'property-photos' || screen === 'property-floor-plans' || screen === 'property-alarms' || screen === 'property-appliances' || screen === 'property-appliance-records' || screen === 'property-utilities' || screen === 'utility-detail' || screen === 'add-building-service' || screen === 'edit-utility' || screen === 'property-parking' || screen === 'property-info' || screen === 'property-compliance' || screen === 'property-doc-vault' || screen === 'property-inspections' || screen === 'property-inventory' || screen === 'property-house-rules' || screen === 'edit-property-house-rules' || screen === 'property-doc-folder' || screen === 'property-flat-documents' || screen === 'edit-property-alarms' || screen === 'edit-property-appliances' || screen === 'edit-property-utilities' || screen === 'edit-property-parking' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'edit-flat' || screen === 'add-flat' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'certificate-assign' || screen === 'select-unit-invite' || screen === 'invite-tenant') STATE.propertyId = opts.propertyId ?? STATE.propertyId;
-    if (screen === 'conduct-inspection' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms' || screen === 'property-inspections') {
+    if (screen === 'conduct-inspection' || screen === 'edit-tenancy-deposit' || screen === 'unit-utilities' || screen === 'flat-detail' || screen === 'flat-keys' || screen === 'edit-flat-keys' || screen === 'property-inventory' || screen === 'property-appliances' || screen === 'property-alarms' || screen === 'property-inspections' || screen === 'property-utilities') {
         if (opts.unit) {
             STATE.selectedUnit = opts.unit;
             STATE.inspectionFilterUnit = opts.unit;
         }
+    }
+    if (screen === 'property-utilities') {
+        if (opts.utilitiesScope) {
+            STATE.utilitiesScope = opts.utilitiesScope;
+        } else if (opts.unit) {
+            STATE.utilitiesScope = opts.unit;
+        }
+        if (opts.utilitiesReturn) {
+            STATE.utilitiesReturn = opts.utilitiesReturn;
+        } else if (from === 'flat-detail') {
+            STATE.utilitiesReturn = 'flat-detail';
+        } else if (from !== 'utility-detail' && from !== 'property-utilities') {
+            STATE.utilitiesReturn = null;
+        }
+    }
+    if (screen === 'utility-detail') {
+        if (opts.utilityId) STATE.utilityId = opts.utilityId;
+        if (opts.utilitiesScope) STATE.utilitiesScope = opts.utilitiesScope;
+        if (opts.utilitiesReturn) STATE.utilitiesReturn = opts.utilitiesReturn;
     }
     if (screen === 'flat-keys' || screen === 'edit-flat-keys') {
         if (opts.keysReturn) {
@@ -2644,6 +2663,7 @@ function go(screen, opts = {}) {
     if (opts.noteId !== undefined) STATE.noteId = opts.noteId;
     if (opts.contractorId != null) STATE.contractorViewId = opts.contractorId;
     if (opts.certId != null) STATE.contractorCertPreviewId = opts.certId;
+    if (opts.roomId !== undefined) STATE.roomId = opts.roomId;
     if (screen === 'tenant-add-note' || screen === 'tenant-edit-note') STATE.tenantId = opts.tenantId ?? STATE.tenantId;
     if (screen === 'document-preview') {
         STATE.previewDocId = opts.docId ?? STATE.previewDocId;
@@ -2824,6 +2844,27 @@ function navigateBackFallback() {
     }
     if (STATE.screen === 'tenant-reminder-detail') {
         go('tenant-reminders', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'property-utilities') {
+        if (STATE.userRole === 'tenant') {
+            go(STATE.utilitiesReturn || 'tenant-building-info', { noHistory: true });
+            return;
+        }
+        if (STATE.utilitiesReturn === 'flat-detail' || (STATE.utilitiesScope && STATE.utilitiesScope !== 'building' && STATE.selectedUnit)) {
+            const retUnit = STATE.selectedUnit || STATE.utilitiesScope;
+            STATE.utilitiesReturn = null;
+            go('flat-detail', { propertyId: STATE.propertyId, unit: retUnit, noHistory: true });
+            return;
+        }
+    }
+    if (STATE.screen === 'utility-detail') {
+        go('property-utilities', {
+            propertyId: STATE.propertyId,
+            utilitiesScope: STATE.utilitiesScope,
+            utilitiesReturn: STATE.utilitiesReturn,
+            noHistory: true
+        });
         return;
     }
     const target = map[STATE.screen]
@@ -3057,7 +3098,19 @@ function back() {
     }
 
     // Tenant role sub-screens
-    if (['tenant-house-rules', 'tenant-building-info', 'tenant-compliance', 'tenant-documents', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-issues', 'tenant-referencing', 'tenant-ref-detail', 'tenant-reminders', 'tenant-communication', 'tenant-checkout'].includes(STATE.screen)) {
+    if (STATE.screen === 'tenant-announcement-detail') {
+        go('tenant-announcements', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'tenant-inventory-room') {
+        go('tenant-inventory', { noHistory: true });
+        return;
+    }
+    if (STATE.screen === 'tenant-ref-detail') {
+        go('tenant-referencing', { noHistory: true });
+        return;
+    }
+    if (['tenant-house-rules', 'tenant-building-info', 'tenant-compliance', 'tenant-documents', 'tenant-inventory', 'tenant-announcements', 'tenant-issues', 'tenant-referencing', 'tenant-reminders', 'tenant-communication', 'tenant-checkout'].includes(STATE.screen)) {
         go('tenant-dashboard', { noHistory: true });
         return;
     }
@@ -6596,6 +6649,9 @@ function collectGoOptions(el) {
     else if (el.getAttribute('data-tenant-tab')) opts.tenantTab = el.getAttribute('data-tenant-tab');
     if (el.dataset.flatTab) opts.flatTab = el.dataset.flatTab;
     if (el.dataset.unit) opts.unit = el.dataset.unit;
+    if (el.dataset.utilitiesScope) opts.utilitiesScope = el.dataset.utilitiesScope;
+    if (el.dataset.utilitiesReturn) opts.utilitiesReturn = el.dataset.utilitiesReturn;
+    if (el.dataset.utilityId) opts.utilityId = el.dataset.utilityId;
     if (el.dataset.keysReturn) opts.keysReturn = el.dataset.keysReturn;
     if (el.dataset.refKey) opts.refKey = el.dataset.refKey;
     if (el.dataset.tenantPayPreset) opts.tenantPayFilter = el.dataset.tenantPayPreset;
@@ -6764,6 +6820,9 @@ function handleDelegatedAction(e, el) {
             if (el.dataset.pid !== undefined && el.dataset.pid !== '') opts.propertyId = +el.dataset.pid;
             if (el.dataset.tid !== undefined && el.dataset.tid !== '') opts.tenantId = +el.dataset.tid;
             if (el.dataset.unit) opts.unit = el.dataset.unit;
+            if (el.dataset.utilitiesScope) opts.utilitiesScope = el.dataset.utilitiesScope;
+            if (el.dataset.utilitiesReturn) opts.utilitiesReturn = el.dataset.utilitiesReturn;
+            if (el.dataset.utilityId) opts.utilityId = el.dataset.utilityId;
             if (el.dataset.duplicateFrom) opts.duplicateFrom = el.dataset.duplicateFrom;
             if (el.dataset.tab) opts.tab = el.dataset.tab;
             if (el.dataset.flatTab) opts.flatTab = el.dataset.flatTab;
@@ -6812,6 +6871,9 @@ function handleDelegatedAction(e, el) {
             e.stopPropagation();
             STATE.actionMenuKey = null;
             if (typeof removeMemberAction === 'function') removeMemberAction(+el.dataset.pid, el.dataset.unit, el.dataset.memberEmail, el.dataset.memberName);
+        });
+        case 'view-inventory-item-photo': return run(() => {
+            if (typeof openInventoryItemPhotoModal === 'function') openInventoryItemPhotoModal(el);
         });
         case 'action-menu-make-lead': return run(() => {
             e.stopPropagation();

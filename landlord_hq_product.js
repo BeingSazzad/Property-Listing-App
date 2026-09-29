@@ -4,13 +4,14 @@ const DOC_FOLDER_DEFS = [
     { id: 'gas', label: 'Gas Safety (CP12)', icon: 'flame', color: '#0284C7', bg: '#F0F9FF', match: d => d.type === 'Gas Certificate' || /gas|cp12/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'eicr', label: 'Electrical (EICR)', icon: 'zap', color: '#D97706', bg: '#FFFBEB', match: d => d.type === 'Electrical Certificate' || /electrical|eicr/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'epc', label: 'Energy Performance (EPC)', icon: 'leaf', color: '#059669', bg: '#ECFDF5', match: d => d.type === 'EPC Certificate' || /epc/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'tenancy', label: 'Tenancy Agreement', icon: 'file-text', color: '#2563EB', bg: '#EFF6FF', match: d => d.type === 'Tenancy Agreement' || /tenancy|lease|agreement|inventory|checkout/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'insurance', label: 'Landlord Insurance', icon: 'shield-check', color: '#7C3AED', bg: '#F5F3FF', match: d => /insurance/i.test(d.name || d.type || '') },
-    { id: 'deposit', label: 'Deposit Protection', icon: 'shield', color: '#2563EB', bg: '#EFF6FF', match: d => d.type === 'Deposit Certificate' || /deposit protection/i.test(`${d.name || ''} ${d.type || ''}`) },
+    { id: 'deposit', label: 'Deposit Protection', icon: 'shield', color: '#2563EB', bg: '#EFF6FF', match: d => d.type === 'Deposit Certificate' || /deposit/i.test(`${d.name || ''} ${d.type || ''}`) },
     { id: 'licence', label: 'Property Licence', icon: 'badge-check', color: '#475569', bg: '#F1F5F9', match: d => d.type === 'Property Licence' || /property\s*licence|property\s*license|hmo|selective\s*licen/i.test(`${d.name || ''} ${d.type || ''}`) },
-    { id: 'custom', label: 'Document Vault & Archive', icon: 'folder-archive', color: '#2563EB', bg: '#EFF6FF', match: () => false },
+    { id: 'custom', label: 'Document Vault & Archive', icon: 'folder-archive', color: '#475569', bg: '#F1F5F9', match: () => false },
 ];
 
-const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'insurance', 'deposit', 'licence', 'custom'];
+const DOC_FOLDER_PRIMARY_IDS = ['gas', 'eicr', 'epc', 'tenancy', 'insurance', 'deposit', 'licence', 'custom'];
 const DOC_FOLDER_RECORDS_IDS = ['licence', 'custom'];
 
 const CHARGE_TYPE_OPTIONS = [
@@ -259,6 +260,7 @@ function tenantDocFolderFromName(name) {
     if (/gas|cp12/.test(n)) return 'gas';
     if (/eicr|electrical/.test(n)) return 'eicr';
     if (/epc/.test(n)) return 'epc';
+    if (/tenancy|lease|agreement|inventory|checkout/.test(n)) return 'tenancy';
     if (/deposit/.test(n)) return 'deposit';
     if (/license|licence/.test(n)) return 'licence';
     if (/fire|smoke|alarm/.test(n)) return 'fire';
@@ -340,13 +342,56 @@ function renderDocFolderListOnly(propertyId, contextKey, opts = {}) {
     ${opts.recordsMode ? `<p class="doc-records-tip">Property-level documents — gas, electrical, EPC and safety certificates for the whole building.</p>` : ''}`;
 }
 
+function getFolderDocsForContext(propertyId, folderId, isTenant = false, tenantId = 0) {
+    const propDocs = (typeof AppStore !== 'undefined' && AppStore.docsForProperty ? AppStore.docsForProperty(propertyId) : [])
+        .filter(d => !isTenant || d.shared !== false || d.uploadedByRole === 'contractor');
+        
+    let combined = [...propDocs];
+    if (isTenant) {
+        const tid = tenantId ?? (typeof activeTenantListId === 'function' ? activeTenantListId() : 0);
+        const rawTenantDocs = typeof getTenantDocuments === 'function' ? getTenantDocuments(tid) : [];
+        const convertedTenantDocs = rawTenantDocs.map((d, idx) => {
+            const existing = typeof findDocumentByName === 'function' ? findDocumentByName(d[1]) : null;
+            if (existing) return existing;
+            const fid = tenantDocFolderFromName(d[1]);
+            return {
+                id: `t-${tid}-${idx}`,
+                propertyId,
+                name: d[1],
+                date: d[2],
+                type: 'Tenant Document',
+                folderId: fid,
+                shared: true,
+                isTenantSource: true,
+                tenantIdx: idx,
+                tenantId: tid,
+            };
+        });
+        combined = [...combined, ...convertedTenantDocs];
+    }
+    
+    // Deduplicate by filename
+    const seen = new Set();
+    const unique = combined.filter(d => {
+        const n = String(d.name || '').toLowerCase().trim();
+        if (!n || seen.has(n)) return false;
+        seen.add(n);
+        return true;
+    });
+
+    return docsForFolder(unique, folderId);
+}
+
 function screenDocFolderView() {
-    const propertyId = STATE.propertyId ?? 0;
+    const isTenant = STATE.userRole === 'tenant' || STATE.docFolderReturn === 'tenant-documents';
+    const tenant = (typeof getActiveTenant === 'function' ? getActiveTenant() : null);
+    const propertyId = (isTenant && tenant?.propertyId != null) ? tenant.propertyId : (STATE.propertyId ?? 0);
     const folderId = STATE.docFolderId || 'gas';
     const folder = DOC_FOLDER_DEFS.find(f => f.id === folderId) || DOC_FOLDER_DEFS[0];
-    const contextKey = `folder-${propertyId}-${folderId}`;
+    const contextKey = isTenant ? `tenant-folder-${folderId}` : `folder-${propertyId}-${folderId}`;
     const sort = STATE.docSort?.[contextKey] || 'year';
-    const allDocs = sortDocList(docsForFolder(AppStore.docsForProperty(propertyId), folderId), sort);
+    const rawAllDocs = getFolderDocsForContext(propertyId, folderId, isTenant, tenant?.id ?? 0);
+    const allDocs = sortDocList(rawAllDocs, sort);
     const q = (STATE.docSearch?.[contextKey] || '').toLowerCase();
     const files = q ? allDocs.filter(d => `${d.name} ${d.date}`.toLowerCase().includes(q)) : allDocs;
     const isCertFolder = ['gas', 'eicr', 'epc', 'insurance', 'fire'].includes(folderId);
@@ -354,7 +399,7 @@ function screenDocFolderView() {
     const currentDoc = pickCurrentCertDoc(files);
     const historyDocs = currentDoc ? files.filter(d => d.id !== currentDoc.id) : [];
 
-    const uploadBtn = `<button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+    const uploadBtn = isTenant ? '' : `<button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
         <span>Upload</span>
     </button>`;
@@ -370,9 +415,13 @@ function screenDocFolderView() {
         const visual = typeof documentRowVisual === 'function' ? documentRowVisual(doc) : { icon: 'file-text' };
         const label = docDisplayFileName(doc);
         const sub = `${docFileSizeLabel(doc)} · ${doc.date || '—'}`;
+        const docMatch = typeof findDocumentByName === 'function' ? findDocumentByName(doc.name) : null;
+        const goAttr = (doc.id != null && !String(doc.id).startsWith('t-'))
+            ? `data-go="document-preview" data-doc="${doc.id}"`
+            : (docMatch ? `data-go="document-preview" data-doc="${docMatch.id}"` : `data-go="document-preview" data-preview-source="tenant" data-preview-idx="${doc.tenantIdx ?? 0}" data-tid="${doc.tenantId ?? 0}"`);
         
         return `
-        <button type="button" data-go="document-preview" data-doc="${doc.id}" class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#93C5FD] transition-all flex items-center justify-between gap-3 w-full text-left cursor-pointer group mb-2.5">
+        <button type="button" ${goAttr} class="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#93C5FD] transition-all flex items-center justify-between gap-3 w-full text-left cursor-pointer group mb-2.5">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background:${folder.bg || '#EFF6FF'};color:${folder.color || '#2563EB'}">
                     <i data-lucide="${visual.icon}" class="w-5 h-5"></i>
@@ -391,6 +440,21 @@ function screenDocFolderView() {
             </div>
         </button>`;
     };
+
+    const emptyBox = isTenant ? `
+    <div class="card p-6 text-center text-[13px] text-[#64748B] bg-white rounded-2xl border border-[#E2E8F0] shadow-xs">
+        <i data-lucide="folder-open" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
+        <p class="font-bold text-[#0F172A] text-[14px]">No files in this folder</p>
+        <p class="mt-1 text-[12px]">Your landlord hasn't shared any documents in this category yet.</p>
+    </div>` : `
+    <div class="card p-6 text-center text-[13px] text-[#64748B] bg-white rounded-2xl border border-[#E2E8F0] shadow-xs">
+        <i data-lucide="file-text" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
+        <p class="font-bold text-[#0F172A] text-[14px]">No files uploaded</p>
+        <p class="mt-1 text-[12px]">Upload a ${escapeHtml(folder.label.replace(/s$/, '').toLowerCase())} to keep records compliant.</p>
+        <button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="w-full py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] mt-4 hover:bg-[#1D4ED8] transition-all cursor-pointer">
+            + Upload Certificate
+        </button>
+    </div>`;
 
     return `
     <div class="doc-folder-page screen-enter">
@@ -422,15 +486,7 @@ function screenDocFolderView() {
                     <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 block mb-2">Documents (${files.length})</span>
                     ${files.map(d => renderDocCard(d, false)).join('')}
                 </div>`}
-            ` : `
-            <div class="card p-6 text-center text-[13px] text-[#64748B] bg-white rounded-2xl border border-[#E2E8F0] shadow-xs">
-                <i data-lucide="file-text" class="w-8 h-8 text-[#CBD5E1] mx-auto mb-2"></i>
-                <p class="font-bold text-[#0F172A] text-[14px]">No files uploaded</p>
-                <p class="mt-1 text-[12px]">Upload a ${escapeHtml(folder.label.replace(/s$/, '').toLowerCase())} to keep records compliant.</p>
-                <button type="button" data-action="open-add-document-folder" data-folder="${folderId}" data-pid="${propertyId}" class="w-full py-3 rounded-xl bg-[#2563EB] text-white font-bold text-[13px] mt-4 hover:bg-[#1D4ED8] transition-all cursor-pointer">
-                    + Upload Certificate
-                </button>
-            </div>`}
+            ` : emptyBox}
         </div>
     </div>`;
 }
@@ -652,85 +708,82 @@ function renderPropertyDocumentsTabProduct(propertyId) {
 }
 
 function renderTenantDocFolderBrowser(tenantId) {
-    const rawDocs = typeof getTenantDocuments === 'function' ? getTenantDocuments(tenantId) : [];
     const tenant = (typeof TENANT_LIST !== 'undefined' ? TENANT_LIST[tenantId] : null) || (typeof getActiveTenant === 'function' ? getActiveTenant() : null);
     const pid = tenant?.propertyId ?? 0;
-    
-    // Also include shared building/property certificates for this tenant's property
-    const propDocs = (typeof AppStore !== 'undefined' && AppStore.documents ? AppStore.documents : [])
-        .filter(d => d.propertyId === pid && (d.shared !== false || d.uploadedByRole === 'contractor'));
-
-    const propDocTuples = propDocs.map(d => ['file-text', d.name, d.date || 'On file', '#2563EB']);
-    const allDocs = [...rawDocs, ...propDocTuples];
-    
-    // Deduplicate by filename
-    const seenNames = new Set();
-    const uniqueDocs = allDocs.filter(d => {
-        const name = d[1] || '';
-        if (seenNames.has(name)) return false;
-        seenNames.add(name);
-        return true;
-    });
-
     const contextKey = `tenant-${tenantId}`;
     const q = (STATE.docSearch?.[contextKey] || '').toLowerCase();
-    if (!STATE.docFolderOpen) STATE.docFolderOpen = {};
-    const mapped = uniqueDocs.map((d, i) => ({
-        id: `t-${tenantId}-${i}`, name: d[1], date: d[2], type: 'tenant', folderId: tenantDocFolderFromName(d[1]),
-    })).filter(d => !q || d.name.toLowerCase().includes(q));
 
-    const folders = DOC_FOLDER_DEFS.map(folder => {
-        const files = mapped.filter(d => d.folderId === folder.id || (folder.id === 'custom' && !DOC_FOLDER_DEFS.slice(0, -1).some(f => f.id === d.folderId)));
-        if (!files.length) return null;
-        const open = STATE.docFolderOpen[`${contextKey}-${folder.id}`] !== false;
+    const folderCards = DOC_FOLDER_DEFS.map(folder => {
+        const files = getFolderDocsForContext(pid, folder.id, true, tenantId);
+        if (q && !folder.label.toLowerCase().includes(q) && !files.some(f => String(f.name || '').toLowerCase().includes(q))) {
+            return null;
+        }
+        if (!files.length && !['gas', 'eicr', 'epc', 'tenancy'].includes(folder.id)) {
+            return null;
+        }
+
+        const count = files.length;
+        const isCertFolder = ['gas', 'eicr', 'epc', 'insurance', 'fire'].includes(folder.id);
+        const st = folderComplianceTone(pid, folder.id);
+
+        let subText = '';
+        if (folder.id === 'gas') {
+            subText = count ? `${count} document${count === 1 ? '' : 's'} · Annual safety check` : 'Annual safety check';
+        } else if (folder.id === 'eicr') {
+            subText = count ? `${count} document${count === 1 ? '' : 's'} · 5-year wiring check` : '5-year wiring check';
+        } else if (folder.id === 'epc') {
+            subText = count ? `${count} document${count === 1 ? '' : 's'} · Energy efficiency rating` : 'Energy efficiency rating';
+        } else if (folder.id === 'tenancy') {
+            subText = count ? `${count} document${count === 1 ? '' : 's'} · Signed lease & inventory` : 'Lease agreement & terms';
+        } else if (folder.id === 'deposit') {
+            subText = count ? `${count} document${count === 1 ? '' : 's'} · TDS / DPS protected` : 'Deposit protection scheme';
+        } else {
+            subText = count ? `${count} file${count === 1 ? '' : 's'} on record` : 'Files & shared records';
+        }
+
+        let badgeHtml = '';
+        if (isCertFolder && count > 0) {
+            badgeHtml = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Valid</span>`;
+        } else if (folder.id === 'deposit' && count > 0) {
+            badgeHtml = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Protected</span>`;
+        } else if (folder.id === 'tenancy' && count > 0) {
+            badgeHtml = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE] shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#2563EB]"></span>Active</span>`;
+        } else if (count > 0) {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] shrink-0">${count} File${count === 1 ? '' : 's'}</span>`;
+        } else {
+            badgeHtml = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-medium bg-[#F1F5F9] text-[#94A3B8] shrink-0">Empty</span>`;
+        }
+
         return `
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm mb-3 text-left">
-            <button type="button" data-action="toggle-doc-folder" data-folder="${folder.id}" data-ctx="${contextKey}" class="flex items-center justify-between w-full text-left gap-3 group cursor-pointer">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:${folder.bg};color:${folder.color}">
-                        <i data-lucide="${folder.icon}" class="w-5 h-5"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h4 class="text-[14.5px] font-extrabold text-[#0F172A] m-0 tracking-tight">${folder.label}</h4>
-                        <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5">${files.length} file${files.length === 1 ? '' : 's'}</p>
-                    </div>
+        <button type="button" data-go="property-doc-folder" data-folder="${folder.id}" data-pid="${pid}" class="w-full card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#93C5FD] hover:shadow-md transition-all flex items-center justify-between gap-3 text-left cursor-pointer group mb-2.5">
+            <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs" style="background:${folder.bg};color:${folder.color}">
+                    <i data-lucide="${folder.icon}" class="w-5 h-5"></i>
                 </div>
-                <div class="w-8 h-8 rounded-full bg-[#F8FAFC] flex items-center justify-center text-[#64748B] group-hover:bg-[#EFF6FF] group-hover:text-[#2563EB] transition-colors shrink-0">
-                    <i data-lucide="${open ? 'chevron-up' : 'chevron-down'}" class="w-4 h-4"></i>
+                <div class="min-w-0 flex-1">
+                    <h4 class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${folder.label}</h4>
+                    <p class="text-[11.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${subText}</p>
                 </div>
-            </button>
-            ${open ? `
-            <div class="pt-2 mt-3 border-t border-[#F1F5F9] divide-y divide-[#F1F5F9]">
-                ${files.map((f, fIdx) => {
-                    const docMatch = typeof findDocumentByName === 'function' ? findDocumentByName(f.name) : null;
-                    const goAttr = docMatch ? `data-go="document-preview" data-doc="${docMatch.id}"` : `data-go="document-preview" data-preview-source="tenant" data-preview-idx="${fIdx}" data-tid="${tenantId}"`;
-                    return `
-                <button type="button" ${goAttr} class="py-3 px-1 w-full text-left cursor-pointer flex items-center justify-between gap-3 group hover:bg-[#F8FAFC] rounded-xl transition-colors">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
-                            <i data-lucide="file-text" class="w-4 h-4"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate m-0">${escapeHtml(f.name)}</p>
-                            <div class="flex items-center gap-2 mt-0.5">
-                                <span class="text-[11px] font-medium text-[#64748B]">${escapeHtml(f.date)}</span>
-                                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5]">PDF Document</span>
-                            </div>
-                        </div>
-                    </div>
-                    <span class="text-[#2563EB] text-[12px] font-bold flex items-center gap-0.5 shrink-0 opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
-                        <span>View</span>
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                    </span>
-                </button>`;
-                }).join('')}
-            </div>` : ''}
-        </div>`;
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                ${badgeHtml}
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all"></i>
+            </div>
+        </button>`;
     }).filter(Boolean);
 
     return `
     ${renderDocFolderToolbar(contextKey)}
-    <div class="doc-folder-list stack-sm">${folders.length ? folders.join('') : `<div class="card p-8 text-center text-[13px] text-[#64748B]">No documents shared yet.</div>`}</div>`;
+    <div class="doc-folder-list pt-1">
+        ${folderCards.length ? folderCards.join('') : `
+        <div class="card p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#2563EB] mx-auto flex items-center justify-center">
+                <i data-lucide="folder-open" class="w-6 h-6"></i>
+            </div>
+            <h4 class="text-[14px] font-bold text-[#0F172A]">No documents found</h4>
+            <p class="text-[12px] text-[#64748B] max-w-[240px] mx-auto">No folders match your current search.</p>
+        </div>`}
+    </div>`;
 }
 
 function paymentStatusBadge(inv) {

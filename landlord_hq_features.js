@@ -4814,6 +4814,7 @@ function getInventoryFixtureIcon(name) {
 }
 
 function screenInventoryRoomEnhanced() {
+    const isTenant = (STATE.userRole === 'tenant');
     const pid = STATE.propertyId ?? 0;
     const p = PROPERTIES[pid] || PROPERTIES[0];
     const rid = STATE.roomId ?? 0;
@@ -4838,10 +4839,10 @@ function screenInventoryRoomEnhanced() {
                     <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Details</span>
                     <h3 class="text-[17px] font-bold text-[#0F172A] m-0 mt-0.5">${escapeHtml(roomName)}</h3>
                 </div>
-                <button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm">
+                ${!isTenant ? `<button type="button" data-go="edit-inventory-room" data-room="${rid}" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-[12px] hover:bg-[#DBEAFE] transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                     <span>Edit Room</span>
-                </button>
+                </button>` : `<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">Schedule Verified</span>`}
             </div>
             <div class="flex flex-wrap items-center gap-2 pt-2.5">
                 ${roomSize ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[11.5px] font-medium text-[#475569]"><i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i> ${escapeHtml(roomSize)} sq ft</span>` : ''}
@@ -5245,16 +5246,22 @@ function tenantUnitForBroadcast(tenant) {
 }
 
 function broadcastVisibleToTenant(b, tenant) {
-    if (!b || !tenant || tenant.propertyId == null) return false;
+    if (!b || !tenant) return false;
+    let pid = tenant.propertyId;
+    if (pid == null) {
+        const tid = typeof activeTenantListId === 'function' ? activeTenantListId() : tenant.id;
+        const listItem = tid != null ? TENANT_LIST[tid] : null;
+        if (listItem?.propertyId != null) pid = listItem.propertyId;
+    }
     if (b.scope === 'portfolio') return true;
-    if (b.propertyId !== tenant.propertyId) return false;
+    if (pid != null && b.propertyId !== pid) return false;
     if (b.scope === 'all' || !b.units?.length) return true;
     const unit = tenantUnitForBroadcast(tenant);
     return unit && b.units.includes(unit);
 }
 
 function announcementsForTenant(tenant) {
-    if (!tenant || tenant.propertyId == null) return [];
+    if (!tenant) return [];
     return (AppStore.broadcasts || [])
         .filter(b => broadcastVisibleToTenant(b, tenant))
         .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -6032,7 +6039,7 @@ function unitActionMenuItems(propertyId, unitName, opts = {}) {
     const occ = u?.status === 'occupied';
     const items = [
         { label: `Edit ${unitWord}`, icon: 'pencil', action: 'action-menu-go', attrs: `data-go="edit-flat" data-pid="${propertyId}" data-unit="${unitName}"` },
-        { label: 'Utilities', icon: 'zap', action: 'action-menu-go', attrs: `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unitName}"` },
+        { label: 'Services & Meters', icon: 'zap', action: 'action-menu-go', attrs: `data-go="property-utilities" data-pid="${propertyId}" data-unit="${unitName}" data-utilities-scope="${unitName}" data-utilities-return="flat-detail"` },
     ];
     if (opts.fromDetail) {
         items.push(
@@ -8143,16 +8150,29 @@ function houseRulesForTenant(tenant) {
 }
 
 function screenPropertyHouseRules() {
-    const propertyId = STATE.propertyId ?? 0;
+    const isTenant = (STATE.userRole === 'tenant');
+    const t = isTenant && typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const propertyId = (isTenant && t?.propertyId != null) ? t.propertyId : (STATE.propertyId ?? 0);
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
 
-    const editBtn = `<button type="button" data-go="edit-property-house-rules" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"><i data-lucide="pencil" class="w-3.5 h-3.5"></i><span>Edit</span></button>`;
+    const editBtn = isTenant
+        ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0] inline-flex items-center gap-1.5 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span><span>Active Policies</span></span>`
+        : `<button type="button" data-go="edit-property-house-rules" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"><i data-lucide="pencil" class="w-3.5 h-3.5"></i><span>Edit</span></button>`;
 
     return `${topBar('House Rules & Policies', { back: true, sub: p.name || '', rightBtn: editBtn })}
     <div class="screen-content screen-enter space-y-4 text-left pb-10">
-        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-[14px] text-[#334155] leading-relaxed [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:space-y-2.5 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2.5 [&>p]:mb-2.5">
+        <!-- Unified Document Card with identical styling across roles -->
+        <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs text-[14px] text-[#334155] leading-relaxed [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:space-y-2.5 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2.5 [&>p]:mb-2.5 [&>h1]:text-[17px] [&>h1]:font-bold [&>h1]:text-[#0F172A] [&>h1]:mb-2 [&>h2]:text-[15px] [&>h2]:font-bold [&>h2]:text-[#0F172A] [&>h2]:mb-2 [&>h3]:text-[14px] [&>h3]:font-bold [&>h3]:text-[#0F172A] [&>h3]:mb-1.5">
             ${getPropertyHouseRulesHtml(propertyId)}
         </div>
+        ${isTenant ? `
+        <div class="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] shadow-xs text-left space-y-1.5">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-[#2563EB]"></i>
+                <span class="text-[12.5px] font-bold text-[#0F172A]">Resident Guidelines &amp; Tenancy Terms</span>
+            </div>
+            <p class="text-[12px] text-[#64748B] leading-relaxed m-0">These building rules and community guidelines form part of your tenancy agreement for <strong class="text-[#0F172A]">${typeof escapeHtml === 'function' ? escapeHtml(p.name || 'this property') : (p.name || 'this property')}</strong>. Please ensure all household members and guests observe them.</p>
+        </div>` : ''}
     </div>`;
 }
 
@@ -8281,6 +8301,9 @@ const TENANT_SCREEN_ALIASES = {
     'mark-rent-received': 'transaction-history',
     'create-invoice': 'transaction-history',
     'pay-contractor': 'transaction-history',
+    'broadcast-notices': 'tenant-announcements',
+    'broadcast-detail': 'tenant-announcement-detail',
+    'send-broadcast': 'tenant-announcements',
 };
 
 const LANDLORD_SCREEN_ALIASES = {
@@ -8291,7 +8314,8 @@ const LANDLORD_SCREEN_ALIASES = {
     'tenant-building-info': 'properties',
     'tenant-compliance': 'compliance-dashboard',
     'tenant-reminders': 'reminders',
-    'tenant-announcements': 'dashboard',
+    'tenant-announcements': 'broadcast-notices',
+    'tenant-announcement-detail': 'broadcast-detail',
     'tenant-house-rules': 'properties',
     'tenant-referencing': 'tenants',
     'tenant-ref-detail': 'tenants',
@@ -8319,7 +8343,7 @@ const TENANT_ALLOWED_SCREENS = new Set([
     'log-maintenance', 'maintenance-detail', 'transaction-history', 'invoice-detail',
     'messages', 'chat', 'personal-info', 'notifications-list', 'notifications-settings',
     'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about',
-    'password', 'security', 'document-preview',
+    'password', 'security', 'document-preview', 'property-doc-folder',
 ]);
 
 function notificationsForRole() {
@@ -10194,7 +10218,9 @@ function propertyFlatDocumentCount(propertyId) {
 }
 
 function screenPropertyCompliance() {
-    const propertyId = STATE.propertyId ?? 0;
+    const isTenant = (STATE.userRole === 'tenant');
+    const t = isTenant && typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const propertyId = (isTenant && t?.propertyId != null) ? t.propertyId : (STATE.propertyId ?? 0);
     const p = PROPERTIES[propertyId] || PROPERTIES[0];
     const sub = p?.name?.split(',')[0] || '';
     const certIssues = propertyCertTileIssues(propertyId);
@@ -10204,14 +10230,23 @@ function screenPropertyCompliance() {
     const validCount = Math.max(0, totalCount - certIssues.length);
     const healthPercent = Math.round((validCount / totalCount) * 100);
 
-    const uploadBtn = `<button type="button" data-action="open-add-document-flow" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
+    const rightBtn = isTenant
+        ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] inline-flex items-center gap-1.5 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-[#059669]"></span><span>Verified Safe</span></span>`
+        : `<button type="button" data-action="open-add-document-flow" class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white text-[12px] font-bold shadow-xs flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all cursor-pointer shrink-0">
         <i data-lucide="upload" class="w-3.5 h-3.5"></i>
         <span>Upload</span>
     </button>`;
 
-    return `${topBar('Certificates & Compliance', { back: true, sub, rightBtn: uploadBtn })}
-    <div class="screen-content screen-content-sm space-y-3 text-left pb-8">
+    return `${topBar('Certificates & Compliance', { back: true, sub, rightBtn })}
+    <div class="screen-content screen-content-sm space-y-3 text-left pb-10">
         ${renderBuildingCertTiles(propertyId)}
+        ${isTenant ? `
+        <div class="pt-2">
+            <button type="button" data-go="tenant-documents" class="btn-primary w-full py-3.5 rounded-2xl text-[13.5px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
+                <i data-lucide="folder-open" class="w-4 h-4"></i>
+                <span>View All Building &amp; Tenancy Documents</span>
+            </button>
+        </div>` : ''}
     </div>`;
 }
 
@@ -11803,9 +11838,12 @@ function unitRentStats(propertyId, unit) {
 
 function renderUnitRentHistory(propertyId, unit) {
     const invs = invoicesForUnit(propertyId, unit);
+    if (!invs.length) {
+        return `<div class="card p-6 text-center text-[#64748B] text-[13px]">No rent records for this unit yet.</div>`;
+    }
     return `
-    <div class="card rent-history-list rent-history-list--clean rent-history-list--compact flat-rent-history-list">
-        ${invs.map(inv => renderRentHistoryRow(inv, { showUnit: false, compact: true })).join('')}
+    <div class="txn-list flat-rent-history-list">
+        ${invs.map(inv => renderTenantPaymentRow(inv, { showUnit: false, compact: true })).join('')}
     </div>`;
 }
 
@@ -12264,13 +12302,13 @@ function renderFlatDetailVitalsGrid(propertyId, unit) {
         },
         {
             icon: 'zap',
-            iconBg: '#F0FDF4',
-            iconColor: '#16A34A',
-            title: 'Meters & Utilities',
-            value: setupCount ? `${setupCount} Meters Active` : 'Meters on file',
-            sub: 'Electricity · Gas · Water',
-            go: 'unit-utilities',
-            attrs: `data-pid="${propertyId}" data-unit="${unit}"`,
+            iconBg: '#EFF6FF',
+            iconColor: '#2563EB',
+            title: 'Services & Meters',
+            value: '6 Services Active',
+            sub: 'Gas · Electricity · Water · Wi-Fi',
+            go: 'property-utilities',
+            attrs: `data-pid="${propertyId}" data-unit="${unit}" data-utilities-scope="${unit}" data-utilities-return="flat-detail"`,
         },
         {
             icon: 'check-circle-2',
@@ -12409,7 +12447,7 @@ function renderFlatDetailRecordsTab(propertyId, unit, p) {
         <p class="flat-records-group-title">Flat records</p>
         ${renderFlatUnitDocumentsSection(propertyId, unit, { full: true })}
         <section class="card flat-records-nav-list">
-            ${navRow('zap', 'Flat Utilities & Bills', `data-go="unit-utilities" data-pid="${propertyId}" data-unit="${unit}"`, utilDocs ? `${utilDocs} bill${utilDocs === 1 ? '' : 's'}` : 'Responsibility, meters & bills')}
+            ${navRow('zap', 'Flat Services & Meters', `data-go="property-utilities" data-pid="${propertyId}" data-unit="${unit}" data-utilities-scope="${unit}" data-utilities-return="flat-detail"`, 'Gas, electricity, water, Wi-Fi & parking')}
             ${navRow('key-round', 'Flat Keys & Fobs', `data-go="flat-keys" data-pid="${propertyId}" data-unit="${unit}"`, getUnitKeys(propertyId, unit).length ? `${getUnitKeys(propertyId, unit).length} set${getUnitKeys(propertyId, unit).length === 1 ? '' : 's'}` : 'Register key sets')}
             ${navRow('images', 'Flat Photos', `data-ftab="gallery"`, `${photoCount} photo${photoCount === 1 ? '' : 's'}`)}
         </section>
@@ -16520,38 +16558,7 @@ function paymentPurposeLabel(inv) {
 }
 
 function renderRentHistoryRow(inv, opts = {}) {
-    const paid = inv.status === 'Paid';
-    const isOverdue = inv.status === 'Overdue';
-    const unitPrefix = opts.showUnit !== false && inv.unit ? `${inv.unit} · ` : '';
-    const monthLabel = inv.month || inv.due || 'Payment';
-    const group = rentHistoryGroupLabel(inv);
-    const purpose = paymentPurposeLabel(inv);
-    const title = `${unitPrefix}${monthLabel}`;
-    const when = paid
-        ? (inv.paidOn || inv.due || 'Paid')
-        : `Due ${inv.due || '—'}${isOverdue ? ' · Overdue' : ''}`;
-    const meta = `${when} · ${purpose}`;
-    const amountTone = paid ? '' : isOverdue ? ' is-overdue' : ' is-due';
-    return `
-    <div class="rent-history-line">
-        <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="rent-history-line-main">
-            <span class="rent-history-copy">
-                <span class="rent-history-title">${escapeHtml(title)}</span>
-                <span class="rent-history-meta">${escapeHtml(meta)}</span>
-            </span>
-            <span class="rent-history-end">
-                <span class="rent-history-amount${amountTone}">${escapeHtml(inv.amount)}</span>
-                <span class="rent-history-kind${group === 'Extra charge' ? ' is-charge' : ''}">${escapeHtml(group)}</span>
-            </span>
-        </button>
-        ${paid ? `
-        <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="rent-history-download" aria-label="Download receipt" title="Download receipt">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i>
-        </button>` : `
-        <span class="rent-history-download rent-history-download--hint" aria-hidden="true">
-            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-        </span>`}
-    </div>`;
+    return renderTenantPaymentRow(inv, opts);
 }
 
 function downloadInvoiceReceipt(iid) {
@@ -16633,44 +16640,38 @@ function invoiceTypeLabel(inv) {
     return inv.month ? `${inv.month} rent` : 'Monthly rent';
 }
 
-function renderTenantPaymentRow(inv) {
+function renderTenantPaymentRow(inv, opts = {}) {
     const isPaid = inv.status === 'Paid';
     const isOverdue = inv.status === 'Overdue';
-    const isCharge = isLandlordExtraCharge(inv);
-    const isMaint = isMaintenanceBill(inv);
     const iconClass = isPaid ? 'txn-icon-paid' : isOverdue ? 'txn-icon-overdue' : 'txn-icon-pending';
     const badgeClass = isPaid ? 'txn-badge-paid' : isOverdue ? 'txn-badge-overdue' : 'txn-badge-pending';
     const statusLabel = isPaid ? 'Paid' : isOverdue ? 'Overdue' : 'Due';
-    const dateLine = isPaid ? (inv.paidOn || inv.due) : `Due ${inv.due}`;
-    const kind = typeof rentHistoryGroupLabel === 'function' ? rentHistoryGroupLabel(inv) : (isCharge || isMaint ? 'Extra charge' : 'Rent');
-    const row = `
+    const tenantName = inv.tenant || (typeof tenantNameForInvoice === 'function' ? tenantNameForInvoice(inv) : '') || 'Tenant';
+    const propShort = (inv.prop || '').split(',')[0].trim();
+    const location = [inv.unit, propShort].filter(Boolean).join(' · ');
+    const purpose = typeof paymentPurposeLabel === 'function'
+        ? paymentPurposeLabel(inv)
+        : (inv.type && inv.type !== 'rent' ? (inv.desc || 'Extra charge') : 'Rent');
+    const dateLine = isPaid
+        ? `${inv.paidOn || inv.date || inv.due || 'Paid'} · ${purpose}`
+        : `Due ${inv.due || inv.date || '—'} · ${purpose}`;
+    const monthPart = inv.month ? ` · ${inv.month}` : '';
+
+    return `
+    <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="txn-row">
         <div class="txn-icon ${iconClass}">
-            <i data-lucide="${isPaid ? 'check' : isOverdue ? 'alert-circle' : chargeInvoiceIcon(inv)}" class="w-4 h-4"></i>
+            <i data-lucide="${isPaid ? 'check' : isOverdue ? 'alert-circle' : 'clock'}" class="w-4 h-4"></i>
         </div>
         <div class="txn-body">
-            <p class="txn-title">${chargeInvoiceLabel(inv)}</p>
-            <p class="txn-sub txn-sub--muted">${dateLine}</p>
+            <p class="txn-title">${escapeHtml(tenantName)}</p>
+            <p class="txn-sub">${escapeHtml(location)}${escapeHtml(monthPart)}</p>
+            <p class="txn-sub txn-sub--muted">${escapeHtml(dateLine)}</p>
         </div>
         <div class="txn-meta">
-            <p class="txn-amount">${inv.amount}</p>
-            <span class="rent-history-kind${kind === 'Extra charge' ? ' is-charge' : ''}">${kind}</span>
-        </div>`;
-    if (!isPaid) {
-        return `
-    <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="txn-row">
-        ${row}
-        <i data-lucide="chevron-right" class="txn-chevron w-4 h-4"></i>
+            <p class="txn-amount">${escapeHtml(inv.amount)}</p>
+            <span class="txn-badge ${badgeClass}">${statusLabel}</span>
+        </div>
     </button>`;
-    }
-    return `
-    <div class="txn-row-wrap txn-row-wrap--action">
-        <button type="button" data-go="invoice-detail" data-iid="${inv.id}" class="txn-row">
-            ${row}
-        </button>
-        <button type="button" data-action="download-invoice-receipt" data-iid="${inv.id}" class="txn-download-btn" aria-label="Download receipt" title="Download receipt">
-            <i data-lucide="download" class="w-4 h-4"></i>
-        </button>
-    </div>`;
 }
 
 function getCurrentRentMonthLabel() {
@@ -17009,10 +17010,18 @@ function renderTenantRentHistory(tenantId, opts = {}) {
         const listItem = TENANT_LIST[tenantId];
         if (listItem?.propertyId != null && listItem.unit) invs = invoicesForUnit(listItem.propertyId, listItem.unit);
     }
+    if (!invs.length) {
+        return `
+        ${opts.hideStillDue ? '' : renderTenantStillDueCard(tenantId)}
+        <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
+            <i data-lucide="receipt" class="w-10 h-10 text-[#CBD5E1] mx-auto mb-2"></i>
+            <p class="text-[14px] font-bold text-[#0F172A] m-0">No rent history recorded yet</p>
+        </div>`;
+    }
     return `
     ${opts.hideStillDue ? '' : renderTenantStillDueCard(tenantId)}
-    <div class="card rent-history-list rent-history-list--clean${opts.compact ? ' rent-history-list--compact' : ''}">
-        ${invs.map(inv => renderRentHistoryRow(inv, { showUnit: false, ...opts })).join('')}
+    <div class="txn-list mt-3">
+        ${invs.map(inv => renderTenantPaymentRow(inv, opts)).join('')}
     </div>`;
 }
 
@@ -17989,90 +17998,87 @@ function screenMaintenanceDetailEnhanced() {
 }
 
 function inviteNidProofSummary(draft = {}) {
-    const front = STATE.nidProofFrontName || draft.nidProofFrontName;
-    const back = STATE.nidProofBackName || draft.nidProofBackName;
-    const legacy = STATE.nidProofName || draft.nidProofName;
-    if (front && back) return `${front} + ${back}`;
-    if (front) return front;
-    return legacy || '';
+    const doc = STATE.nidProofName || draft.nidProofName || STATE.nidProofFrontName || draft.nidProofFrontName || STATE.nidProofBackName || draft.nidProofBackName;
+    return doc || '';
+}
+
+function hasNidProof(draft = {}) {
+    return !!(STATE.nidProofName || draft.nidProofName || STATE.nidProofFrontName || draft.nidProofFrontName || STATE.nidProofBackName || draft.nidProofBackName);
 }
 
 function hasNidProofFront(draft = {}) {
-    return !!(STATE.nidProofFrontName || draft.nidProofFrontName || STATE.nidProofName || draft.nidProofName);
+    return hasNidProof(draft);
 }
 
 function hasNidProofBack(draft = {}) {
-    return !!(STATE.nidProofBackName || draft.nidProofBackName);
+    return hasNidProof(draft);
 }
 
 function hasCompleteNidProof(draft = {}) {
-    return hasNidProofFront(draft) && hasNidProofBack(draft);
+    return hasNidProof(draft);
 }
 
 function validateNidProof(draft = {}) {
-    if (!hasNidProofFront(draft)) return 'Upload the front of the NID card';
-    if (!hasNidProofBack(draft)) return 'Upload the back of the NID card';
+    if (!hasNidProof(draft)) return 'Upload an ID document (National ID or Passport)';
     return null;
 }
 
 function hasInviteNidProof(draft = {}) {
-    return hasCompleteNidProof(draft);
+    return hasNidProof(draft);
 }
 
 function renderNidProofUploadTile(side, fileName, required, previewUrl = '') {
-    const label = side === 'back' ? 'Back' : 'Front';
     const uploaded = !!(fileName || previewUrl);
     const thumb = previewUrl && isFieldPhotoPreviewable(previewUrl)
         ? `<img src="${previewUrl}" alt="" class="nid-proof-tile-thumb">`
         : `<i data-lucide="${uploaded ? 'file-check' : 'upload'}" class="w-5 h-5"></i>`;
     return `
-    <button type="button" data-action="upload-nid-proof" data-nid-side="${side}" class="nid-proof-tile${uploaded ? ' nid-proof-tile--done' : ''}">
+    <button type="button" data-action="upload-nid-proof" class="nid-proof-tile${uploaded ? ' nid-proof-tile--done' : ''}">
         ${thumb}
-        <span class="nid-proof-tile-label">${label}${required ? ' *' : ''}</span>
+        <span class="nid-proof-tile-label">ID Document${required ? ' *' : ''}</span>
         <span class="nid-proof-tile-name">${uploaded ? 'Uploaded' : (required ? 'Tap to upload' : 'Optional')}</span>
     </button>`;
 }
 
 function renderNidProofReviewPreview(draft = {}) {
-    const front = STATE.nidProofFrontName || draft.nidProofFrontName || '';
-    const back = STATE.nidProofBackName || draft.nidProofBackName || '';
-    const legacy = STATE.nidProofName || draft.nidProofName || '';
-    const frontName = front || legacy;
-    const backName = back;
-    if (!frontName && !backName) return '';
-    const tile = (side, name) => `
-    <div class="nid-proof-review-tile">
-        <span class="nid-proof-review-thumb" aria-hidden="true">
-            <i data-lucide="file-image" class="w-6 h-6"></i>
-        </span>
-        <span class="nid-proof-review-label">${side}</span>
-        <span class="nid-proof-review-name">${name ? escapeHtml(name) : '—'}</span>
-    </div>`;
+    const fileName = STATE.nidProofName || draft.nidProofName || STATE.nidProofFrontName || draft.nidProofFrontName || draft.nidProof || '';
+    if (!fileName) return '';
     return `
     <div class="invite-review-nid">
         <p class="invite-review-nid-title">ID document</p>
-        <div class="nid-proof-grid nid-proof-grid--review">
-            ${tile('Front', frontName)}
-            ${tile('Back', backName)}
+        <div class="nid-proof-review-tile">
+            <span class="nid-proof-review-thumb" aria-hidden="true">
+                <i data-lucide="file-image" class="w-6 h-6"></i>
+            </span>
+            <span class="nid-proof-review-label">NID / Passport</span>
+            <span class="nid-proof-review-name">${escapeHtml(fileName)}</span>
         </div>
     </div>`;
 }
 
 function renderNidProofUploadFields(draft = {}) {
-    const front = STATE.nidProofFrontName || draft.nidProofFrontName || '';
-    const back = STATE.nidProofBackName || draft.nidProofBackName || '';
-    const frontPreview = STATE.nidProofFrontPreview || draft.nidProofFrontPreview || '';
-    const backPreview = STATE.nidProofBackPreview || draft.nidProofBackPreview || '';
-    const legacy = !front && !back && (STATE.nidProofName || draft.nidProofName);
-    const err = STATE.formErrors.nidProof;
+    const fileName = STATE.nidProofName || draft.nidProofName || STATE.nidProofFrontName || draft.nidProofFrontName || '';
+    const previewUrl = STATE.nidProofPreview || draft.nidProofPreview || STATE.nidProofFrontPreview || draft.nidProofFrontPreview || '';
+    const uploaded = !!(fileName || previewUrl);
+    const err = STATE.formErrors?.nidProof;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
     return `
     <div class="nid-proof-block${err ? ' nid-proof-block--error' : ''}">
         <label class="form-label">${requiredLabel('ID document')}</label>
-        <p class="form-helper nid-proof-hint">National ID card — upload front and back photos.</p>
-        <div class="nid-proof-grid">
-            ${renderNidProofUploadTile('front', front || legacy, true, frontPreview)}
-            ${renderNidProofUploadTile('back', back, true, backPreview)}
-        </div>
+        <p class="form-helper nid-proof-hint">National ID, Passport, or Driving Licence (PDF or photo).</p>
+        <button type="button" data-action="upload-nid-proof" class="nid-proof-single-box${uploaded ? ' nid-proof-single-box--done' : ''}">
+            <div class="nid-proof-single-icon">
+                <i data-lucide="${uploaded ? 'file-check' : 'upload-cloud'}" class="w-6 h-6"></i>
+            </div>
+            <div class="nid-proof-single-info">
+                <p class="nid-proof-single-title">${uploaded ? esc(fileName) : 'Upload ID document'}</p>
+                <p class="nid-proof-single-sub">${uploaded ? 'Document uploaded · Tap to change' : 'Tap to browse photo or PDF (up to 10MB)'}</p>
+            </div>
+            <div class="nid-proof-single-badge">
+                ${uploaded ? '<span class="nid-proof-status-pill nid-proof-status-pill--done"><i data-lucide="check" class="w-3.5 h-3.5"></i> Added</span>' : '<span class="nid-proof-status-pill">Browse</span>'}
+            </div>
+        </button>
         ${err ? `<p class="form-error-msg"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>${err}</p>` : ''}
     </div>`;
 }
@@ -18802,6 +18808,7 @@ function renderReminderFormFields(reminder = null) {
             <p class="text-[12px] text-[#1E40AF] leading-relaxed">Synced from property records. Saving updates the certificate, alarm, lease or inspection date behind this Smart Reminder.</p>
         </div>` : '';
     // Build unit options for the currently selected property
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const buildUnitOptions = (pid, selUnit) => {
         const units = typeof getPropertyUnits === 'function' ? getPropertyUnits(pid) : [];
         const opts = units.map(u => {
@@ -21088,9 +21095,14 @@ function screenPropertyUtilitiesView() {
         ? (activeScope === 'building' ? `${p?.name || ''} · Whole building & communal` : `${p?.name || ''} · ${activeScope} Services`)
         : `${p?.name || ''} · Property services`;
 
-    return `${topBar('Building Services & Meters', { back: true, sub: subTitle })}
+    const isTenant = STATE.userRole === 'tenant';
+    const effectiveScope = isTenant
+        ? (typeof getActiveTenant === 'function' && getActiveTenant()?.unit ? getActiveTenant().unit : activeScope)
+        : activeScope;
+
+    return `${topBar('Services & Meters', { back: true, sub: subTitle })}
     <div class="screen-content screen-enter building-svc-page text-left">
-        ${isMulti ? `
+        ${(isMulti && !isTenant) ? `
         <!-- Scope Selector Dropdown Card -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between gap-3.5">
             <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -21172,10 +21184,10 @@ function screenUtilityDetail() {
                 ['Supplier', flatData.gas.provider],
                 ['MPRN', flatData.gas.mprn],
                 ['Location', flatData.gas.location],
-                ['Boiler', flatData.gas.boiler],
                 ['Shut-off', flatData.gas.shutOff],
                 ['Helpline', flatData.gas.phone],
-            ] : [
+                ['Tariff / Notes', flatData.gas.notes || 'Fixed rate until 2026'],
+            ].filter(([, val]) => val && val !== '—') : [
                 ['Supplier', gas.provider || 'British Gas'],
                 ['MPRN', gas.meterNumber || '489201'],
                 ['Location', gas.meterLocation || 'Cupboard under the stairs'],
@@ -21210,11 +21222,12 @@ function screenUtilityDetail() {
             badge: flatData ? flatData.water.badge : 'Metered',
             rows: flatData ? [
                 ['Supplier', flatData.water.provider],
-                ['Sub-meter', flatData.water.meterNumber],
+                ['Account / Meter', flatData.water.meterNumber],
                 ['Stopcock', flatData.water.location],
-                ['Shut-off', flatData.water.shutOff],
+                ['Street valve', flatData.water.shutOff],
                 ['Helpline', flatData.water.phone],
-            ] : [
+                ['Tariff / Notes', flatData.water.notes || 'Unmetered flat rate'],
+            ].filter(([, val]) => val && val !== '—') : [
                 ['Supplier', water.provider || 'Thames Water'],
                 ['Account / Meter', water.meterNumber || '902184'],
                 ['Stopcock', water.meterLocation || 'Under kitchen sink'],
@@ -22941,33 +22954,26 @@ async function uploadNidProof(side = 'front') {
     const fileName = file.name;
     const preview = file.url;
     if (!STATE.inviteDraft) STATE.inviteDraft = {};
-    if (side === 'back') {
-        STATE.nidProofBackName = fileName;
-        STATE.nidProofBackPreview = preview;
-        STATE.inviteDraft.nidProofBackName = fileName;
-        STATE.inviteDraft.nidProofBackPreview = preview;
-    } else {
-        STATE.nidProofFrontName = fileName;
-        STATE.nidProofFrontPreview = preview;
-        STATE.inviteDraft.nidProofFrontName = fileName;
-        STATE.inviteDraft.nidProofFrontPreview = preview;
-        STATE.nidProofName = fileName;
-        STATE.inviteDraft.nidProofName = fileName;
-    }
+    STATE.nidProofName = fileName;
+    STATE.nidProofPreview = preview;
+    STATE.nidProofFrontName = fileName;
+    STATE.nidProofFrontPreview = preview;
+    STATE.inviteDraft.nidProofName = fileName;
+    STATE.inviteDraft.nidProofPreview = preview;
+    STATE.inviteDraft.nidProofFrontName = fileName;
+    STATE.inviteDraft.nidProofFrontPreview = preview;
+    if (STATE.formErrors?.nidProof) delete STATE.formErrors.nidProof;
+
     if (STATE.screen === 'edit-tenant' && STATE.tenantId != null) {
         const t = TENANTS[STATE.tenantId];
         if (t) {
-            if (side === 'back') t.nidProofBack = fileName;
-            else t.nidProofFront = fileName;
-            t.nidProof = inviteNidProofSummary(STATE.inviteDraft) || fileName;
+            t.nidProof = fileName;
+            t.nidProofFront = fileName;
         }
-        ensureTenantNidProof(STATE.tenantId, inviteNidProofSummary(STATE.inviteDraft) || fileName, {
-            front: STATE.nidProofFrontName || STATE.inviteDraft.nidProofFrontName || '',
-            back: STATE.nidProofBackName || STATE.inviteDraft.nidProofBackName || '',
-        });
+        ensureTenantNidProof(STATE.tenantId, fileName, { front: fileName });
         AppStore.save();
     }
-    toast(side === 'back' ? 'ID back uploaded' : 'ID front uploaded');
+    toast(`ID document "${fileName}" selected`);
     render();
 }
 
