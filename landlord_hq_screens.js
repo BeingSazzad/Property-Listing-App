@@ -6164,7 +6164,7 @@ function screenEditTenant() {
                 <span class="text-[13px] font-semibold text-[#0F172A] text-right">${typeof escapeHtml === 'function' ? escapeHtml(String(value)) : value}</span>
             </div>`).join('')}
             <div class="flex justify-between gap-3 py-2">
-                <span class="text-[12px] text-[#64748B]">NID document</span>
+                <span class="text-[12px] text-[#64748B]">ID document</span>
                 <span class="text-[13px] font-semibold text-[#0F172A]">${nidDoc ? nidDoc.name : 'Not uploaded'}</span>
             </div>
         </div>

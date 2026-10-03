@@ -2131,7 +2131,7 @@ function renderTenantMainFactsCard(tenantId) {
         ${tenantFactsRow('Emergency contact', t.emergency && t.emergency !== '—' ? t.emergency : '—')}
         ${tenantFactsRow('Emergency phone', t.emergencyPhone && t.emergencyPhone !== '—' ? t.emergencyPhone : '—')}
         ${tenantFactsRow('Address', tenantCurrentAddress(tenantId))}
-        ${tenantFactsRow('NID document', nidDoc ? nidDoc.name : 'Not uploaded', nidAttrs)}
+        ${tenantFactsRow('ID document', nidDoc ? nidDoc.name : 'Not uploaded', nidAttrs)}
     </div>`;
 }
 
