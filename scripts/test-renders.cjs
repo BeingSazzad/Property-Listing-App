@@ -42,6 +42,14 @@ const tests = [
   { name: 'screenContractorScheduleHub', fn: "screenContractorScheduleHub()" },
   { name: 'screenFlatKeys', fn: "demoLogin('landlord'); screenFlatKeys()" },
   { name: 'screenEditFlatKeys', fn: "screenEditFlatKeys()" },
+  { name: 'screenSignUp (Landlord)', fn: "STATE.authRole = 'landlord'; screenSignUp()" },
+  { name: 'screenSignUp (Tenant)', fn: "STATE.authRole = 'tenant'; screenSignUp()" },
+  { name: 'screenSignUp (Contractor)', fn: "STATE.authRole = 'contractor'; screenSignUp()" },
+  { name: 'screenContractorPublicProfile', fn: "demoLogin('landlord'); STATE.contractorViewId = 0; screenContractorPublicProfile()" },
+  { name: 'screenContractorAssignedProperties', fn: "demoLogin('contractor'); screenContractorAssignedProperties()" },
+  { name: 'screenContractorCertifications', fn: "demoLogin('contractor'); screenContractorCertifications()" },
+  { name: 'screenContractorJobs', fn: "demoLogin('contractor'); screenContractorJobs()" },
+  { name: 'screenContractorDashboard', fn: "demoLogin('contractor'); screenContractorDashboard()" },
 ];
 
 tests.forEach(t => {
@@ -51,4 +59,4 @@ tests.forEach(t => {
   console.log(`[PASS] ${t.name} -> ${html.length} chars | Undefined: ${hasUndef} | NaN: ${hasNaN}`);
   if (hasUndef || hasNaN) throw new Error('Fault in ' + t.name);
 });
-console.log('\n=== ALL 9 SCREENS RENDERED 100% CLEAN AND ERROR-FREE ===');
+console.log(`\n=== ALL ${tests.length} SCREENS RENDERED 100% CLEAN AND ERROR-FREE ===`);

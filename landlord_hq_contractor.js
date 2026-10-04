@@ -32,14 +32,15 @@ const CONTRACTOR_NOTIFS = [
 ];
 
 const CONTRACTOR_STATUS = {
-    assigned: { label: 'Assigned', bg: '#FFEDD5', color: '#C2410C' },
-    accepted: { label: 'Accepted', bg: '#DBEAFE', color: '#1D4ED8' },
-    scheduled: { label: 'Visit Scheduled', bg: '#DBEAFE', color: '#1D4ED8' },
+    assigned: { label: 'Pending', bg: '#FFEDD5', color: '#C2410C' },
+    accepted: { label: 'Scheduled', bg: '#EFF6FF', color: '#1D4ED8' },
+    scheduled: { label: 'Scheduled', bg: '#EFF6FF', color: '#1D4ED8' },
     in_progress: { label: 'In Progress', bg: '#FEF3C7', color: '#D97706' },
-    waiting_approval: { label: 'Awaiting Review', bg: '#EFF6FF', color: '#2563EB' },
-    approved: { label: 'Awaiting Payment', bg: '#DCFCE7', color: '#16A34A' },
+    waiting_approval: { label: 'Awaiting Review', bg: '#FAF5FF', color: '#7E22CE' },
+    approved: { label: 'Approved', bg: '#DCFCE7', color: '#16A34A' },
     completed: { label: 'Completed', bg: '#D1FAE5', color: '#047857' },
     paid: { label: 'Paid', bg: '#ECFDF5', color: '#059669' },
+    cancelled: { label: 'Cancelled', bg: '#FEF2F2', color: '#DC2626' },
 };
 
 const contractorStatusStyle = (status) => CONTRACTOR_STATUS[status] || { label: status, bg: '#F1F5F9', color: '#64748B' };
@@ -157,6 +158,10 @@ function syncContractorJobToMaintenance(job) {
     if (job.status === 'completed') {
         item.status = 'progress';
     }
+    if (job.certificates && job.certificates.length) {
+        item.certificates = job.certificates;
+        item.certificate = job.certificates[0];
+    }
 }
 
 function submitContractorInvoice(job) {
@@ -254,17 +259,37 @@ const contractorTimeline = (status) => {
 
 function contractorJobAction(action, msg) {
     const job = contractorJob(STATE.contractorJobId);
-    const flow = { accept: 'accepted', start: 'in_progress' };
-    if (action === 'decline') {
-        toast(msg || 'Job declined');
-        go('contractor-jobs');
+    if (!job) return;
+    if (action === 'decline' || action === 'cancel-booking') {
+        STATE.showContractorCancelModal = true;
+        render();
         return;
     }
-    if (action === 'schedule') {
-        go('contractor-schedule', { jobId: job.id });
+    if (action === 'accept' || action === 'schedule' || action === 'reschedule' || action === 'open-accept-schedule') {
+        STATE.showContractorScheduleModal = true;
+        render();
         return;
     }
-    if (action === 'work') {
+    if (action === 'start' || action === 'start-job') {
+        startContractorJob(job.id);
+        return;
+    }
+    if (action === 'pause' || action === 'pause-job') {
+        STATE.showContractorPauseModal = true;
+        render();
+        return;
+    }
+    if (action === 'reopen' || action === 're-open') {
+        job.status = 'assigned';
+        delete job.cancelReason;
+        delete job.cancelledAt;
+        syncContractorJobToMaintenance(job);
+        saveContractorJobs();
+        toast('Job re-opened for scheduling');
+        render();
+        return;
+    }
+    if (action === 'work' || action === 'complete-work') {
         go('contractor-documents', { jobId: job.id, jobTab: 'invoice' });
         return;
     }
@@ -272,6 +297,7 @@ function contractorJobAction(action, msg) {
         go('contractor-documents', { jobId: job.id, jobTab: 'invoice' });
         return;
     }
+    const flow = { start: 'in_progress' };
     if (flow[action]) {
         job.status = flow[action];
         syncContractorJobToMaintenance(job);
@@ -300,6 +326,89 @@ function confirmContractorSchedule() {
     saveContractorJobs();
     toast('Visit scheduled');
     go('contractor-job-detail', { jobId: job.id });
+}
+
+function confirmAcceptScheduleModal() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!job) return;
+    const dateInput = document.querySelector('[data-field="ctrModalVisitDate"]');
+    const timeInput = document.querySelector('[data-field="ctrModalVisitTime"]');
+    const notesInput = document.querySelector('[data-field="ctrModalScheduleNotes"]');
+    const pricingChoice = document.querySelector('input[name="ctrPricingChoice"]:checked')?.value || 'fixed';
+
+    const date = dateInput?.value || new Date().toISOString().split('T')[0];
+    const time = timeInput?.value || '16:30';
+    const notes = notesInput?.value?.trim() || '';
+
+    job.scheduledDate = date;
+    job.scheduledTime = time;
+    job.scheduleNotes = notes;
+    job.pricingMode = pricingChoice;
+
+    const formatted = new Date(`${date}T${time}`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    job.visitDate = Number.isNaN(new Date(`${date}T${time}`).getTime()) ? `${date} ${time}` : formatted;
+    
+    // Explicitly set to 'scheduled' - NOT in_progress! Contractor has accepted and visit is confirmed
+    job.status = 'scheduled';
+    job.acceptedAt = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    
+    STATE.showContractorScheduleModal = false;
+    syncContractorJobToMaintenance(job);
+    saveContractorJobs();
+    toast('Visit scheduled & booking confirmed');
+    render();
+}
+
+function startContractorJob(jobId) {
+    const job = contractorJob(jobId ?? STATE.contractorJobId);
+    if (!job) return;
+    job.status = 'in_progress';
+    job.startedAt = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    syncContractorJobToMaintenance(job);
+    saveContractorJobs();
+    toast('Work started on site');
+    render();
+}
+
+function confirmContractorCancel() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!job) return;
+    const reasonInput = document.querySelector('input[name="ctrCancelReason"]:checked');
+    const customInput = document.querySelector('[data-field="ctrCancelReasonCustom"]')?.value?.trim();
+    const reason = customInput || reasonInput?.value || 'Contractor unavailable';
+
+    job.status = 'cancelled';
+    job.cancelledAt = new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    job.cancelReason = reason;
+
+    STATE.showContractorCancelModal = false;
+    syncContractorJobToMaintenance(job);
+    saveContractorJobs();
+    toast('Job booking cancelled');
+    render();
+}
+
+function confirmContractorPause() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!job) return;
+    const reason = document.querySelector('[data-field="ctrPauseReason"]')?.value?.trim() || 'Awaiting specialist replacement parts';
+    const nextDate = document.querySelector('[data-field="ctrPauseNextDate"]')?.value;
+    const nextTime = document.querySelector('[data-field="ctrPauseNextTime"]')?.value || '10:00';
+
+    job.status = 'scheduled';
+    job.pauseReason = reason;
+    if (nextDate) {
+        job.scheduledDate = nextDate;
+        job.scheduledTime = nextTime;
+        const formatted = new Date(`${nextDate}T${nextTime}`).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        job.visitDate = Number.isNaN(new Date(`${nextDate}T${nextTime}`).getTime()) ? `${nextDate} ${nextTime}` : formatted;
+    }
+
+    STATE.showContractorPauseModal = false;
+    syncContractorJobToMaintenance(job);
+    saveContractorJobs();
+    toast('Job paused & follow-up visit scheduled');
+    render();
 }
 
 function saveContractorNote() {
@@ -373,10 +482,11 @@ let contractorFilterJobs = () => {
     const f = STATE.contractorJobFilter || 'all';
     const map = {
         all: () => true,
-        pending: j => ['assigned', 'accepted'].includes(j.status),
+        pending: j => j.status === 'assigned',
+        scheduled: j => ['accepted', 'scheduled'].includes(j.status),
         assigned: j => j.status === 'assigned',
         accepted: j => ['accepted', 'scheduled'].includes(j.status),
-        in_progress: j => ['scheduled', 'in_progress', 'waiting_approval', 'approved'].includes(j.status),
+        in_progress: j => ['in_progress', 'waiting_approval', 'approved'].includes(j.status),
         completed: j => ['completed', 'paid'].includes(j.status),
     };
     let jobs = CONTRACTOR_JOBS.filter(map[f] || map.all);
@@ -393,10 +503,11 @@ let contractorFilterJobs = () => {
 
 function contractorJobFilterCounts() {
     const all = CONTRACTOR_JOBS.length;
-    const pending = CONTRACTOR_JOBS.filter(j => ['assigned', 'accepted'].includes(j.status)).length;
-    const inProgress = CONTRACTOR_JOBS.filter(j => ['scheduled', 'in_progress', 'waiting_approval', 'approved'].includes(j.status)).length;
+    const pending = CONTRACTOR_JOBS.filter(j => j.status === 'assigned').length;
+    const scheduled = CONTRACTOR_JOBS.filter(j => ['accepted', 'scheduled'].includes(j.status)).length;
+    const inProgress = CONTRACTOR_JOBS.filter(j => ['in_progress', 'waiting_approval', 'approved'].includes(j.status)).length;
     const completed = CONTRACTOR_JOBS.filter(j => ['completed', 'paid'].includes(j.status)).length;
-    return { all, pending, inProgress, completed };
+    return { all, pending, scheduled, inProgress, completed };
 }
 
 function contractorJobEstimate(job) {
@@ -410,11 +521,18 @@ function contractorJobEstimate(job) {
 }
 
 function contractorJobDisplayStatus(job) {
+    if (!job) return { label: 'Pending', bg: '#F1F5F9', color: '#64748B' };
     const st = contractorStatusStyle(job.status);
     const label = {
-        assigned: 'Pending', accepted: 'Pending', scheduled: 'In progress',
-        in_progress: 'In progress', waiting_approval: 'Pending review',
-        approved: 'Pending review', completed: 'Completed', paid: 'Completed',
+        assigned: 'Pending',
+        accepted: 'Scheduled',
+        scheduled: 'Scheduled',
+        in_progress: 'In Progress',
+        waiting_approval: 'Awaiting Review',
+        approved: 'Approved',
+        completed: 'Completed',
+        paid: 'Completed',
+        cancelled: 'Cancelled',
     }[job.status] || st.label;
     return { label, bg: st.bg, color: st.color };
 }
@@ -423,6 +541,9 @@ function contractorJobListCard(job) {
     const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
     const disp = contractorJobDisplayStatus(job);
     const location = `${job.property}${job.unit && job.unit !== '—' ? ` · ${job.unit}` : ''}`;
+    const isScheduled = job.status === 'scheduled' || job.status === 'accepted';
+    const isPending = job.status === 'assigned';
+    const isInProgress = job.status === 'in_progress';
     return `
     <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="ctr-v2-job-card card w-full text-left">
         <img src="${thumb}" alt="" class="ctr-v2-job-thumb">
@@ -430,7 +551,10 @@ function contractorJobListCard(job) {
             <p class="ctr-v2-job-title">${job.issue}</p>
             <p class="ctr-v2-job-addr">${location}</p>
             <div class="ctr-v2-job-meta">
-                <span class="ctr-v2-job-badge" style="background:${disp.bg};color:${disp.color}">${disp.label}</span>
+                <span class="ctr-v2-job-badge" style="background:${disp.bg};color:${disp.color};border:1px solid ${isScheduled ? '#BFDBFE' : (isPending ? '#FED7AA' : 'transparent')}">
+                    ${isScheduled ? '<i data-lucide="calendar" class="w-3 h-3 inline mr-1 text-[#2563EB]"></i>' : (isPending ? '<span class="w-1.5 h-1.5 rounded-full bg-[#EA580C] animate-pulse inline-block mr-1"></span>' : (isInProgress ? '<span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse inline-block mr-1"></span>' : ''))}
+                    ${disp.label}
+                </span>
                 <span class="ctr-v2-job-time"><i data-lucide="clock" class="w-3 h-3"></i>${job.visitDate || '—'}</span>
             </div>
         </div>
@@ -504,6 +628,7 @@ const CONTRACTOR_TRADE_CATALOG = [
     { id: 'roofing', label: 'Roofing', shortLabel: 'Roofer', icon: 'home', color: '#2563EB', bg: '#EFF6FF', jobsFor: 'Roof leaks, tiles, gutters, chimneys', keywords: ['roof', 'gutter', 'tile', 'chimney', 'slate'] },
     { id: 'carpentry', label: 'Carpentry', shortLabel: 'Carpenter', icon: 'ruler', color: '#B45309', bg: '#FFEDD5', jobsFor: 'Doors, floors, frames, built-in units', keywords: ['door', 'floor', 'wood', 'frame', 'cupboard', 'shelf', 'skirting'] },
     { id: 'painting', label: 'Painting & Decorating', shortLabel: 'Decorator', icon: 'paintbrush', color: '#DB2777', bg: '#FCE7F3', jobsFor: 'Paint, wallpaper, plaster touch-ups', keywords: ['paint', 'peel', 'wallpaper', 'decorat', 'plaster', 'wall', 'mould'] },
+    { id: 'locksmith', label: 'Locksmith & Security', shortLabel: 'Locksmith', icon: 'key', color: '#7C3AED', bg: '#F5F3FF', jobsFor: 'Emergency lockouts, broken keys, lock repairs, cylinders', keywords: ['lock', 'key', 'lockout', 'deadbolt', 'cylinder', 'padlock'] },
 ];
 
 const CONTRACTOR_TRADES = CONTRACTOR_TRADE_CATALOG.map(t => t.label);
@@ -570,17 +695,194 @@ let CONTRACTOR_USER = {
     gasSafe: true,
     liabilityInsurance: true,
     certificates: [
-        { id: 0, type: 'gas_safe', name: 'Gas Safe Registration', fileName: 'gas-safe-reg-2026.pdf', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027' },
-        { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance', fileName: 'liability-insurance-2026.pdf', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026' },
+        { id: 0, type: 'gas_safe', name: 'Gas Safe Registration (CP12 & Boilers)', fileName: 'gas-safe-reg-2026.pdf', certNumber: 'GS-684920', uploadedAt: 'Jan 15, 2026', validUntil: 'Mar 2027', issuer: 'Gas Safe Register UK', verified: true },
+        { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance (£5M)', fileName: 'liability-insurance-2026.pdf', certNumber: 'PL-HISCOX-441209', uploadedAt: 'Dec 1, 2025', validUntil: 'Dec 2026', issuer: 'Hiscox Insurance UK', verified: true },
+        { id: 2, type: 'trade_qualification', name: 'City & Guilds NVQ Level 3 Plumbing & Heating', fileName: 'city-guilds-nvq3.pdf', certNumber: 'CG-8821094', uploadedAt: 'Jun 10, 2024', validUntil: 'Lifetime', issuer: 'City & Guilds of London Institute', verified: true },
     ],
 };
 
 const CONTRACTOR_CERT_TYPES = [
-    { type: 'gas_safe', label: 'Gas Safe Registration', icon: 'flame', color: '#EA580C', bg: '#FFF7ED' },
-    { type: 'liability_insurance', label: 'Public Liability Insurance', icon: 'shield', color: '#2563EB', bg: '#EFF6FF' },
-    { type: 'trade_qualification', label: 'Trade Qualification', icon: 'award', color: '#2563EB', bg: '#EFF6FF' },
-    { type: 'other', label: 'Other Certificate', icon: 'file-text', color: '#64748B', bg: '#F1F5F9' },
+    { type: 'gas_safe', label: 'Gas Safe Registration', icon: 'flame', color: '#EA580C', bg: '#FFF7ED', regPrefix: 'GS-', defaultIssuer: 'Gas Safe Register UK', defaultCertNumber: 'GS-684920' },
+    { type: 'liability_insurance', label: 'Public Liability Insurance', icon: 'shield-check', color: '#2563EB', bg: '#EFF6FF', regPrefix: 'PL-', defaultIssuer: 'Hiscox Insurance UK', defaultCertNumber: 'PL-HISCOX-441209' },
+    { type: 'trade_qualification', label: 'Trade Qualification', icon: 'award', color: '#7C3AED', bg: '#F5F3FF', regPrefix: 'CG-', defaultIssuer: 'City & Guilds of London Institute', defaultCertNumber: 'CG-8821094' },
+    { type: 'electrical_cert', label: 'NICEIC / NAPIT Part P', icon: 'zap', color: '#D97706', bg: '#FEF3C7', regPrefix: 'NICEIC-', defaultIssuer: 'NICEIC Certification', defaultCertNumber: 'NICEIC-882194' },
+    { type: 'mla_licence', label: 'MLA Master Locksmith Licence', icon: 'key-round', color: '#7C3AED', bg: '#F5F3FF', regPrefix: 'MLA-', defaultIssuer: 'Master Locksmiths Association UK', defaultCertNumber: 'MLA-004921' },
+    { type: 'dbs_check', label: 'DBS Security Clearance', icon: 'badge-check', color: '#059669', bg: '#ECFDF5', regPrefix: 'DBS-', defaultIssuer: 'Disclosure & Barring Service UK', defaultCertNumber: 'DBS-009182471' },
+    { type: 'waste_carrier', label: 'Waste Carrier Licence', icon: 'truck', color: '#0284C7', bg: '#E0F2FE', regPrefix: 'CBDU-', defaultIssuer: 'Environment Agency UK', defaultCertNumber: 'CBDU-992144' },
+    { type: 'health_safety', label: 'Health & Safety (CHAS / SafeContractor)', icon: 'check-circle-2', color: '#059669', bg: '#ECFDF5', regPrefix: 'SSIP-', defaultIssuer: 'Alcumus SafeContractor', defaultCertNumber: 'SSIP-491028' },
+    { type: 'asbestos', label: 'Asbestos Awareness (Cat A)', icon: 'alert-triangle', color: '#D97706', bg: '#FEF3C7', regPrefix: 'UKATA-', defaultIssuer: 'UKATA / IATP', defaultCertNumber: 'UKATA-2025-119' },
+    { type: 'first_aid', label: 'Emergency First Aid at Work', icon: 'heart-pulse', color: '#DC2626', bg: '#FEF2F2', regPrefix: 'HSE-', defaultIssuer: 'St John Ambulance', defaultCertNumber: 'FAW-881920' },
+    { type: 'other', label: 'Other Certificate', icon: 'file-text', color: '#64748B', bg: '#F1F5F9', regPrefix: 'CERT-', defaultIssuer: 'Accredited Body', defaultCertNumber: 'CERT-552019' },
 ];
+
+const CONTRACTOR_ELECTIVE_CERT_TYPES = [
+    { type: 'dbs_check', label: 'DBS Criminal Check', icon: 'badge-check', color: '#059669', bg: '#ECFDF5', note: 'Provides tenant safety assurance for unattended flat entry' },
+    { type: 'waste_carrier', label: 'Waste Carrier Licence', icon: 'truck', color: '#0284C7', bg: '#E0F2FE', note: 'Required to transport & dispose of boilers or old fixtures' },
+    { type: 'asbestos', label: 'Asbestos Awareness', icon: 'alert-triangle', color: '#D97706', bg: '#FEF3C7', note: 'Safety standard for pre-2000 residential buildings' },
+    { type: 'first_aid', label: 'First Aid at Work', icon: 'heart-pulse', color: '#DC2626', bg: '#FEF2F2', note: 'HSE approved workplace emergency responder' },
+];
+
+function getRequiredCertTypesForTrade(tradeId) {
+    switch (tradeId) {
+        case 'plumbing':
+        case 'heating':
+            return [
+                {
+                    type: 'gas_safe',
+                    label: 'Gas Safe Registration',
+                    tradeLabel: 'Plumbing & Heating',
+                    mandatoryNote: 'Statutory UK requirement for domestic gas and boilers (Gas Safety Regs 1998)',
+                    acceptedEx: 'Gas Safe ID Card (CP12 certified)',
+                    defaultCertNumber: 'GS-684920',
+                    defaultIssuer: 'Gas Safe Register UK',
+                    icon: 'flame',
+                    color: '#EA580C',
+                    bg: '#FFF7ED',
+                },
+                {
+                    type: 'liability_insurance',
+                    label: 'Public Liability Insurance (£5M)',
+                    tradeLabel: 'Plumbing & Heating',
+                    mandatoryNote: 'Mandatory minimum £2M–£5M cover required by Landlord HQ compliance policy',
+                    acceptedEx: 'Policy Schedule / Certificate of Insurance',
+                    defaultCertNumber: 'PL-HISCOX-441209',
+                    defaultIssuer: 'Hiscox Insurance UK',
+                    icon: 'shield-check',
+                    color: '#2563EB',
+                    bg: '#EFF6FF',
+                },
+                {
+                    type: 'trade_qualification',
+                    label: 'City & Guilds NVQ Level 3',
+                    tradeLabel: 'Plumbing & Heating',
+                    mandatoryNote: 'Verified trade competency qualification or WaterSafe approved plumber',
+                    acceptedEx: 'City & Guilds 6189 NVQ Level 3 or WRAS',
+                    defaultCertNumber: 'CG-8821094',
+                    defaultIssuer: 'City & Guilds of London Institute',
+                    icon: 'award',
+                    color: '#7C3AED',
+                    bg: '#F5F3FF',
+                },
+            ];
+        case 'electrical':
+            return [
+                {
+                    type: 'electrical_cert',
+                    label: 'NICEIC / NAPIT Part P Accreditation',
+                    tradeLabel: 'Electrical',
+                    mandatoryNote: 'Statutory certification for domestic installation sign-offs and issuing EICRs',
+                    acceptedEx: 'NICEIC Approved Contractor or NAPIT Part P',
+                    defaultCertNumber: 'NICEIC-882194',
+                    defaultIssuer: 'NICEIC Certification',
+                    icon: 'zap',
+                    color: '#D97706',
+                    bg: '#FEF3C7',
+                },
+                {
+                    type: 'liability_insurance',
+                    label: 'Public Liability Insurance (£5M)',
+                    tradeLabel: 'Electrical',
+                    mandatoryNote: 'Mandatory minimum £2M–£5M cover required by Landlord HQ compliance policy',
+                    acceptedEx: 'Policy Schedule with electrical indemnity',
+                    defaultCertNumber: 'PL-ALLIANZ-39218',
+                    defaultIssuer: 'Allianz Insurance UK',
+                    icon: 'shield-check',
+                    color: '#2563EB',
+                    bg: '#EFF6FF',
+                },
+                {
+                    type: 'trade_qualification',
+                    label: '18th Edition Wiring Regs (BS 7671)',
+                    tradeLabel: 'Electrical',
+                    mandatoryNote: 'IET Wiring Regulations 18th Edition (BS 7671:2018+A2:2022)',
+                    acceptedEx: 'City & Guilds 2382-22 Certificate',
+                    defaultCertNumber: 'CG-2382-99120',
+                    defaultIssuer: 'City & Guilds of London Institute',
+                    icon: 'award',
+                    color: '#7C3AED',
+                    bg: '#F5F3FF',
+                },
+            ];
+        case 'locksmith':
+            return [
+                {
+                    type: 'mla_licence',
+                    label: 'MLA Approved Company Licence',
+                    tradeLabel: 'Locksmith & Security',
+                    mandatoryNote: 'Official Master Locksmiths Association company accreditation',
+                    acceptedEx: 'MLA Corporate Member Certificate',
+                    defaultCertNumber: 'MLA-004921',
+                    defaultIssuer: 'Master Locksmiths Association UK',
+                    icon: 'key-round',
+                    color: '#7C3AED',
+                    bg: '#F5F3FF',
+                },
+                {
+                    type: 'liability_insurance',
+                    label: 'Public Liability Insurance (£5M)',
+                    tradeLabel: 'Locksmith & Security',
+                    mandatoryNote: 'Mandatory £5M keyholder liability and damage coverage',
+                    acceptedEx: 'Policy Schedule with loss of keys extension',
+                    defaultCertNumber: 'PL-ZURICH-84912',
+                    defaultIssuer: 'Zurich Insurance',
+                    icon: 'shield-check',
+                    color: '#2563EB',
+                    bg: '#EFF6FF',
+                },
+                {
+                    type: 'dbs_check',
+                    label: 'Enhanced DBS Clearance',
+                    tradeLabel: 'Locksmith & Security',
+                    mandatoryNote: 'Mandatory criminal record clearance for emergency master key handling',
+                    acceptedEx: 'Enhanced DBS Certificate (dated within 3 yrs)',
+                    defaultCertNumber: 'DBS-009182471',
+                    defaultIssuer: 'Disclosure & Barring Service UK',
+                    icon: 'badge-check',
+                    color: '#059669',
+                    bg: '#ECFDF5',
+                },
+            ];
+        default:
+            return [
+                {
+                    type: 'liability_insurance',
+                    label: 'Public Liability Insurance (£2M–£5M)',
+                    tradeLabel: 'General Maintenance',
+                    mandatoryNote: 'Mandatory public liability protection required for all Landlord HQ contractors',
+                    acceptedEx: 'Policy Schedule / Certificate of Insurance',
+                    defaultCertNumber: 'PL-AXA-291840',
+                    defaultIssuer: 'AXA Insurance UK',
+                    icon: 'shield-check',
+                    color: '#2563EB',
+                    bg: '#EFF6FF',
+                },
+                {
+                    type: 'trade_qualification',
+                    label: 'Trade Competence (NVQ / CSCS)',
+                    tradeLabel: 'General Maintenance',
+                    mandatoryNote: 'Recognized UK trade qualification or valid CSCS Skills Card',
+                    acceptedEx: 'City & Guilds, NVQ Level 2/3, or CSCS Skilled Card',
+                    defaultCertNumber: 'CSCS-8812903',
+                    defaultIssuer: 'Construction Skills Certification Scheme',
+                    icon: 'award',
+                    color: '#7C3AED',
+                    bg: '#F5F3FF',
+                },
+                {
+                    type: 'health_safety',
+                    label: 'Health & Safety (CHAS / SafeContractor)',
+                    tradeLabel: 'General Maintenance',
+                    mandatoryNote: 'SSIP health and safety management accreditation',
+                    acceptedEx: 'CHAS, SafeContractor, or SMAS Worksafe',
+                    defaultCertNumber: 'SSIP-491028',
+                    defaultIssuer: 'Alcumus SafeContractor',
+                    icon: 'check-circle-2',
+                    color: '#059669',
+                    bg: '#ECFDF5',
+                },
+            ];
+    }
+}
 
 function contractorCertTypeOption(type) {
     return CONTRACTOR_CERT_TYPES.find(t => t.type === type) || CONTRACTOR_CERT_TYPES[CONTRACTOR_CERT_TYPES.length - 1];
@@ -710,19 +1012,27 @@ function saveContractorCertUpload() {
         toast('Choose a file to upload');
         return;
     }
+    const opt = contractorCertTypeOption(upload.type);
     const nameInput = document.querySelector('[data-ctr-cert-name]');
+    const numInput = document.querySelector('[data-ctr-cert-num]');
+    const issuerInput = document.querySelector('[data-ctr-cert-issuer]');
     const validInput = document.querySelector('[data-ctr-cert-valid]');
     const name = (nameInput?.value?.trim() || upload.displayName || upload.file.name).trim();
     if (!name) {
         toast('Enter a certificate name');
         return;
     }
-    const validUntil = validInput?.value?.trim() || '';
+    const certNumber = (numInput?.value?.trim() || opt.defaultCertNumber || `REG-${Date.now().toString().slice(-6)}`).trim();
+    const issuer = (issuerInput?.value?.trim() || opt.defaultIssuer || 'Accredited UK Authority').trim();
+    const validUntil = validInput?.value?.trim() || 'Dec 2027';
     const now = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     const cert = {
         id: upload.replaceId ?? nextContractorCertId(CONTRACTOR_USER),
         type: upload.type,
         name,
+        certNumber,
+        issuer,
+        verified: true,
         fileName: upload.file.name,
         fileUrl: upload.file.url,
         mime: upload.file.mime,
@@ -886,51 +1196,93 @@ function deleteContractorCert(certId) {
     render();
 }
 
-function renderContractorCertSlot(certType) {
-    const opt = contractorCertTypeOption(certType);
-    const cert = contractorCertByType(CONTRACTOR_USER, certType);
+function renderContractorCertSlot(slot) {
+    const slotType = typeof slot === 'string' ? slot : slot.type;
+    const opt = typeof slot === 'object' ? { ...contractorCertTypeOption(slotType), ...slot } : contractorCertTypeOption(slotType);
+    const cert = contractorCertByType(CONTRACTOR_USER, slotType);
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const certNum = cert?.certNumber || opt.defaultCertNumber || (cert ? `REG-${cert.id + 48201}` : '');
+    const issuer = cert?.issuer || opt.defaultIssuer || '';
 
     if (cert) {
         return `
-        <div data-action="view-contractor-cert" data-cert="${cert.id}" class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left cursor-pointer hover:border-[#2563EB] transition-all group">
-            <div class="flex items-center gap-3.5 min-w-0">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${opt.color};background:${opt.bg}">
-                    <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
-                </div>
-                <div class="min-w-0 space-y-0.5">
-                    <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate group-hover:text-[#2563EB] transition-colors">${esc(opt.label)}</h4>
-                    <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate">
-                        ${esc(cert.fileName)}
-                        ${cert.validUntil ? ` · <span class="font-bold text-[#059669]">Expires ${esc(cert.validUntil)}</span>` : ''}
-                    </p>
-                </div>
-            </div>
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm hover:border-[#BFDBFE] transition-all space-y-2 text-left">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs mt-0.5" style="color:${opt.color};background:${opt.bg}">
+                        <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0 space-y-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h4 class="text-[13.5px] font-extrabold text-[#0F172A] m-0 truncate">${esc(cert.name || opt.label)}</h4>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                                <i data-lucide="badge-check" class="w-3 h-3 text-[#16A34A]"></i> Verified
+                            </span>
+                        </div>
+                        
+                        <!-- Registration / Policy Number & Issuer -->
+                        <div class="flex items-center gap-1.5 text-[11px] text-[#475569] flex-wrap">
+                            ${certNum ? `
+                            <span class="font-mono font-bold text-[#1E293B] bg-[#F1F5F9] px-2 py-0.5 rounded-md border border-[#E2E8F0]">
+                                ${esc(certNum)}
+                            </span>` : ''}
+                            ${issuer ? `<span class="text-[#64748B]">Issued by <strong class="text-[#334155] font-semibold">${esc(issuer)}</strong></span>` : ''}
+                        </div>
 
-            <div class="flex items-center gap-2 shrink-0">
-                <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-[#F8FAFC] text-[#94A3B8] hover:text-[#DC2626] hover:bg-[#FEF2F2] border border-[#E2E8F0] flex items-center justify-center transition-colors cursor-pointer" title="Delete Certificate">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] transition-colors"></i>
+                        <!-- File & Expiry Date (Clean, never truncated!) -->
+                        <div class="flex items-center gap-2 text-[11px] text-[#64748B] flex-wrap pt-0.5">
+                            <span class="flex items-center gap-1 text-[#475569]">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5 text-[#94A3B8]"></i>
+                                <span class="font-medium">${esc(cert.fileName || 'certificate.pdf')}</span>
+                            </span>
+                            <span>·</span>
+                            <span class="font-semibold text-[#059669] flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-3 h-3"></i>
+                                ${cert.validUntil ? (cert.validUntil === 'Lifetime' ? 'Lifetime Validity' : `Expires ${esc(cert.validUntil)}`) : `Uploaded ${esc(cert.uploadedAt || 'Recent')}`}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons: View & Delete -->
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] text-[11.5px] font-bold border border-[#BFDBFE] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors active:scale-95">
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                        <span>View</span>
+                    </button>
+                    <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-7 h-7 rounded-xl bg-white hover:bg-[#FEF2F2] text-[#94A3B8] hover:text-[#DC2626] border border-[#E2E8F0] hover:border-[#FECACA] flex items-center justify-center transition-colors cursor-pointer" title="Remove Certificate">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
             </div>
         </div>`;
     }
 
     return `
-    <button type="button" data-action="open-contractor-cert-slot" data-cert-type="${certType}" class="card p-3.5 rounded-2xl bg-[#F8FAFC] border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] hover:bg-[#EFF6FF] transition-all flex items-center justify-between gap-3 text-left w-full cursor-pointer group">
-        <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${opt.color};background:${opt.bg}">
-                <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
+    <div class="card p-3.5 rounded-2xl bg-[#F8FAFC] border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] hover:bg-[#EFF6FF]/30 transition-all text-left space-y-2">
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs mt-0.5" style="color:${opt.color};background:${opt.bg}">
+                    <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0 space-y-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <h4 class="text-[13.5px] font-extrabold text-[#0F172A] m-0">${esc(opt.label)}</h4>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                            Required
+                        </span>
+                    </div>
+                    <p class="text-[11.5px] text-[#475569] m-0 leading-relaxed font-medium">${esc(opt.mandatoryNote || 'Required document for landlord verification')}</p>
+                    <p class="text-[10.5px] text-[#64748B] m-0">Accepted: ${esc(opt.acceptedEx || 'Official certificate PDF or clear photo')}</p>
+                </div>
             </div>
-            <div class="min-w-0">
-                <h4 class="text-[14px] font-extrabold text-[#0F172A] m-0 truncate">${esc(opt.label)}</h4>
-                <p class="text-[11.5px] font-medium text-[#64748B] m-0 truncate mt-0.5">Required document</p>
-            </div>
+
+            <button type="button" data-action="open-contractor-cert-slot" data-cert-type="${opt.type}" class="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-[12px] flex items-center gap-1.5 shrink-0 shadow-sm transition-all active:scale-95 cursor-pointer">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                <span>Upload</span>
+            </button>
         </div>
-        <span class="px-3 py-1.5 rounded-xl bg-[#2563EB] text-white font-bold text-[12px] flex items-center gap-1 shrink-0 shadow-sm group-hover:bg-[#1D4ED8]">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Upload
-        </span>
-    </button>`;
+    </div>`;
 }
 
 function renderExtraWorkModal() {
@@ -983,34 +1335,76 @@ function renderContractorCertUploadModal() {
     const opt = contractorCertTypeOption(upload.type);
     const step = upload.step || 'file';
     const title = step === 'review' ? 'Review certificate' : `Upload ${opt.label}`;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
     return `
     <div class="modal-overlay" data-action="close-contractor-cert-upload">
-        <div class="modal-card ctr-cert-modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <button type="button" data-action="close-contractor-cert-upload" class="modal-close"><i data-lucide="x" class="w-5 h-5"></i></button>
-                <h2 class="modal-title">${title}</h2>
+        <div class="modal-card ctr-cert-modal max-w-[420px] p-5 rounded-2xl bg-white space-y-4 text-left shadow-xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="color:${opt.color};background:${opt.bg}">
+                        <i data-lucide="${opt.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <h2 class="text-[16px] font-extrabold text-[#0F172A] m-0">${esc(title)}</h2>
+                </div>
+                <button type="button" data-action="close-contractor-cert-upload" class="text-[#94A3B8] hover:text-[#0F172A] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="modal-body">
+
+            <div class="space-y-3">
                 ${step === 'file' ? `
-                <p class="text-[13px] text-[#64748B]">Upload a PDF or photo for <strong>${escapeHtml(opt.label)}</strong>. Landlords and tenants can view this on your profile.</p>
-                <button type="button" data-action="pick-contractor-cert-file" class="card border-2 border-dashed border-[#E2E8F0] p-6 text-center w-full mt-3">
-                    <i data-lucide="upload" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
-                    <p class="text-[13px] font-semibold text-[#0F172A] mt-2">Choose file</p>
-                    <p class="text-[11px] text-[#64748B] mt-1">PDF, JPG or PNG</p>
-                </button>` : `
-                <div class="ctr-cert-review-file card p-3 flex items-center gap-3">
-                    <div class="ctr-cert-review-icon" style="background:${opt.bg};color:${opt.color}"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                <p class="text-[12.5px] text-[#475569] leading-relaxed">
+                    Upload official proof for <strong>${esc(opt.label)}</strong>. Landlords and tenants can view this verified accreditation on your profile.
+                </p>
+                <button type="button" data-action="pick-contractor-cert-file" class="card border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] hover:bg-[#EFF6FF]/40 transition-all p-6 text-center w-full rounded-2xl cursor-pointer">
+                    <i data-lucide="upload-cloud" class="w-9 h-9 text-[#2563EB] mx-auto"></i>
+                    <p class="text-[13.5px] font-bold text-[#0F172A] mt-2 mb-0.5">Choose Document File</p>
+                    <p class="text-[11.5px] text-[#64748B] m-0">PDF, JPG, PNG up to 10MB</p>
+                </button>
+                <div class="text-center pt-1">
+                    <button type="button" data-action="use-demo-contractor-cert-file" class="text-[12px] font-bold text-[#2563EB] hover:underline cursor-pointer">
+                        or use sample demo PDF (${esc(opt.label).toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf)
+                    </button>
+                </div>` : `
+                <div class="card p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style="background:${opt.bg};color:${opt.color}">
+                        <i data-lucide="file-check" class="w-4.5 h-4.5"></i>
+                    </div>
                     <div class="min-w-0">
-                        <p class="text-[13px] font-semibold text-[#0F172A] truncate">${escapeHtml(upload.file?.name || 'Document')}</p>
-                        <p class="text-[11px] text-[#64748B]">${escapeHtml(opt.label)}</p>
+                        <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${esc(upload.file?.name || 'document.pdf')}</p>
+                        <p class="text-[11px] text-[#64748B] m-0">${esc(opt.label)} · Ready to verify</p>
                     </div>
                 </div>
-                <div class="auth-field" style="margin-top:12px"><label>Certificate name</label><input type="text" data-ctr-cert-name class="auth-input" value="${escapeHtml(upload.displayName || '')}" placeholder="${escapeHtml(opt.label)}"></div>
-                <div class="auth-field"><label>Valid until (optional)</label><input type="text" data-ctr-cert-valid class="auth-input" value="${escapeHtml(upload.validUntil || '')}" placeholder="e.g. Mar 2027"></div>`}
+
+                <div class="space-y-2.5 pt-1 text-left">
+                    <div>
+                        <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Certificate / Document Title</label>
+                        <input type="text" data-ctr-cert-name class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none" value="${esc(upload.displayName || opt.label)}" placeholder="${esc(opt.label)}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Registration / Policy #</label>
+                            <input type="text" data-ctr-cert-num class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none font-mono" value="${esc(opt.defaultCertNumber || '')}" placeholder="e.g. GS-684920">
+                        </div>
+                        <div>
+                            <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Valid Until</label>
+                            <input type="text" data-ctr-cert-valid class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none" value="${esc(upload.validUntil || 'Mar 2027')}" placeholder="e.g. Mar 2027 or Lifetime">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Issuing Authority / Underwriter</label>
+                        <input type="text" data-ctr-cert-issuer class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none" value="${esc(opt.defaultIssuer || '')}" placeholder="e.g. Gas Safe Register UK">
+                    </div>
+                </div>`}
             </div>
-            <div class="modal-footer">
-                ${step === 'review' ? `<button type="button" data-action="save-contractor-cert" class="btn-primary w-full py-3">Save certificate</button>` : ''}
-                <button type="button" data-action="close-contractor-cert-upload" class="btn-secondary w-full py-3 mt-2">Cancel</button>
+
+            <div class="pt-2 flex items-center gap-2">
+                <button type="button" data-action="close-contractor-cert-upload" class="btn-secondary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold cursor-pointer">
+                    Cancel
+                </button>
+                ${step === 'review' ? `
+                <button type="button" data-action="save-contractor-cert" class="btn-primary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold cursor-pointer">
+                    Save &amp; Verify
+                </button>` : ''}
             </div>
         </div>
     </div>`;
@@ -1076,6 +1470,341 @@ function screenContractorCertPreview() {
             }) : `<p class="p-6 text-center text-[13px] text-[#64748B]">Certificate on file</p>`}
         </div>
         <p class="text-[12px] text-[#64748B] text-center mt-3">Visible to landlords and tenants assigned to your jobs</p>
+    </div>`;
+}
+
+function getContractorAssignedPropertyIds(contractorId) {
+    const cId = contractorId != null ? +contractorId : 0;
+    if (typeof AppStore !== 'undefined' && AppStore.contractorPropertyAssignments && AppStore.contractorPropertyAssignments[cId]) {
+        return AppStore.contractorPropertyAssignments[cId];
+    }
+    const defaults = {
+        0: [0, 1, 2],    // Plumber Pro: 12 Park Lane, 45 Queens Road, 88 King Street
+        1: [0, 2, 3],    // Heating Co.: 12 Park Lane, 88 King Street, 15 Victoria Ave
+        2: [0, 1],       // Sparks Electric: 12 Park Lane, 45 Queens Road
+        3: [0, 1, 2, 3], // SafeKey 24/7 Locksmiths: All 4 buildings (Full portfolio coverage)
+        4: [0, 3],       // Master Carpentry: 12 Park Lane, 15 Victoria Ave
+        5: [1, 2],       // ProPaint Decorators: 45 Queens Road, 88 King Street
+    };
+    return defaults[cId] !== undefined ? defaults[cId] : [0, 1];
+}
+
+function setContractorAssignedPropertyIds(contractorId, propIds) {
+    const cId = contractorId != null ? +contractorId : 0;
+    if (typeof AppStore === 'undefined') window.AppStore = {};
+    if (!AppStore.contractorPropertyAssignments) AppStore.contractorPropertyAssignments = {};
+    AppStore.contractorPropertyAssignments[cId] = Array.from(new Set(propIds));
+    if (typeof saveState === 'function') saveState();
+}
+
+function openManageContractorProps(cid) {
+    STATE.showManageContractorPropsModal = true;
+    STATE.manageContractorId = cid != null ? +cid : (STATE.contractorViewId ?? 0);
+    STATE.editContractorPropIds = [...getContractorAssignedPropertyIds(STATE.manageContractorId)];
+    render();
+}
+
+function closeManageContractorProps() {
+    STATE.showManageContractorPropsModal = false;
+    STATE.manageContractorId = null;
+    STATE.editContractorPropIds = null;
+    render();
+}
+
+function toggleContractorProp(pid) {
+    if (!STATE.editContractorPropIds) STATE.editContractorPropIds = [];
+    const id = +pid;
+    const idx = STATE.editContractorPropIds.indexOf(id);
+    if (idx >= 0) {
+        STATE.editContractorPropIds.splice(idx, 1);
+    } else {
+        STATE.editContractorPropIds.push(id);
+    }
+    render();
+}
+
+function toggleAllContractorProps() {
+    const allProps = typeof PROPERTIES !== 'undefined' ? PROPERTIES : [];
+    if (!STATE.editContractorPropIds) STATE.editContractorPropIds = [];
+    if (STATE.editContractorPropIds.length === allProps.length) {
+        STATE.editContractorPropIds = [];
+    } else {
+        STATE.editContractorPropIds = allProps.map(p => p.id);
+    }
+    render();
+}
+
+function saveManageContractorProps() {
+    if (STATE.manageContractorId != null && STATE.editContractorPropIds) {
+        setContractorAssignedPropertyIds(STATE.manageContractorId, STATE.editContractorPropIds);
+        const count = STATE.editContractorPropIds.length;
+        if (typeof toast === 'function') toast(`Portfolio coverage updated (${count} buildings assigned)`);
+    }
+    closeManageContractorProps();
+}
+
+function quickAssignContractorProp(cid, pid) {
+    const cId = cid != null ? +cid : (STATE.contractorViewId ?? 0);
+    const pId = +pid;
+    const current = getContractorAssignedPropertyIds(cId);
+    if (!current.includes(pId)) {
+        setContractorAssignedPropertyIds(cId, [...current, pId]);
+        const prop = typeof PROPERTIES !== 'undefined' ? PROPERTIES.find(p => p.id === pId) : null;
+        if (typeof toast === 'function') toast(`Assigned to ${prop ? prop.name : 'property'}`);
+        render();
+    }
+}
+
+function renderContractorPortfolioCoverageCard(profile, isLandlord, isTenant) {
+    const cid = profile.id != null ? profile.id : (STATE.contractorViewId ?? 0);
+    const assignedIds = getContractorAssignedPropertyIds(cid);
+    const allProps = typeof PROPERTIES !== 'undefined' && Array.isArray(PROPERTIES) ? PROPERTIES : [];
+    const assignedProps = allProps.filter(p => assignedIds.includes(p.id));
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const isFullPortfolio = assignedProps.length === allProps.length;
+
+    return `
+    <!-- Portfolio Coverage & Assigned Properties Card -->
+    <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3.5 text-left">
+        <!-- Header & Action -->
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full ${assignedProps.length ? 'bg-[#16A34A] animate-pulse' : 'bg-[#94A3B8]'}"></span>
+                    <h3 class="text-[14px] font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                        <i data-lucide="building-2" class="w-4 h-4 text-[#2563EB]"></i>
+                        Assigned Properties
+                    </h3>
+                </div>
+                <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Portfolio coverage &amp; building access permissions</p>
+            </div>
+            
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full ${isFullPortfolio ? 'bg-[#ECFDF5] text-[#166534] border border-[#BBF7D0]' : 'bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]'} text-[11px] font-bold shrink-0">
+                    <i data-lucide="${isFullPortfolio ? 'check-check' : 'layers'}" class="w-3.5 h-3.5"></i>
+                    ${assignedProps.length} of ${allProps.length} Buildings
+                </span>
+                ${isLandlord ? `
+                <button type="button" data-action="open-manage-contractor-props" data-cid="${cid}" class="px-2.5 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11.5px] font-bold shrink-0 cursor-pointer shadow-2xs flex items-center gap-1 transition-all active:scale-95">
+                    <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
+                    <span>Manage</span>
+                </button>` : ''}
+            </div>
+        </div>
+
+        <!-- Explanatory Context Note for User/Landlord -->
+        <div class="p-3 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-start gap-2.5 text-[12px] text-[#166534] leading-relaxed">
+            <i data-lucide="shield-check" class="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5"></i>
+            <div>
+                <p class="m-0 font-bold text-[#14532D]">Multi-Building Preferred Contractor</p>
+                <p class="m-0 text-[#166534] text-[11.5px] mt-0.5">
+                    This contractor is authorized across multiple properties in your portfolio. Assigned buildings grant key safe access, emergency dispatch, and direct maintenance authority.
+                </p>
+            </div>
+        </div>
+
+        <!-- Properties List -->
+        <div class="space-y-2">
+            ${allProps.map(p => {
+                const isAssigned = assignedIds.includes(p.id);
+                const pJobs = (typeof CONTRACTOR_JOBS !== 'undefined' ? CONTRACTOR_JOBS : []).filter(j => j.propertyId === p.id || (j.address && j.address.includes(p.name)));
+                const activeJobs = pJobs.filter(j => j.status !== 'completed' && j.status !== 'paid');
+                const unitsCount = typeof getPropertyUnits === 'function' ? getPropertyUnits(p.id).length : 4;
+                const unitLabel = p.isHmo ? 'Rooms' : 'Units';
+
+                return `
+                <div class="p-3 rounded-xl ${isAssigned ? 'bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#BFDBFE]' : 'bg-[#FAFAFA] border border-dashed border-[#CBD5E1] opacity-75'} transition-all flex items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${isAssigned ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-[#F1F5F9] text-[#94A3B8]'}">
+                            <i data-lucide="home" class="w-4.5 h-4.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-[13px] font-bold text-[#0F172A] truncate">${esc(p.name)}</span>
+                                ${isAssigned ? `
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9.5px] font-extrabold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                                    <i data-lucide="check" class="w-2.5 h-2.5"></i> Assigned
+                                </span>` : `
+                                <span class="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-[#F1F5F9] text-[#64748B]">
+                                    Not Covered
+                                </span>`}
+                            </div>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5 truncate flex items-center gap-1.5">
+                                <span>${esc(p.address)}</span>
+                                <span>·</span>
+                                <span>${unitsCount} ${unitLabel}</span>
+                                ${activeJobs.length ? `<span>·</span><strong class="text-[#D97706]">${activeJobs.length} active</strong>` : ''}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${isAssigned ? `
+                        <button type="button" data-go="property-detail" data-property="${p.id}" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#EFF6FF] text-[#2563EB] text-[11px] font-bold border border-[#CBD5E1] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors">
+                            <span>View</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </button>` : (isLandlord ? `
+                        <button type="button" data-action="quick-assign-contractor-prop" data-cid="${cid}" data-pid="${p.id}" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#F0FDF4] text-[#16A34A] text-[11px] font-bold border border-[#86EFAC] shadow-2xs flex items-center gap-1 cursor-pointer transition-colors active:scale-95">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Assign</span>
+                        </button>` : '')}
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>
+    </div>`;
+}
+
+function renderManageContractorPropsModal() {
+    if (!STATE.showManageContractorPropsModal) return '';
+    const cid = STATE.manageContractorId != null ? STATE.manageContractorId : 0;
+    const profile = getContractorPublicProfile(cid);
+    if (!profile) return '';
+    const allProps = typeof PROPERTIES !== 'undefined' && Array.isArray(PROPERTIES) ? PROPERTIES : [];
+    const editIds = STATE.editContractorPropIds || [];
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const isAllSelected = editIds.length === allProps.length;
+
+    return `
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter" data-action="close-manage-contractor-props">
+        <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl w-full max-w-md space-y-4 text-left" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                <div class="min-w-0 pr-2">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#EFF6FF] text-[#2563EB] mb-1">
+                        <i data-lucide="building-2" class="w-3 h-3"></i> Portfolio Assignments
+                    </span>
+                    <h3 class="text-[17px] font-black text-[#0F172A] m-0 truncate leading-snug">Manage Building Coverage</h3>
+                    <p class="text-[12px] text-[#64748B] m-0 truncate mt-0.5">Select properties for ${esc(profile.name)}</p>
+                </div>
+                <button type="button" data-action="close-manage-contractor-props" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Context Info -->
+            <div class="flex items-center justify-between text-[12px] px-1">
+                <span class="text-[#64748B]">Coverage: <strong class="text-[#0F172A]">${editIds.length} of ${allProps.length}</strong> selected</span>
+                <button type="button" data-action="toggle-all-contractor-props" class="text-[11.5px] font-bold text-[#2563EB] hover:underline cursor-pointer">
+                    ${isAllSelected ? 'Deselect All' : 'Select Full Portfolio'}
+                </button>
+            </div>
+
+            <!-- Property Checkbox List -->
+            <div class="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                ${allProps.map(p => {
+                    const isChecked = editIds.includes(p.id);
+                    const unitsCount = typeof getPropertyUnits === 'function' ? getPropertyUnits(p.id).length : 4;
+                    const unitLabel = p.isHmo ? 'Rooms' : 'Units';
+
+                    return `
+                    <div data-action="toggle-contractor-prop" data-pid="${p.id}" class="p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${isChecked ? 'bg-[#F0FDF4] border-[#86EFAC]' : 'bg-[#F8FAFC] border-[#E2E8F0] hover:bg-white'}">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${isChecked ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'border-[#CBD5E1] bg-white'}">
+                                ${isChecked ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${esc(p.name)}</p>
+                                <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${esc(p.address)} · ${unitsCount} ${unitLabel}</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isChecked ? 'bg-white text-[#166534] border border-[#BBF7D0]' : 'bg-[#E2E8F0] text-[#64748B]'} shrink-0">
+                            ${isChecked ? 'Authorized' : 'Unassigned'}
+                        </span>
+                    </div>`;
+                }).join('')}
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="space-y-2 pt-2 border-t border-[#F1F5F9]">
+                <button type="button" data-action="save-manage-contractor-props" class="btn-primary w-full py-3.5 rounded-xl text-[14px] font-extrabold shadow-md cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99] transition-transform">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    Save Coverage (${editIds.length} Buildings)
+                </button>
+                <button type="button" data-action="close-manage-contractor-props" class="w-full py-2 text-[12px] font-bold text-[#64748B] hover:text-[#0F172A] text-center cursor-pointer">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function screenContractorAssignedProperties() {
+    const cid = 0; // current contractor user
+    const assignedIds = getContractorAssignedPropertyIds(cid);
+    const allProps = typeof PROPERTIES !== 'undefined' && Array.isArray(PROPERTIES) ? PROPERTIES : [];
+    const assignedProps = allProps.filter(p => assignedIds.includes(p.id));
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    return `${topBar('Assigned Properties', { back: true })}
+    <div class="screen-content screen-content-sm screen-enter space-y-4 pb-12 text-left">
+        <!-- Landlord & Portfolio Header Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <div class="flex items-center gap-3">
+                <img src="${(typeof IMG !== 'undefined' && IMG?.avatar?.landlord) || 'assets/landlord.png'}" class="w-12 h-12 rounded-2xl object-cover border border-[#E2E8F0]" alt="">
+                <div class="min-w-0 flex-1">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] mb-0.5">
+                        Client Portfolio
+                    </span>
+                    <h3 class="text-[16px] font-bold text-[#0F172A] m-0 truncate">John Smith's Properties</h3>
+                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${assignedProps.length} Authorized Buildings in London</p>
+                </div>
+            </div>
+            
+            <div class="p-3 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-start gap-2.5 text-[12px] text-[#166534]">
+                <i data-lucide="shield-check" class="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5"></i>
+                <p class="m-0 leading-relaxed text-[11.5px]">
+                    You have active maintenance authorization and key safe access for these properties. Always follow building access protocols and safety guidelines.
+                </p>
+            </div>
+        </div>
+
+        <!-- Authorized Buildings List -->
+        <div class="space-y-3">
+            <p class="text-[11.5px] font-bold text-[#64748B] uppercase tracking-wider m-0 px-1">Your Authorized Buildings (${assignedProps.length})</p>
+            ${assignedProps.length ? assignedProps.map(p => {
+                const keyNotes = p.id === 0 ? 'Front porch key safe (Code #4821)' : p.id === 1 ? 'Concierge reception key' : p.id === 2 ? 'Basement master lockbox (Code #8812)' : 'Lockbox next to intercom (Code #1509)';
+                const stopcock = p.id === 0 ? 'Under kitchen sink (Flat 1) & main riser' : p.id === 1 ? 'Ground floor utility cupboard' : p.id === 2 ? 'Plant room adjacent to entrance' : 'Front corridor meter box';
+                const unitsCount = typeof getPropertyUnits === 'function' ? getPropertyUnits(p.id).length : 4;
+                const unitLabel = p.isHmo ? 'Rooms' : 'Units';
+
+                return `
+                <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                                <i data-lucide="building-2" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-[15px] font-bold text-[#0F172A] m-0 truncate">${esc(p.name)}</h4>
+                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${esc(p.address)} · ${unitsCount} ${unitLabel}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] shrink-0">
+                            Authorized
+                        </span>
+                    </div>
+
+                    <!-- Building Access Specs -->
+                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 text-[12px]">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="key-round" class="w-3.5 h-3.5 text-[#2563EB] shrink-0 mt-0.5"></i>
+                            <div class="min-w-0">
+                                <span class="font-bold text-[#334155]">Key Access: </span>
+                                <span class="text-[#0F172A]">${esc(keyNotes)}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="droplets" class="w-3.5 h-3.5 text-[#0284C7] shrink-0 mt-0.5"></i>
+                            <div class="min-w-0">
+                                <span class="font-bold text-[#334155]">Main Water Shut-off: </span>
+                                <span class="text-[#0F172A]">${esc(stopcock)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('') : `<p class="text-[13px] text-[#64748B] italic p-4 text-center">No properties assigned yet.</p>`}
+        </div>
     </div>`;
 }
 
@@ -1158,6 +1887,9 @@ function screenContractorPublicProfile() {
                 </a>` : '<div></div>'}
             </div>` : ''}
         </div>
+
+        <!-- Portfolio Coverage & Assigned Properties Card -->
+        ${renderContractorPortfolioCoverageCard(profile, isLandlord, isTenant)}
 
         <!-- Submitted Certificates & Compliance Documents Card -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
@@ -1322,29 +2054,151 @@ function screenContractorPublicProfile() {
         </div>` : ''}
 
         ${isTenant ? `<p class="text-[12px] text-[#64748B] text-center italic">Contact your landlord to reschedule or change contractor.</p>` : ''}
-    </div>`;
+    </div>
+    ${renderManageContractorPropsModal()}`;
 }
 
 function screenContractorCertifications() {
-    const certs = ensureContractorCertificates(CONTRACTOR_USER);
-    const slotTypes = CONTRACTOR_CERT_TYPES.filter(t => t.type !== 'other');
-    const otherCerts = certs.filter(c => c.type === 'other');
+    const u = CONTRACTOR_USER;
+    const tradeMeta = resolveContractorTrade(u);
+    const requiredSlots = getRequiredCertTypesForTrade(tradeMeta.id);
+    const certs = ensureContractorCertificates(u);
+    
+    // Calculate compliance metrics
+    const uploadedRequiredCount = requiredSlots.filter(s => contractorCertByType(u, s.type)).length;
+    const totalRequired = requiredSlots.length;
+    const isFullyCompliant = uploadedRequiredCount === totalRequired;
+    const percentCompliant = Math.round((uploadedRequiredCount / totalRequired) * 100);
+
+    // Other / Elective Certificates (not in mandatory trade slots)
+    const requiredTypeKeys = requiredSlots.map(s => s.type);
+    const otherCerts = certs.filter(c => !requiredTypeKeys.includes(c.type));
+
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
     return `${topBar('Certifications', { back: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-16">
-        <!-- Primary Certificate Slots List -->
-        <div class="space-y-2.5">
-            ${slotTypes.map(t => renderContractorCertSlot(t.type)).join('')}
+        <!-- Top Profile & Compliance Score Hero Card -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <img src="${contractorAvatarForTrade(tradeMeta.id)}" class="w-12 h-12 rounded-2xl object-cover border border-[#E2E8F0] shrink-0" alt="">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h3 class="text-[15.5px] font-extrabold text-[#0F172A] m-0 truncate">${esc(u.company || `${u.firstName} ${u.lastName}`)}</h3>
+                        </div>
+                        <p class="text-[12px] font-semibold text-[#2563EB] m-0 mt-0.5 flex items-center gap-1">
+                            <i data-lucide="${tradeMeta.icon}" class="w-3.5 h-3.5"></i>
+                            <span>${esc(tradeMeta.label)}</span>
+                        </p>
+                    </div>
+                </div>
+
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${isFullyCompliant ? 'bg-[#ECFDF5] text-[#166534] border border-[#BBF7D0]' : 'bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A]'} text-[11px] font-black shrink-0">
+                    <i data-lucide="${isFullyCompliant ? 'shield-check' : 'alert-circle'}" class="w-3.5 h-3.5 ${isFullyCompliant ? 'text-[#16A34A]' : 'text-[#F59E0B]'}"></i>
+                    ${percentCompliant}% Verified
+                </span>
+            </div>
+
+            <!-- Compliance Progress Bar -->
+            <div class="space-y-1.5 pt-1 border-t border-[#F1F5F9]">
+                <div class="flex items-center justify-between text-[11.5px]">
+                    <span class="font-bold text-[#334155]">${uploadedRequiredCount} of ${totalRequired} Mandatory Credentials on File</span>
+                    <span class="font-medium text-[#64748B]">${isFullyCompliant ? 'Fully Compliant' : 'Action Required'}</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-[#E2E8F0] overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500 ${isFullyCompliant ? 'bg-[#16A34A]' : 'bg-[#2563EB]'}" style="width: ${percentCompliant}%"></div>
+                </div>
+            </div>
+
+            <!-- Informational Banner -->
+            <div class="p-3 rounded-xl ${isFullyCompliant ? 'bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534]' : 'bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF]'} text-[11.5px] leading-relaxed flex items-start gap-2">
+                <i data-lucide="${isFullyCompliant ? 'check-circle-2' : 'info'}" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                <p class="m-0">
+                    ${isFullyCompliant
+                        ? 'Your profile is fully verified for statutory UK compliance. Landlords can dispatch emergency maintenance and routine servicing directly to you.'
+                        : `Please upload your remaining credentials. Landlords in London require verified insurance and trade registrations before booking.`}
+                </p>
+            </div>
         </div>
 
-        <!-- Additional Certificates -->
+        <!-- Section 1: Mandatory Trade Accreditations -->
+        <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <div>
+                    <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Mandatory Trade Accreditations</h3>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Statutory UK requirements for ${esc(tradeMeta.label)}</p>
+                </div>
+                <span class="text-[11px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">UK Regulated</span>
+            </div>
+
+            <div class="space-y-2.5">
+                ${requiredSlots.map(slot => renderContractorCertSlot(slot)).join('')}
+            </div>
+        </div>
+
+        <!-- Section 2: Additional Compliance & Trust Credentials -->
         <div class="pt-2 space-y-2.5">
-            <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0 px-1">Additional Certificates</h3>
-            ${otherCerts.length ? renderContractorCertList({ ...CONTRACTOR_USER, id: getContractorDirectoryEntry(CONTRACTOR_USER.email || CONTRACTOR_USER.company)?.id }) : ''}
-            
+            <div class="flex items-center justify-between px-1">
+                <div>
+                    <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Additional Trust &amp; Safety Credentials</h3>
+                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Recommended documents to increase landlord booking rates</p>
+                </div>
+            </div>
+
+            <!-- Existing Elective Certificates List -->
+            ${otherCerts.length ? `
+            <div class="space-y-2.5">
+                ${otherCerts.map(cert => {
+                    const opt = contractorCertTypeOption(cert.type);
+                    return `
+                    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs" style="color:${opt.color};background:${opt.bg}">
+                                <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${esc(cert.name)}</h4>
+                                <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${esc(cert.fileName)} · <strong class="text-[#059669]">${cert.validUntil ? `Expires ${esc(cert.validUntil)}` : 'Verified'}</strong></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold border border-[#BFDBFE] cursor-pointer">View</button>
+                            <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-white text-[#94A3B8] hover:text-[#DC2626] border border-[#E2E8F0] flex items-center justify-center cursor-pointer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>` : ''}
+
+            <!-- Quick Add Recommended Badges Grid -->
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                ${CONTRACTOR_ELECTIVE_CERT_TYPES.map(el => {
+                    const alreadyUploaded = certs.some(c => c.type === el.type);
+                    if (alreadyUploaded) return '';
+                    return `
+                    <button type="button" data-action="open-contractor-cert-slot" data-cert-type="${el.type}" class="p-3 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#2563EB] hover:bg-[#F8FAFC] transition-all text-left flex items-start gap-2.5 shadow-2xs cursor-pointer group">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${el.color};background:${el.bg}">
+                            <i data-lucide="${el.icon}" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[12px] font-bold text-[#0F172A] m-0 truncate group-hover:text-[#2563EB] transition-colors">${esc(el.label)}</p>
+                            <span class="text-[10px] text-[#2563EB] font-bold mt-0.5 inline-flex items-center gap-0.5">
+                                <i data-lucide="plus" class="w-3 h-3"></i> Add
+                            </span>
+                        </div>
+                    </button>`;
+                }).filter(Boolean).join('')}
+            </div>
+
             <button type="button" data-action="open-contractor-cert-slot" data-cert-type="other" class="btn-secondary w-full py-3 text-[13px] font-bold flex items-center justify-center gap-1.5 rounded-2xl border border-[#E2E8F0] bg-white shadow-sm hover:border-[#2563EB] transition-colors cursor-pointer">
-                <i data-lucide="plus" class="w-4 h-4"></i> Add Certificate
+                <i data-lucide="plus" class="w-4 h-4"></i> Add Other Certificate
             </button>
+        </div>
+
+        <!-- Compliance & Security Assurance Note -->
+        <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B] flex items-center gap-2.5">
+            <i data-lucide="shield" class="w-4 h-4 text-[#16A34A] shrink-0"></i>
+            <span>All trade credentials and insurance policies are verified by Landlord HQ compliance specialists before public badge issuance.</span>
         </div>
     </div>
     ${renderContractorCertUploadModal()}`;
@@ -2333,20 +3187,24 @@ function screenTenantBuildingInfo() {
     const epcBand = info.epc || 'B';
     const landlordPhone = LANDLORD_USER.phone || '+44 7700 900123';
 
+    if (STATE.tab && ['overview', 'safety', 'appliances', 'gallery'].includes(STATE.tab)) {
+        STATE.buildingInfoTab = STATE.tab;
+        delete STATE.tab;
+    }
     const activeTab = STATE.buildingInfoTab || 'overview';
 
     const tabBtn = (tabKey, label, icon) => `
-    <button type="button" data-action="set-building-tab" data-tab="${tabKey}" class="flex-1 py-2 px-2 rounded-xl text-[11.5px] font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeTab === tabKey ? 'bg-white text-[#2563EB] shadow-xs border border-[#DBEAFE]' : 'text-[#64748B] hover:text-[#0F172A]'}">
-        <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+    <button type="button" data-action="set-building-tab" data-tab="${tabKey}" class="flex-1 min-w-fit py-2 px-3 rounded-xl text-[12px] font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${activeTab === tabKey ? 'bg-white text-[#2563EB] shadow-xs border border-[#DBEAFE]' : 'text-[#64748B] hover:text-[#0F172A]'}">
+        <i data-lucide="${icon}" class="w-3.5 h-3.5 shrink-0"></i>
         <span>${label}</span>
     </button>`;
 
-    return `${topBar('Your building', { back: true, sub: p?.name || '' })}
+    return `${topBar('Your Building', { back: true, sub: p?.name || '12 Park Lane' })}
     <div class="screen-content screen-content-sm screen-enter space-y-3.5 text-left pb-12">
         <!-- Sticky Top Category Segmented Control -->
-        <div class="card p-1 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] flex items-center gap-1 shadow-inner">
+        <div class="p-1 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] flex items-center gap-1 shadow-inner overflow-x-auto no-scrollbar">
             ${tabBtn('overview', 'Overview', 'building-2')}
-            ${tabBtn('safety', 'Safety &amp; Meters', 'shield-alert')}
+            ${tabBtn('safety', 'Safety &amp; Meters', 'shield-check')}
             ${tabBtn('appliances', 'Appliances', 'plug')}
             ${tabBtn('gallery', 'Photos &amp; Rules', 'image')}
         </div>
@@ -2633,22 +3491,25 @@ function screenTenantBuildingInfo() {
                 <span class="text-[11px] font-semibold text-[#64748B]">${appliances.length} Recorded</span>
             </div>
             <div class="space-y-2">
-                ${appliances.map(a => {
-                    const photo = typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '';
+                ${appliances.map((a, i) => {
+                    const photo = (typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '') || (typeof getDemoAppliancePhoto === 'function' ? getDemoAppliancePhoto(a.name, a.id) : '');
                     const icon = typeof applianceIcon === 'function' ? applianceIcon(a.name) : 'plug';
                     return `
-                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
-                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-11 h-11 rounded-lg object-cover shrink-0 border border-[#E2E8F0]">`
-                            : `<div class="w-10 h-10 rounded-xl bg-[#F1F5F9] text-[#475569] flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
+                    <button type="button" onclick="openTenantApplianceModal(${i}, ${pid})" class="w-full p-3.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#CBD5E1] flex items-start gap-3.5 transition-all cursor-pointer text-left group shadow-2xs">
+                        ${photo ? `<img src="${esc(photo)}" alt="" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#E2E8F0] group-hover:scale-105 transition-transform">`
+                            : `<div class="w-12 h-12 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"><i data-lucide="${icon}" class="w-5 h-5"></i></div>`}
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center justify-between gap-2">
-                                <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${esc(a.name || 'Appliance')}</p>
-                                ${a.warranty ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] shrink-0">${esc(a.warranty)}</span>` : ''}
+                                <p class="text-[13.5px] font-bold text-[#0F172A] m-0 group-hover:text-[#2563EB] transition-colors truncate">${esc(a.name || 'Appliance')}</p>
+                                ${a.warranty ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] shrink-0">${esc(a.warranty)}</span>` : ''}
                             </div>
-                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5 m-0 font-medium">${esc(a.brand)}</p>` : ''}
-                            ${a.description ? `<p class="text-[11px] text-[#475569] mt-0.5 m-0 leading-relaxed">${esc(a.description)}</p>` : ''}
+                            ${a.brand ? `<p class="text-[12px] text-[#64748B] mt-0.5 m-0 font-medium truncate">${esc(a.brand)}</p>` : ''}
+                            <div class="flex items-center justify-between mt-1 text-[11px]">
+                                <span class="text-[#64748B] truncate">${esc(a.description || 'Specs & manual')}</span>
+                                <span class="text-[#2563EB] font-bold inline-flex items-center gap-0.5 shrink-0 ml-1">Manual <i data-lucide="chevron-right" class="w-3 h-3"></i></span>
+                            </div>
                         </div>
-                    </div>`;
+                    </button>`;
                 }).join('')}
             </div>
         </div>` : `<div class="card p-6 rounded-2xl bg-white border border-[#E2E8F0] text-center"><p class="text-[13px] text-[#64748B]">No appliances recorded yet.</p></div>`}
@@ -2656,26 +3517,65 @@ function screenTenantBuildingInfo() {
         <!-- TAB 4: GALLERY & RULES -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between gap-2">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Property Photos</p>
-                <span class="text-[11px] font-semibold text-[#64748B]">${propertyPhotos.length} photo${propertyPhotos.length === 1 ? '' : 's'}</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
+                        <i data-lucide="building-2" class="w-4 h-4"></i>
+                    </div>
+                    <p class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider mb-0">Building &amp; Common Areas</p>
+                </div>
+                <span class="text-[11px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-0.5 rounded-full border border-[#DBEAFE]">${propertyPhotos.length} Photos</span>
             </div>
-            <p class="text-[12px] text-[#64748B] m-0">Uploaded by your landlord for the building.</p>
-            ${photoGrid(propertyPhotos, { coverBadge: true, empty: 'No property photos uploaded yet.' })}
+            <p class="text-[12px] text-[#64748B] m-0">Official building exterior, lobby and communal amenities.</p>
+            <div class="grid grid-cols-3 gap-2 pt-1">
+                ${propertyPhotos.map((src, i) => `
+                <button type="button" onclick="openTenantPhotoLightbox('${esc(src)}', 'Building Photo ${i + 1}')" class="aspect-square rounded-xl overflow-hidden border border-[#E2E8F0] group cursor-pointer relative bg-[#F8FAFC]">
+                    <img src="${esc(src)}" alt="Photo ${i + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                    ${i === 0 ? '<span class="absolute top-1 left-1 px-1.5 py-0.2 rounded-md bg-black/70 text-white text-[9px] font-bold">Cover</span>' : ''}
+                </button>`).join('')}
+            </div>
         </div>
 
-        ${t.unit && unitPhotos.length ? `
+        ${t.unit ? `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
             <div class="flex items-center justify-between gap-2">
-                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">${esc(t.unit)} Photos</p>
-                <span class="text-[11px] font-semibold text-[#64748B]">${unitPhotos.length} photo${unitPhotos.length === 1 ? '' : 's'}</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-[#ECFDF5] text-[#059669] flex items-center justify-center">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                    </div>
+                    <p class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider mb-0">${esc(t.unit)} Living Space</p>
+                </div>
+                <span class="text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#A7F3D0]">${(unitPhotos.length || 3)} Photos</span>
             </div>
-            ${photoGrid(unitPhotos, { coverBadge: true, empty: 'No unit photos uploaded yet.' })}
+            <p class="text-[12px] text-[#64748B] m-0">Interior layout, living area, bedrooms and fixtures.</p>
+            <div class="grid grid-cols-3 gap-2 pt-1">
+                ${(unitPhotos.length ? unitPhotos : [
+                    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80'
+                ]).map((src, i) => `
+                <button type="button" onclick="openTenantPhotoLightbox('${esc(src)}', '${esc(t.unit)} Photo ${i + 1}')" class="aspect-square rounded-xl overflow-hidden border border-[#E2E8F0] group cursor-pointer relative bg-[#F8FAFC]">
+                    <img src="${esc(src)}" alt="Photo ${i + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                </button>`).join('')}
+            </div>
         </div>` : ''}
 
         ${floorPlans.length ? `
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3">
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-0">Floor Plans</p>
-            ${photoGrid(floorPlans, { empty: 'No floor plans yet.' })}
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center">
+                        <i data-lucide="map" class="w-4 h-4"></i>
+                    </div>
+                    <p class="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider mb-0">Architectural Floor Plans</p>
+                </div>
+                <span class="text-[11px] font-bold text-[#7C3AED] bg-[#F5F3FF] px-2.5 py-0.5 rounded-full border border-[#DDD6FE]">${floorPlans.length} Plans</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                ${floorPlans.map((src, i) => `
+                <button type="button" onclick="openTenantPhotoLightbox('${esc(src)}', 'Floor Plan ${i + 1}')" class="aspect-video rounded-xl overflow-hidden border border-[#E2E8F0] group cursor-pointer relative bg-[#F8FAFC]">
+                    <img src="${esc(src)}" alt="Plan ${i + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                </button>`).join('')}
+            </div>
         </div>` : ''}
 
         ${info.notes ? `
@@ -2690,6 +3590,100 @@ function screenTenantBuildingInfo() {
         </button>
         `}
     </div>`;
+}
+
+function openTenantPhotoLightbox(src, title) {
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const modalHtml = `
+    <div class="card p-4 space-y-3 text-left screen-enter bg-white rounded-2xl shadow-2xl border border-[#E2E8F0] max-w-[380px] mx-auto">
+        <div class="flex items-center justify-between gap-2">
+            <h4 class="text-[15px] font-extrabold text-[#0F172A] m-0 truncate">${esc(title || 'Photo')}</h4>
+            <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 cursor-pointer" aria-label="Close">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div class="rounded-xl overflow-hidden border border-[#E2E8F0] bg-black/5">
+            <img src="${esc(src)}" alt="${esc(title)}" class="w-full h-72 object-contain bg-[#0F172A] block">
+        </div>
+        <button type="button" onclick="closeModal()" class="btn-secondary w-full py-2.5 rounded-xl text-[12.5px] font-bold cursor-pointer">
+            Close Preview
+        </button>
+    </div>`;
+    if (typeof openModal === 'function') openModal(modalHtml);
+}
+if (typeof window !== 'undefined') {
+    window.openTenantPhotoLightbox = openTenantPhotoLightbox;
+}
+
+function openTenantApplianceModal(idx, pid) {
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : (typeof PROPERTIES !== 'undefined' ? PROPERTIES[0] : null);
+    const meta = typeof AppStore !== 'undefined' && typeof AppStore.meta === 'function' ? AppStore.meta(pid) : {};
+    const appliances = meta.appliances || [];
+    const a = appliances[idx] || appliances[0] || { name: 'Appliance', brand: 'Standard', warranty: 'Standard' };
+    const photo = (typeof isFieldPhotoPreviewable === 'function' && isFieldPhotoPreviewable(a.photo) ? a.photo : '')
+        || (typeof getDemoAppliancePhoto === 'function' ? getDemoAppliancePhoto(a.name, a.id) : (typeof DEMO_APPLIANCE_PHOTOS !== 'undefined' ? DEMO_APPLIANCE_PHOTOS.boiler : ''));
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const serial = a.serial || `SN-${(a.brand || 'APP').replace(/[^A-Z0-9]/gi, '').slice(0, 4).toUpperCase()}-2024-${8900 + idx * 37}`;
+    const installed = a.installed || '15 Jan 2023';
+    const location = a.location || (a.name.toLowerCase().includes('boiler') ? 'Kitchen Cupboard' : 'Kitchen');
+
+    const modalHtml = `
+    <div class="card p-0 rounded-2xl bg-white shadow-2xl border border-[#E2E8F0] overflow-hidden max-w-[400px] mx-auto text-left screen-enter">
+        <div class="relative h-48 bg-slate-900 overflow-hidden">
+            ${photo ? `<img src="${esc(photo)}" alt="${esc(a.name)}" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-[#1E293B] flex items-center justify-center text-white/50"><i data-lucide="plug" class="w-12 h-12"></i></div>`}
+            <button type="button" onclick="closeModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center cursor-pointer transition-colors" aria-label="Close">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] shadow-sm">
+                    ${esc(a.warranty || 'Under Warranty')}
+                </span>
+                <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-black/60 text-white backdrop-blur-xs">
+                    ${esc(location)}
+                </span>
+            </div>
+        </div>
+        <div class="p-4 space-y-3.5">
+            <div>
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight m-0">${esc(a.name || 'Appliance')}</h3>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">Flat Inventory</span>
+                </div>
+                <p class="text-[13px] text-[#64748B] mt-0.5 m-0 font-medium">${esc(a.brand || 'Appliance Model')}</p>
+                ${a.description ? `<p class="text-[12px] text-[#475569] mt-2 m-0 bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0] leading-relaxed">${esc(a.description)}</p>` : ''}
+            </div>
+
+            <div class="rounded-xl border border-[#E2E8F0] overflow-hidden divide-y divide-[#F1F5F9] text-[12px]">
+                <div class="p-2.5 px-3 flex items-center justify-between bg-[#F8FAFC]">
+                    <span class="text-[#64748B] font-medium">Serial Number</span>
+                    <span class="font-mono font-bold text-[#0F172A]">${esc(serial)}</span>
+                </div>
+                <div class="p-2.5 px-3 flex items-center justify-between">
+                    <span class="text-[#64748B] font-medium">Installed Date</span>
+                    <span class="font-bold text-[#0F172A]">${esc(installed)}</span>
+                </div>
+                <div class="p-2.5 px-3 flex items-center justify-between bg-[#F8FAFC]">
+                    <span class="text-[#64748B] font-medium">Warranty Coverage</span>
+                    <span class="font-bold text-[#059669]">${esc(a.warranty || 'Active')}</span>
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-1">
+                <button type="button" onclick="closeModal(); if (typeof showToast === 'function') showToast('Opening manufacturer user manual (PDF)...');" class="btn-primary w-full py-2.5 text-[12.5px] font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    <span>Download User Manual (PDF)</span>
+                </button>
+                <button type="button" onclick="closeModal(); go('log-maintenance', { maintCategory: 'appliances', maintTitle: 'Issue with ${esc(a.name)}' });" class="btn-secondary w-full py-2.5 text-[12.5px] font-bold flex items-center justify-center gap-2 cursor-pointer text-[#DC2626] border-[#FCA5A5] hover:bg-[#FEF2F2]">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-[#DC2626]"></i>
+                    <span>Report Issue with this Appliance</span>
+                </button>
+            </div>
+        </div>
+    </div>`;
+    if (typeof openModal === 'function') openModal(modalHtml);
+}
+if (typeof window !== 'undefined') {
+    window.openTenantApplianceModal = openTenantApplianceModal;
 }
 
 const INVENTORY_ITEM_DEMO_PHOTOS = {
@@ -2838,9 +3832,9 @@ function openInventoryItemPhotoModal(el) {
         <div class="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] shadow-sm">
             <img id="inventory-modal-img" src="${esc(photoUrl)}" alt="${esc(itemName)}" class="w-full h-60 object-cover block">
             <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 text-[#059669] shadow-sm backdrop-blur-xs border border-[#D1FAE5]">
-                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
-                    <span>${esc(condition)} Condition</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${item.tenantVerified ? 'bg-[#059669] text-white' : (item.discrepancy ? 'bg-[#DC2626] text-white' : 'bg-white/95 text-[#059669]')} shadow-sm backdrop-blur-xs border ${item.tenantVerified ? 'border-[#059669]' : (item.discrepancy ? 'border-[#DC2626]' : 'border-[#D1FAE5]')}">
+                    <i data-lucide="${item.tenantVerified ? 'check-check' : (item.discrepancy ? 'alert-triangle' : 'check-circle-2')}" class="w-3.5 h-3.5"></i>
+                    <span>${item.tenantVerified ? 'Verified by You' : (item.discrepancy ? 'Discrepancy Flagged' : esc(condition) + ' Condition')}</span>
                 </span>
                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-black/60 text-white backdrop-blur-xs">
                     <i data-lucide="camera" class="w-3 h-3"></i> Check-in Photo
@@ -2856,21 +3850,248 @@ function openInventoryItemPhotoModal(el) {
             </button>`).join('')}
         </div>` : ''}
 
-        <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[12px] text-[#475569] leading-relaxed">
-            <span class="font-bold text-[#0F172A]">Inventory Record:</span> Handover condition verified and recorded under schedule of condition.
+        <div class="p-3 rounded-xl ${item.discrepancy ? 'bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B]' : (item.tenantVerified ? 'bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46]' : 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#475569]')} text-[12px] leading-relaxed">
+            ${item.discrepancy ? `
+                <div class="flex items-start gap-2">
+                    <i data-lucide="flag" class="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5"></i>
+                    <div>
+                        <span class="font-bold text-[#DC2626]">Discrepancy Reported:</span>
+                        <p class="m-0 mt-0.5 text-[11.5px] text-[#7F1D1D]">${esc(item.discrepancyNotes || 'Condition does not match check-in record.')}</p>
+                    </div>
+                </div>
+            ` : (item.tenantVerified ? `
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-[#059669] shrink-0"></i>
+                    <div><span class="font-bold text-[#064E3B]">Verified by Tenant:</span> You confirmed this item is present and in good condition.</div>
+                </div>
+            ` : `
+                <span class="font-bold text-[#0F172A]">Action required:</span> Please inspect this item in your room. Tap <b>"Confirm Condition"</b> if accurate, or <b>"Report Issue"</b> if damaged or missing.
+            `)}
         </div>
 
-        <button type="button" onclick="closeModal()" class="btn-primary w-full py-3 rounded-xl text-[13px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer">
-            <span>Done</span>
-        </button>
+        <!-- Action Buttons -->
+        <div class="space-y-2 pt-1">
+            <button type="button" onclick="tenantVerifyItem(${pid}, ${rid}, ${itemIdx})" class="btn-primary w-full py-2.5 rounded-xl text-[13px] font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer ${item.tenantVerified ? 'bg-[#059669] hover:bg-[#047857]' : ''}">
+                <i data-lucide="${item.tenantVerified ? 'check-check' : 'check'}" class="w-4 h-4"></i>
+                <span>${item.tenantVerified ? 'Verified (Looks Good)' : 'Confirm Condition (All Good)'}</span>
+            </button>
+
+            <button type="button" onclick="openTenantDiscrepancyModal(${pid}, ${rid}, ${itemIdx})" class="btn-secondary w-full py-2.5 rounded-xl text-[12.5px] font-bold text-[#DC2626] border border-[#FECACA] bg-[#FEF2F2] hover:bg-[#FEE2E2] flex items-center justify-center gap-1.5 cursor-pointer">
+                <i data-lucide="flag" class="w-3.5 h-3.5"></i>
+                <span>${item.discrepancy ? 'Update Reported Issue' : 'Report Issue / Damage'}</span>
+            </button>
+        </div>
     </div>`;
 
     if (typeof openModal === 'function') {
         openModal(modalHtml);
     }
 }
+
+function tenantVerifyItem(pid, rid, itemIdx) {
+    const key = typeof inventoryKey === 'function' ? inventoryKey(pid, rid) : `${pid}-${rid}`;
+    if (typeof ensureInventoryRoom === 'function') ensureInventoryRoom(pid, rid);
+    if (typeof AppStore !== 'undefined' && AppStore.inventory && AppStore.inventory[key]) {
+        const roomData = AppStore.inventory[key];
+        if (roomData.items && roomData.items[itemIdx]) {
+            const cur = typeof inventoryItemObject === 'function' ? inventoryItemObject(roomData.items[itemIdx]) : roomData.items[itemIdx];
+            cur.tenantVerified = true;
+            delete cur.discrepancy;
+            delete cur.discrepancyNotes;
+            cur.condition = 'Good';
+            roomData.items[itemIdx] = cur;
+            if (typeof AppStore.save === 'function') AppStore.save();
+        }
+    }
+    if (typeof closeModal === 'function') closeModal();
+    if (typeof toast === 'function') toast('Item verified as in good condition!');
+    if (typeof render === 'function') render();
+}
+
+function openTenantDiscrepancyModal(pid, rid, itemIdx) {
+    const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
+    const room = rooms[rid] || rooms[0];
+    const roomName = room?.[0] || 'Room';
+    const items = typeof getInventoryItemObjects === 'function' ? getInventoryItemObjects(pid, rid) : [];
+    const item = items[itemIdx] || { name: 'Fixture' };
+    const itemName = item.name || 'Fixture';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    const modalHtml = `
+    <div class="card p-5 space-y-4 text-left screen-enter bg-white rounded-2xl shadow-xl border border-[#E2E8F0] max-w-[370px] mx-auto">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#DC2626] uppercase tracking-wider">Report Discrepancy</span>
+                <h3 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight m-0 mt-0.5 truncate">${esc(itemName)}</h3>
+                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${esc(roomName)}</p>
+            </div>
+            <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 transition-colors cursor-pointer" aria-label="Close">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider mb-1.5">Condition Status</label>
+                <select id="tenant-discrepancy-status" class="form-input form-select w-full text-[13px] font-semibold text-[#0F172A] bg-white border border-[#CBD5E1] rounded-xl px-3 py-2">
+                    <option value="Damaged" selected>⚠️ Damaged / Scratched / Broken</option>
+                    <option value="Missing">❌ Missing from Room</option>
+                    <option value="Fair">Fair / Noticeable Wear &amp; Tear</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[11.5px] font-bold text-[#475569] uppercase tracking-wider mb-1.5">Details for Landlord</label>
+                <textarea id="tenant-discrepancy-notes" class="form-input w-full h-24 text-[12.5px] text-[#0F172A] border border-[#CBD5E1] rounded-xl p-3 resize-none focus:border-[#DC2626]" placeholder="Describe what is damaged or missing (e.g., deep scratch on front panel, handle loose)...">${esc(item.discrepancyNotes || '')}</textarea>
+            </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-[#FEF2F2] border border-[#FEE2E2] text-[11.5px] text-[#991B1B] leading-relaxed">
+            Logging this will notify your landlord immediately and protect your deposit record.
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+            <button type="button" onclick="closeModal()" class="btn-secondary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold cursor-pointer">Cancel</button>
+            <button type="button" onclick="submitTenantDiscrepancy(${pid}, ${rid}, ${itemIdx})" class="btn-primary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold bg-[#DC2626] hover:bg-[#B91C1C] border-[#DC2626] shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                <i data-lucide="flag" class="w-4 h-4"></i>
+                <span>Flag &amp; Report</span>
+            </button>
+        </div>
+    </div>`;
+
+    if (typeof openModal === 'function') {
+        openModal(modalHtml);
+    }
+}
+
+function submitTenantDiscrepancy(pid, rid, itemIdx) {
+    const statusEl = document.getElementById('tenant-discrepancy-status');
+    const notesEl = document.getElementById('tenant-discrepancy-notes');
+    const status = statusEl?.value || 'Damaged';
+    const notes = notesEl?.value?.trim() || 'Tenant noted discrepancy during move-in inventory inspection.';
+
+    const key = typeof inventoryKey === 'function' ? inventoryKey(pid, rid) : `${pid}-${rid}`;
+    if (typeof ensureInventoryRoom === 'function') ensureInventoryRoom(pid, rid);
+
+    let itemName = 'Fixture';
+    if (typeof AppStore !== 'undefined' && AppStore.inventory && AppStore.inventory[key]) {
+        const roomData = AppStore.inventory[key];
+        if (roomData.items && roomData.items[itemIdx]) {
+            const cur = typeof inventoryItemObject === 'function' ? inventoryItemObject(roomData.items[itemIdx]) : roomData.items[itemIdx];
+            cur.condition = status;
+            cur.discrepancy = true;
+            cur.discrepancyNotes = notes;
+            delete cur.tenantVerified;
+            roomData.items[itemIdx] = cur;
+            itemName = cur.name || 'Fixture';
+            if (typeof AppStore.save === 'function') AppStore.save();
+        }
+    }
+
+    // Auto-create maintenance record if AppStore.maintenance exists
+    if (typeof AppStore !== 'undefined' && Array.isArray(AppStore.maintenance)) {
+        const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
+        const roomName = rooms[rid]?.[0] || 'Room';
+        const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+        AppStore.maintenance.unshift({
+            id: Date.now(),
+            propertyId: pid,
+            unit: t?.unit || 'Flat',
+            title: `[Inventory Discrepancy] ${roomName} - ${itemName}`,
+            category: 'General Repairs',
+            priority: status === 'Missing' ? 'High' : 'Medium',
+            status: 'reported',
+            description: `Tenant move-in inventory discrepancy for ${itemName} in ${roomName}: ${notes}`,
+            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+            source: 'Tenant Inventory Handover',
+        });
+        if (typeof AppStore.save === 'function') AppStore.save();
+    }
+
+    if (typeof closeModal === 'function') closeModal();
+    if (typeof toast === 'function') toast(`Issue flagged: "${itemName}" marked as ${status}`);
+    if (typeof render === 'function') render();
+}
+
+function openTenantSignInventoryModal() {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const pid = t?.propertyId ?? (typeof STATE !== 'undefined' ? STATE.propertyId : 0) ?? 0;
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : { name: 'Flat 1' };
+    const propName = p.name || 'Your Flat';
+    const tenantName = t?.name || 'Sarah Jenkins';
+    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    const modalHtml = `
+    <div class="card p-5 space-y-4 text-left screen-enter bg-white rounded-2xl shadow-xl border border-[#E2E8F0] max-w-[370px] mx-auto">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#2563EB] uppercase tracking-wider">TDS Deposit Scheme</span>
+                <h3 class="text-[17px] font-extrabold text-[#0F172A] tracking-tight m-0 mt-0.5">Sign Inventory &amp; Condition</h3>
+            </div>
+            <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 transition-colors cursor-pointer" aria-label="Close">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 text-[12px] text-[#475569]">
+            <div class="flex items-center justify-between">
+                <span class="font-bold text-[#0F172A]">Property:</span>
+                <span class="truncate max-w-[180px] text-right font-medium">${esc(propName)}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="font-bold text-[#0F172A]">Tenant:</span>
+                <span class="font-medium">${esc(tenantName)}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="font-bold text-[#0F172A]">Date:</span>
+                <span class="font-medium">${esc(today)}</span>
+            </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] text-[11.5px] text-[#1E40AF] leading-relaxed">
+            By confirming, you agree that you have inspected the property fixtures and furnishings and accept this schedule of condition for your tenancy deposit protection.
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+            <button type="button" onclick="closeModal()" class="btn-secondary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold cursor-pointer">Cancel</button>
+            <button type="button" onclick="confirmTenantSignInventory(${pid})" class="btn-primary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Confirm &amp; Sign</span>
+            </button>
+        </div>
+    </div>`;
+
+    if (typeof openModal === 'function') {
+        openModal(modalHtml);
+    }
+}
+
+function confirmTenantSignInventory(pid) {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const byName = t?.name || 'Sarah Jenkins';
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (typeof AppStore !== 'undefined' && AppStore.meta) {
+        const meta = AppStore.meta(pid);
+        meta.tenantInventorySigned = {
+            by: byName,
+            date: dateStr,
+            timestamp: Date.now(),
+        };
+        if (typeof AppStore.save === 'function') AppStore.save();
+    }
+    if (typeof closeModal === 'function') closeModal();
+    if (typeof toast === 'function') toast('Inventory signed! Deposit protection active.');
+    if (typeof render === 'function') render();
+}
+
 if (typeof window !== 'undefined') {
     window.openInventoryItemPhotoModal = openInventoryItemPhotoModal;
+    window.tenantVerifyItem = tenantVerifyItem;
+    window.openTenantDiscrepancyModal = openTenantDiscrepancyModal;
+    window.submitTenantDiscrepancy = submitTenantDiscrepancy;
+    window.openTenantSignInventoryModal = openTenantSignInventoryModal;
+    window.confirmTenantSignInventory = confirmTenantSignInventory;
 }
 
 function screenTenantInventory() {
@@ -2879,10 +4100,12 @@ function screenTenantInventory() {
         return `${topBar('Inventory', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Join a flat first to view inventory.</p></div>`;
     }
     const pid = t.propertyId;
+    const meta = (typeof AppStore !== 'undefined' && AppStore.meta) ? AppStore.meta(pid) : {};
+    const signed = meta.tenantInventorySigned;
     const rooms = typeof getInventoryRooms === 'function' ? getInventoryRooms(pid) : [];
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
-    const roomCards = rooms.map(([name, sub, icon, idx]) => {
+    const roomCards = rooms.map(([name, sub, icon, idx, condSum]) => {
         const itemObjs = typeof getInventoryItemObjects === 'function'
             ? getInventoryItemObjects(pid, idx)
             : (typeof getInventoryItems === 'function' ? getInventoryItems(pid, idx).map(n => ({ name: n })) : []);
@@ -2891,19 +4114,70 @@ function screenTenantInventory() {
         const roomSize = storedSize || INVENTORY_DEFAULT_ROOM_SIZES[name] || '80';
         const roomIcon = INVENTORY_ROOM_ICONS[name] || icon || 'package';
         const subText = `${roomSize} sq ft · ${itemCount} items`;
-        return { name, roomIcon, idx, subText, roomSize, itemCount };
+        const cond = condSum || (typeof getInventoryRoomConditionSummary === 'function' ? getInventoryRoomConditionSummary(pid, idx) : null);
+        return { name, roomIcon, idx, subText, roomSize, itemCount, cond };
     });
 
-    return `${topBar('Inventory', { back: true })}
-    <div class="screen-content screen-enter space-y-3 text-left pb-12 pt-1">
-        ${roomCards.length ? roomCards.map(r => `
-        <button type="button" data-go="tenant-inventory-room" data-room="${r.idx}" class="card w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all text-left flex items-center gap-3.5 group cursor-pointer">
-            <div class="w-11 h-11 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <i data-lucide="${r.roomIcon}" class="w-5 h-5"></i>
+    return `${topBar('Inventory & Condition', { back: true })}
+    <div class="screen-content screen-enter space-y-3.5 text-left pb-12 pt-1">
+        <!-- Tenancy Verification Banner -->
+        ${signed ? `
+        <div class="card p-4 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] shadow-xs space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#065F46] uppercase tracking-wider">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-[#059669]"></i>
+                    <span>Deposit Protected</span>
+                </span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-[#059669] border border-[#A7F3D0]">Signed</span>
             </div>
-            <div class="min-w-0 flex-1">
-                <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">${esc(r.name)}</h3>
-                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${esc(r.subText)}</p>
+            <p class="text-[13.5px] font-bold text-[#064E3B] m-0">Schedule of Condition Accepted</p>
+            <p class="text-[11.5px] text-[#047857] m-0 leading-normal">
+                Signed by ${esc(signed.by || t.name || 'Tenant')} on ${esc(signed.date || '01 Oct 2026')}. Locked for your check-out deposit return.
+            </p>
+        </div>` : `
+        <div class="card p-4 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1E40AF] uppercase tracking-wider">
+                    <i data-lucide="clipboard-check" class="w-4 h-4 text-[#2563EB]"></i>
+                    <span>Move-in Handover Review</span>
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">7 Days Left</span>
+            </div>
+            <p class="text-[13.5px] font-bold text-[#1E3A8A] m-0">Inspect items &amp; confirm condition</p>
+            <p class="text-[11.5px] text-[#3B82F6] m-0 leading-normal">
+                Review each room below. If all fixtures match the handover report, tap Sign &amp; Accept to lock your deposit protection.
+            </p>
+            <div class="flex items-center gap-2 pt-1">
+                <button type="button" onclick="openTenantSignInventoryModal()" class="btn-primary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span>Sign &amp; Accept</span>
+                </button>
+                <button type="button" onclick="openTenantDiscrepancyModal(${pid}, 0, 0)" class="btn-secondary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold text-[#DC2626] border border-[#FECACA] bg-[#FEF2F2] hover:bg-[#FEE2E2] shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="flag" class="w-3.5 h-3.5 text-[#DC2626]"></i>
+                    <span>Report Issue</span>
+                </button>
+            </div>
+        </div>`}
+
+        <div class="flex items-center justify-between px-1">
+            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Room Checklists (${roomCards.length})</span>
+            <span class="text-[11px] text-[#64748B]">Tap room to inspect items</span>
+        </div>
+
+        ${roomCards.length ? roomCards.map(r => `
+        <button type="button" data-go="tenant-inventory-room" data-room="${r.idx}" class="card w-full p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all text-left flex items-center justify-between gap-3 group cursor-pointer">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-11 h-11 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <i data-lucide="${r.roomIcon}" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">${esc(r.name)}</h3>
+                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5">${esc(r.subText)}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                ${r.cond ? `<span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full ${r.cond.class}">${r.cond.label}</span>` : ''}
+                <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-transform"></i>
             </div>
         </button>`).join('') : `
         <div class="empty-state card p-6 text-center rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
@@ -2928,11 +4202,14 @@ function screenTenantInventoryRoom() {
     const roomSize = storedSize || INVENTORY_DEFAULT_ROOM_SIZES[roomName] || '95';
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
-    return `${topBar('Inventory', { back: true })}
+    return `${topBar(roomName, { back: true })}
     <div class="screen-content screen-enter space-y-4 text-left pb-12 pt-1">
         <!-- Room Header Card -->
         <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-between">
-            <h2 class="text-[17px] font-bold text-[#0F172A] m-0">${esc(roomName)}</h2>
+            <div>
+                <span class="block text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider">Room Schedule</span>
+                <h2 class="text-[17px] font-bold text-[#0F172A] m-0 mt-0.5">${esc(roomName)}</h2>
+            </div>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-[12px] font-semibold text-[#475569]">
                 <i data-lucide="maximize" class="w-3.5 h-3.5 text-[#64748B]"></i>
                 <span>${esc(roomSize)} sq ft</span>
@@ -2941,15 +4218,40 @@ function screenTenantInventoryRoom() {
 
         <!-- ITEMS & FIXTURES Section -->
         <div>
-            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 mb-2">ITEMS &amp; FIXTURES</p>
+            <div class="flex items-center justify-between px-1 mb-2">
+                <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Items &amp; Fixtures (${items.length})</span>
+                <span class="text-[11px] text-[#64748B]">Tap to inspect photo</span>
+            </div>
             <div class="card p-2 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs divide-y divide-[#F1F5F9]">
                 ${items.length ? items.map((item, itemIdx) => {
                     const itemName = item.name || 'Fixture';
+                    const itemCond = item.condition || 'Good';
+                    const isVerified = !!item.tenantVerified;
+                    const isFlagged = !!item.discrepancy || itemCond === 'Damaged' || itemCond === 'Missing';
+                    const condClass = isFlagged
+                        ? 'bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA]'
+                        : (isVerified
+                            ? 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]'
+                            : (itemCond === 'Good'
+                                ? 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]'
+                                : 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]'));
+                    const statusText = isFlagged ? '⚠️ Flagged' : (isVerified ? '✓ Verified' : esc(itemCond));
                     const photoUrl = getInventoryItemPhotoUrl(item, roomName);
                     return `
-                    <button type="button" data-action="view-inventory-item-photo" data-room="${rid}" data-item-idx="${itemIdx}" class="w-full p-2.5 flex items-center gap-3.5 hover:bg-[#F8FAFC] rounded-xl transition-colors cursor-pointer text-left group">
-                        <img src="${esc(photoUrl)}" alt="${esc(itemName)}" class="w-11 h-11 rounded-full object-cover shrink-0 border border-[#E2E8F0] shadow-xs">
-                        <span class="text-[14.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors flex-1">${esc(itemName)}</span>
+                    <button type="button" data-action="view-inventory-item-photo" data-room="${rid}" data-item-idx="${itemIdx}" class="w-full p-2.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] rounded-xl transition-colors cursor-pointer text-left group">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <img src="${esc(photoUrl)}" alt="${esc(itemName)}" class="w-11 h-11 rounded-xl object-cover shrink-0 border border-[#E2E8F0] shadow-xs">
+                            <div class="min-w-0">
+                                <span class="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors block truncate">${esc(itemName)}</span>
+                                <span class="text-[11px] ${isFlagged ? 'text-[#DC2626] font-semibold' : (isVerified ? 'text-[#059669] font-medium' : 'text-[#64748B]')}">
+                                    ${isFlagged ? 'Discrepancy reported' : (isVerified ? 'Verified by you' : 'Handover condition recorded')}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full ${condClass}">${statusText}</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-transform"></i>
+                        </div>
                     </button>`;
                 }).join('') : `
                 <div class="text-center py-4">
@@ -2957,6 +4259,12 @@ function screenTenantInventoryRoom() {
                 </div>`}
             </div>
         </div>
+
+        <!-- Room Discrepancy Reporting CTA -->
+        <button type="button" onclick="openTenantDiscrepancyModal(${pid}, ${rid}, 0)" class="w-full py-2.5 rounded-xl border border-[#CBD5E1] bg-white hover:bg-[#F8FAFC] text-[#475569] font-bold text-[12.5px] shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer">
+            <i data-lucide="flag" class="w-3.5 h-3.5 text-[#DC2626]"></i>
+            <span>Report Discrepancy in ${esc(roomName)}</span>
+        </button>
     </div>`;
 }
 function screenTenantAnnouncements() {
@@ -3464,14 +4772,15 @@ function screenTenantActiveTenancy() {
     const fullAddress = p ? (p.name && !p.address?.toLowerCase().includes(p.name.toLowerCase()) ? `${p.name}, ${p.address}` : (p.address || '12 Park Lane, London, SW1A 1AA')) : '12 Park Lane, London, SW1A 1AA';
 
     const more = [
-        ['zap', 'Services & meters', 'property-utilities'],
-        ['file-text', 'Documents', 'tenant-documents'],
-        ['book-open', 'House rules & policies', 'tenant-house-rules'],
-        ['package', 'Inventory', 'tenant-inventory'],
-        ['building-2', 'Building info', 'tenant-building-info'],
-        ['shield-check', 'Compliance', 'tenant-compliance'],
-        ['bell', 'Reminders', 'tenant-reminders'],
-        ['megaphone', 'Announcements', 'tenant-announcements'],
+        { icon: 'image', label: 'Property & Unit Gallery', go: 'tenant-building-info', tab: 'gallery', desc: 'Exterior, communal areas, flat interior & floor plans', color: '#2563EB', bg: '#EFF6FF' },
+        { icon: 'clipboard-check', label: 'Inventory & Condition', go: 'tenant-inventory', desc: 'Room-by-room condition report, photos & sign-off', color: '#059669', bg: '#ECFDF5' },
+        { icon: 'plug', label: 'Appliances & Manuals', go: 'tenant-building-info', tab: 'appliances', desc: 'Boiler, white goods, serials & user guides', color: '#D97706', bg: '#FEF3C7' },
+        { icon: 'zap', label: 'Services & Meters', go: 'property-utilities', pid: t?.propertyId || 0, unit: t?.unit || '', scope: t?.unit || '', ureturn: 'tenant-active-tenancy', desc: 'Gas, electricity, water, Wi-Fi & parking', color: '#2563EB', bg: '#EFF6FF' },
+        { icon: 'file-text', label: 'Tenancy Documents', go: 'tenant-documents', desc: 'AST agreement, EPC, certificates & tenant guide', color: '#7C3AED', bg: '#F5F3FF' },
+        { icon: 'book-open', label: 'House Rules & Policies', go: 'tenant-house-rules', desc: 'Quiet hours, waste, pets & communal guidelines', color: '#475569', bg: '#F1F5F9' },
+        { icon: 'phone-call', label: 'Emergency Contacts', go: 'tenant-emergency-contacts', desc: '24/7 landlord, emergency plumber, electrician & 999', color: '#DC2626', bg: '#FEF2F2' },
+        { icon: 'shield-check', label: 'Safety & Compliance', go: 'tenant-compliance', desc: 'Gas CP12, EICR, smoke alarms & compliance', color: '#059669', bg: '#ECFDF5' },
+        { icon: 'megaphone', label: 'Building Notices', go: 'tenant-announcements', desc: 'Maintenance notices, deliveries & announcements', color: '#EA580C', bg: '#FFF7ED' },
     ];
     const { members } = typeof getFlatMemberRoster === 'function'
         ? getFlatMemberRoster(t?.propertyId, t?.unit)
@@ -3600,6 +4909,28 @@ function screenTenantActiveTenancy() {
             </div>
         </div>
 
+        <!-- Quick Action Shortcut Buttons (matching Figma active tenancy header actions) -->
+        <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-go="transaction-history" class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all text-center cursor-pointer group flex flex-col items-center justify-center gap-1.5">
+                <div class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i>
+                </div>
+                <span class="text-[11.5px] font-bold text-[#0F172A]">Rent Ledger</span>
+            </button>
+            <button type="button" data-go="log-maintenance" class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all text-center cursor-pointer group flex flex-col items-center justify-center gap-1.5">
+                <div class="w-8 h-8 rounded-xl bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <i data-lucide="wrench" class="w-4 h-4"></i>
+                </div>
+                <span class="text-[11.5px] font-bold text-[#0F172A]">Report Issue</span>
+            </button>
+            <button type="button" data-go="chat" data-chat="0" class="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all text-center cursor-pointer group flex flex-col items-center justify-center gap-1.5">
+                <div class="w-8 h-8 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                </div>
+                <span class="text-[11.5px] font-bold text-[#0F172A]">Chat Landlord</span>
+            </button>
+        </div>
+
         <!-- 4. Group Members (if applicable) -->
         ${showHousehold && typeof renderTenantAccountMembers === 'function' ? renderTenantAccountMembers(tid) : ''}
 
@@ -3607,15 +4938,18 @@ function screenTenantActiveTenancy() {
         <div>
             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider px-1 mb-2">Property Records &amp; Info</p>
             <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden">
-                ${more.map(([icon, label, go]) => `
-                <button type="button" data-go="${go}" class="w-full p-3.5 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                            <i data-lucide="${icon}" class="w-4 h-4"></i>
+                ${more.map(m => `
+                <button type="button" data-go="${m.go}" ${m.tab ? `data-tab="${m.tab}"` : ''} ${m.pid != null ? `data-pid="${m.pid}"` : ''} ${m.unit ? `data-unit="${esc(m.unit)}"` : ''} ${m.scope ? `data-utilities-scope="${esc(m.scope)}"` : ''} ${m.ureturn ? `data-utilities-return="${m.ureturn}"` : ''} class="w-full p-3.5 flex items-center justify-between hover:bg-[#F8FAFC] transition-colors cursor-pointer text-left group">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs" style="background:${m.bg};color:${m.color};">
+                            <i data-lucide="${m.icon}" class="w-5 h-5"></i>
                         </div>
-                        <span class="text-[13px] font-bold text-[#0F172A] truncate">${label}</span>
+                        <div class="min-w-0">
+                            <span class="block text-[13.5px] font-bold text-[#0F172A] truncate group-hover:text-[#2563EB] transition-colors">${esc(m.label)}</span>
+                            <span class="block text-[11.5px] text-[#64748B] mt-0.5 truncate">${esc(m.desc)}</span>
+                        </div>
                     </div>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] shrink-0"></i>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all shrink-0"></i>
                 </button>`).join('')}
             </div>
         </div>
@@ -3653,6 +4987,379 @@ function screenTenantContact() {
         ${chatId != null ? `<button type="button" data-go="chat" data-chat="${chatId}" class="btn-primary w-full py-3 text-[13px]">Message landlord</button>` : ''}
     </div>`;
 }
+
+function screenTenantEmergencyContacts() {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const pid = t?.propertyId ?? (STATE.propertyId ?? 0);
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : (typeof PROPERTIES !== 'undefined' && PROPERTIES[0] ? PROPERTIES[0] : { name: '12 Park Lane' });
+    const landlordPhone = (typeof LANDLORD_USER !== 'undefined' && LANDLORD_USER.phone) ? LANDLORD_USER.phone : '+44 7700 900123';
+    const landlordName = (typeof LANDLORD_USER !== 'undefined' && LANDLORD_USER.name) ? LANDLORD_USER.name : 'John Smith';
+    const chatId = typeof getActiveTenantLandlordChatId === 'function' ? getActiveTenantLandlordChatId() : 0;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    return `${topBar('Emergency Contacts', { back: true, sub: 'Landlord 24/7 Emergency Line' })}
+    <div class="screen-content screen-enter space-y-4 text-left pb-12">
+        <!-- 1. LANDLORD EMERGENCY HOTLINE HERO (PRIMARY FOCUS) -->
+        <div class="card p-4.5 rounded-2xl bg-gradient-to-b from-[#FFF5F5] via-white to-white border-2 border-[#FCA5A5] shadow-sm text-left space-y-4 relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-[#FEE2E2] rounded-full opacity-40 pointer-events-none"></div>
+
+            <!-- On-Call Badge & Landlord Info -->
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#DC2626] text-white shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                        24/7 ON-CALL
+                    </span>
+                    <span class="text-[11px] font-bold text-[#64748B]">Property Owner &amp; Manager</span>
+                </div>
+                <span class="text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">Direct Hotline</span>
+            </div>
+
+            <!-- Landlord Identity Card -->
+            <div class="flex items-center gap-3.5 pt-1">
+                <div class="w-14 h-14 rounded-2xl overflow-hidden border-2 border-white shadow-sm shrink-0">
+                    <img src="${IMG.avatar.john}" alt="" class="w-full h-full object-cover">
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-[17px] font-extrabold text-[#0F172A] m-0 tracking-tight">${esc(landlordName)}</h3>
+                    <p class="text-[12px] font-medium text-[#64748B] m-0 mt-0.5">Landlord HQ · ${esc(p.name || '12 Park Lane')}${t?.unit ? ' (' + esc(t.unit) + ')' : ''}</p>
+                    <p class="text-[11px] text-[#059669] font-semibold m-0 mt-0.5 flex items-center gap-1">
+                        <i data-lucide="clock" class="w-3 h-3"></i>
+                        <span>Average emergency pickup: &lt; 2 mins</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Large Phone Number Box -->
+            <div class="p-3.5 rounded-xl bg-white border border-[#FECACA] shadow-xs flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <span class="block text-[10px] font-extrabold text-[#DC2626] uppercase tracking-wider">Landlord Emergency Number</span>
+                    <a href="tel:${esc(landlordPhone)}" class="text-[18px] font-mono font-black text-[#0F172A] hover:text-[#DC2626] transition-colors tracking-tight block m-0">
+                        ${esc(landlordPhone)}
+                    </a>
+                </div>
+                <button type="button" onclick="navigator.clipboard.writeText('${esc(landlordPhone)}'); if (typeof showToast === 'function') showToast('Emergency phone number copied!');" class="p-2.5 rounded-xl bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] transition-colors cursor-pointer shrink-0" title="Copy Number">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Call & Chat Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 pt-0.5">
+                <a href="tel:${esc(landlordPhone)}" class="py-3 px-3 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[13px] font-extrabold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]">
+                    <i data-lucide="phone-call" class="w-4 h-4 animate-bounce"></i>
+                    <span>Call Landlord Now</span>
+                </a>
+                <button type="button" data-go="chat" data-chat="${chatId}" class="py-3 px-3 rounded-xl bg-white border border-[#CBD5E1] hover:bg-[#F8FAFC] text-[13px] font-bold text-[#0F172A] flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
+                    <i data-lucide="message-square" class="w-4 h-4 text-[#2563EB]"></i>
+                    <span>Priority Chat</span>
+                </button>
+            </div>
+
+            <!-- Quick Policy Hint & Coverage Modal -->
+            <div class="pt-2 border-t border-[#F1F5F9] flex items-center justify-between text-[11.5px]">
+                <span class="text-[#64748B]">Burst pipe · Gas leak · Power out · Lockout</span>
+                <button type="button" data-action="view-landlord-sla" class="font-bold text-[#2563EB] hover:underline cursor-pointer flex items-center gap-1">
+                    <span>SLA &amp; Policy</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. SECONDARY EMERGENCY CONTACT (BUILDING CARETAKER) -->
+        <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3 text-left">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 font-bold text-[13px]">
+                    RH
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <h4 class="text-[13px] font-bold text-[#0F172A] m-0 truncate">Robert Hayes</h4>
+                        <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-[#F1F5F9] text-[#475569]">On-site Caretaker</span>
+                    </div>
+                    <p class="text-[11.5px] text-[#64748B] m-0 font-mono">+44 7700 900456 · Secondary Contact</p>
+                </div>
+            </div>
+            <a href="tel:+447700900456" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:bg-[#F8FAFC] text-[12px] font-bold text-[#0F172A] flex items-center gap-1 shadow-2xs transition-colors shrink-0">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                <span>Call</span>
+            </a>
+        </div>
+
+        <!-- 3. Approved Building Emergency Trades -->
+        <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <div>
+                    <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">Pre-Authorized Emergency Trades</p>
+                    <p class="text-[10px] text-[#94A3B8] m-0">Direct billed to landlord if urgent</p>
+                </div>
+                <span class="text-[10px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">Pre-Approved</span>
+            </div>
+
+            <!-- Emergency Plumber & Heating (Profile 0) -->
+            <button type="button" data-go="contractor-public-profile" data-contractor-id="0" data-contractor-profile-return="tenant-emergency-contacts" class="w-full card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#2563EB] shadow-2xs hover:shadow-xs transition-all cursor-pointer group text-left">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                            <i data-lucide="droplet" class="w-5 h-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">David Evans · Plumber Pro</h4>
+                                <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">Gas Safe</span>
+                            </div>
+                            <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0 truncate">Burst pipes, severe leaks, boiler breakdown</p>
+                        </div>
+                    </div>
+                    <a href="tel:+447700900201" onclick="event.stopPropagation();" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold flex items-center gap-1 shadow-2xs shrink-0 transition-colors">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span>Call</span>
+                    </a>
+                </div>
+                <div class="mt-2.5 pt-2 border-t border-[#F8FAFC] flex items-center justify-between text-[11px] font-bold text-[#2563EB]">
+                    <span>View verified Gas Safe cert, £5M insurance &amp; reviews</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"></i>
+                </div>
+            </button>
+
+            <!-- Emergency Electrician (Profile 2) -->
+            <button type="button" data-go="contractor-public-profile" data-contractor-id="2" data-contractor-profile-return="tenant-emergency-contacts" class="w-full card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#2563EB] shadow-2xs hover:shadow-xs transition-all cursor-pointer group text-left">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-[#FFFBEB] text-[#D97706] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">James Wilson · Electric Fix</h4>
+                                <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">NICEIC</span>
+                            </div>
+                            <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0 truncate">Sparking fusebox, total power loss, dangerous wiring</p>
+                        </div>
+                    </div>
+                    <a href="tel:+447700900203" onclick="event.stopPropagation();" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold flex items-center gap-1 shadow-2xs shrink-0 transition-colors">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span>Call</span>
+                    </a>
+                </div>
+                <div class="mt-2.5 pt-2 border-t border-[#F8FAFC] flex items-center justify-between text-[11px] font-bold text-[#2563EB]">
+                    <span>View NICEIC registration, 18th Edition &amp; reviews</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"></i>
+                </div>
+            </button>
+
+            <!-- Emergency Locksmith (Profile 3) -->
+            <button type="button" data-go="contractor-public-profile" data-contractor-id="3" data-contractor-profile-return="tenant-emergency-contacts" class="w-full card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#2563EB] shadow-2xs hover:shadow-xs transition-all cursor-pointer group text-left">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                            <i data-lucide="key" class="w-5 h-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <h4 class="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0 truncate">Mark Higgins · SafeKey 24/7</h4>
+                                <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-[#F1F5F9] text-[#475569]">MLA Member</span>
+                            </div>
+                            <p class="text-[11.5px] text-[#64748B] mt-0.5 m-0 truncate">Broken lock, snapped key, lockout emergency</p>
+                        </div>
+                    </div>
+                    <a href="tel:+447700900321" onclick="event.stopPropagation();" class="px-3.5 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12px] font-bold flex items-center gap-1 shadow-2xs shrink-0 transition-colors">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span>Call</span>
+                    </a>
+                </div>
+                <div class="mt-2.5 pt-2 border-t border-[#F8FAFC] flex items-center justify-between text-[11px] font-bold text-[#2563EB]">
+                    <span>View Master Locksmiths credentials &amp; BS 3621 cert</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"></i>
+                </div>
+            </button>
+        </div>
+
+        <!-- 4. National UK Utility Emergency Helplines -->
+        <div>
+            <div class="flex items-center justify-between px-1 mb-2">
+                <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider m-0">National Utility Helplines (Free &amp; 24/7)</p>
+                <span class="text-[10px] font-bold text-[#64748B]">Tap card for meter guide</span>
+            </div>
+            <div class="card rounded-2xl bg-white border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] overflow-hidden text-left">
+                <!-- Gas Emergency (utility-detail gas) -->
+                <button type="button" data-go="utility-detail" data-utility-id="gas" data-pid="${pid}" data-utilities-return="tenant-emergency-contacts" class="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors cursor-pointer group text-left">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-[#FEF2F2] text-[#DC2626] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <i data-lucide="flame" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h5 class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#DC2626] transition-colors m-0">Smell Gas? National Gas Emergency</h5>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Free 24h line · View meter &amp; shut-off guide →</p>
+                        </div>
+                    </div>
+                    <a href="tel:0800111999" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-xl bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] text-[12px] font-bold flex items-center gap-1 shrink-0 transition-colors">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span>0800 111 999</span>
+                    </a>
+                </button>
+
+                <!-- Power Cut (utility-detail electricity) -->
+                <button type="button" data-go="utility-detail" data-utility-id="electricity" data-pid="${pid}" data-utilities-return="tenant-emergency-contacts" class="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors cursor-pointer group text-left">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-[#FFFBEB] text-[#D97706] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <i data-lucide="zap-off" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h5 class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#D97706] transition-colors m-0">Power Cut (UK Power Networks)</h5>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">National grid fault · View consumer unit guide →</p>
+                        </div>
+                    </div>
+                    <a href="tel:105" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-xl bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] text-[12px] font-bold flex items-center gap-1 shrink-0 transition-colors">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span>105</span>
+                    </a>
+                </button>
+
+                <!-- Thames Water (utility-detail water) -->
+                <button type="button" data-go="utility-detail" data-utility-id="water" data-pid="${pid}" data-utilities-return="tenant-emergency-contacts" class="w-full p-3.5 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors cursor-pointer group text-left">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <i data-lucide="droplet" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h5 class="text-[13px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors m-0">Thames Water 24/7 Leakline</h5>
+                            <p class="text-[11px] text-[#64748B] m-0 mt-0.5">External burst mains · View stopcock guide →</p>
+                        </div>
+                    </div>
+                    <a href="tel:08003169800" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-xl bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] border border-[#BFDBFE] text-[12px] font-bold flex items-center gap-1 shrink-0 transition-colors">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        <span>0800 316 9800</span>
+                    </a>
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. In-Flat Emergency Shut-Off Locations -->
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-[#2563EB]"></i>
+                    <h4 class="text-[13px] font-bold text-[#0F172A] m-0">Emergency Shut-Off Locations</h4>
+                </div>
+                <button type="button" data-go="property-utilities" data-pid="${pid}" data-unit="${esc(t?.unit || '')}" data-utilities-scope="${esc(t?.unit || '')}" data-utilities-return="tenant-emergency-contacts" class="text-[11.5px] font-bold text-[#2563EB] hover:underline cursor-pointer flex items-center gap-0.5">
+                    <span>View All Meters</span>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <button type="button" data-go="utility-detail" data-utility-id="water" data-pid="${pid}" data-utilities-return="tenant-emergency-contacts" class="p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#EFF6FF] border border-[#E2E8F0] hover:border-[#BFDBFE] transition-all cursor-pointer group text-center">
+                    <i data-lucide="droplets" class="w-4 h-4 text-[#2563EB] mx-auto mb-1 group-hover:scale-110 transition-transform"></i>
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase">Water</span>
+                    <span class="block text-[11px] font-bold text-[#0F172A] group-hover:text-[#2563EB] mt-0.5 truncate">Sink Stopcock</span>
+                </button>
+                <button type="button" data-go="utility-detail" data-utility-id="electricity" data-pid="${pid}" data-utilities-return="tenant-emergency-contacts" class="p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#FFFBEB] border border-[#E2E8F0] hover:border-[#FDE68A] transition-all cursor-pointer group text-center">
+                    <i data-lucide="zap" class="w-4 h-4 text-[#D97706] mx-auto mb-1 group-hover:scale-110 transition-transform"></i>
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase">Electric</span>
+                    <span class="block text-[11px] font-bold text-[#0F172A] group-hover:text-[#D97706] mt-0.5 truncate">Hallway Fusebox</span>
+                </button>
+                <button type="button" data-go="utility-detail" data-utility-id="gas" data-pid="${pid}" data-utilities-return="tenant-emergency-contacts" class="p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#FEF2F2] border border-[#E2E8F0] hover:border-[#FECACA] transition-all cursor-pointer group text-center">
+                    <i data-lucide="flame" class="w-4 h-4 text-[#DC2626] mx-auto mb-1 group-hover:scale-110 transition-transform"></i>
+                    <span class="block text-[10px] font-bold text-[#64748B] uppercase">Gas</span>
+                    <span class="block text-[11px] font-bold text-[#0F172A] group-hover:text-[#DC2626] mt-0.5 truncate">Meter Cabinet</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. Routine Maintenance Prompt -->
+        <div class="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-center space-y-2">
+            <p class="text-[12px] text-[#64748B] m-0">Not an immediate emergency? Submit a routine repair request so our team can schedule it.</p>
+            <button type="button" data-go="log-maintenance" class="btn-secondary w-full py-2.5 text-[12.5px] font-bold shadow-2xs cursor-pointer">
+                Report Routine Maintenance
+            </button>
+        </div>
+    </div>`;
+}
+
+function openLandlordCoverageModal() {
+    const t = typeof getActiveTenant === 'function' ? getActiveTenant() : null;
+    const pid = t?.propertyId ?? (STATE.propertyId ?? 0);
+    const p = (typeof PROPERTIES !== 'undefined' && PROPERTIES[pid]) ? PROPERTIES[pid] : { name: '12 Park Lane' };
+    const landlordPhone = (typeof LANDLORD_USER !== 'undefined' && LANDLORD_USER.phone) ? LANDLORD_USER.phone : '+44 7700 900123';
+    const landlordName = (typeof LANDLORD_USER !== 'undefined' && LANDLORD_USER.name) ? LANDLORD_USER.name : 'John Smith';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const chatId = typeof getActiveTenantLandlordChatId === 'function' ? getActiveTenantLandlordChatId() : 0;
+
+    const modalHtml = `
+    <div class="card p-5 space-y-4 text-left screen-enter max-w-[380px] mx-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-[15px] font-extrabold text-[#0F172A] m-0">Out-of-Hours Policy</h3>
+                    <p class="text-[11px] text-[#64748B] m-0">${esc(p.name || 'Building')} · SLA &amp; Coverage</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal()" class="text-[#94A3B8] hover:text-[#0F172A] p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block mb-1">Target Response SLAs</span>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="p-2.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA]">
+                        <span class="block text-[15px] font-black text-[#DC2626]">1 Hour</span>
+                        <span class="block text-[10px] font-bold text-[#991B1B] mt-0.5">Critical Emergency</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-[#FFFBEB] border border-[#FDE68A]">
+                        <span class="block text-[15px] font-black text-[#D97706]">4 Hours</span>
+                        <span class="block text-[10px] font-bold text-[#92400E] mt-0.5">Urgent Repair</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                        <span class="block text-[15px] font-black text-[#0F172A]">24 Hours</span>
+                        <span class="block text-[10px] font-bold text-[#64748B] mt-0.5">Routine Report</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 text-[12px]">
+                <p class="font-bold text-[#0F172A] m-0 flex items-center gap-1.5">
+                    <i data-lucide="phone-call" class="w-3.5 h-3.5 text-[#2563EB]"></i> Escalation Ladder
+                </p>
+                <div class="space-y-1.5 text-[#475569]">
+                    <div class="flex justify-between items-center">
+                        <span>1. Primary Manager:</span>
+                        <span class="font-bold text-[#0F172A]">${esc(landlordName)} (${esc(landlordPhone)})</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>2. Duty Building Desk:</span>
+                        <span class="font-bold text-[#0F172A]">+44 20 7946 0912</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>3. Emergency Plumber:</span>
+                        <span class="font-bold text-[#0F172A]">+44 7700 900201</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1E40AF] leading-relaxed">
+                <strong>Emergency Call-Out Note:</strong> Pre-authorized contractor call-outs for genuine emergencies (uncontrolled leak, total heating loss under 12°C, locked-out lock failure) are covered by the property owner.
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+            <a href="tel:${esc(landlordPhone)}" class="py-2.5 px-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-[12.5px] flex items-center justify-center gap-1.5 shadow-sm">
+                <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                <span>Call Landlord</span>
+            </a>
+            <button type="button" onclick="closeModal(); if (typeof go === 'function') go('chat', { chatId: ${chatId} });" class="py-2.5 px-3 rounded-xl bg-white border border-[#CBD5E1] hover:bg-[#F8FAFC] text-[#0F172A] font-bold text-[12.5px] flex items-center justify-center gap-1.5">
+                <i data-lucide="message-square" class="w-3.5 h-3.5 text-[#2563EB]"></i>
+                <span>Open Chat</span>
+            </button>
+        </div>
+    </div>`;
+
+    if (typeof openModal === 'function') {
+        openModal(modalHtml);
+    }
+}
+window.openLandlordCoverageModal = openLandlordCoverageModal;
 
 function screenTenantReminders() {
     const t = getActiveTenant();
@@ -4087,47 +5794,68 @@ function contractorHomeHeader(name, company) {
 </div>`;
 }
 
+function formatCtrVisitDateTime(visitDate) {
+    if (!visitDate) return { time: '4:30 PM', date: 'Today · 4 Oct 2026' };
+    const raw = String(visitDate).trim();
+    const timeMatch = raw.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
+    const time = timeMatch ? timeMatch[1].toUpperCase() : '4:30 PM';
+    let datePart = raw.replace(/,?\s*\d{1,2}:\d{2}\s*(?:AM|PM)?/i, '').trim();
+    if (!datePart || datePart.toLowerCase() === 'today') {
+        datePart = 'Today · 4 Oct';
+    } else if (datePart.toLowerCase() === 'tomorrow') {
+        datePart = 'Tomorrow · 5 Oct';
+    }
+    return { time, date: datePart };
+}
+
 function renderCtrScheduleHero(job) {
     if (!job) {
         return `
         <div class="card p-4 rounded-2xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
-                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-white/95 flex items-center gap-1.5">
+                    <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i> NEXT SCHEDULE
                 </span>
-                <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-[11px] font-bold text-white inline-flex items-center gap-1.5">
+                <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-[11px] font-bold text-white inline-flex items-center gap-1.5 border border-white/10">
                     <span class="w-2 h-2 rounded-full bg-[#4ADE80]"></span> On duty
                 </span>
             </div>
-            <p class="text-[24px] font-black text-white m-0 tracking-tight">No visits scheduled today</p>
-            <p class="text-[12px] text-white/90 m-0">Check your active jobs for upcoming assignments.</p>
+            <p class="text-[22px] font-black text-white m-0 tracking-tight">No upcoming visits scheduled</p>
+            <p class="text-[12px] text-white/90 m-0">Check your assigned jobs to set appointment dates.</p>
             <button type="button" data-go="contractor-jobs" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm mt-1 hover:bg-[#F8FAFC] transition-colors cursor-pointer border-none outline-none">
                 View jobs <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
             </button>
         </div>`;
     }
-    const timeMatch = (job.visitDate || '').match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
-    const timeLabel = timeMatch ? timeMatch[1] : (job.visitDate || '4:30 PM');
+    const dt = formatCtrVisitDateTime(job.visitDate);
     const location = contractorJobLocation(job);
     return `
-    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card w-full p-4 rounded-2xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2 text-left relative overflow-hidden group border-none outline-none cursor-pointer">
+    <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card w-full p-4 rounded-2xl bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md space-y-2.5 text-left relative overflow-hidden group border-none outline-none cursor-pointer">
         <div class="flex items-center justify-between">
-            <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-white/90 flex items-center gap-1">
-                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> TODAY'S SCHEDULE
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-white/95 flex items-center gap-1.5">
+                <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i> NEXT SCHEDULE
             </span>
-            <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-[11px] font-bold text-white inline-flex items-center gap-1.5">
+            <span class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-[11px] font-bold text-white inline-flex items-center gap-1.5 border border-white/15">
                 <span class="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse"></span> On duty
             </span>
         </div>
-        <p class="text-[26px] font-black text-white m-0 tracking-tight leading-none pt-0.5">${timeLabel}</p>
-        <p class="text-[16px] font-black text-white m-0 truncate leading-snug">${job.issue}</p>
-        <p class="text-[12px] font-medium text-white/90 m-0 truncate flex items-center gap-1">
-            <i data-lucide="map-pin" class="w-3.5 h-3.5 shrink-0 text-white"></i> ${location}
-        </p>
-        <div class="pt-1">
+        <div class="pt-0.5 space-y-1">
+            <div class="flex items-baseline gap-2.5 flex-wrap">
+                <p class="text-[28px] font-black text-white m-0 tracking-tight leading-none">${dt.time}</p>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-white/20 backdrop-blur-sm text-white text-[12px] font-bold border border-white/25">
+                    <i data-lucide="calendar" class="w-3 h-3"></i> ${dt.date}
+                </span>
+            </div>
+            <p class="text-[16px] font-black text-white m-0 truncate leading-snug pt-0.5">${job.issue}</p>
+            <p class="text-[12px] font-medium text-white/90 m-0 truncate flex items-center gap-1">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 shrink-0 text-white"></i> ${location}
+            </p>
+        </div>
+        <div class="pt-0.5 flex items-center justify-between">
             <span class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-[#2563EB] text-[12.5px] font-extrabold shadow-sm group-hover:bg-[#F8FAFC] transition-colors">
                 View schedule <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
             </span>
+            <span class="text-[11px] font-bold text-white/80 group-hover:text-white transition-colors">Job #${job.id + 1} details →</span>
         </div>
     </button>`;
 }
@@ -4162,9 +5890,12 @@ function renderCtrOverviewCard(icon, label, value, sub) {
 }
 
 function renderCtrHomeJobRow(job) {
-    const st = contractorStatusStyle(job.status);
+    const disp = contractorJobDisplayStatus(job);
     const thumb = job.reportPhotos?.[0] || job.photos?.before?.[0] || IMG.maint[job.id % IMG.maint.length];
     const location = contractorJobLocation(job);
+    const isScheduled = job.status === 'scheduled' || job.status === 'accepted';
+    const isPending = job.status === 'assigned';
+    const isInProgress = job.status === 'in_progress';
     return `
     <button type="button" data-go="contractor-job-detail" data-job="${job.id}" class="card p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left hover:border-[#2563EB] transition-all cursor-pointer group w-full">
         <div class="flex items-center gap-3 min-w-0">
@@ -4174,11 +5905,16 @@ function renderCtrHomeJobRow(job) {
                 <p class="text-[11.5px] font-semibold text-[#64748B] m-0 mt-0.5 truncate flex items-center gap-1">
                     <i data-lucide="map-pin" class="w-3 h-3 text-[#94A3B8] shrink-0"></i> ${location}
                 </p>
-                <p class="text-[10.5px] font-medium text-[#94A3B8] m-0 mt-0.5">${job.visitDate || 'Today · 4:30 PM'}</p>
+                <p class="text-[10.5px] font-medium text-[#94A3B8] m-0 mt-0.5 flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i> ${job.visitDate || 'Today · 4:30 PM'}
+                </p>
             </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-            <span class="px-2.5 py-1 rounded-full text-[10.5px] font-extrabold tracking-wide" style="background:${st.bg};color:${st.color}">${st.label}</span>
+            <span class="px-2.5 py-1 rounded-full text-[10.5px] font-extrabold tracking-wide flex items-center gap-1" style="background:${disp.bg};color:${disp.color};border:1px solid ${isScheduled ? '#BFDBFE' : (isPending ? '#FED7AA' : 'transparent')}">
+                ${isScheduled ? '<i data-lucide="calendar" class="w-3 h-3 text-[#2563EB]"></i>' : (isPending ? '<span class="w-1.5 h-1.5 rounded-full bg-[#EA580C] animate-pulse"></span>' : (isInProgress ? '<span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>' : ''))}
+                ${disp.label}
+            </span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] transition-colors"></i>
         </div>
     </button>`;
@@ -4282,6 +6018,7 @@ function screenContractorJobs() {
                 <select data-action="filter-contractor-jobs-select" class="appearance-none bg-white border border-[#CBD5E1] text-[#0F172A] text-[12.5px] font-bold rounded-xl pl-3.5 pr-8 py-2.5 shadow-sm hover:border-[#2563EB] focus:border-[#2563EB] focus:outline-none cursor-pointer">
                     <option value="all" ${f === 'all' ? 'selected' : ''}>All (${counts.all})</option>
                     <option value="pending" ${f === 'pending' ? 'selected' : ''}>Pending (${counts.pending})</option>
+                    <option value="scheduled" ${f === 'scheduled' ? 'selected' : ''}>Scheduled (${counts.scheduled})</option>
                     <option value="in_progress" ${f === 'in_progress' ? 'selected' : ''}>In progress (${counts.inProgress})</option>
                     <option value="completed" ${f === 'completed' ? 'selected' : ''}>Completed (${counts.completed})</option>
                 </select>
@@ -4331,16 +6068,12 @@ function screenContractorJobDetail() {
     if (tab === 'work') return screenContractorCompleteJob();
     if (tab === 'invoice') return screenContractorJobInvoice();
 
-    const canMessageTenant = job.tenant && job.tenant !== '—' && job.tenantChatId != null;
-    const contactName = canMessageTenant ? job.tenant : job.landlord;
-    const contactInitials = contactName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const isAssigned = job.status === 'assigned';
     const maintItem = job.maintId != null && typeof MAINTENANCE_ITEMS !== 'undefined'
         ? MAINTENANCE_ITEMS.find(m => m.id === job.maintId)
         : null;
 
     const photos = [...(job.reportPhotos || []), ...(job.photos?.before || [])];
-    const mainFeaturedPhoto = photos[0] || (typeof IMG !== 'undefined' && IMG.maint ? IMG.maint[job.id % IMG.maint.length] : 'assets/plumber.png');
-
     const rawVideos = typeof getMaintReportVideos === 'function'
         ? getMaintReportVideos(job || maintItem)
         : (job.reportVideos || maintItem?.videos || []);
@@ -4352,20 +6085,128 @@ function screenContractorJobDetail() {
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
     const accessInfo = getContractorJobAccessInfo(job);
 
-    // Check utilities for emergency shutoff / stopcock / fusebox
+    const dt = typeof formatCtrVisitDateTime === 'function' ? formatCtrVisitDateTime(job.visitDate) : { time: job.visitDate || '4:30 PM', date: 'Today · 4 Oct' };
+
+    const landlordName = job.landlord || 'John Smith';
+    const landlordPhone = (typeof LANDLORD_USER !== 'undefined' && LANDLORD_USER.phone) ? LANDLORD_USER.phone : '+44 7700 900123';
+    const tenantName = (job.tenant && job.tenant !== '—') ? job.tenant : null;
+    const tenantPhone = '+44 7700 900456';
+
     const pid = job.propertyId ?? maintItem?.propertyId ?? 0;
     const meta = typeof AppStore !== 'undefined' ? AppStore.meta(pid) : {};
     const utils = meta?.utilities || {};
-    const waterStopcock = utils.water?.shutOff || utils.water?.meterLocation || 'Pavement outside front boundary';
-    const elecLocation = utils.elec?.meterLocation || utils.elec?.meter || 'Hallway intake / meter box';
+    const waterStopcock = utils.water?.shutOff || utils.water?.meterLocation || 'Sink stopcock & external pavement';
+    const elecLocation = utils.elec?.meterLocation || utils.elec?.meter || 'Hallway consumer unit';
     const isPlumbing = /sink|pipe|water|tap|toilet|leak|basin|drain/i.test(job.issue || '') || (maintItem?.categoryId === 'plumbing');
     const isElectrical = /power|plug|light|fuse|electric|breaker|wire/i.test(job.issue || '') || (maintItem?.categoryId === 'electrical');
+    const rawPriority = String(job.priority || maintItem?.priority || 'medium').toLowerCase();
+    const isHighPriority = rawPriority.includes('high') || rawPriority.includes('emergency') || /leak|burst|flood|gas|power|fire/i.test(job.issue || '');
+    const isMediumPriority = !isHighPriority && (rawPriority.includes('med') || /radiator|heat|window|latch|lock/i.test(job.issue || ''));
 
     const primaryAction = {
-        assigned: `<button type="button" data-contractor-action="accept" data-msg="Job accepted" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer">Accept job</button>`,
-        accepted: `<button type="button" data-contractor-action="schedule" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer">Schedule visit</button>`,
-        scheduled: `<button type="button" data-contractor-action="start" data-msg="Work started" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer">Start job</button>`,
-        in_progress: `<button type="button" data-contractor-action="work" class="btn-primary w-full py-3.5 text-[14px] font-extrabold flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer"><i data-lucide="file-text" class="w-4 h-4"></i> Finish &amp; invoice</button>`,
+        assigned: `
+        <div class="space-y-2">
+            <button type="button" data-contractor-action="accept" class="btn-primary w-full py-3.5 text-[14.5px] font-black flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer active:scale-[0.99] transition-transform">
+                <i data-lucide="calendar-check" class="w-4 h-4"></i> Accept &amp; Confirm Visit
+            </button>
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <button type="button" data-contractor-action="schedule" class="py-2.5 px-3 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-bold text-[#2563EB] hover:bg-[#EFF6FF] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Pick Different Time
+                </button>
+                <button type="button" data-contractor-action="decline" class="py-2.5 px-3 rounded-xl border border-[#FECACA] bg-[#FEF2F2] text-[12px] font-bold text-[#DC2626] hover:bg-[#FEE2E2] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i> Decline Request
+                </button>
+            </div>
+            <div class="text-center pt-0.5">
+                <button type="button" data-action="open-contractor-quote-modal" class="text-[12px] font-bold text-[#64748B] hover:text-[#2563EB] cursor-pointer">
+                    Propose Different Quote / Pricing →
+                </button>
+            </div>
+        </div>`,
+        accepted: `
+        <div class="space-y-2.5">
+            <div class="p-3 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-7 h-7 rounded-lg bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[12px] font-extrabold text-[#1E40AF] m-0 truncate">Visit Confirmed: ${dt.time} · ${dt.date}</p>
+                        <p class="text-[11px] text-[#3B82F6] m-0">Tap below once you arrive on site to log check-in</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#2563EB] border border-[#BFDBFE] shrink-0">Booked</span>
+            </div>
+
+            <button type="button" data-contractor-action="start-job" class="btn-primary w-full py-3.5 text-[15px] font-black flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer bg-[#16A34A] hover:bg-[#15803D] text-white active:scale-[0.99] transition-transform">
+                <i data-lucide="play" class="w-4.5 h-4.5 fill-white"></i> Start Working on Site
+            </button>
+
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <button type="button" data-contractor-action="reschedule" class="py-2.5 px-3 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-bold text-[#334155] hover:text-[#2563EB] hover:border-[#2563EB] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i> Reschedule Visit
+                </button>
+                <button type="button" data-contractor-action="cancel-booking" class="py-2.5 px-3 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-bold text-[#64748B] hover:text-[#DC2626] hover:border-[#FECACA] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="x-circle" class="w-3.5 h-3.5 text-[#DC2626]"></i> Cancel Booking
+                </button>
+            </div>
+        </div>`,
+        scheduled: `
+        <div class="space-y-2.5">
+            <div class="p-3 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-7 h-7 rounded-lg bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center shrink-0">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[12px] font-extrabold text-[#1E40AF] m-0 truncate">Visit Confirmed: ${dt.time} · ${dt.date}</p>
+                        <p class="text-[11px] text-[#3B82F6] m-0">Tap below once you arrive on site to log check-in</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#2563EB] border border-[#BFDBFE] shrink-0">Booked</span>
+            </div>
+
+            <button type="button" data-contractor-action="start-job" class="btn-primary w-full py-3.5 text-[15px] font-black flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer bg-[#16A34A] hover:bg-[#15803D] text-white active:scale-[0.99] transition-transform">
+                <i data-lucide="play" class="w-4.5 h-4.5 fill-white"></i> Start Working on Site
+            </button>
+
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <button type="button" data-contractor-action="reschedule" class="py-2.5 px-3 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-bold text-[#334155] hover:text-[#2563EB] hover:border-[#2563EB] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB]"></i> Reschedule Visit
+                </button>
+                <button type="button" data-contractor-action="cancel-booking" class="py-2.5 px-3 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-bold text-[#64748B] hover:text-[#DC2626] hover:border-[#FECACA] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="x-circle" class="w-3.5 h-3.5 text-[#DC2626]"></i> Cancel Booking
+                </button>
+            </div>
+        </div>`,
+        in_progress: `
+        <div class="space-y-2.5">
+            <div class="p-3 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-7 h-7 rounded-lg bg-[#D1FAE5] text-[#059669] flex items-center justify-center shrink-0">
+                        <i data-lucide="activity" class="w-4 h-4 animate-pulse"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[12px] font-extrabold text-[#065F46] m-0 truncate">Active Work in Progress</p>
+                        <p class="text-[11px] text-[#047857] m-0">Started ${job.startedAt ? `at ${esc(job.startedAt)}` : 'on site'} · Check-in logged</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#059669] border border-[#A7F3D0] shrink-0">Live</span>
+            </div>
+
+            <button type="button" data-contractor-action="complete-work" class="btn-primary w-full py-3.5 text-[15px] font-black flex items-center justify-center gap-2 rounded-xl shadow-md cursor-pointer active:scale-[0.99] transition-transform">
+                <i data-lucide="check-circle-2" class="w-4.5 h-4.5"></i> Complete Job &amp; Submit Invoice
+            </button>
+
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <button type="button" data-action="add-extra-work" class="py-2.5 px-3 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-bold text-[#334155] hover:text-[#2563EB] hover:border-[#2563EB] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-[#2563EB]"></i> + Add Variation
+                </button>
+                <button type="button" data-contractor-action="pause-job" class="py-2.5 px-3 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-bold text-[#64748B] hover:text-[#D97706] hover:border-[#FDE68A] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="pause-circle" class="w-3.5 h-3.5 text-[#D97706]"></i> Pause (Need Parts)
+                </button>
+            </div>
+        </div>`,
         waiting_approval: `
         <div class="card p-4 rounded-xl bg-[#FAF5FF] border border-[#E9D5FF] text-center space-y-1.5">
             <span class="inline-flex items-center gap-1.5 text-[13px] font-extrabold text-[#7E22CE]">
@@ -4379,6 +6220,22 @@ function screenContractorJobDetail() {
         approved: `<div class="card p-3.5 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Approved — payment via Stripe</div>`,
         completed: `<div class="card p-3.5 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] text-[13px] font-bold text-center border border-[#DBEAFE]">Job completed</div>`,
         paid: `<div class="card p-3.5 rounded-xl bg-[#ECFDF5] text-[#047857] text-[13px] font-bold text-center border border-[#A7F3D0]">Payment received</div>`,
+        cancelled: `
+        <div class="space-y-2">
+            <div class="p-3.5 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] space-y-1 text-left">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-extrabold text-[#991B1B] uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="x-circle" class="w-4 h-4 text-[#DC2626]"></i> Booking Cancelled
+                    </span>
+                    ${job.cancelledAt ? `<span class="text-[10px] font-medium text-[#7F1D1D]">${esc(job.cancelledAt)}</span>` : ''}
+                </div>
+                <p class="text-[12px] text-[#7F1D1D] m-0 font-medium">${esc(job.cancelReason || 'Cancelled by contractor')}</p>
+            </div>
+
+            <button type="button" data-contractor-action="reopen" class="btn-secondary w-full py-3 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer border border-[#CBD5E1] bg-white hover:bg-[#F8FAFC]">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-[#2563EB]"></i> Re-open &amp; Schedule Visit
+            </button>
+        </div>`,
     }[job.status] || '';
 
     const reviewsBlock = typeof renderContractorJobReviewsReadonly === 'function'
@@ -4387,105 +6244,684 @@ function screenContractorJobDetail() {
     return `${topBar('Job details', { back: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-16">
         
-        <!-- Unified Main Job Card (Clean cohesive layout, no fragmented box clutter) -->
+        <!-- MAIN CLEAN UNIFIED JOB CARD (NO NESTED BOX CLUTTER) -->
         <div class="card p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-4 text-left">
-            <!-- Status & Job Ref Badge -->
+            
+            <!-- Top Badges: Status & Ticket -->
             <div class="flex items-center justify-between">
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase" style="background:${st.bg};color:${st.color}">
-                    <i data-lucide="clock" class="w-3 h-3 inline-block -mt-0.5 mr-0.5"></i> ${st.label}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide" style="background:${st.bg};color:${st.color}">
+                    <span class="w-1.5 h-1.5 rounded-full ${isAssigned ? 'bg-[#EA580C] animate-pulse' : 'bg-current'}"></span>
+                    ${isAssigned ? 'PENDING' : st.label}
                 </span>
-                <span class="px-2.5 py-0.5 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-mono font-extrabold tracking-wider border border-[#DBEAFE]">
+                <span class="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2563EB] text-[11px] font-mono font-bold tracking-wider">
                     #JOB-${1000 + job.id}
                 </span>
             </div>
 
-            <!-- Title & Meta Information (Minimal, clean chips — no redundant box clutter) -->
+            <!-- Title -->
             <div>
-                <h1 class="text-[20px] font-black text-[#0F172A] tracking-tight leading-snug m-0">${esc(job.issue)}</h1>
-                <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium text-[#64748B] mt-2.5">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
-                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
-                        ${esc(job.address)}
-                    </span>
-                    <button type="button" data-contractor-action="schedule" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] font-semibold text-[11.5px] hover:border-[#2563EB] transition-colors cursor-pointer" title="Visit schedule">
-                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
-                        ${esc(job.visitDate || 'Set visit')}
+                <h1 class="text-[20px] font-extrabold text-[#0F172A] tracking-tight leading-snug m-0">${esc(job.issue)}</h1>
+            </div>
+
+            <!-- Prominent Situation & Priority Assessment Banner -->
+            <div class="p-3 rounded-2xl ${isHighPriority ? 'bg-[#FEF2F2] border border-[#FECACA]' : (isMediumPriority ? 'bg-[#FFFBEB] border border-[#FDE68A]' : 'bg-[#F8FAFC] border border-[#E2E8F0]')} flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-xl ${isHighPriority ? 'bg-[#FEE2E2] text-[#DC2626]' : (isMediumPriority ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#F1F5F9] text-[#64748B]')} flex items-center justify-center shrink-0">
+                        <i data-lucide="${isHighPriority ? 'alert-octagon' : (isMediumPriority ? 'alert-triangle' : 'info')}" class="w-4 h-4 ${isHighPriority ? 'animate-pulse' : ''}"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-black uppercase tracking-wider block ${isHighPriority ? 'text-[#991B1B]' : (isMediumPriority ? 'text-[#92400E]' : 'text-[#475569]')}">
+                            ${isHighPriority ? 'HIGH PRIORITY SITUATION' : (isMediumPriority ? 'MEDIUM PRIORITY SITUATION' : 'ROUTINE MAINTENANCE')}
+                        </span>
+                        <span class="text-[12px] font-extrabold text-[#0F172A] block truncate">
+                            ${isHighPriority ? 'Active leak reported · Same-day response required' : (isMediumPriority ? 'Standard repair · Within 24–48 hours SLA' : 'Routine non-urgent maintenance')}
+                        </span>
+                    </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold shrink-0 ${isHighPriority ? 'bg-white text-[#DC2626] border border-[#FECACA]' : 'bg-white text-[#64748B] border border-[#E2E8F0]'}">
+                    ${isHighPriority ? 'High Urgency' : (isMediumPriority ? 'Standard SLA' : 'Routine')}
+                </span>
+            </div>
+
+            <!-- Key Details Rows (Clean, sleek rows - NO heavy boxes!) -->
+            <div class="space-y-2.5 pt-1 text-[13px]">
+                <!-- Location -->
+                <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9]">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-[#2563EB] shrink-0"></i>
+                        <span class="font-medium text-[#0F172A] truncate">${esc(job.address)}</span>
+                    </div>
+                    <button type="button" onclick="navigator.clipboard.writeText('${esc(job.address)}'); if (typeof showToast === 'function') showToast('Address copied');" class="text-[11px] font-bold text-[#2563EB] hover:underline shrink-0 cursor-pointer">
+                        Copy
                     </button>
-                    <button type="button" ${['assigned', 'accepted'].includes(job.status) ? 'data-action="open-contractor-quote-modal"' : ''} class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] font-semibold text-[11.5px] ${['assigned', 'accepted'].includes(job.status) ? 'hover:border-[#2563EB] cursor-pointer' : ''}" title="Job price">
-                        <i data-lucide="banknote" class="w-3.5 h-3.5 text-[#16A34A] shrink-0"></i>
-                        ${price} <span class="text-[10px] text-[#64748B]">(${paymentStatus})</span>
-                    </button>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11.5px] font-bold" style="background:${contractorPriorityStyle(job.priority)[0]};color:${contractorPriorityStyle(job.priority)[1]}">
-                        <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i>
-                        ${esc(job.priority)}
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]" title="Property Access / Key">
-                        <i data-lucide="key" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
-                        ${esc(accessInfo)}
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] font-semibold text-[11.5px]">
-                        <i data-lucide="user" class="w-3.5 h-3.5 text-[#64748B] shrink-0"></i>
-                        ${esc(job.landlord || 'John Smith')}
-                    </span>
+                </div>
+
+                <!-- Requested Time & Pricing Choice -->
+                <div class="grid grid-cols-2 gap-2 text-[12.5px]">
+                    <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9] min-w-0">
+                        <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${isAssigned ? 'Requested Slot' : 'Confirmed Schedule'}</span>
+                        <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#2563EB] shrink-0"></i>
+                            <span class="font-extrabold text-[#0F172A] truncate">${dt.time} · ${dt.date}</span>
+                        </div>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9] min-w-0">
+                        <span class="block text-[10px] font-bold text-[#64748B] uppercase tracking-wider">${isAssigned ? 'Offered Budget' : 'Agreed Billing'}</span>
+                        <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
+                            <i data-lucide="${job.pricingMode === 'after_completion' ? 'file-check-2' : 'tag'}" class="w-3.5 h-3.5 ${job.pricingMode === 'after_completion' ? 'text-[#059669]' : 'text-[#2563EB]'} shrink-0"></i>
+                            <span class="font-extrabold ${job.pricingMode === 'after_completion' ? 'text-[#059669]' : 'text-[#2563EB]'} truncate">
+                                ${job.pricingMode === 'after_completion' ? 'Invoice upon completion' : `${isAssigned ? 'Offered: ' : 'Fixed: '}£${job.quoteAmount || 185}.00`}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access Note -->
+                <div class="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9] text-[12.5px]">
+                    <i data-lucide="key" class="w-4 h-4 text-[#64748B] shrink-0"></i>
+                    <span class="text-[#334155] truncate"><strong class="font-semibold text-[#0F172A]">Access:</strong> ${esc(accessInfo)}</span>
+                </div>
+
+                <!-- Assigned By (Landlord) -->
+                <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#F8FAFC] border border-[#F1F5F9] text-[12.5px]">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i data-lucide="user-check" class="w-4 h-4 text-[#64748B] shrink-0"></i>
+                        <span class="text-[#334155] truncate"><strong class="font-semibold text-[#0F172A]">Assigned by:</strong> ${esc(landlordName)} (Landlord)</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <a href="tel:${esc(landlordPhone)}" class="w-7 h-7 rounded-lg bg-white border border-[#CBD5E1] flex items-center justify-center text-[#475569] hover:text-[#2563EB]" title="Call Landlord">
+                            <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                        </a>
+                        <button type="button" data-go="chat" data-chat="${job.landlordChatId || 1}" class="w-7 h-7 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center text-[#2563EB] cursor-pointer" title="Chat Landlord">
+                            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Description -->
-            <div class="space-y-1.5 pt-3.5 border-t border-[#F1F5F9]">
-                <h3 class="text-[11.5px] font-extrabold text-[#64748B] uppercase tracking-wider m-0">Job Description</h3>
-                <p class="text-[13px] font-medium text-[#334155] leading-relaxed m-0">${esc(job.desc)}</p>
+            <!-- Divider -->
+            <div class="border-t border-[#F1F5F9] pt-1"></div>
+
+            <!-- Job Description -->
+            <div class="space-y-1.5">
+                <span class="text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider block">Job Description</span>
+                <p class="text-[13.5px] text-[#334155] leading-relaxed m-0">${esc(job.desc)}</p>
+                ${(isPlumbing || isElectrical) ? `
+                <div class="mt-2 flex items-center gap-1.5 text-[11.5px] text-[#2563EB] font-medium">
+                    <i data-lucide="shield-alert" class="w-3.5 h-3.5 shrink-0"></i>
+                    <span>${isPlumbing ? `Stopcock: ${esc(waterStopcock)}` : `Consumer unit: ${esc(elecLocation)}`}</span>
+                </div>` : ''}
             </div>
 
-            <!-- Attached Media Thumbnails (Compact, clean thumbnails at bottom) -->
+            <!-- Divider -->
             ${(photos.length || videos.length) ? `
-            <div class="space-y-2 pt-3.5 border-t border-[#F1F5F9]">
-                <span class="text-[11.5px] font-extrabold text-[#64748B] uppercase tracking-wider block">Evidence Media (${totalMediaCount})</span>
-                <div class="flex items-center gap-2.5 overflow-x-auto pb-1 pt-0.5">
+            <div class="border-t border-[#F1F5F9] pt-1"></div>
+
+            <!-- Evidence Media -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider">Evidence Media (${totalMediaCount})</span>
+                </div>
+                <div class="flex items-center gap-2.5 overflow-x-auto pb-1">
                     ${videos.map((v) => `
-                    <button type="button" class="relative w-20 h-16 rounded-xl overflow-hidden border border-[#CBD5E1] shrink-0 group cursor-pointer bg-black" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
+                    <button type="button" class="relative w-22 h-16 rounded-xl overflow-hidden border border-[#CBD5E1] shrink-0 group cursor-pointer bg-black" data-action="preview-maint-media" data-kind="video" data-src="${String(v.url || '').replace(/"/g, '&quot;')}" data-poster="${String(v.poster || photos[0] || '').replace(/"/g, '&quot;')}" data-name="${String(v.name || 'Video attachment').replace(/"/g, '&quot;')}">
                         <img src="${v.poster || photos[0] || IMG.maint[0]}" alt="" class="w-full h-full object-cover">
-                        <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white"><i data-lucide="play" class="w-4 h-4 fill-white"></i></span>
+                        <span class="absolute inset-0 bg-black/40 flex items-center justify-center text-white"><i data-lucide="play" class="w-4 h-4 fill-white"></i></span>
                     </button>`).join('')}
 
                     ${photos.map((src) => `
-                    <button type="button" class="relative w-20 h-16 rounded-xl overflow-hidden border border-[#E2E8F0] shrink-0 group cursor-pointer bg-[#F8FAFC]" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
+                    <button type="button" class="relative w-22 h-16 rounded-xl overflow-hidden border border-[#E2E8F0] shrink-0 group cursor-pointer bg-[#F8FAFC]" data-action="preview-maint-media" data-kind="photo" data-src="${String(src).replace(/"/g, '&quot;')}">
                         <img src="${src}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
                     </button>`).join('')}
                 </div>
             </div>` : ''}
 
-            <!-- Contact Row (Seamlessly integrated at the bottom of the card) -->
-            <div class="pt-3.5 border-t border-[#F1F5F9] flex items-center justify-between gap-3">
+            <!-- Divider -->
+            ${tenantName ? `
+            <div class="border-t border-[#F1F5F9] pt-1"></div>
+
+            <!-- Resident Contact Row -->
+            <div class="flex items-center justify-between gap-3 pt-0.5">
                 <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] font-bold text-[13px] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
-                        ${contactInitials}
+                    <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] font-bold text-[13px] flex items-center justify-center shrink-0 border border-[#BFDBFE]">
+                        ${tenantName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[14px] font-bold text-[#0F172A] m-0 truncate">${esc(contactName)}</p>
-                        <p class="text-[12px] font-medium text-[#64748B] m-0">${canMessageTenant ? 'Tenant' : 'Landlord'}</p>
+                        <p class="text-[14px] font-bold text-[#0F172A] m-0 truncate">${esc(tenantName)}</p>
+                        <p class="text-[12px] text-[#64748B] m-0 mt-0.5">Tenant · On-site Resident</p>
                     </div>
                 </div>
-
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" data-action="toast" data-msg="Calling ${esc(contactName)}…" class="w-9 h-9 rounded-xl bg-[#F8FAFC] text-[#475569] border border-[#CBD5E1] flex items-center justify-center hover:bg-[#F1F5F9] transition-colors cursor-pointer" title="Call">
+                    <a href="tel:${esc(tenantPhone)}" class="w-9 h-9 rounded-full bg-[#F8FAFC] border border-[#CBD5E1] flex items-center justify-center text-[#475569] hover:text-[#2563EB] transition-colors" title="Call Tenant">
                         <i data-lucide="phone" class="w-4 h-4"></i>
-                    </button>
-                    <button type="button" data-go="chat" data-chat="${canMessageTenant ? job.tenantChatId : job.landlordChatId}" class="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] flex items-center justify-center hover:bg-[#DBEAFE] transition-colors cursor-pointer" title="Message">
+                    </a>
+                    <button type="button" data-go="chat" data-chat="${job.tenantChatId || 0}" class="w-9 h-9 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center text-[#2563EB] transition-colors cursor-pointer" title="Chat Tenant">
                         <i data-lucide="message-square" class="w-4 h-4"></i>
                     </button>
                 </div>
-            </div>
+            </div>` : ''}
+
+            <!-- Trade Compliance Certificate Section -->
+            <div class="border-t border-[#F1F5F9] pt-1"></div>
+            ${(job.certificates && job.certificates.length) ? `
+            <div class="p-3.5 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10.5px] font-extrabold text-[#065F46] uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-[#059669]"></i>
+                        Trade Compliance Certificate
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#059669] border border-[#A7F3D0]">
+                        Verified &amp; Issued
+                    </span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <h4 class="text-[13px] font-extrabold text-[#064E3B] m-0 truncate">${esc(job.certificates[0].name)}</h4>
+                        <p class="text-[11px] text-[#047857] m-0 mt-0.5">Cert #${job.certificates[0].id || 'CERT-2025-8841'} · 12 Mo Warranty</p>
+                    </div>
+                    <button type="button" data-action="view-job-certificate" class="px-2.5 py-1 rounded-lg bg-white border border-[#6EE7B7] text-[#065F46] text-[11px] font-bold hover:bg-[#D1FAE5] shrink-0 cursor-pointer shadow-2xs">
+                        View Certificate
+                    </button>
+                </div>
+            </div>` : `
+            <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <i data-lucide="award" class="w-4 h-4 text-[#D97706] shrink-0"></i>
+                    <div class="min-w-0">
+                        <span class="text-[12px] font-bold text-[#0F172A] block truncate">Trade Safety Certificate</span>
+                        <span class="text-[11px] text-[#64748B] block truncate">Gas Safe, NICEIC or Leak-Tight Warranty</span>
+                    </div>
+                </div>
+                <button type="button" data-action="open-issue-certificate-modal" class="px-2.5 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-[#0F172A] text-[11px] font-bold hover:bg-[#F1F5F9] shrink-0 cursor-pointer shadow-2xs">
+                    + Issue Certificate
+                </button>
+            </div>`}
+
         </div>
 
         ${reviewsBlock}
 
-        <!-- Primary Action (Always visible inside phone frame directly below job card) -->
+        <!-- Primary Action Button -->
         <div class="pt-1">
             ${primaryAction}
         </div>
     </div>
-    ${typeof renderMaintMediaPreviewModal === 'function' ? renderMaintMediaPreviewModal() : ''}
-    ${renderContractorQuoteModal()}`;
+    ${typeof renderContractorScheduleModal === 'function' ? renderContractorScheduleModal() : ''}
+    ${typeof renderContractorCancelModal === 'function' ? renderContractorCancelModal() : ''}
+    ${typeof renderContractorPauseModal === 'function' ? renderContractorPauseModal() : ''}
+    ${typeof renderContractorQuoteModal === 'function' ? renderContractorQuoteModal() : ''}
+    ${typeof renderIssueCertificateModal === 'function' ? renderIssueCertificateModal() : ''}
+    ${typeof renderViewCertificateModal === 'function' ? renderViewCertificateModal() : ''}
+    ${typeof renderMaintMediaPreviewModal === 'function' ? renderMaintMediaPreviewModal() : ''}`;
+}
+
+function renderContractorScheduleModal() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!STATE.showContractorScheduleModal || !job) return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const today = new Date().toISOString().split('T')[0];
+    const defaultDate = job.scheduledDate || today;
+    const defaultTime = job.scheduledTime || '16:30';
+    const isReschedule = job.status !== 'assigned';
+
+    const rawPriority = String(job.priority || 'medium').toLowerCase();
+    const isHighPriority = rawPriority.includes('high') || rawPriority.includes('emergency') || /leak|burst|flood|gas|power|fire/i.test(job.issue || '');
+    const isMediumPriority = !isHighPriority && (rawPriority.includes('med') || /radiator|heat|window|latch|lock/i.test(job.issue || ''));
+
+    return `
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter" data-action="close-contractor-schedule-modal">
+        <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl w-full max-w-md space-y-4 text-left max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                <div class="min-w-0 pr-2">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#EFF6FF] text-[#2563EB] mb-1">
+                        <i data-lucide="${isReschedule ? 'calendar' : 'calendar-check'}" class="w-3 h-3"></i>
+                        ${isReschedule ? 'Reschedule Visit Slot' : 'Review &amp; Accept Job'}
+                    </span>
+                    <h3 class="text-[17px] font-black text-[#0F172A] m-0 truncate leading-snug">
+                        ${isReschedule ? 'Update Visit Date &amp; Time' : 'Confirm Visit &amp; Schedule'}
+                    </h3>
+                    <p class="text-[12px] text-[#64748B] m-0 truncate mt-0.5">#JOB-${1000 + job.id} · ${esc(job.issue)}</p>
+                </div>
+                <button type="button" data-action="close-contractor-schedule-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Situation & Urgency Recap Banner -->
+            <div class="p-3 rounded-2xl ${isHighPriority ? 'bg-[#FEF2F2] border border-[#FECACA]' : (isMediumPriority ? 'bg-[#FFFBEB] border border-[#FDE68A]' : 'bg-[#F8FAFC] border border-[#E2E8F0]')} flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-7 h-7 rounded-xl ${isHighPriority ? 'bg-[#FEE2E2] text-[#DC2626]' : 'bg-[#FEF3C7] text-[#D97706]'} flex items-center justify-center shrink-0">
+                        <i data-lucide="${isHighPriority ? 'alert-octagon' : 'alert-triangle'}" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider block ${isHighPriority ? 'text-[#991B1B]' : 'text-[#92400E]'}">
+                            ${isHighPriority ? 'HIGH PRIORITY SITUATION' : (isMediumPriority ? 'MEDIUM PRIORITY' : 'ROUTINE')}
+                        </span>
+                        <span class="text-[11.5px] font-bold text-[#0F172A] block truncate">
+                            ${isHighPriority ? 'Active leak · Same-day response required' : 'Standard repair response'}
+                        </span>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white ${isHighPriority ? 'text-[#DC2626] border border-[#FECACA]' : 'text-[#64748B] border border-[#E2E8F0]'} shrink-0">
+                    ${isHighPriority ? 'Urgent' : 'Normal'}
+                </span>
+            </div>
+
+            <!-- Job Description Box -->
+            <div class="p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1">
+                <span class="text-[10.5px] font-bold text-[#64748B] uppercase tracking-wider block">Job Description Reported</span>
+                <p class="text-[12.5px] text-[#334155] leading-relaxed m-0 font-medium">"${esc(job.desc)}"</p>
+                <div class="flex items-center gap-2 pt-1 text-[11px] text-[#64748B]">
+                    <i data-lucide="map-pin" class="w-3 h-3 text-[#2563EB] shrink-0"></i>
+                    <span class="truncate">${esc(job.address)}</span>
+                </div>
+            </div>
+
+            <!-- Tenant Preferred Time Alert -->
+            <div class="p-2.5 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-between gap-2 text-[12px]">
+                <div class="flex items-center gap-2 min-w-0">
+                    <i data-lucide="clock" class="w-3.5 h-3.5 text-[#16A34A] shrink-0"></i>
+                    <span class="text-[11.5px] font-bold text-[#166534] truncate">Tenant requested: ${esc(job.visitDate || 'Today, 4:30 PM')}</span>
+                </div>
+                <button type="button" onclick="const d = document.querySelector('[data-field=\\'ctrModalVisitDate\\']'); const t = document.querySelector('[data-field=\\'ctrModalVisitTime\\']'); if(d) d.value = '${today}'; if(t) t.value = '16:30'; if (typeof showToast === 'function') showToast('Preferred slot applied');" class="px-2 py-0.5 rounded-md bg-white border border-[#86EFAC] text-[#166534] font-bold text-[10.5px] hover:bg-[#DCFCE7] shrink-0 cursor-pointer">
+                    Use slot
+                </button>
+            </div>
+
+            <!-- Date & Time Pickers -->
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[11.5px] font-bold text-[#334155] mb-1">${isReschedule ? 'New Visit Date' : 'Visit Date'}</label>
+                    <input type="date" data-field="ctrModalVisitDate" value="${defaultDate}" class="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-[12.5px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB]">
+                </div>
+
+                <div>
+                    <label class="block text-[11.5px] font-bold text-[#334155] mb-1">Arrival Window</label>
+                    <input type="time" data-field="ctrModalVisitTime" value="${defaultTime}" class="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-[12.5px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB]">
+                </div>
+            </div>
+
+            <!-- Pricing Choice: Fixed Upfront vs Invoice After Completion -->
+            <div>
+                <label class="block text-[11.5px] font-bold text-[#334155] mb-1.5">Pricing &amp; Billing Choice</label>
+                <div class="grid grid-cols-2 gap-2 text-[12px]">
+                    <label class="p-2.5 rounded-xl border border-[#CBD5E1] bg-white cursor-pointer hover:border-[#2563EB] flex flex-col justify-between space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-[#0F172A] text-[11.5px]">Fixed Upfront Quote</span>
+                            <input type="radio" name="ctrPricingChoice" value="fixed" ${job.pricingMode === 'after_completion' ? '' : 'checked'} class="text-[#2563EB]">
+                        </div>
+                        <span class="text-[13px] font-black text-[#2563EB]">£${job.quoteAmount || 185}.00</span>
+                        <span class="text-[10px] text-[#64748B]">Agreed price before commencing</span>
+                    </label>
+
+                    <label class="p-2.5 rounded-xl border border-[#CBD5E1] bg-white cursor-pointer hover:border-[#2563EB] flex flex-col justify-between space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-[#0F172A] text-[11.5px]">Invoice After Work</span>
+                            <input type="radio" name="ctrPricingChoice" value="after_completion" ${job.pricingMode === 'after_completion' ? 'checked' : ''} class="text-[#2563EB]">
+                        </div>
+                        <span class="text-[13px] font-black text-[#059669]">Parts + Labor</span>
+                        <span class="text-[10px] text-[#64748B]">Submit price upon completion</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label class="block text-[11.5px] font-bold text-[#334155] mb-1">${isReschedule ? 'Reason for Reschedule / Note for Tenant' : 'Arrival Note for Tenant & Landlord (Optional)'}</label>
+                <textarea data-field="ctrModalScheduleNotes" rows="2" placeholder="${isReschedule ? 'e.g. Delayed on earlier emergency call. Rescheduling for 5:30 PM today.' : 'e.g. Will bring pipe replacement fittings. Please ensure area under sink is clear.'}" class="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB] resize-none">${esc(job.scheduleNotes || '')}</textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-2 pt-1">
+                <button type="button" data-action="confirm-accept-schedule-modal" class="btn-primary w-full py-3.5 rounded-xl text-[14px] font-extrabold shadow-md cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99] transition-transform">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    ${isReschedule ? 'Update Visit Schedule' : 'Confirm Schedule &amp; Accept Job'}
+                </button>
+                <button type="button" data-action="close-contractor-schedule-modal" class="w-full py-2 text-[12px] font-bold text-[#64748B] hover:text-[#0F172A] text-center cursor-pointer">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderContractorCancelModal() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!STATE.showContractorCancelModal || !job) return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const isAlreadyScheduled = job.status === 'scheduled';
+
+    const reasons = [
+        'Contractor emergency / Illness',
+        'Fully booked / Unable to meet slot',
+        'Parts or specialist tools unavailable',
+        'Resident requested postponement',
+        'Outside service scope / Trade mismatch',
+    ];
+
+    return `
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter" data-action="close-contractor-cancel-modal">
+        <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl w-full max-w-md space-y-4 text-left" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                <div class="min-w-0 pr-2">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FEF2F2] text-[#DC2626] mb-1">
+                        <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                        ${isAlreadyScheduled ? 'Cancel Booking' : 'Decline Request'}
+                    </span>
+                    <h3 class="text-[17px] font-black text-[#0F172A] m-0 truncate leading-snug">
+                        ${isAlreadyScheduled ? 'Cancel Confirmed Booking' : 'Decline Job Request'}
+                    </h3>
+                    <p class="text-[12px] text-[#64748B] m-0 truncate mt-0.5">#JOB-${1000 + job.id} · ${esc(job.issue)}</p>
+                </div>
+                <button type="button" data-action="close-contractor-cancel-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Informational Notice -->
+            <div class="p-3 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] text-[12px] text-[#92400E] leading-relaxed flex items-start gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-[#D97706] shrink-0 mt-0.5"></i>
+                <p class="m-0 font-medium">
+                    ${isAlreadyScheduled
+                        ? 'Cancelling a confirmed booking will instantly notify the landlord and tenant so they can arrange alternative access.'
+                        : 'The landlord will be notified and can re-assign this job to another registered contractor in London.'}
+                </p>
+            </div>
+
+            <!-- Reason Selector -->
+            <div class="space-y-2">
+                <label class="block text-[11.5px] font-bold text-[#334155]">Select Reason</label>
+                <div class="space-y-1.5 text-[12.5px]">
+                    ${reasons.map((r, i) => `
+                    <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] hover:bg-[#F1F5F9] cursor-pointer">
+                        <input type="radio" name="ctrCancelReason" value="${esc(r)}" ${i === 0 ? 'checked' : ''} class="text-[#DC2626]">
+                        <span class="font-medium text-[#0F172A]">${esc(r)}</span>
+                    </label>`).join('')}
+                </div>
+            </div>
+
+            <!-- Optional Additional Detail -->
+            <div>
+                <label class="block text-[11.5px] font-bold text-[#334155] mb-1">Additional Note (Optional)</label>
+                <textarea data-field="ctrCancelReasonCustom" rows="2" placeholder="Provide any extra details for the landlord..." class="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-[12px] font-medium text-[#0F172A] focus:outline-none focus:border-[#DC2626] resize-none"></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-2 pt-1">
+                <button type="button" data-action="confirm-contractor-cancel" class="btn-danger w-full py-3.5 rounded-xl text-[14px] font-extrabold bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99] transition-transform">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i>
+                    ${isAlreadyScheduled ? 'Confirm Booking Cancellation' : 'Decline Job Request'}
+                </button>
+                <button type="button" data-action="close-contractor-cancel-modal" class="w-full py-2 text-[12px] font-bold text-[#64748B] hover:text-[#0F172A] text-center cursor-pointer">
+                    Keep Job / Back
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderContractorPauseModal() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!STATE.showContractorPauseModal || !job) return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+    return `
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter" data-action="close-contractor-pause-modal">
+        <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl w-full max-w-md space-y-4 text-left" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                <div class="min-w-0 pr-2">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FFFBEB] text-[#D97706] mb-1">
+                        <i data-lucide="pause-circle" class="w-3 h-3"></i>
+                        Pause / Parts Required
+                    </span>
+                    <h3 class="text-[17px] font-black text-[#0F172A] m-0 truncate leading-snug">
+                        Pause Work &amp; Schedule Visit 2
+                    </h3>
+                    <p class="text-[12px] text-[#64748B] m-0 truncate mt-0.5">#JOB-${1000 + job.id} · ${esc(job.issue)}</p>
+                </div>
+                <button type="button" data-action="close-contractor-pause-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Info Notice -->
+            <div class="p-3 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[12px] text-[#1D4ED8] leading-relaxed flex items-start gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5"></i>
+                <p class="m-0 font-medium">
+                    If this job requires ordering specialist parts or returning on another date, set a follow-up visit. The tenant and landlord will be updated automatically.
+                </p>
+            </div>
+
+            <!-- Reason / Parts note -->
+            <div>
+                <label class="block text-[11.5px] font-bold text-[#334155] mb-1">Why is work paused? (e.g. Parts needed)</label>
+                <input type="text" data-field="ctrPauseReason" value="Awaiting specialist replacement parts" class="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-[12.5px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB]">
+            </div>
+
+            <!-- Follow-up Visit Pickers -->
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[11.5px] font-bold text-[#334155] mb-1">Follow-up Date</label>
+                    <input type="date" data-field="ctrPauseNextDate" value="${tomorrow}" class="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-[12.5px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB]">
+                </div>
+                <div>
+                    <label class="block text-[11.5px] font-bold text-[#334155] mb-1">Expected Arrival</label>
+                    <input type="time" data-field="ctrPauseNextTime" value="10:00" class="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-[12.5px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB]">
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-2 pt-1">
+                <button type="button" data-action="confirm-contractor-pause" class="btn-primary w-full py-3.5 rounded-xl text-[14px] font-extrabold shadow-md cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99] transition-transform">
+                    <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                    Schedule Follow-up Visit
+                </button>
+                <button type="button" data-action="close-contractor-pause-modal" class="w-full py-2 text-[12px] font-bold text-[#64748B] hover:text-[#0F172A] text-center cursor-pointer">
+                    Cancel / Resume
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function openIssueCertificateModal() {
+    STATE.showIssueCertModal = true;
+    render();
+}
+
+function closeIssueCertificateModal() {
+    STATE.showIssueCertModal = false;
+    render();
+}
+
+function confirmIssueCertificate() {
+    const job = contractorJob(STATE.contractorJobId);
+    if (!job) return;
+    const certType = document.querySelector('[data-field="ctrCertType"]')?.value || 'Gas Safety Certificate (CP12)';
+    const regNo = document.querySelector('[data-field="ctrCertReg"]')?.value?.trim() || 'Gas Safe #582914';
+    const notes = document.querySelector('[data-field="ctrCertNotes"]')?.value?.trim() || 'Work completed in full compliance with UK safety regulations.';
+    const certId = 'CERT-2025-' + Math.floor(1000 + Math.random() * 9000);
+
+    if (!job.certificates) job.certificates = [];
+    const certObj = {
+        id: certId,
+        name: certType,
+        regNo: regNo,
+        notes: notes,
+        uploadedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        engineer: (typeof CONTRACTOR_USER !== 'undefined' && CONTRACTOR_USER.name) ? CONTRACTOR_USER.name : 'Evans Plumbing & Heating'
+    };
+    job.certificates.unshift(certObj);
+
+    if (job.maintId != null && typeof MAINTENANCE_ITEMS !== 'undefined') {
+        const item = MAINTENANCE_ITEMS.find(m => m.id === job.maintId);
+        if (item) {
+            if (!item.certificates) item.certificates = [];
+            item.certificates.unshift(certObj);
+            item.certificate = certObj;
+            if (typeof addMaintHistoryEvent === 'function') {
+                addMaintHistoryEvent(item, 'Certificate issued', certType);
+            }
+        }
+    }
+
+    saveContractorJobs();
+    STATE.showIssueCertModal = false;
+    toast(`Certificate issued: ${certType}`);
+    render();
+}
+
+function viewJobCertificate() {
+    STATE.showViewCertModal = true;
+    render();
+}
+
+function closeViewCertificateModal() {
+    STATE.showViewCertModal = false;
+    render();
+}
+
+function renderIssueCertificateModal() {
+    if (!STATE.showIssueCertModal) return '';
+    const job = contractorJob(STATE.contractorJobId);
+    if (!job) return '';
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    return `
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter" data-action="close-issue-certificate-modal">
+        <div class="card p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl w-full max-w-md space-y-4 text-left" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+                <div class="min-w-0 pr-2">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#ECFDF5] text-[#059669] mb-1">
+                        <i data-lucide="shield-check" class="w-3 h-3"></i>
+                        Compliance Sign-off
+                    </span>
+                    <h3 class="text-[17px] font-black text-[#0F172A] m-0 truncate leading-snug">Issue Trade Certificate</h3>
+                    <p class="text-[12px] text-[#64748B] m-0 truncate mt-0.5">#JOB-${1000 + job.id} · ${esc(job.address)}</p>
+                </div>
+                <button type="button" data-action="close-issue-certificate-modal" class="w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center shrink-0 cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <div class="space-y-3 pt-1">
+                <div>
+                    <label class="block text-[12px] font-bold text-[#334155] mb-1">Certificate Type</label>
+                    <select data-field="ctrCertType" class="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] bg-white text-[13px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB] shadow-2xs cursor-pointer">
+                        <option value="Gas Safety Certificate (CP12)" selected>Gas Safety Certificate (CP12)</option>
+                        <option value="Minor Electrical Works Certificate (NICEIC)">Minor Electrical Works Certificate (NICEIC)</option>
+                        <option value="Plumbing Leak-Tight Guarantee (12 Months)">Plumbing Leak-Tight Guarantee (12 Months)</option>
+                        <option value="Locksmith British Standard BS 3621 Cert">Locksmith British Standard BS 3621 Cert</option>
+                        <option value="General Workmanship &amp; Safety Sign-off">General Workmanship &amp; Safety Sign-off</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[12px] font-bold text-[#334155] mb-1">Trade Registration / License No.</label>
+                    <input type="text" data-field="ctrCertReg" value="Gas Safe #582914" class="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] bg-white text-[13px] font-mono font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB] shadow-2xs">
+                </div>
+
+                <div>
+                    <label class="block text-[12px] font-bold text-[#334155] mb-1">Safety &amp; Compliance Sign-off Statement</label>
+                    <textarea data-field="ctrCertNotes" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] bg-white text-[12.5px] font-medium text-[#0F172A] focus:outline-none focus:border-[#2563EB] shadow-2xs resize-none">Repairs completed in full accordance with UK safety standards. Tested under pressure — zero leaks detected. 12 months workmanship warranty applied.</textarea>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-2 pt-2">
+                <button type="button" data-action="confirm-issue-certificate" class="btn-primary w-full py-3.5 rounded-xl text-[14px] font-extrabold shadow-md cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99] transition-transform">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                    Issue &amp; Sign Certificate
+                </button>
+                <button type="button" data-action="close-issue-certificate-modal" class="w-full py-2 text-[12px] font-bold text-[#64748B] hover:text-[#0F172A] text-center cursor-pointer">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderViewCertificateModal() {
+    if (!STATE.showViewCertModal) return '';
+    let job = contractorJob(STATE.contractorJobId);
+    let item = typeof maintItem === 'function' && STATE.maintId != null ? maintItem(STATE.maintId) : null;
+    if (!job && item && typeof getContractorJobForMaint === 'function') {
+        job = getContractorJobForMaint(item.id);
+    }
+    const cert = (job?.certificates && job.certificates[0]) || (item?.certificates && item.certificates[0]) || item?.certificate || {
+        id: 'CERT-2025-8841',
+        name: 'Plumbing Leak-Tight & Workmanship Guarantee',
+        regNo: 'Gas Safe #582914',
+        uploadedAt: 'Today',
+        notes: 'Pipe connections replaced and tightness pressure test passed.'
+    };
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const propAddress = job?.address || item?.prop || 'Flat 3, 12 Park Lane, London, SW1A 1AA';
+
+    return `
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 screen-enter" data-action="close-view-certificate-modal">
+        <div class="card p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl w-full max-w-md space-y-4 text-left relative overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Official Watermark ribbon -->
+            <div class="absolute top-3 right-3">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
+                    <i data-lucide="badge-check" class="w-3.5 h-3.5 text-[#059669]"></i>
+                    OFFICIAL SIGN-OFF
+                </span>
+            </div>
+
+            <!-- Top header -->
+            <div>
+                <p class="text-[10px] font-mono font-bold text-[#64748B] uppercase tracking-wider m-0">Landlord HQ · Certified Safety Document</p>
+                <h3 class="text-[18px] font-black text-[#0F172A] m-0 mt-0.5">${esc(cert.name)}</h3>
+                <p class="text-[11px] font-mono text-[#059669] font-bold m-0 mt-0.5">Ref: ${cert.id || 'CERT-2025-8841'} · Date: ${cert.uploadedAt || 'Today'}</p>
+            </div>
+
+            <!-- Certificate Details Card -->
+            <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2.5 text-[12px]">
+                <div class="flex justify-between border-b border-[#E2E8F0] pb-2">
+                    <span class="text-[#64748B]">Property:</span>
+                    <span class="font-bold text-[#0F172A] text-right truncate ml-2">${esc(propAddress)}</span>
+                </div>
+                <div class="flex justify-between border-b border-[#E2E8F0] pb-2">
+                    <span class="text-[#64748B]">Approved Tradesperson:</span>
+                    <span class="font-bold text-[#0F172A]">Evans Plumbing &amp; Heating</span>
+                </div>
+                <div class="flex justify-between border-b border-[#E2E8F0] pb-2">
+                    <span class="text-[#64748B]">Accreditation ID:</span>
+                    <span class="font-bold font-mono text-[#2563EB]">${esc(cert.regNo || 'Gas Safe #582914')}</span>
+                </div>
+                <div class="flex justify-between border-b border-[#E2E8F0] pb-2">
+                    <span class="text-[#64748B]">Pressure / Leak Test:</span>
+                    <span class="font-bold text-[#059669]">PASSED (Zero drop)</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-[#64748B]">Warranty Coverage:</span>
+                    <span class="font-bold text-[#0F172A]">12 Months Parts &amp; Labour</span>
+                </div>
+            </div>
+
+            <!-- Statement / Notes -->
+            <div class="p-3 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] text-[11.5px] text-[#166534] leading-relaxed">
+                <p class="m-0 font-medium">"${esc(cert.notes || 'Repairs completed in full accordance with UK safety standards.')}"</p>
+            </div>
+
+            <!-- Download & Close Buttons -->
+            <div class="space-y-2 pt-1">
+                <button type="button" onclick="if (typeof showToast === 'function') showToast('Certificate PDF downloaded');" class="btn-primary w-full py-3 rounded-xl text-[13.5px] font-extrabold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Official PDF
+                </button>
+                <button type="button" data-action="close-view-certificate-modal" class="w-full py-2 text-[12px] font-bold text-[#64748B] hover:text-[#0F172A] text-center cursor-pointer">
+                    Close Preview
+                </button>
+            </div>
+        </div>
+    </div>`;
 }
 
 function renderContractorQuoteModal() {
@@ -5051,6 +7487,7 @@ function screenContractorProfile() {
     const group1 = [
         ['user', 'Personal Information', 'personal-info'],
         ['building-2', 'Company Information', 'contractor-company'],
+        ['home', 'Assigned Properties (Portfolio)', 'contractor-assigned-properties', `${getContractorAssignedPropertyIds(0).length} buildings`],
         ['shield-check', 'Certifications', 'contractor-certifications', `${certCount} on file`],
         ['bell', 'Notification Settings', 'notifications-settings'],
         ['key-round', 'Change Password', 'password'],
@@ -5424,6 +7861,7 @@ Object.assign(SCREEN_MAP, {
     'contractor-documents': screenContractorDocuments,
     'contractor-notifications': screenContractorNotifications,
     'contractor-profile': screenContractorProfile,
+    'contractor-assigned-properties': screenContractorAssignedProperties,
     'contractor-org': screenContractorOrg,
     'contractor-company': screenContractorCompany,
     'contractor-certifications': screenContractorCertifications,
@@ -5449,6 +7887,7 @@ Object.assign(SCREEN_MAP, {
     'tenant-ref-detail': screenTenantRefDetail,
     'tenant-active-tenancy': screenTenantActiveTenancy,
     'tenant-contact': screenTenantContact,
+    'tenant-emergency-contacts': screenTenantEmergencyContacts,
     'tenant-reminders': screenTenantReminders,
     'tenant-reminder-detail': screenTenantReminderDetail,
     'tenant-inspection-upload': screenTenantInspectionUpload,
@@ -5460,13 +7899,13 @@ Object.assign(SCREEN_MAP, {
 const CONTRACTOR_NO_NAV = [
     'contractor-job-detail', 'contractor-schedule', 'contractor-schedule-hub', 'contractor-earnings', 'contractor-reviews',
     'contractor-work', 'contractor-documents',
-    'contractor-company', 'contractor-certifications', 'contractor-public-profile', 'contractor-cert-preview',
+    'contractor-company', 'contractor-assigned-properties', 'contractor-certifications', 'contractor-public-profile', 'contractor-cert-preview',
     'contractor-invite', 'contractor-sign-up', 'contractor-welcome',
     'contractor-landlords', 'contractor-invite-landlord', 'contractor-landlord-invite-sent',
     'tenant-invite', 'tenant-activate', 'tenant-welcome', 'tenant-dashboard',
     'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile',
     'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
-    'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
+    'tenant-active-tenancy', 'tenant-contact', 'tenant-emergency-contacts', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
     'tenant-communication', 'tenant-checkout', 'tenant-inspection-upload',
 ];
 NO_NAV.push(...CONTRACTOR_NO_NAV);
@@ -5491,6 +7930,60 @@ function bindContractorEvents() {
     app.querySelectorAll('[data-action="confirm-contractor-schedule"]').forEach(el => { el.onclick = confirmContractorSchedule; });
     app.querySelectorAll('[data-action="save-contractor-note"]').forEach(el => { el.onclick = saveContractorNote; });
     app.querySelectorAll('[data-action="mark-contractor-complete"]').forEach(el => { el.onclick = markContractorJobComplete; });
+    app.querySelectorAll('[data-action="open-contractor-schedule-modal"]').forEach(el => {
+        el.onclick = () => { STATE.showContractorScheduleModal = true; render(); };
+    });
+    app.querySelectorAll('[data-action="close-contractor-schedule-modal"]').forEach(el => {
+        el.onclick = () => { STATE.showContractorScheduleModal = false; render(); };
+    });
+    app.querySelectorAll('[data-action="confirm-accept-schedule-modal"]').forEach(el => {
+        el.onclick = confirmAcceptScheduleModal;
+    });
+    app.querySelectorAll('[data-action="close-contractor-cancel-modal"]').forEach(el => {
+        el.onclick = () => { STATE.showContractorCancelModal = false; render(); };
+    });
+    app.querySelectorAll('[data-action="confirm-contractor-cancel"]').forEach(el => {
+        el.onclick = confirmContractorCancel;
+    });
+    app.querySelectorAll('[data-action="close-contractor-pause-modal"]').forEach(el => {
+        el.onclick = () => { STATE.showContractorPauseModal = false; render(); };
+    });
+    app.querySelectorAll('[data-action="confirm-contractor-pause"]').forEach(el => {
+        el.onclick = confirmContractorPause;
+    });
+    app.querySelectorAll('[data-action="open-issue-certificate-modal"]').forEach(el => {
+        el.onclick = openIssueCertificateModal;
+    });
+    app.querySelectorAll('[data-action="close-issue-certificate-modal"]').forEach(el => {
+        el.onclick = closeIssueCertificateModal;
+    });
+    app.querySelectorAll('[data-action="confirm-issue-certificate"]').forEach(el => {
+        el.onclick = confirmIssueCertificate;
+    });
+    app.querySelectorAll('[data-action="view-job-certificate"]').forEach(el => {
+        el.onclick = viewJobCertificate;
+    });
+    app.querySelectorAll('[data-action="close-view-certificate-modal"]').forEach(el => {
+        el.onclick = closeViewCertificateModal;
+    });
+    app.querySelectorAll('[data-action="open-manage-contractor-props"]').forEach(el => {
+        el.onclick = () => openManageContractorProps(el.dataset.cid);
+    });
+    app.querySelectorAll('[data-action="close-manage-contractor-props"]').forEach(el => {
+        el.onclick = closeManageContractorProps;
+    });
+    app.querySelectorAll('[data-action="toggle-contractor-prop"]').forEach(el => {
+        el.onclick = () => toggleContractorProp(el.dataset.pid);
+    });
+    app.querySelectorAll('[data-action="toggle-all-contractor-props"]').forEach(el => {
+        el.onclick = toggleAllContractorProps;
+    });
+    app.querySelectorAll('[data-action="save-manage-contractor-props"]').forEach(el => {
+        el.onclick = saveManageContractorProps;
+    });
+    app.querySelectorAll('[data-action="quick-assign-contractor-prop"]').forEach(el => {
+        el.onclick = () => quickAssignContractorProp(el.dataset.cid, el.dataset.pid);
+    });
     app.querySelectorAll('[data-action="open-contractor-quote-modal"]').forEach(el => {
         el.onclick = () => { STATE.showContractorQuoteModal = true; render(); };
     });
@@ -5542,6 +8035,22 @@ function bindContractorEvents() {
     });
     app.querySelectorAll('[data-action="pick-contractor-cert-file"]').forEach(el => {
         el.onclick = (e) => { e.preventDefault(); pickContractorCertFileAction(); };
+    });
+    app.querySelectorAll('[data-action="use-demo-contractor-cert-file"]').forEach(el => {
+        el.onclick = (e) => {
+            e.preventDefault();
+            if (!STATE.contractorCertUpload) return;
+            const opt = contractorCertTypeOption(STATE.contractorCertUpload.type);
+            STATE.contractorCertUpload.file = {
+                name: `${opt.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf`,
+                url: '#',
+                mime: 'application/pdf',
+            };
+            STATE.contractorCertUpload.displayName = opt.label;
+            STATE.contractorCertUpload.validUntil = 'Mar 2027';
+            STATE.contractorCertUpload.step = 'review';
+            render();
+        };
     });
     app.querySelectorAll('[data-action="save-contractor-cert"]').forEach(el => {
         el.onclick = (e) => { e.preventDefault(); saveContractorCertUpload(); };

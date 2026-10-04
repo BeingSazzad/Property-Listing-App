@@ -772,7 +772,7 @@ const PREF_OPTIONS = {
     dateFormat: { title: 'Date Format', options: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'], current: 'DD/MM/YYYY' },
     timezone: { title: 'Timezone', options: ['GMT (London)', 'GMT (Dublin)', 'CET (Paris)'], current: 'GMT (London)' },
 };
-const NO_NAV = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success', 'chat', 'tenant-detail', 'property-detail', 'flat-detail', 'flat-members', 'tenancy-detail', 'maintenance-detail', 'maintenance-history', 'invoice-detail', 'inventory-room', 'document-preview', 'personal-info', 'notifications-settings', 'security', 'password', 'delete-account', 'preferences', 'payment-methods', 'subscription', 'subscription-billing', 'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about', 'property-cross-sell', 'contractor-org', 'add-property', 'log-maintenance', 'notifications-list', 'transaction-history', 'edit-property', 'edit-flat', 'add-flat', 'invite-tenant', 'tenant-invite-sent', 'edit-tenant', 'reschedule-inspection', 'renew-compliance', 'edit-inventory-room', 'add-payment-method', 'edit-payment-method', 'edit-preference', 'tenant-add-note', 'tenant-edit-note', 'select-property-invite', 'select-unit-invite', 'global-search', 'broadcast-notices', 'send-broadcast', 'broadcast-detail', 'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail', 'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-compliance', 'tenant-communication', 'tenant-checkout', 'property-compliance', 'property-doc-vault', 'property-inspections', 'property-inventory', 'property-house-rules', 'edit-property-house-rules', 'property-flat-documents', 'property-doc-folder', 'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info'];
+const NO_NAV = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success', 'chat', 'tenant-detail', 'property-detail', 'flat-detail', 'flat-members', 'tenancy-detail', 'maintenance-detail', 'maintenance-history', 'invoice-detail', 'inventory-room', 'document-preview', 'personal-info', 'notifications-settings', 'security', 'password', 'delete-account', 'preferences', 'payment-methods', 'subscription', 'subscription-billing', 'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about', 'property-cross-sell', 'contractor-org', 'add-property', 'log-maintenance', 'notifications-list', 'transaction-history', 'edit-property', 'edit-flat', 'add-flat', 'invite-tenant', 'tenant-invite-sent', 'edit-tenant', 'reschedule-inspection', 'renew-compliance', 'edit-inventory-room', 'add-payment-method', 'edit-payment-method', 'edit-preference', 'tenant-add-note', 'tenant-edit-note', 'select-property-invite', 'select-unit-invite', 'global-search', 'broadcast-notices', 'send-broadcast', 'broadcast-detail', 'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room', 'tenant-announcements', 'tenant-announcement-detail', 'tenant-house-rules', 'tenant-edit-profile', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail', 'tenant-active-tenancy', 'tenant-contact', 'tenant-emergency-contacts', 'tenant-reminders', 'tenant-compliance', 'tenant-communication', 'tenant-checkout', 'property-compliance', 'property-doc-vault', 'property-inspections', 'property-inventory', 'property-house-rules', 'edit-property-house-rules', 'property-flat-documents', 'property-doc-folder', 'property-photos', 'property-floor-plans', 'property-alarms', 'property-appliances', 'property-utilities', 'property-parking', 'property-info'];
 
 const PRE_AUTH_SCREENS = ['splash', 'onboarding', 'role-select', 'sign-in', 'sign-up', 'sign-up-phone', 'verify-otp', 'welcome', 'contractor-invite', 'contractor-sign-up', 'contractor-welcome', 'tenant-invite', 'tenant-activate', 'tenant-welcome', 'forgot-password', 'reset-verify-code', 'reset-password', 'reset-success'];
 const PUBLIC_SCREENS = [...PRE_AUTH_SCREENS];
@@ -1365,8 +1365,20 @@ function completeSignup() {
 
 
 function startLandlordSignup() {
-    // Prototype: Create Account has no validation / OTP — enter the selected role demo
-    demoLogin(STATE.authRole || 'landlord');
+    const role = STATE.authRole || 'landlord';
+    if (role === 'tenant') {
+        const first = document.querySelector('[data-signup-first]')?.value?.trim() || 'Sarah';
+        const nid = document.querySelector('[data-signup-nid]')?.value?.trim() || 'NID-8821-4902';
+        toast(`Welcome ${first}! Tenant account created with verified ID.`);
+    } else if (role === 'contractor') {
+        const company = document.querySelector('[data-signup-company]')?.value?.trim() || 'Plumber Pro';
+        const trade = document.querySelector('[data-signup-trade]')?.value || 'Plumbing & Heating';
+        toast(`Welcome! ${company} registered as ${trade} partner.`);
+    } else {
+        const company = document.querySelector('[data-signup-company]')?.value?.trim() || 'Smith Properties';
+        toast(`Landlord portfolio account created for ${company}.`);
+    }
+    demoLogin(role);
 }
 
 function resendSignupCode() {
@@ -2105,8 +2117,44 @@ function screenSignIn() {
 function screenSignUp() {
     const pwType = STATE.showPassword ? 'text' : 'password';
     const role = STATE.authRole || 'landlord';
-    const labels = { landlord: 'Landlord', tenant: 'Tenant', contractor: 'Contractor' };
     const demo = DEMO_CREDENTIALS[role] || DEMO_CREDENTIALS.landlord;
+    const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+
+    // Role-specific headings & descriptions
+    const roleMeta = {
+        tenant: {
+            title: 'Create Tenant Account',
+            sub: 'Verify your National ID & connect directly with your landlord.',
+            icon: 'user-check',
+            btn: 'Create Tenant Account',
+            color: '#059669',
+            badge: 'Resident KYC & ID Verification'
+        },
+        contractor: {
+            title: 'Register as Contractor',
+            sub: 'Submit trade licenses, insurance & receive verified job requests.',
+            icon: 'wrench',
+            btn: 'Register as Approved Contractor',
+            color: '#D97706',
+            badge: 'Trade License & Compliance'
+        },
+        landlord: {
+            title: 'Create Landlord Account',
+            sub: 'Manage rental properties, automate collections & compliance.',
+            icon: 'building-2',
+            btn: 'Create Landlord Account',
+            color: '#2563EB',
+            badge: 'Property Owner & Investor'
+        }
+    }[role] || {
+        title: 'Create Your Account',
+        sub: 'Select your role to get started.',
+        icon: 'user-plus',
+        btn: 'Create Account',
+        color: '#2563EB',
+        badge: 'Account Setup'
+    };
+
     return `
     <div class="auth-screen">
         <div class="auth-topbar">
@@ -2114,28 +2162,267 @@ function screenSignUp() {
             ${appLogo()}
             <span style="width:40px"></span>
         </div>
-        <div class="auth-content">
-            <div class="auth-icon-wrap">
-                <i data-lucide="user-plus" class="w-7 h-7 text-[#2563EB]"></i>
+        <div class="auth-content pb-12">
+            <!-- Role Switcher Segmented Tabs -->
+            <div class="p-1 rounded-xl bg-[#F1F5F9] border border-[#E2E8F0] grid grid-cols-3 gap-1 mb-4 text-[12px] font-bold">
+                <button type="button" data-action="switch-signup-role" data-role="landlord" class="py-2.5 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'landlord' ? 'bg-white text-[#2563EB] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
+                    <i data-lucide="building" class="w-3.5 h-3.5"></i>
+                    <span>Landlord</span>
+                </button>
+                <button type="button" data-action="switch-signup-role" data-role="tenant" class="py-2.5 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'tenant' ? 'bg-white text-[#059669] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
+                    <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                    <span>Tenant</span>
+                </button>
+                <button type="button" data-action="switch-signup-role" data-role="contractor" class="py-2.5 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'contractor' ? 'bg-white text-[#D97706] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
+                    <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+                    <span>Contractor</span>
+                </button>
             </div>
-            <h1 class="auth-heading">Create Your Account</h1>
-            <p class="auth-sub">Prototype — fields are optional. Tap Create Account to explore as ${labels[role] || 'Landlord'}.</p>
+
+            <!-- Header Badge & Title -->
+            <div class="text-center space-y-1 mb-4">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider" style="background:${roleMeta.color}15;color:${roleMeta.color}">
+                    <i data-lucide="${roleMeta.icon}" class="w-3.5 h-3.5"></i>
+                    ${roleMeta.badge}
+                </span>
+                <h1 class="auth-heading text-[22px] font-black text-[#0F172A] m-0">${roleMeta.title}</h1>
+                <p class="auth-sub text-[13px] text-[#64748B] m-0">${roleMeta.sub}</p>
+            </div>
+
             ${authDemoCard()}
-            <div class="auth-form">
-                <div class="auth-field"><label>First name</label><input type="text" data-signup-first class="auth-input" placeholder="John" autocomplete="given-name" value=""></div>
-                <div class="auth-field"><label>Last name</label><input type="text" data-signup-last class="auth-input" placeholder="Smith" autocomplete="family-name" value=""></div>
-                <div class="auth-field"><label>Email address</label><input type="email" data-signup-email class="auth-input" placeholder="${demo.email}" autocomplete="email" inputmode="email" value=""></div>
+
+            <div class="auth-form space-y-4 text-left">
+
+                <!-- 1. COMMON BASIC CREDENTIALS -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#334155]">First name</label>
+                        <input type="text" data-signup-first class="auth-input" placeholder="${role === 'tenant' ? 'Sarah' : (role === 'contractor' ? 'David' : 'John')}" autocomplete="given-name" value="">
+                    </div>
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#334155]">Last name</label>
+                        <input type="text" data-signup-last class="auth-input" placeholder="${role === 'tenant' ? 'Johnson' : (role === 'contractor' ? 'Evans' : 'Smith')}" autocomplete="family-name" value="">
+                    </div>
+                </div>
+
                 <div class="auth-field">
-                    <label>Password</label>
+                    <label class="text-[12px] font-bold text-[#334155]">Email address</label>
+                    <input type="email" data-signup-email class="auth-input" placeholder="${demo.email}" autocomplete="email" inputmode="email" value="">
+                </div>
+
+                <div class="auth-field">
+                    <label class="text-[12px] font-bold text-[#334155]">Phone number</label>
+                    <input type="tel" data-signup-phone class="auth-input" placeholder="+44 7700 900123" autocomplete="tel">
+                </div>
+
+                <!-- 2. ROLE-SPECIFIC DETAILED SECTIONS -->
+
+                <!-- ==================== TENANT SIGN UP ==================== -->
+                ${role === 'tenant' ? `
+                <div class="p-4 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-3.5 text-left">
+                    <div class="flex items-center justify-between border-b border-[#DCFCE7] pb-2">
+                        <span class="text-[11.5px] font-extrabold text-[#166534] uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-[#16A34A]"></i>
+                            National ID &amp; KYC Verification
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#16A34A] border border-[#BBF7D0]">Right to Rent</span>
+                    </div>
+
+                    <!-- ID Document Type -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#166534]">ID Document Type</label>
+                        <select class="auth-input bg-white cursor-pointer" data-signup-idtype>
+                            <option value="nid" selected>National ID Card (NID)</option>
+                            <option value="passport">Passport (UK / International)</option>
+                            <option value="license">UK Driving Licence</option>
+                            <option value="brp">Biometric Residence Permit (BRP)</option>
+                        </select>
+                    </div>
+
+                    <!-- NID / Document Number -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#166534]">National ID / Document Number</label>
+                        <input type="text" data-signup-nid class="auth-input bg-white font-mono" placeholder="e.g. NID-8821-4902-88">
+                    </div>
+
+                    <!-- Photo ID Upload Box with Live Simulation Preview -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#166534]">Upload Photo ID (Front &amp; Back)</label>
+                        <div class="p-3 rounded-xl bg-white border border-[#86EFAC] text-center space-y-2 cursor-pointer hover:border-[#16A34A] transition-colors" onclick="if (typeof showToast === 'function') showToast('Government ID scanned &amp; attached');">
+                            <div class="w-8 h-8 rounded-full bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center mx-auto">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <span class="text-[12px] font-bold text-[#0F172A] block">Tap to upload or take photo of NID</span>
+                                <span class="text-[10.5px] text-[#64748B]">JPG, PNG or PDF · Scanned securely</span>
+                            </div>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ECFDF5] text-[#059669] text-[10.5px] font-bold border border-[#A7F3D0]">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-[#10B981]"></i>
+                                <span>nid_card_front.jpg (Ready)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tenancy Connection Code -->
+                    <div class="auth-field pt-1">
+                        <label class="text-[12px] font-bold text-[#166534]">Property Invite Code (Optional)</label>
+                        <input type="text" data-signup-invite class="auth-input bg-white font-mono uppercase" placeholder="e.g. LHQ-PARK-2A">
+                        <span class="text-[10.5px] text-[#166534] mt-1 block">Provided by your landlord, or enter tenancy after sign up.</span>
+                    </div>
+
+                    <!-- Emergency Contact Person -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#166534]">Emergency Next-of-Kin Contact</label>
+                        <input type="text" data-signup-kin class="auth-input bg-white" placeholder="Name &amp; Phone (e.g. Emma Johnson · +44 7700 900888)">
+                    </div>
+                </div>` : ''}
+
+                <!-- ==================== CONTRACTOR SIGN UP ==================== -->
+                ${role === 'contractor' ? `
+                <div class="p-4 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] space-y-3.5 text-left">
+                    <div class="flex items-center justify-between border-b border-[#FEF3C7] pb-2">
+                        <span class="text-[11.5px] font-extrabold text-[#92400E] uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="badge-check" class="w-4 h-4 text-[#D97706]"></i>
+                            Trade Credentials &amp; Compliance
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#D97706] border border-[#FDE68A]">Verified Pro</span>
+                    </div>
+
+                    <!-- Business / Trading Name -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#92400E]">Company / Trading Name</label>
+                        <input type="text" data-signup-company class="auth-input bg-white" placeholder="e.g. Plumber Pro &amp; Heating Ltd">
+                    </div>
+
+                    <!-- Primary Trade Specialty -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#92400E]">Primary Trade Specialty</label>
+                        <select class="auth-input bg-white cursor-pointer" data-signup-trade>
+                            <option value="plumbing" selected>Plumbing &amp; Heating (Gas Safe)</option>
+                            <option value="electrical">Electrical &amp; Rewiring (NICEIC / ELECSA)</option>
+                            <option value="locksmith">Locksmith &amp; Security (MLA Approved)</option>
+                            <option value="handyman">General Handyman &amp; Carpentry</option>
+                            <option value="roofing">Roofing &amp; External Drainage</option>
+                            <option value="hvac">HVAC &amp; Ventilation</option>
+                            <option value="painting">Painting &amp; Decorating</option>
+                        </select>
+                    </div>
+
+                    <!-- Trade License / Reg Number -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#92400E]">Trade License / Registration Number</label>
+                        <input type="text" data-signup-cert class="auth-input bg-white font-mono" placeholder="e.g. Gas Safe #582914 or NICEIC #048291">
+                    </div>
+
+                    <!-- Upload Trade Certificate -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#92400E]">Upload Trade Certificate / Card</label>
+                        <div class="p-3 rounded-xl bg-white border border-[#FCD34D] text-center space-y-2 cursor-pointer hover:border-[#D97706] transition-colors" onclick="if (typeof showToast === 'function') showToast('Trade certificate attached');">
+                            <div class="w-8 h-8 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center mx-auto">
+                                <i data-lucide="file-badge" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <span class="text-[12px] font-bold text-[#0F172A] block">Upload License / Proof of Competency</span>
+                                <span class="text-[10.5px] text-[#64748B]">Gas Safe, NICEIC or MLA Card</span>
+                            </div>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#B45309] text-[10.5px] font-bold border border-[#FDE68A]">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-[#D97706]"></i>
+                                <span>trade_license_cert_2025.pdf (Attached)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Public Liability Insurance -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="auth-field">
+                            <label class="text-[12px] font-bold text-[#92400E]">Insurance Cover</label>
+                            <select class="auth-input bg-white text-[12.5px] cursor-pointer" data-signup-insurance>
+                                <option value="1m">£1,000,000</option>
+                                <option value="2m">£2,000,000</option>
+                                <option value="5m" selected>£5,000,000 (Standard)</option>
+                            </select>
+                        </div>
+                        <div class="auth-field">
+                            <label class="text-[12px] font-bold text-[#92400E]">Service Postcode</label>
+                            <input type="text" data-signup-area class="auth-input bg-white font-mono uppercase text-[12.5px]" placeholder="e.g. SW1, W1, EC1">
+                        </div>
+                    </div>
+                </div>` : ''}
+
+                <!-- ==================== LANDLORD SIGN UP ==================== -->
+                ${role === 'landlord' ? `
+                <div class="p-4 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-3.5 text-left">
+                    <div class="flex items-center justify-between border-b border-[#DBEAFE] pb-2">
+                        <span class="text-[11.5px] font-extrabold text-[#1E40AF] uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="briefcase" class="w-4 h-4 text-[#2563EB]"></i>
+                            Property Portfolio Details
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#2563EB] border border-[#BFDBFE]">Owner / Investor</span>
+                    </div>
+
+                    <!-- Company / Portfolio Name -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#1E40AF]">Company or Portfolio Name</label>
+                        <input type="text" data-signup-company class="auth-input bg-white" placeholder="e.g. Smith Property Group (or Private Landlord)">
+                    </div>
+
+                    <!-- Portfolio Size -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#1E40AF]">Portfolio Size</label>
+                        <select class="auth-input bg-white cursor-pointer" data-signup-portfolio>
+                            <option value="1-4">1–4 Units (Private Landlord)</option>
+                            <option value="5-15" selected>5–15 Units (Growing Portfolio)</option>
+                            <option value="16+">16+ Units / Commercial / HMOs</option>
+                        </select>
+                    </div>
+
+                    <!-- Landlord Scheme / Registration -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#1E40AF]">Landlord Accreditation / PRS ID (Optional)</label>
+                        <input type="text" data-signup-prsid class="auth-input bg-white font-mono" placeholder="e.g. NRLA #94821 or Council Reg">
+                    </div>
+
+                    <!-- Rent Payout Account Setup -->
+                    <div class="auth-field">
+                        <label class="text-[12px] font-bold text-[#1E40AF]">Rent Direct Payout Bank (UK Account)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" class="auth-input bg-white font-mono text-[12.5px]" placeholder="Sort Code (e.g. 20-40-60)">
+                            <input type="text" class="auth-input bg-white font-mono text-[12.5px]" placeholder="Account No (8 Digits)">
+                        </div>
+                    </div>
+                </div>` : ''}
+
+                <!-- 3. SECURITY / PASSWORD -->
+                <div class="auth-field">
+                    <label class="text-[12px] font-bold text-[#334155]">Password</label>
                     <div class="auth-input-wrap">
-                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Optional in prototype" style="padding-right:44px" autocomplete="new-password">
+                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Create strong password" style="padding-right:44px" autocomplete="new-password">
                         <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
                     </div>
                 </div>
-                <div class="auth-field"><label>Confirm Password</label><input type="password" data-signup-confirm class="auth-input" placeholder="Optional in prototype" autocomplete="new-password"></div>
-                <button type="button" data-action="start-signup" class="btn-auth btn-auth-primary">Create Account</button>
+
+                <div class="auth-field">
+                    <label class="text-[12px] font-bold text-[#334155]">Confirm Password</label>
+                    <input type="password" data-signup-confirm class="auth-input" placeholder="Re-enter password" autocomplete="new-password">
+                </div>
+
+                <!-- Terms and Compliance Check -->
+                <label class="flex items-start gap-2.5 text-[11.5px] text-[#64748B] cursor-pointer pt-1">
+                    <input type="checkbox" checked class="mt-0.5 rounded text-[#2563EB] focus:ring-[#2563EB]">
+                    <span>
+                        I agree to Landlord HQ's <a href="#" class="text-[#2563EB] underline">Terms of Service</a>, 
+                        ${role === 'tenant' ? 'Right to Rent verification & Privacy Notice' : (role === 'contractor' ? 'Trade Service Provider Agreement & Insurance verification' : 'GDPR Data Processing Agreement')}.
+                    </span>
+                </label>
+
+                <!-- Primary Submit Button -->
+                <button type="button" data-action="start-signup" class="btn-auth btn-auth-primary w-full py-3.5 text-[15px] font-extrabold shadow-md cursor-pointer flex items-center justify-center gap-2">
+                    <i data-lucide="${roleMeta.icon}" class="w-4 h-4"></i>
+                    <span>${roleMeta.btn}</span>
+                </button>
             </div>
-            <p class="auth-footer-text" style="margin-top:20px">Already have an account? <button type="button" data-go="sign-in">Sign In</button></p>
+
+            <p class="auth-footer-text" style="margin-top:24px">Already have an account? <button type="button" data-go="sign-in">Sign In</button></p>
         </div>
     </div>`;
 }
@@ -2662,6 +2949,7 @@ function go(screen, opts = {}) {
     if (opts.paymentId !== undefined) STATE.paymentId = opts.paymentId;
     if (opts.noteId !== undefined) STATE.noteId = opts.noteId;
     if (opts.contractorId != null) STATE.contractorViewId = opts.contractorId;
+    if (opts.contractorProfileReturn) STATE.contractorProfileReturn = opts.contractorProfileReturn;
     if (opts.certId != null) STATE.contractorCertPreviewId = opts.certId;
     if (opts.roomId !== undefined) STATE.roomId = opts.roomId;
     if (screen === 'tenant-add-note' || screen === 'tenant-edit-note') STATE.tenantId = opts.tenantId ?? STATE.tenantId;
@@ -2805,6 +3093,7 @@ function navigateBackFallback() {
         'tenant-ref-detail': 'tenant-referencing',
         'tenant-active-tenancy': 'tenant-dashboard',
         'tenant-contact': 'personal-info',
+        'tenant-emergency-contacts': 'tenant-dashboard',
         'tenant-reminders': 'tenant-dashboard',
         'tenant-reminder-detail': 'tenant-reminders',
         'tenant-inspection-upload': 'tenant-reminders',
@@ -2859,6 +3148,14 @@ function navigateBackFallback() {
         }
     }
     if (STATE.screen === 'utility-detail') {
+        if (STATE.utilitiesReturn) {
+            go(STATE.utilitiesReturn, {
+                propertyId: STATE.propertyId,
+                utilitiesScope: STATE.utilitiesScope,
+                noHistory: true
+            });
+            return;
+        }
         go('property-utilities', {
             propertyId: STATE.propertyId,
             utilitiesScope: STATE.utilitiesScope,
@@ -3421,6 +3718,7 @@ const topBar = (title, opts = {}) => {
             </button>
             <div class="min-w-0">
                 <h1 class="sub-header-title">${title}</h1>
+                ${opts.sub ? `<p class="sub-header-subtitle text-[11.5px] text-[#64748B] font-medium truncate m-0 leading-tight">${opts.sub}</p>` : ''}
             </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
@@ -3702,6 +4000,7 @@ const TENANT_BOTTOM_NAV = [
 
 const TENANT_DRAWER_NAV = [
     ['building-2', 'Building', 'tenant-building-info'],
+    ['phone-call', 'Emergency Contacts', 'tenant-emergency-contacts'],
     ['circle-help', 'FAQ', 'faq'],
     ['life-buoy', 'Help & Support', 'help-support'],
 ];
@@ -4046,12 +4345,12 @@ const drawer = () => {
     const isTenant = STATE.userRole === 'tenant';
     const navHtml = isContractor
         ? CONTRACTOR_DRAWER_NAV.map(([ic, label, sc]) => `
-        <button data-go="${sc}" class="drawer-item ${isActive(sc) ? 'active' : ''}">
+        <button data-go="${sc}" data-drawer-nav="1" class="drawer-item ${isActive(sc) ? 'active' : ''}">
             <i data-lucide="${ic}" class="w-5 h-5"></i><span>${label}</span>
         </button>`).join('')
         : isTenant
             ? TENANT_DRAWER_NAV.map(([ic, label, sc]) => `
-        <button data-go="${sc}" class="drawer-item ${isActive(sc) ? 'active' : ''}">
+        <button data-go="${sc}" data-drawer-nav="1" class="drawer-item ${isActive(sc) ? 'active' : ''}">
             <i data-lucide="${ic}" class="w-5 h-5"></i><span>${label}</span>
         </button>`).join('')
             : LANDLORD_DRAWER_NAV.map(([ic, label, sc]) => `
@@ -6674,6 +6973,8 @@ function collectGoOptions(el) {
     if (el.dataset.maintSourceOnNav) opts.maintSourceFilter = el.dataset.maintSourceOnNav;
     if (el.dataset.maintFilterOnNav) opts.maintFilter = el.dataset.maintFilterOnNav;
     if (el.dataset.rentRollRecord != null) opts.rentRollRecord = true;
+    if (el.dataset.contractorId !== undefined) opts.contractorId = +el.dataset.contractorId;
+    if (el.dataset.contractorProfileReturn) opts.contractorProfileReturn = el.dataset.contractorProfileReturn;
     if (el.dataset.resetReturn) STATE.resetReturnScreen = el.dataset.resetReturn;
     if (el.dataset.drawerNav != null) opts.fromDrawer = true;
     return opts;
@@ -6688,6 +6989,101 @@ function handleDelegatedAction(e, el) {
     if (!action) return false;
     const run = (fn) => { e.preventDefault(); fn(); return true; };
     switch (action) {
+        case 'switch-signup-role':
+            return run(() => {
+                STATE.authRole = el.dataset.role || 'landlord';
+                render();
+            });
+        case 'open-contractor-schedule-modal':
+            return run(() => {
+                STATE.showContractorScheduleModal = true;
+                render();
+            });
+        case 'close-contractor-schedule-modal':
+            return run(() => {
+                STATE.showContractorScheduleModal = false;
+                render();
+            });
+        case 'confirm-accept-schedule-modal':
+            return run(() => {
+                if (typeof confirmAcceptScheduleModal === 'function') confirmAcceptScheduleModal();
+            });
+        case 'close-contractor-cancel-modal':
+            return run(() => {
+                STATE.showContractorCancelModal = false;
+                render();
+            });
+        case 'confirm-contractor-cancel':
+            return run(() => {
+                if (typeof confirmContractorCancel === 'function') confirmContractorCancel();
+            });
+        case 'close-contractor-pause-modal':
+            return run(() => {
+                STATE.showContractorPauseModal = false;
+                render();
+            });
+        case 'confirm-contractor-pause':
+            return run(() => {
+                if (typeof confirmContractorPause === 'function') confirmContractorPause();
+            });
+        case 'open-issue-certificate-modal':
+            return run(() => {
+                if (typeof openIssueCertificateModal === 'function') openIssueCertificateModal();
+            });
+        case 'close-issue-certificate-modal':
+            return run(() => {
+                if (typeof closeIssueCertificateModal === 'function') closeIssueCertificateModal();
+            });
+        case 'confirm-issue-certificate':
+            return run(() => {
+                if (typeof confirmIssueCertificate === 'function') confirmIssueCertificate();
+            });
+        case 'view-job-certificate':
+            return run(() => {
+                if (typeof viewJobCertificate === 'function') viewJobCertificate();
+            });
+        case 'close-view-certificate-modal':
+            return run(() => {
+                if (typeof closeViewCertificateModal === 'function') closeViewCertificateModal();
+            });
+        case 'open-manage-contractor-props':
+            return run(() => {
+                if (typeof openManageContractorProps === 'function') openManageContractorProps(el.dataset.cid);
+            });
+        case 'close-manage-contractor-props':
+            return run(() => {
+                if (typeof closeManageContractorProps === 'function') closeManageContractorProps();
+            });
+        case 'toggle-contractor-prop':
+            return run(() => {
+                if (typeof toggleContractorProp === 'function') toggleContractorProp(el.dataset.pid);
+            });
+        case 'toggle-all-contractor-props':
+            return run(() => {
+                if (typeof toggleAllContractorProps === 'function') toggleAllContractorProps();
+            });
+        case 'save-manage-contractor-props':
+            return run(() => {
+                if (typeof saveManageContractorProps === 'function') saveManageContractorProps();
+            });
+        case 'quick-assign-contractor-prop':
+            return run(() => {
+                if (typeof quickAssignContractorProp === 'function') quickAssignContractorProp(el.dataset.cid, el.dataset.pid);
+            });
+        case 'use-demo-contractor-cert-file':
+            return run(() => {
+                if (!STATE.contractorCertUpload) return;
+                const opt = typeof contractorCertTypeOption === 'function' ? contractorCertTypeOption(STATE.contractorCertUpload.type) : { label: 'Certificate' };
+                STATE.contractorCertUpload.file = {
+                    name: `${opt.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf`,
+                    url: '#',
+                    mime: 'application/pdf',
+                };
+                STATE.contractorCertUpload.displayName = opt.label;
+                STATE.contractorCertUpload.validUntil = 'Mar 2027';
+                STATE.contractorCertUpload.step = 'review';
+                render();
+            });
         case 'back': return run(back);
         case 'drawer':
         case 'drawer-close': return run(toggleDrawer);
@@ -6880,6 +7276,9 @@ function handleDelegatedAction(e, el) {
             STATE.actionMenuKey = null;
             if (typeof makeLeadTenantAction === 'function') makeLeadTenantAction(+el.dataset.pid, el.dataset.unit, el.dataset.memberEmail, el.dataset.memberName);
         });
+        case 'view-landlord-sla': return run(() => {
+            if (typeof openLandlordCoverageModal === 'function') openLandlordCoverageModal();
+        });
         default: return false;
     }
 }
@@ -6988,6 +7387,8 @@ function handleAppClick(e) {
     if (goEl && goEl.dataset.go && !goEl.dataset.action) {
         const nestedAction = e.target.closest('[data-action]');
         if (nestedAction && nestedAction !== goEl && goEl.contains(nestedAction)) return;
+        const nestedLink = e.target.closest('a[href^="tel:"], a[href^="mailto:"]');
+        if (nestedLink && nestedLink !== goEl && goEl.contains(nestedLink)) return;
         e.preventDefault();
         go(goEl.dataset.go, collectGoOptions(goEl));
     }

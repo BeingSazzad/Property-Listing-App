@@ -117,6 +117,44 @@ const CONTRACTORS = [
             { id: 2, type: 'trade_qualification', name: '18th Edition IET Wiring Regulations (BS 7671)', fileName: '18th-edition-wiring-reg.pdf', certNumber: 'IET-7671-5502', uploadedAt: 'Sep 4, 2024', validUntil: 'Lifetime', verified: true, issuer: 'Institution of Engineering and Technology' },
         ]
     },
+    {
+        id: 3,
+        name: 'SafeKey 24/7 Locksmiths',
+        companyName: 'SafeKey Security & Locks London Ltd',
+        contactPerson: 'Mark Higgins',
+        roleTitle: 'Master Locksmiths Association (MLA) Approved',
+        tradeId: 'locksmith',
+        trade: 'Locksmith & Security',
+        category: 'Locksmith',
+        jobsFor: 'Emergency lockouts, broken keys, lock repairs, high security cylinders',
+        img: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&h=200&fit=crop&crop=faces',
+        phone: '+44 7700 900321',
+        email: 'urgent@safekeylocksmiths.co.uk',
+        companyReg: '13982014',
+        vatNumber: 'GB 419 8201 12',
+        address: '88 High Street, Kensington, London W8 4SG',
+        serviceArea: 'Greater London (20–30 min emergency arrival)',
+        hourlyRate: '£95 / hr',
+        calloutFee: 'No callout fee (Emergency 24/7)',
+        experience: '16+ years',
+        completedJobs: 54,
+        insuranceProvider: 'Allianz Insurance UK',
+        insuranceCoverage: '£5,000,000 Public Liability',
+        insurancePolicy: 'POL-ALZ-881920',
+        tradeRegNo: 'MLA-99412',
+        liabilityInsurance: true,
+        avgRating: '4.9',
+        ratings: [
+            { stars: 5, comment: 'Arrived in 20 minutes when my key snapped in the deadbolt. Replaced cylinder immediately.', job: 'Front door lockout', at: 'Mar 18, 2025', from: 'Sarah Johnson', role: 'tenant' },
+            { stars: 5, comment: 'Installed high-security British Standard BS 3621 euro-cylinders for tenant turnover.', job: 'Lock upgrade & keys', at: 'Feb 10, 2025', from: 'John Smith', role: 'landlord' },
+            { stars: 5, comment: 'Clean, non-destructive entry during evening lockout. Professional service.', job: 'Emergency lockout', at: 'Jan 22, 2025', from: 'David Wilson', role: 'tenant' },
+        ],
+        certificates: [
+            { id: 0, type: 'trade_qualification', name: 'Master Locksmiths Association (MLA) Certification', fileName: 'mla-master-cert.pdf', certNumber: 'MLA-99412', uploadedAt: 'Jan 12, 2026', validUntil: 'Jan 2027', verified: true, issuer: 'Master Locksmiths Association UK' },
+            { id: 1, type: 'liability_insurance', name: 'Public Liability Insurance (£5M)', fileName: 'safekey-insurance.pdf', certNumber: 'POL-ALZ-881920', uploadedAt: 'Nov 1, 2025', validUntil: 'Nov 2026', verified: true, issuer: 'Allianz Insurance UK' },
+            { id: 2, type: 'trade_qualification', name: 'British Standard BS 3621 Certified Installer', fileName: 'bs3621-installer.pdf', certNumber: 'BSI-3621-771', uploadedAt: 'Aug 10, 2024', validUntil: 'Lifetime', verified: true, issuer: 'British Standards Institution' },
+        ]
+    },
 ];
 
 function normalizeContractorRecord(c) {
@@ -4503,6 +4541,40 @@ function renderPropertyInventoryTab(propertyId) {
             </div>
         </div>` : ''}
 
+        ${(() => {
+            const meta = (typeof AppStore !== 'undefined' && AppStore.meta) ? AppStore.meta(propertyId) : {};
+            const signed = meta.tenantInventorySigned;
+            if (signed) {
+                return `
+                <div class="card p-3 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] shadow-xs flex items-center justify-between gap-3 mb-1">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-xl bg-[#D1FAE5] text-[#059669] flex items-center justify-center shrink-0">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[12.5px] font-bold text-[#064E3B] m-0">Tenant Signed &amp; Accepted</p>
+                            <p class="text-[11px] text-[#047857] m-0 truncate">By ${escapeHtml(signed.by || 'Tenant')} · ${escapeHtml(signed.date || '')} · Deposit Protected</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-[#059669] border border-[#A7F3D0] shrink-0">Signed</span>
+                </div>`;
+            } else {
+                return `
+                <div class="card p-3 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] shadow-xs flex items-center justify-between gap-3 mb-1">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-xl bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center shrink-0">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[12.5px] font-bold text-[#1E3A8A] m-0">Shared with Tenant</p>
+                            <p class="text-[11px] text-[#2563EB] m-0 truncate">Awaiting tenant review &amp; signature for deposit record</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-[#2563EB] border border-[#DBEAFE] shrink-0">Pending</span>
+                </div>`;
+            }
+        })()}
+
         <div class="flex items-center justify-between px-1 mt-2 mb-1">
             <p class="text-[13.5px] font-bold text-[#0F172A] m-0">${isMulti ? `${escapeHtml(activeUnit === 'communal' ? 'Communal Area' : activeUnit)} Room Checklists` : 'Room Checklists'}</p>
             <div class="flex items-center gap-2">
@@ -8336,7 +8408,7 @@ const CONTRACTOR_SCREEN_ALIASES = {
 
 const TENANT_ALLOWED_SCREENS = new Set([
     'tenant-dashboard', 'tenant-issues', 'tenant-documents', 'tenant-referencing', 'tenant-ref-detail',
-    'tenant-active-tenancy', 'tenant-contact', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
+    'tenant-active-tenancy', 'tenant-contact', 'tenant-emergency-contacts', 'tenant-reminders', 'tenant-reminder-detail', 'tenant-compliance',
     'tenant-communication', 'tenant-checkout', 'tenant-building-info', 'tenant-inventory', 'tenant-inventory-room',
     'tenant-announcements', 'tenant-announcement-detail',
     'tenant-house-rules', 'tenant-edit-profile', 'tenant-welcome', 'tenant-inspection-upload',
@@ -8344,6 +8416,7 @@ const TENANT_ALLOWED_SCREENS = new Set([
     'messages', 'chat', 'personal-info', 'notifications-list', 'notifications-settings',
     'help-support', 'faq', 'faq-detail', 'privacy', 'terms', 'about',
     'password', 'security', 'document-preview', 'property-doc-folder',
+    'contractor-public-profile', 'utility-detail', 'property-utilities',
 ]);
 
 function notificationsForRole() {
@@ -15432,7 +15505,31 @@ function renderSharedJobProgress(job) {
 
 function renderSharedMaintJobPanel(item, job, role = 'landlord') {
     if (!job) return '';
-    return renderSharedJobInvoiceCard(job, role, item);
+    const invoiceCard = renderSharedJobInvoiceCard(job, role, item);
+    const cert = (job.certificates && job.certificates[0]) || (item?.certificates && item.certificates[0]) || item?.certificate;
+    const certCard = cert ? `
+    <div class="card p-4 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] space-y-2 text-left mt-3">
+        <div class="flex items-center justify-between">
+            <span class="text-[10.5px] font-extrabold text-[#065F46] uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-[#059669]"></i>
+                Trade Safety Certificate
+            </span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#059669] border border-[#A7F3D0]">
+                Verified &amp; Issued
+            </span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
+                <h4 class="text-[13px] font-extrabold text-[#064E3B] m-0 truncate">${typeof escapeHtml === 'function' ? escapeHtml(cert.name) : cert.name}</h4>
+                <p class="text-[11px] text-[#047857] m-0 mt-0.5">Cert #${cert.id || 'CERT-2025-8841'} · 12 Mo Warranty</p>
+            </div>
+            <button type="button" data-action="view-job-certificate" class="px-2.5 py-1.5 rounded-lg bg-white border border-[#6EE7B7] text-[#065F46] text-[11px] font-bold hover:bg-[#D1FAE5] shrink-0 cursor-pointer shadow-2xs">
+                View Certificate
+            </button>
+        </div>
+    </div>` : '';
+
+    return `${invoiceCard}${certCard}`;
 }
 
 function renderMaintAssignmentStatus(item, contractorJob) {
@@ -17966,7 +18063,8 @@ function screenMaintenanceDetailEnhanced() {
             ${maintReviewEligible(item, contractorJob) ? renderContractorRatingCard(item, contractorJob) : ''}
             ${item.status === 'done' ? `<p class="maint-resolved-note"><i data-lucide="check-circle" class="w-4 h-4"></i> Issue resolved</p>` : ''}
         </div>
-        ${renderMaintMediaPreviewModal()}`;
+        ${renderMaintMediaPreviewModal()}
+        ${typeof renderViewCertificateModal === 'function' ? renderViewCertificateModal() : ''}`;
     }
 
     ensureMaintPaidBy(item);
@@ -17994,7 +18092,8 @@ function screenMaintenanceDetailEnhanced() {
         ${item.status !== 'done' ? `<button type="button" data-action="cancel-maintenance" data-mid="${item.id}" class="maint-cancel-link">Cancel issue</button>` : `<p class="maint-resolved-note"><i data-lucide="check-circle" class="w-4 h-4"></i> Issue resolved</p>`}
     </div>
     ${footer}
-    ${renderMaintMediaPreviewModal()}`;
+    ${renderMaintMediaPreviewModal()}
+    ${typeof renderViewCertificateModal === 'function' ? renderViewCertificateModal() : ''}`;
 }
 
 function inviteNidProofSummary(draft = {}) {
