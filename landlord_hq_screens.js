@@ -4,13 +4,13 @@ const imgUrl = (id, w = 600) =>
 const AVATAR_PHOTOS = {
     john: '1560250097-0b93528c311a',
     sarah: '1494790108377-be9c29b29330',
-    david: '1506794778202-cf84c6bee0ac',
+    david: '1506794778202-cad84cf45f1d',
     michael: '1500648767791-00dcc994a43e',
     emma: '1438761681033-6461ffad8d80',
     priya: '1573496359142-b8d87734a5a2',
     james: '1472099645785-5658abf4ff4e',
-    plumber: '1519085364259-bc88b9451dea',
-    electric: '1581092795360-f4a9d2467710',
+    plumber: '1507003211169-0a1dd7228f2d',
+    electric: '1581092160607-ee22621dd758',
     heating: '1581578731548-c64695cc6952',
 };
 const avatarUrl = (seed) =>
@@ -1364,19 +1364,100 @@ function completeSignup() {
 }
 
 
+function captureContractorUnifiedDraft() {
+    STATE.contractorSignupDraft = STATE.contractorSignupDraft || {};
+    const d = STATE.contractorSignupDraft;
+    const fn = document.querySelector('[data-signup-fullname]')?.value;
+    if (fn !== undefined) d.fullName = fn;
+    const em = document.querySelector('[data-signup-email]')?.value;
+    if (em !== undefined) d.email = em;
+    const ph = document.querySelector('[data-signup-phone]')?.value;
+    if (ph !== undefined) d.phone = ph;
+    const co = document.querySelector('[data-signup-company]')?.value;
+    if (co !== undefined) d.company = co;
+    const tr = document.querySelector('[data-signup-trade]')?.value;
+    if (tr !== undefined) d.trade = tr;
+    const nid = document.querySelector('[data-signup-nid]')?.value;
+    if (nid !== undefined) d.nid = nid;
+    const cert = document.querySelector('[data-signup-cert]')?.value;
+    if (cert !== undefined) d.certName = cert;
+    const pw = document.querySelector('[data-signup-password]')?.value;
+    if (pw !== undefined) d.password = pw;
+    const cpw = document.querySelector('[data-signup-confirm]')?.value;
+    if (cpw !== undefined) d.confirmPassword = cpw;
+    return d;
+}
+
+function advanceContractorSignupStep() {
+    captureContractorUnifiedDraft();
+    const d = STATE.contractorSignupDraft;
+    if (!d.fullName?.trim()) {
+        toast('Please enter your full name');
+        return;
+    }
+    if (!d.email?.trim()) {
+        toast('Please enter your email address');
+        return;
+    }
+    STATE.contractorSignupStep = 2;
+    render();
+}
+
+function retreatContractorSignupStep() {
+    captureContractorUnifiedDraft();
+    STATE.contractorSignupStep = 1;
+    render();
+}
+
 function startLandlordSignup() {
     const role = STATE.authRole || 'landlord';
+    const fullName = document.querySelector('[data-signup-fullname]')?.value?.trim() || STATE.contractorSignupDraft?.fullName || '';
+    const { firstName, lastName } = typeof splitFullName === 'function' ? splitFullName(fullName) : { firstName: fullName, lastName: '' };
+
     if (role === 'tenant') {
-        const first = document.querySelector('[data-signup-first]')?.value?.trim() || 'Sarah';
-        const nid = document.querySelector('[data-signup-nid]')?.value?.trim() || 'NID-8821-4902';
-        toast(`Welcome ${first}! Tenant account created with verified ID.`);
+        const first = firstName || document.querySelector('[data-signup-first]')?.value?.trim() || 'Sarah';
+        toast(`Welcome ${first}! Tenant account created.`);
     } else if (role === 'contractor') {
-        const company = document.querySelector('[data-signup-company]')?.value?.trim() || 'Plumber Pro';
-        const trade = document.querySelector('[data-signup-trade]')?.value || 'Plumbing & Heating';
+        captureContractorUnifiedDraft();
+        const d = STATE.contractorSignupDraft || {};
+        const company = document.querySelector('[data-signup-company]')?.value?.trim() || d.company || 'Plumber Pro Ltd';
+        const trade = document.querySelector('[data-signup-trade]')?.value || d.trade || 'Plumbing & Heating';
+        const nid = document.querySelector('[data-signup-nid]')?.value?.trim() || d.nid || '';
+        const certName = document.querySelector('[data-signup-cert]')?.value?.trim() || d.certName || '';
+        const certFile = STATE.signupCertFile;
+        const cFirst = firstName || d.firstName || 'Mike';
+        const cLast = lastName || d.lastName || 'Thompson';
+
+        if (typeof CONTRACTOR_USER !== 'undefined') {
+            if (nid) CONTRACTOR_USER.nid = nid;
+            if (company) CONTRACTOR_USER.company = company;
+            if (trade) CONTRACTOR_USER.trade = trade;
+            if (cFirst) CONTRACTOR_USER.firstName = cFirst;
+            if (cLast) CONTRACTOR_USER.lastName = cLast;
+            if (d.phone) CONTRACTOR_USER.phone = d.phone;
+            if (d.email) CONTRACTOR_USER.email = d.email;
+            if (certName) {
+                if (typeof ensureContractorCertificates === 'function') ensureContractorCertificates(CONTRACTOR_USER);
+                const nextId = typeof nextContractorCertId === 'function' ? nextContractorCertId(CONTRACTOR_USER) : Date.now();
+                CONTRACTOR_USER.certificates.push({
+                    id: nextId,
+                    type: 'other',
+                    name: certName,
+                    fileName: certFile?.name || `${certName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf`,
+                    fileUrl: certFile?.url || 'assets/sample_cert.pdf',
+                    mime: certFile?.mime || 'application/pdf',
+                    verified: true,
+                    uploadedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                });
+                if (typeof saveContractorCertificates === 'function') saveContractorCertificates();
+            }
+        }
+        STATE.signupCertFile = null;
+        STATE.contractorSignupStep = 1;
         toast(`Welcome! ${company} registered as ${trade} partner.`);
     } else {
-        const company = document.querySelector('[data-signup-company]')?.value?.trim() || 'Smith Properties';
-        toast(`Landlord portfolio account created for ${company}.`);
+        const first = firstName || 'John';
+        toast(`Landlord portfolio account created for ${first}.`);
     }
     demoLogin(role);
 }
@@ -1761,7 +1842,7 @@ function nextOnboarding() {
 }
 function setAuthRole(role) {
     STATE.authRole = role || 'landlord';
-    demoLogin(STATE.authRole);
+    render();
 }
 function togglePassword() { STATE.showPassword = !STATE.showPassword; render(); }
 function toggleConfirmPassword() { STATE.showConfirmPassword = !STATE.showConfirmPassword; render(); }
@@ -2050,19 +2131,22 @@ function screenOnboarding() {
 }
 
 function screenRoleSelect() {
+    const currentRole = STATE.authRole || 'landlord';
+    const roleLabels = { landlord: 'Landlord', tenant: 'Tenant', contractor: 'Contractor' };
+    const currentLabel = roleLabels[currentRole] || 'Landlord';
     return `
     <div class="auth-screen">
         <div class="auth-topbar">
             <button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
             ${appLogo()}
-            <span style="width:40px"></span>
+            <button type="button" data-go="sign-up" class="text-[13px] font-bold text-[#2563EB] hover:underline cursor-pointer">Sign Up</button>
         </div>
-        <div class="auth-content">
+        <div class="auth-content pb-8">
             <h1 class="auth-heading">Choose Your Role</h1>
-            <p class="auth-sub">Tap Landlord, Tenant, or Contractor to enter the demo. No sign-in needed.</p>
-            <div class="stack" style="margin-top:28px">
+            <p class="auth-sub">Select your account type to sign up with role-specific details or enter demo.</p>
+            <div class="stack" style="margin-top:20px">
                 ${SELECTABLE_ROLES.map(r => `
-                <button type="button" data-action="set-role" data-role="${r.id}" class="role-card ${STATE.authRole === r.id ? 'selected' : ''}">
+                <button type="button" data-action="set-role" data-role="${r.id}" class="role-card ${currentRole === r.id ? 'selected' : ''}">
                     <div class="role-card-icon" style="background:${r.bg};color:${r.color}">
                         <i data-lucide="${r.icon}" class="w-6 h-6"></i>
                     </div>
@@ -2072,6 +2156,21 @@ function screenRoleSelect() {
                     </div>
                     <div class="role-radio"><div class="role-radio-dot"></div></div>
                 </button>`).join('')}
+            </div>
+
+            <!-- Action buttons: Sign Up & Demo Login -->
+            <div class="space-y-2.5 pt-5 text-left">
+                <button type="button" data-go="sign-up" class="btn-auth btn-auth-primary w-full py-3.5 text-[15px] font-extrabold shadow-md cursor-pointer flex items-center justify-center gap-2">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>Sign Up as ${currentLabel}</span>
+                </button>
+                <button type="button" data-action="demo-login" data-demo-role="${currentRole}" class="w-full py-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] font-bold text-[13.5px] transition-colors cursor-pointer text-center flex items-center justify-center gap-2">
+                    <i data-lucide="play-circle" class="w-4 h-4 text-[#2563EB]"></i>
+                    <span>Instant Demo Login as ${currentLabel}</span>
+                </button>
+                <div class="text-center pt-2">
+                    <p class="text-[13px] text-[#64748B] m-0">Already have an account? <button type="button" data-go="sign-in" class="text-[#2563EB] font-bold hover:underline cursor-pointer">Sign In</button></p>
+                </div>
             </div>
         </div>
     </div>`;
@@ -2116,313 +2215,200 @@ function screenSignIn() {
 
 function screenSignUp() {
     const pwType = STATE.showPassword ? 'text' : 'password';
+    const confirmType = STATE.showConfirmPassword ? 'text' : 'password';
     const role = STATE.authRole || 'landlord';
     const demo = DEMO_CREDENTIALS[role] || DEMO_CREDENTIALS.landlord;
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const isContractor = role === 'contractor';
+    const contractorStep = isContractor ? (STATE.contractorSignupStep || 1) : 1;
+    const draft = STATE.contractorSignupDraft || {};
 
-    // Role-specific headings & descriptions
-    const roleMeta = {
-        tenant: {
-            title: 'Create Tenant Account',
-            sub: 'Verify your National ID & connect directly with your landlord.',
-            icon: 'user-check',
-            btn: 'Create Tenant Account',
-            color: '#059669',
-            badge: 'Resident KYC & ID Verification'
-        },
-        contractor: {
-            title: 'Register as Contractor',
-            sub: 'Submit trade licenses, insurance & receive verified job requests.',
-            icon: 'wrench',
-            btn: 'Register as Approved Contractor',
-            color: '#D97706',
-            badge: 'Trade License & Compliance'
-        },
-        landlord: {
-            title: 'Create Landlord Account',
-            sub: 'Manage rental properties, automate collections & compliance.',
-            icon: 'building-2',
-            btn: 'Create Landlord Account',
-            color: '#2563EB',
-            badge: 'Property Owner & Investor'
+    let title = 'Create Your Account';
+    let subtitle = "Sign up with your email. We'll send a verification code to confirm it's you.";
+    if (isContractor) {
+        if (contractorStep === 1) {
+            title = 'Personal Information';
+            subtitle = 'Step 1 of 2: Enter your name and contact details.';
+        } else {
+            title = 'Company & Credentials';
+            subtitle = 'Step 2 of 2: Set up your business trade and certificates.';
         }
-    }[role] || {
-        title: 'Create Your Account',
-        sub: 'Select your role to get started.',
-        icon: 'user-plus',
-        btn: 'Create Account',
-        color: '#2563EB',
-        badge: 'Account Setup'
-    };
+    }
 
     return `
     <div class="auth-screen">
         <div class="auth-topbar">
             <button type="button" data-action="back" class="auth-back-btn"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-            ${appLogo()}
+            <span></span>
             <span style="width:40px"></span>
         </div>
         <div class="auth-content pb-12">
-            <!-- Role Switcher Segmented Tabs -->
-            <div class="p-1 rounded-xl bg-[#F1F5F9] border border-[#E2E8F0] grid grid-cols-3 gap-1 mb-4 text-[12px] font-bold">
-                <button type="button" data-action="switch-signup-role" data-role="landlord" class="py-2.5 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'landlord' ? 'bg-white text-[#2563EB] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
-                    <i data-lucide="building" class="w-3.5 h-3.5"></i>
+            <!-- Hero Icon, Title & Subtitle (Minimal & Elegant) -->
+            <div class="text-center space-y-2 mb-5">
+                <div class="w-14 h-14 rounded-2xl bg-[#2563EB] flex items-center justify-center text-white mx-auto shadow-sm">
+                    <i data-lucide="${isContractor ? 'hard-hat' : 'home'}" class="w-7 h-7"></i>
+                </div>
+                <h1 class="text-[24px] font-black text-[#0F172A] tracking-tight m-0">${title}</h1>
+                <p class="text-[13.5px] text-[#64748B] max-w-[300px] mx-auto m-0 leading-relaxed">${subtitle}</p>
+            </div>
+
+            <!-- Role Switcher: Subtle Neutral Segmented Tabs -->
+            <div class="p-1 rounded-xl bg-[#F1F5F9] border border-[#E2E8F0] grid grid-cols-3 gap-1 mb-5 text-[12px] font-bold">
+                <button type="button" data-action="switch-signup-role" data-role="landlord" class="py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'landlord' ? 'bg-white text-[#0F172A] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
                     <span>Landlord</span>
                 </button>
-                <button type="button" data-action="switch-signup-role" data-role="tenant" class="py-2.5 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'tenant' ? 'bg-white text-[#059669] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
-                    <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                <button type="button" data-action="switch-signup-role" data-role="tenant" class="py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'tenant' ? 'bg-white text-[#0F172A] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
                     <span>Tenant</span>
                 </button>
-                <button type="button" data-action="switch-signup-role" data-role="contractor" class="py-2.5 px-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'contractor' ? 'bg-white text-[#D97706] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
-                    <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+                <button type="button" data-action="switch-signup-role" data-role="contractor" class="py-2 px-1 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${role === 'contractor' ? 'bg-white text-[#0F172A] shadow-xs' : 'text-[#64748B] hover:text-[#0F172A]'}">
                     <span>Contractor</span>
                 </button>
             </div>
 
-            <!-- Header Badge & Title -->
-            <div class="text-center space-y-1 mb-4">
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider" style="background:${roleMeta.color}15;color:${roleMeta.color}">
-                    <i data-lucide="${roleMeta.icon}" class="w-3.5 h-3.5"></i>
-                    ${roleMeta.badge}
-                </span>
-                <h1 class="auth-heading text-[22px] font-black text-[#0F172A] m-0">${roleMeta.title}</h1>
-                <p class="auth-sub text-[13px] text-[#64748B] m-0">${roleMeta.sub}</p>
-            </div>
-
-            ${authDemoCard()}
+            ${isContractor ? `
+            <!-- Contractor 2-Step Progress Indicator -->
+            <div class="mb-5">
+                <div class="flex items-center justify-between text-[12px] font-bold mb-2 px-0.5">
+                    <span class="${contractorStep === 1 ? 'text-[#2563EB]' : 'text-[#059669]'} flex items-center gap-1.5">
+                        ${contractorStep > 1 ? '<i data-lucide="check-circle" class="w-4 h-4 text-[#10B981]"></i>' : '<span class="w-5 h-5 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-[10px]">1</span>'}
+                        Personal Info
+                    </span>
+                    <span class="${contractorStep === 2 ? 'text-[#2563EB]' : 'text-[#94A3B8]'} flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full ${contractorStep === 2 ? 'bg-[#2563EB] text-white' : 'bg-[#E2E8F0] text-[#64748B]'} flex items-center justify-center text-[10px]">2</span>
+                        Company &amp; Certs
+                    </span>
+                </div>
+                <div class="h-1.5 w-full bg-[#F1F5F9] rounded-full overflow-hidden">
+                    <div class="h-full bg-[#2563EB] rounded-full transition-all duration-300" style="width: ${contractorStep === 1 ? '50%' : '100%'}"></div>
+                </div>
+            </div>` : ''}
 
             <div class="auth-form space-y-4 text-left">
+                ${isContractor && contractorStep === 2 ? `
+                <!-- Step 2: Company, Trade & Certificates -->
+                <div class="auth-field">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Company / Trading Name</label>
+                    <input type="text" data-signup-company class="auth-input" placeholder="e.g. Plumber Pro Ltd" autocomplete="organization" value="${esc(draft.company || '')}">
+                </div>
+                <div class="auth-field">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Primary Trade</label>
+                    <select data-signup-trade class="auth-input bg-white cursor-pointer">
+                        <option value="Plumbing & Heating" ${(draft.trade || '') === 'Plumbing & Heating' ? 'selected' : ''}>Plumbing & Heating</option>
+                        <option value="Electrical & Lighting" ${(draft.trade || '') === 'Electrical & Lighting' ? 'selected' : ''}>Electrical & Lighting</option>
+                        <option value="Locksmith & Security" ${(draft.trade || '') === 'Locksmith & Security' ? 'selected' : ''}>Locksmith & Security</option>
+                        <option value="Carpentry & Joinery" ${(draft.trade || '') === 'Carpentry & Joinery' ? 'selected' : ''}>Carpentry & Joinery</option>
+                        <option value="Painting & Decorating" ${(draft.trade || '') === 'Painting & Decorating' ? 'selected' : ''}>Painting & Decorating</option>
+                        <option value="General Handyman" ${(draft.trade || '') === 'General Handyman' ? 'selected' : ''}>General Handyman</option>
+                    </select>
+                </div>
+                <div class="auth-field">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">National ID / NID Number</label>
+                    <input type="text" data-signup-nid class="auth-input font-mono" placeholder="e.g. NID-8821-4902-88" value="${esc(draft.nid || '')}">
+                </div>
+                <div class="auth-field">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Certificate Name</label>
+                    <input type="text" data-signup-cert class="auth-input" placeholder="e.g. Gas Safe Registration" value="${esc(draft.certName || '')}">
+                </div>
+                <div class="auth-field">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Attachment</label>
+                    <div data-action="pick-signup-cert-file" class="auth-input flex items-center justify-between cursor-pointer hover:border-[#2563EB] transition-colors bg-white select-none" style="border-radius:12px;min-height:42px;">
+                        ${STATE.signupCertFile ? `
+                        <span class="text-[12.5px] font-medium text-[#0F172A] flex items-center gap-2 truncate">
+                            <i data-lucide="paperclip" class="w-4 h-4 text-[#2563EB] shrink-0"></i>
+                            <span class="truncate">${esc(STATE.signupCertFile.name)}</span>
+                        </span>
+                        <button type="button" data-action="clear-signup-cert-file" class="text-[11.5px] font-bold text-[#2563EB] hover:underline cursor-pointer shrink-0 ml-2" onclick="event.stopPropagation();">Change</button>
+                        ` : `
+                        <span class="text-[12.5px] text-[#94A3B8] flex items-center gap-2 truncate">
+                            <i data-lucide="upload-cloud" class="w-4 h-4 text-[#94A3B8] shrink-0"></i>
+                            <span>Attach certificate (PDF, JPG)</span>
+                        </span>
+                        <span class="text-[11.5px] font-bold text-[#2563EB] shrink-0">Upload</span>
+                        `}
+                    </div>
+                </div>
 
-                <!-- 1. COMMON BASIC CREDENTIALS -->
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#334155]">First name</label>
-                        <input type="text" data-signup-first class="auth-input" placeholder="${role === 'tenant' ? 'Sarah' : (role === 'contractor' ? 'David' : 'John')}" autocomplete="given-name" value="">
-                    </div>
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#334155]">Last name</label>
-                        <input type="text" data-signup-last class="auth-input" placeholder="${role === 'tenant' ? 'Johnson' : (role === 'contractor' ? 'Evans' : 'Smith')}" autocomplete="family-name" value="">
-                    </div>
+                <div class="space-y-2.5 pt-2">
+                    <button type="button" data-action="start-signup" class="btn-auth btn-auth-primary w-full py-3.5 text-[15px] font-bold rounded-xl shadow-md cursor-pointer flex items-center justify-center">
+                        Create Contractor Account
+                    </button>
+                    <button type="button" data-action="contractor-signup-prev-step" class="w-full py-3 rounded-xl border border-[#CBD5E1] bg-white text-[#475569] text-[13.5px] font-bold hover:bg-[#F8FAFC] transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>Back to Personal Info</span>
+                    </button>
+                </div>
+                ` : `
+                <!-- Step 1: Personal Info (Contractor Step 1, or Landlord/Tenant) -->
+                <div class="auth-field">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Full Name</label>
+                    <input type="text" data-signup-fullname class="auth-input" placeholder="John Smith" autocomplete="name" value="${esc(isContractor ? (draft.fullName || '') : '')}">
                 </div>
 
                 <div class="auth-field">
-                    <label class="text-[12px] font-bold text-[#334155]">Email address</label>
-                    <input type="email" data-signup-email class="auth-input" placeholder="${demo.email}" autocomplete="email" inputmode="email" value="">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Email address</label>
+                    <input type="email" data-signup-email class="auth-input" placeholder="you@email.com" autocomplete="email" inputmode="email" value="${esc(isContractor ? (draft.email || '') : '')}">
                 </div>
 
+                ${isContractor ? `
                 <div class="auth-field">
-                    <label class="text-[12px] font-bold text-[#334155]">Phone number</label>
-                    <input type="tel" data-signup-phone class="auth-input" placeholder="+44 7700 900123" autocomplete="tel">
-                </div>
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Mobile Phone</label>
+                    <input type="tel" data-signup-phone class="auth-input" placeholder="+44 7700 900123" autocomplete="tel" value="${esc(draft.phone || '')}">
+                </div>` : ''}
 
-                <!-- 2. ROLE-SPECIFIC DETAILED SECTIONS -->
-
-                <!-- ==================== TENANT SIGN UP ==================== -->
                 ${role === 'tenant' ? `
-                <div class="p-4 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-3.5 text-left">
-                    <div class="flex items-center justify-between border-b border-[#DCFCE7] pb-2">
-                        <span class="text-[11.5px] font-extrabold text-[#166534] uppercase tracking-wider flex items-center gap-1.5">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-[#16A34A]"></i>
-                            National ID &amp; KYC Verification
-                        </span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#16A34A] border border-[#BBF7D0]">Right to Rent</span>
-                    </div>
-
-                    <!-- ID Document Type -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#166534]">ID Document Type</label>
-                        <select class="auth-input bg-white cursor-pointer" data-signup-idtype>
-                            <option value="nid" selected>National ID Card (NID)</option>
-                            <option value="passport">Passport (UK / International)</option>
-                            <option value="license">UK Driving Licence</option>
-                            <option value="brp">Biometric Residence Permit (BRP)</option>
-                        </select>
-                    </div>
-
-                    <!-- NID / Document Number -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#166534]">National ID / Document Number</label>
-                        <input type="text" data-signup-nid class="auth-input bg-white font-mono" placeholder="e.g. NID-8821-4902-88">
-                    </div>
-
-                    <!-- Photo ID Upload Box with Live Simulation Preview -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#166534]">Upload Photo ID (Front &amp; Back)</label>
-                        <div class="p-3 rounded-xl bg-white border border-[#86EFAC] text-center space-y-2 cursor-pointer hover:border-[#16A34A] transition-colors" onclick="if (typeof showToast === 'function') showToast('Government ID scanned &amp; attached');">
-                            <div class="w-8 h-8 rounded-full bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center mx-auto">
-                                <i data-lucide="camera" class="w-4 h-4"></i>
-                            </div>
-                            <div>
-                                <span class="text-[12px] font-bold text-[#0F172A] block">Tap to upload or take photo of NID</span>
-                                <span class="text-[10.5px] text-[#64748B]">JPG, PNG or PDF · Scanned securely</span>
-                            </div>
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ECFDF5] text-[#059669] text-[10.5px] font-bold border border-[#A7F3D0]">
-                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-[#10B981]"></i>
-                                <span>nid_card_front.jpg (Ready)</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tenancy Connection Code -->
-                    <div class="auth-field pt-1">
-                        <label class="text-[12px] font-bold text-[#166534]">Property Invite Code (Optional)</label>
-                        <input type="text" data-signup-invite class="auth-input bg-white font-mono uppercase" placeholder="e.g. LHQ-PARK-2A">
-                        <span class="text-[10.5px] text-[#166534] mt-1 block">Provided by your landlord, or enter tenancy after sign up.</span>
-                    </div>
-
-                    <!-- Emergency Contact Person -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#166534]">Emergency Next-of-Kin Contact</label>
-                        <input type="text" data-signup-kin class="auth-input bg-white" placeholder="Name &amp; Phone (e.g. Emma Johnson · +44 7700 900888)">
-                    </div>
-                </div>` : ''}
-
-                <!-- ==================== CONTRACTOR SIGN UP ==================== -->
-                ${role === 'contractor' ? `
-                <div class="p-4 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] space-y-3.5 text-left">
-                    <div class="flex items-center justify-between border-b border-[#FEF3C7] pb-2">
-                        <span class="text-[11.5px] font-extrabold text-[#92400E] uppercase tracking-wider flex items-center gap-1.5">
-                            <i data-lucide="badge-check" class="w-4 h-4 text-[#D97706]"></i>
-                            Trade Credentials &amp; Compliance
-                        </span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#D97706] border border-[#FDE68A]">Verified Pro</span>
-                    </div>
-
-                    <!-- Business / Trading Name -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#92400E]">Company / Trading Name</label>
-                        <input type="text" data-signup-company class="auth-input bg-white" placeholder="e.g. Plumber Pro &amp; Heating Ltd">
-                    </div>
-
-                    <!-- Primary Trade Specialty -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#92400E]">Primary Trade Specialty</label>
-                        <select class="auth-input bg-white cursor-pointer" data-signup-trade>
-                            <option value="plumbing" selected>Plumbing &amp; Heating (Gas Safe)</option>
-                            <option value="electrical">Electrical &amp; Rewiring (NICEIC / ELECSA)</option>
-                            <option value="locksmith">Locksmith &amp; Security (MLA Approved)</option>
-                            <option value="handyman">General Handyman &amp; Carpentry</option>
-                            <option value="roofing">Roofing &amp; External Drainage</option>
-                            <option value="hvac">HVAC &amp; Ventilation</option>
-                            <option value="painting">Painting &amp; Decorating</option>
-                        </select>
-                    </div>
-
-                    <!-- Trade License / Reg Number -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#92400E]">Trade License / Registration Number</label>
-                        <input type="text" data-signup-cert class="auth-input bg-white font-mono" placeholder="e.g. Gas Safe #582914 or NICEIC #048291">
-                    </div>
-
-                    <!-- Upload Trade Certificate -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#92400E]">Upload Trade Certificate / Card</label>
-                        <div class="p-3 rounded-xl bg-white border border-[#FCD34D] text-center space-y-2 cursor-pointer hover:border-[#D97706] transition-colors" onclick="if (typeof showToast === 'function') showToast('Trade certificate attached');">
-                            <div class="w-8 h-8 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center justify-center mx-auto">
-                                <i data-lucide="file-badge" class="w-4 h-4"></i>
-                            </div>
-                            <div>
-                                <span class="text-[12px] font-bold text-[#0F172A] block">Upload License / Proof of Competency</span>
-                                <span class="text-[10.5px] text-[#64748B]">Gas Safe, NICEIC or MLA Card</span>
-                            </div>
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#B45309] text-[10.5px] font-bold border border-[#FDE68A]">
-                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-[#D97706]"></i>
-                                <span>trade_license_cert_2025.pdf (Attached)</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Public Liability Insurance -->
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="auth-field">
-                            <label class="text-[12px] font-bold text-[#92400E]">Insurance Cover</label>
-                            <select class="auth-input bg-white text-[12.5px] cursor-pointer" data-signup-insurance>
-                                <option value="1m">£1,000,000</option>
-                                <option value="2m">£2,000,000</option>
-                                <option value="5m" selected>£5,000,000 (Standard)</option>
-                            </select>
-                        </div>
-                        <div class="auth-field">
-                            <label class="text-[12px] font-bold text-[#92400E]">Service Postcode</label>
-                            <input type="text" data-signup-area class="auth-input bg-white font-mono uppercase text-[12.5px]" placeholder="e.g. SW1, W1, EC1">
-                        </div>
-                    </div>
-                </div>` : ''}
-
-                <!-- ==================== LANDLORD SIGN UP ==================== -->
-                ${role === 'landlord' ? `
-                <div class="p-4 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-3.5 text-left">
-                    <div class="flex items-center justify-between border-b border-[#DBEAFE] pb-2">
-                        <span class="text-[11.5px] font-extrabold text-[#1E40AF] uppercase tracking-wider flex items-center gap-1.5">
-                            <i data-lucide="briefcase" class="w-4 h-4 text-[#2563EB]"></i>
-                            Property Portfolio Details
-                        </span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#2563EB] border border-[#BFDBFE]">Owner / Investor</span>
-                    </div>
-
-                    <!-- Company / Portfolio Name -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#1E40AF]">Company or Portfolio Name</label>
-                        <input type="text" data-signup-company class="auth-input bg-white" placeholder="e.g. Smith Property Group (or Private Landlord)">
-                    </div>
-
-                    <!-- Portfolio Size -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#1E40AF]">Portfolio Size</label>
-                        <select class="auth-input bg-white cursor-pointer" data-signup-portfolio>
-                            <option value="1-4">1–4 Units (Private Landlord)</option>
-                            <option value="5-15" selected>5–15 Units (Growing Portfolio)</option>
-                            <option value="16+">16+ Units / Commercial / HMOs</option>
-                        </select>
-                    </div>
-
-                    <!-- Landlord Scheme / Registration -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#1E40AF]">Landlord Accreditation / PRS ID (Optional)</label>
-                        <input type="text" data-signup-prsid class="auth-input bg-white font-mono" placeholder="e.g. NRLA #94821 or Council Reg">
-                    </div>
-
-                    <!-- Rent Payout Account Setup -->
-                    <div class="auth-field">
-                        <label class="text-[12px] font-bold text-[#1E40AF]">Rent Direct Payout Bank (UK Account)</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" class="auth-input bg-white font-mono text-[12.5px]" placeholder="Sort Code (e.g. 20-40-60)">
-                            <input type="text" class="auth-input bg-white font-mono text-[12.5px]" placeholder="Account No (8 Digits)">
-                        </div>
-                    </div>
-                </div>` : ''}
-
-                <!-- 3. SECURITY / PASSWORD -->
                 <div class="auth-field">
-                    <label class="text-[12px] font-bold text-[#334155]">Password</label>
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Property Invite Code (Optional)</label>
+                    <input type="text" data-signup-invite class="auth-input font-mono uppercase" placeholder="e.g. LHQ-PARK-2A">
+                </div>` : ''}
+
+                <div class="auth-field">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Password</label>
                     <div class="auth-input-wrap">
-                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Create strong password" style="padding-right:44px" autocomplete="new-password">
+                        <input type="${pwType}" data-signup-password class="auth-input" placeholder="Create password" style="padding-right:44px" autocomplete="new-password" value="${esc(isContractor ? (draft.password || '') : '')}">
                         <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
                     </div>
                 </div>
 
                 <div class="auth-field">
-                    <label class="text-[12px] font-bold text-[#334155]">Confirm Password</label>
-                    <input type="password" data-signup-confirm class="auth-input" placeholder="Re-enter password" autocomplete="new-password">
+                    <label class="block text-[13px] font-bold text-[#334155] mb-1.5">Confirm Password</label>
+                    <div class="auth-input-wrap">
+                        <input type="${confirmType}" data-signup-confirm class="auth-input" placeholder="Confirm password" style="padding-right:44px" autocomplete="new-password" value="${esc(isContractor ? (draft.confirmPassword || '') : '')}">
+                        <button type="button" data-action="toggle-confirm-password" class="auth-input-toggle"><i data-lucide="${STATE.showConfirmPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+                    </div>
                 </div>
 
-                <!-- Terms and Compliance Check -->
-                <label class="flex items-start gap-2.5 text-[11.5px] text-[#64748B] cursor-pointer pt-1">
-                    <input type="checkbox" checked class="mt-0.5 rounded text-[#2563EB] focus:ring-[#2563EB]">
-                    <span>
-                        I agree to Landlord HQ's <a href="#" class="text-[#2563EB] underline">Terms of Service</a>, 
-                        ${role === 'tenant' ? 'Right to Rent verification & Privacy Notice' : (role === 'contractor' ? 'Trade Service Provider Agreement & Insurance verification' : 'GDPR Data Processing Agreement')}.
-                    </span>
-                </label>
+                <!-- Password Requirements Box -->
+                <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9] space-y-1.5 text-left">
+                    <p class="text-[12px] font-medium text-[#475569] m-0 mb-2">Password must include:</p>
+                    <div class="flex items-center gap-2 text-[12px] text-[#059669]">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-[#10B981]"></i>
+                        <span>8+ characters</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[12px] text-[#059669]">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-[#10B981]"></i>
+                        <span>One number</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[12px] text-[#64748B]">
+                        <i data-lucide="circle" class="w-4 h-4 text-[#94A3B8]"></i>
+                        <span>One uppercase letter</span>
+                    </div>
+                </div>
 
-                <!-- Primary Submit Button -->
-                <button type="button" data-action="start-signup" class="btn-auth btn-auth-primary w-full py-3.5 text-[15px] font-extrabold shadow-md cursor-pointer flex items-center justify-center gap-2">
-                    <i data-lucide="${roleMeta.icon}" class="w-4 h-4"></i>
-                    <span>${roleMeta.btn}</span>
+                ${isContractor ? `
+                <button type="button" data-action="contractor-signup-next-step" class="btn-auth btn-auth-primary w-full py-3.5 text-[15px] font-bold rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2">
+                    <span>Continue to Company Details</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
+                ` : `
+                <button type="button" data-action="start-signup" class="btn-auth btn-auth-primary w-full py-3.5 text-[15px] font-bold rounded-xl shadow-md cursor-pointer flex items-center justify-center">
+                    Create Account
+                </button>
+                `}
+                `}
             </div>
 
-            <p class="auth-footer-text" style="margin-top:24px">Already have an account? <button type="button" data-go="sign-in">Sign In</button></p>
+            <!-- Footer Link -->
+            <p class="auth-footer-text text-center text-[13px] text-[#64748B] mt-5">Already have an account? <button type="button" data-go="sign-in" class="text-[#2563EB] font-bold hover:underline cursor-pointer">Sign In</button></p>
         </div>
     </div>`;
 }
@@ -2675,10 +2661,11 @@ function go(screen, opts = {}) {
         if (opts.propertyId != null) STATE.maintPropertyFilter = opts.propertyId;
         if (opts.unit) STATE.maintUnitFilter = opts.unit;
     }
-    if (screen === 'sign-up' && STATE.authRole === 'contractor') screen = 'contractor-sign-up';
-    if (['sign-in', 'sign-up', 'sign-up-phone', 'contractor-sign-up', 'forgot-password', 'verify-otp', 'reset-verify-code', 'reset-password', 'reset-success'].includes(screen)) {
-        screen = STATE.isAuthenticated ? getRoleHome() : 'role-select';
-        opts = { ...opts, noHistory: true };
+    if (['sign-in', 'sign-up', 'sign-up-phone', 'forgot-password', 'verify-otp', 'reset-verify-code', 'reset-password', 'reset-success'].includes(screen)) {
+        if (STATE.isAuthenticated) {
+            screen = getRoleHome();
+            opts = { ...opts, noHistory: true };
+        }
     }
     if (screen === 'sign-up' && ['sign-in', 'role-select'].includes(from)) {
         STATE.authReturnScreen = from;
@@ -3247,6 +3234,10 @@ function back() {
         return;
     }
     if (STATE.screen === 'role-select') return;
+    if (STATE.screen === 'sign-up' && STATE.authRole === 'contractor' && (STATE.contractorSignupStep || 1) > 1) {
+        retreatContractorSignupStep();
+        return;
+    }
 
     if (['sign-up', 'contractor-sign-up', 'sign-in', 'sign-up-phone', 'verify-otp', 'forgot-password'].includes(STATE.screen)) {
         go('role-select', { noHistory: true });
@@ -6763,7 +6754,9 @@ function bindImageFallbacks() {
         img.decoding = 'async';
         img.referrerPolicy = 'no-referrer';
         img.onerror = function () {
-            if (this.src !== IMG.fallback) this.src = IMG.fallback;
+            const isAvatar = this.classList.contains('rounded-full') || (this.src && this.src.includes('avatar'));
+            const fb = isAvatar ? (IMG?.avatar?.john || 'assets/auth-key-badge.png') : IMG.fallback;
+            if (this.src !== fb) this.src = fb;
         };
     });
 }
@@ -6991,8 +6984,18 @@ function handleDelegatedAction(e, el) {
     switch (action) {
         case 'switch-signup-role':
             return run(() => {
+                if (typeof captureContractorUnifiedDraft === 'function') captureContractorUnifiedDraft();
                 STATE.authRole = el.dataset.role || 'landlord';
+                STATE.contractorSignupStep = 1;
                 render();
+            });
+        case 'contractor-signup-next-step':
+            return run(() => {
+                if (typeof advanceContractorSignupStep === 'function') advanceContractorSignupStep();
+            });
+        case 'contractor-signup-prev-step':
+            return run(() => {
+                if (typeof retreatContractorSignupStep === 'function') retreatContractorSignupStep();
             });
         case 'open-contractor-schedule-modal':
             return run(() => {
@@ -7537,6 +7540,39 @@ function bindEvents() {
     });
     app.querySelectorAll('[data-action="start-signup"]').forEach(el => {
         el.onclick = startLandlordSignup;
+    });
+    app.querySelectorAll('[data-action="contractor-signup-next-step"]').forEach(el => {
+        el.onclick = advanceContractorSignupStep;
+    });
+    app.querySelectorAll('[data-action="contractor-signup-prev-step"]').forEach(el => {
+        el.onclick = retreatContractorSignupStep;
+    });
+    app.querySelectorAll('[data-action="pick-signup-cert-file"]').forEach(el => {
+        el.onclick = async () => {
+            if (typeof pickDocumentFiles === 'function') {
+                const files = await pickDocumentFiles({ multiple: false });
+                if (files && files.length) {
+                    STATE.signupCertFile = files[0];
+                    render();
+                    return;
+                }
+            }
+            const certName = document.querySelector('[data-signup-cert]')?.value?.trim() || 'Gas Safe Certificate';
+            STATE.signupCertFile = {
+                name: `${certName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf`,
+                url: 'assets/sample_cert.pdf',
+                mime: 'application/pdf',
+            };
+            toast('Certificate attached');
+            render();
+        };
+    });
+    app.querySelectorAll('[data-action="clear-signup-cert-file"]').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            STATE.signupCertFile = null;
+            render();
+        };
     });
     app.querySelectorAll('[data-action="resend-signup-code"]').forEach(el => {
         el.onclick = resendSignupCode;

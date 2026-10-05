@@ -692,6 +692,7 @@ let CONTRACTOR_USER = {
     jobsFor: 'Leaks, taps, sinks, pipes, toilets, blocked drains',
     companyReg: '12345678',
     vatNumber: 'GB123456789',
+    nid: 'NID-8821-4902-88',
     gasSafe: true,
     liabilityInsurance: true,
     certificates: [
@@ -973,16 +974,14 @@ function saveContractorCertificates() {
     syncContractorUserToDirectory();
 }
 
-function openContractorCertSlot(certType, replaceCertId = null) {
+function openContractorCertSlot(certType = 'other', replaceCertId = null) {
     const opt = contractorCertTypeOption(certType);
     STATE.contractorCertUpload = {
         open: true,
-        step: 'file',
         type: certType,
         replaceId: replaceCertId,
         file: null,
-        displayName: replaceCertId ? '' : opt.label,
-        validUntil: '',
+        displayName: replaceCertId ? '' : (certType === 'other' ? '' : opt.label),
     };
     render();
 }
@@ -999,79 +998,44 @@ async function pickContractorCertFileAction() {
     }
     const files = await pickDocumentFiles({ multiple: false });
     if (!files.length) return;
-    if (!STATE.contractorCertUpload) STATE.contractorCertUpload = { open: true, step: 'file' };
+    if (!STATE.contractorCertUpload) STATE.contractorCertUpload = { open: true };
     STATE.contractorCertUpload.file = files[0];
-    STATE.contractorCertUpload.displayName = STATE.contractorCertUpload.displayName || files[0].name.replace(/\.[^.]+$/, '');
-    STATE.contractorCertUpload.step = 'review';
+    if (!STATE.contractorCertUpload.displayName) {
+        STATE.contractorCertUpload.displayName = files[0].name.replace(/\.[^.]+$/, '');
+    }
     render();
 }
 
 function saveContractorCertUpload() {
-    const upload = STATE.contractorCertUpload;
-    if (!upload?.file || !upload.type) {
-        toast('Choose a file to upload');
-        return;
-    }
-    const opt = contractorCertTypeOption(upload.type);
+    const upload = STATE.contractorCertUpload || {};
     const nameInput = document.querySelector('[data-ctr-cert-name]');
-    const numInput = document.querySelector('[data-ctr-cert-num]');
-    const issuerInput = document.querySelector('[data-ctr-cert-issuer]');
-    const validInput = document.querySelector('[data-ctr-cert-valid]');
-    const name = (nameInput?.value?.trim() || upload.displayName || upload.file.name).trim();
+    const name = (nameInput?.value?.trim() || upload.displayName || upload.file?.name || '').trim();
     if (!name) {
-        toast('Enter a certificate name');
+        toast('Enter certificate name');
         return;
     }
-    const certNumber = (numInput?.value?.trim() || opt.defaultCertNumber || `REG-${Date.now().toString().slice(-6)}`).trim();
-    const issuer = (issuerInput?.value?.trim() || opt.defaultIssuer || 'Accredited UK Authority').trim();
-    const validUntil = validInput?.value?.trim() || 'Dec 2027';
+    const fileName = upload.file?.name || `${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf`;
     const now = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     const cert = {
         id: upload.replaceId ?? nextContractorCertId(CONTRACTOR_USER),
-        type: upload.type,
+        type: upload.type || 'other',
         name,
-        certNumber,
-        issuer,
+        fileName,
+        fileUrl: upload.file?.url || '#',
+        mime: upload.file?.mime || 'application/pdf',
         verified: true,
-        fileName: upload.file.name,
-        fileUrl: upload.file.url,
-        mime: upload.file.mime,
         uploadedAt: now,
-        validUntil,
     };
     ensureContractorCertificates(CONTRACTOR_USER);
     if (upload.replaceId != null) {
         CONTRACTOR_USER.certificates = CONTRACTOR_USER.certificates.filter(c => c.id !== upload.replaceId);
-    } else {
-        const existing = contractorCertByType(CONTRACTOR_USER, upload.type);
-        if (existing && upload.type !== 'other') {
-            CONTRACTOR_USER.certificates = CONTRACTOR_USER.certificates.filter(c => c.id !== existing.id);
-        }
     }
     CONTRACTOR_USER.certificates.push(cert);
     if (upload.type === 'gas_safe') CONTRACTOR_USER.gasSafe = true;
     if (upload.type === 'liability_insurance') CONTRACTOR_USER.liabilityInsurance = true;
-    if (upload.fromJob && upload.jobId != null && typeof CONTRACTOR_JOBS !== 'undefined') {
-        const job = CONTRACTOR_JOBS.find(j => j.id === upload.jobId);
-        if (job) {
-            if (!job.certificates) job.certificates = [];
-            job.certificates.push({
-                id: cert.id,
-                type: cert.type,
-                name: cert.name,
-                fileName: cert.fileName,
-                uploadedAt: cert.uploadedAt,
-                validUntil: cert.validUntil,
-            });
-            if (typeof saveContractorJobs === 'function') saveContractorJobs();
-            if (typeof autoFileContractorCertToLandlord === 'function') {
-                autoFileContractorCertToLandlord(job, cert);
-            }
-        }
-    }
     saveContractorCertificates();
     STATE.contractorCertUpload = null;
-    toast(upload.replaceId != null ? 'Certificate replaced & synced' : 'Certificate uploaded & synced to Landlord & Tenants');
+    toast(upload.replaceId != null ? 'Certificate replaced' : 'Certificate added');
     render();
 }
 
@@ -1332,79 +1296,58 @@ function renderExtraWorkModal() {
 function renderContractorCertUploadModal() {
     const upload = STATE.contractorCertUpload;
     if (!upload?.open) return '';
-    const opt = contractorCertTypeOption(upload.type);
-    const step = upload.step || 'file';
-    const title = step === 'review' ? 'Review certificate' : `Upload ${opt.label}`;
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
+    const currentName = upload.displayName || upload.file?.name?.replace(/\.[^.]+$/, '') || '';
+    const hasFile = !!upload.file;
 
     return `
     <div class="modal-overlay" data-action="close-contractor-cert-upload">
-        <div class="modal-card ctr-cert-modal max-w-[420px] p-5 rounded-2xl bg-white space-y-4 text-left shadow-xl" onclick="event.stopPropagation()">
+        <div class="modal-card max-w-[380px] p-5 rounded-2xl bg-white space-y-4 text-left shadow-xl" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="color:${opt.color};background:${opt.bg}">
-                        <i data-lucide="${opt.icon}" class="w-4 h-4"></i>
-                    </div>
-                    <h2 class="text-[16px] font-extrabold text-[#0F172A] m-0">${esc(title)}</h2>
-                </div>
-                <button type="button" data-action="close-contractor-cert-upload" class="text-[#94A3B8] hover:text-[#0F172A] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-
-            <div class="space-y-3">
-                ${step === 'file' ? `
-                <p class="text-[12.5px] text-[#475569] leading-relaxed">
-                    Upload official proof for <strong>${esc(opt.label)}</strong>. Landlords and tenants can view this verified accreditation on your profile.
-                </p>
-                <button type="button" data-action="pick-contractor-cert-file" class="card border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] hover:bg-[#EFF6FF]/40 transition-all p-6 text-center w-full rounded-2xl cursor-pointer">
-                    <i data-lucide="upload-cloud" class="w-9 h-9 text-[#2563EB] mx-auto"></i>
-                    <p class="text-[13.5px] font-bold text-[#0F172A] mt-2 mb-0.5">Choose Document File</p>
-                    <p class="text-[11.5px] text-[#64748B] m-0">PDF, JPG, PNG up to 10MB</p>
+                <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Add Certificate</h3>
+                <button type="button" data-action="close-contractor-cert-upload" class="text-[#94A3B8] hover:text-[#0F172A] cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
-                <div class="text-center pt-1">
-                    <button type="button" data-action="use-demo-contractor-cert-file" class="text-[12px] font-bold text-[#2563EB] hover:underline cursor-pointer">
-                        or use sample demo PDF (${esc(opt.label).toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf)
-                    </button>
-                </div>` : `
-                <div class="card p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style="background:${opt.bg};color:${opt.color}">
-                        <i data-lucide="file-check" class="w-4.5 h-4.5"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-[13px] font-bold text-[#0F172A] m-0 truncate">${esc(upload.file?.name || 'document.pdf')}</p>
-                        <p class="text-[11px] text-[#64748B] m-0">${esc(opt.label)} · Ready to verify</p>
-                    </div>
-                </div>
-
-                <div class="space-y-2.5 pt-1 text-left">
-                    <div>
-                        <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Certificate / Document Title</label>
-                        <input type="text" data-ctr-cert-name class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none" value="${esc(upload.displayName || opt.label)}" placeholder="${esc(opt.label)}">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Registration / Policy #</label>
-                            <input type="text" data-ctr-cert-num class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none font-mono" value="${esc(opt.defaultCertNumber || '')}" placeholder="e.g. GS-684920">
-                        </div>
-                        <div>
-                            <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Valid Until</label>
-                            <input type="text" data-ctr-cert-valid class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none" value="${esc(upload.validUntil || 'Mar 2027')}" placeholder="e.g. Mar 2027 or Lifetime">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-[11.5px] font-bold text-[#475569] mb-1">Issuing Authority / Underwriter</label>
-                        <input type="text" data-ctr-cert-issuer class="w-full px-3 py-2 text-[12.5px] rounded-xl border border-[#CBD5E1] text-[#0F172A] focus:border-[#2563EB] focus:outline-none" value="${esc(opt.defaultIssuer || '')}" placeholder="e.g. Gas Safe Register UK">
-                    </div>
-                </div>`}
             </div>
 
-            <div class="pt-2 flex items-center gap-2">
-                <button type="button" data-action="close-contractor-cert-upload" class="btn-secondary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold cursor-pointer">
+            <div class="space-y-3.5">
+                <div>
+                    <label class="block text-[12.5px] font-bold text-[#334155] mb-1.5">Certificate Name</label>
+                    <input type="text" data-ctr-cert-name class="auth-input w-full" placeholder="e.g. Gas Safe Registration" value="${esc(currentName)}">
+                </div>
+
+                <div>
+                    <label class="block text-[12.5px] font-bold text-[#334155] mb-1.5">Attachment</label>
+                    ${hasFile ? `
+                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <i data-lucide="paperclip" class="w-4 h-4 text-[#2563EB] shrink-0"></i>
+                            <span class="text-[13px] font-medium text-[#0F172A] truncate">${esc(upload.file.name)}</span>
+                        </div>
+                        <button type="button" data-action="pick-contractor-cert-file" class="text-[11.5px] font-bold text-[#2563EB] hover:underline cursor-pointer shrink-0">Change</button>
+                    </div>` : `
+                    <div class="p-4 rounded-xl border-2 border-dashed border-[#CBD5E1] bg-[#F8FAFC] hover:border-[#2563EB] hover:bg-[#EFF6FF]/30 transition-all text-center space-y-2">
+                        <button type="button" data-action="pick-contractor-cert-file" class="w-full text-center cursor-pointer">
+                            <i data-lucide="upload-cloud" class="w-6 h-6 text-[#2563EB] mx-auto"></i>
+                            <span class="block text-[12.5px] font-bold text-[#0F172A] mt-1">Choose Document File</span>
+                            <span class="block text-[11px] text-[#64748B]">PDF, PNG, JPG up to 10MB</span>
+                        </button>
+                        <div class="pt-1.5 border-t border-[#E2E8F0]">
+                            <button type="button" data-action="use-demo-contractor-cert-file" class="text-[11.5px] font-bold text-[#2563EB] hover:underline cursor-pointer">
+                                or attach sample PDF
+                            </button>
+                        </div>
+                    </div>`}
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+                <button type="button" data-action="close-contractor-cert-upload" class="btn-secondary flex-1 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer">
                     Cancel
                 </button>
-                ${step === 'review' ? `
-                <button type="button" data-action="save-contractor-cert" class="btn-primary flex-1 py-2.5 rounded-xl text-[12.5px] font-bold cursor-pointer">
-                    Save &amp; Verify
-                </button>` : ''}
+                <button type="button" data-action="save-contractor-cert" class="btn-primary flex-1 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer">
+                    Save Certificate
+                </button>
             </div>
         </div>
     </div>`;
@@ -1447,10 +1390,14 @@ function renderContractorCertList(profile, { editable = false, compact = false }
 }
 
 function screenContractorCertPreview() {
-    const profile = getContractorPublicProfile(STATE.contractorViewId);
-    const cert = ensureContractorCertificates(profile).find(c => c.id === STATE.contractorCertPreviewId);
-    if (!profile || !cert) {
-        return `${topBar('Certificate', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B]">Certificate not found</p></div>`;
+    let profile = getContractorPublicProfile(STATE.contractorViewId);
+    let cert = profile ? ensureContractorCertificates(profile).find(c => c.id === STATE.contractorCertPreviewId) : null;
+    if (!cert && typeof CONTRACTOR_USER !== 'undefined') {
+        cert = ensureContractorCertificates(CONTRACTOR_USER).find(c => c.id === STATE.contractorCertPreviewId);
+        profile = CONTRACTOR_USER;
+    }
+    if (!cert) {
+        return `${topBar('Certificate', { back: true })}<div class="screen-content"><p class="text-[13px] text-[#64748B] p-6 text-center">Certificate not found</p></div>`;
     }
     const opt = contractorCertTypeOption(cert.type);
     return `${topBar(cert.name, { back: true })}
@@ -1739,23 +1686,14 @@ function screenContractorAssignedProperties() {
     return `${topBar('Assigned Properties', { back: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 pb-12 text-left">
         <!-- Landlord & Portfolio Header Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-            <div class="flex items-center gap-3">
-                <img src="${(typeof IMG !== 'undefined' && IMG?.avatar?.landlord) || 'assets/landlord.png'}" class="w-12 h-12 rounded-2xl object-cover border border-[#E2E8F0]" alt="">
-                <div class="min-w-0 flex-1">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] mb-0.5">
-                        Client Portfolio
-                    </span>
-                    <h3 class="text-[16px] font-bold text-[#0F172A] m-0 truncate">John Smith's Properties</h3>
-                    <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${assignedProps.length} Authorized Buildings in London</p>
-                </div>
-            </div>
-            
-            <div class="p-3 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-start gap-2.5 text-[12px] text-[#166534]">
-                <i data-lucide="shield-check" class="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5"></i>
-                <p class="m-0 leading-relaxed text-[11.5px]">
-                    You have active maintenance authorization and key safe access for these properties. Always follow building access protocols and safety guidelines.
-                </p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5 text-left">
+            <img src="${(typeof IMG !== 'undefined' && (IMG?.avatar?.landlord || IMG?.avatar?.john)) || 'assets/landlord.png'}" class="w-12 h-12 rounded-2xl object-cover border border-[#E2E8F0] shrink-0" style="width:48px;height:48px;" alt="">
+            <div class="min-w-0 flex-1">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] mb-0.5">
+                    Client Portfolio
+                </span>
+                <h3 class="text-[16px] font-bold text-[#0F172A] m-0 truncate">John Smith's Properties</h3>
+                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${assignedProps.length} Authorized Buildings in London</p>
             </div>
         </div>
 
@@ -1763,45 +1701,23 @@ function screenContractorAssignedProperties() {
         <div class="space-y-3">
             <p class="text-[11.5px] font-bold text-[#64748B] uppercase tracking-wider m-0 px-1">Your Authorized Buildings (${assignedProps.length})</p>
             ${assignedProps.length ? assignedProps.map(p => {
-                const keyNotes = p.id === 0 ? 'Front porch key safe (Code #4821)' : p.id === 1 ? 'Concierge reception key' : p.id === 2 ? 'Basement master lockbox (Code #8812)' : 'Lockbox next to intercom (Code #1509)';
-                const stopcock = p.id === 0 ? 'Under kitchen sink (Flat 1) & main riser' : p.id === 1 ? 'Ground floor utility cupboard' : p.id === 2 ? 'Plant room adjacent to entrance' : 'Front corridor meter box';
                 const unitsCount = typeof getPropertyUnits === 'function' ? getPropertyUnits(p.id).length : 4;
                 const unitLabel = p.isHmo ? 'Rooms' : 'Units';
 
                 return `
-                <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
-                                <i data-lucide="building-2" class="w-5 h-5"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="text-[15px] font-bold text-[#0F172A] m-0 truncate">${esc(p.name)}</h4>
-                                <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${esc(p.address)} · ${unitsCount} ${unitLabel}</p>
-                            </div>
+                <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                            <i data-lucide="building-2" class="w-5 h-5"></i>
                         </div>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] shrink-0">
-                            Authorized
-                        </span>
-                    </div>
-
-                    <!-- Building Access Specs -->
-                    <div class="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 text-[12px]">
-                        <div class="flex items-start gap-2">
-                            <i data-lucide="key-round" class="w-3.5 h-3.5 text-[#2563EB] shrink-0 mt-0.5"></i>
-                            <div class="min-w-0">
-                                <span class="font-bold text-[#334155]">Key Access: </span>
-                                <span class="text-[#0F172A]">${esc(keyNotes)}</span>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-2">
-                            <i data-lucide="droplets" class="w-3.5 h-3.5 text-[#0284C7] shrink-0 mt-0.5"></i>
-                            <div class="min-w-0">
-                                <span class="font-bold text-[#334155]">Main Water Shut-off: </span>
-                                <span class="text-[#0F172A]">${esc(stopcock)}</span>
-                            </div>
+                        <div class="min-w-0">
+                            <h4 class="text-[15px] font-bold text-[#0F172A] m-0 truncate">${esc(p.name)}</h4>
+                            <p class="text-[12px] text-[#64748B] m-0 mt-0.5 truncate">${esc(p.address)} · ${unitsCount} ${unitLabel}</p>
                         </div>
                     </div>
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] shrink-0">
+                        Authorized
+                    </span>
                 </div>`;
             }).join('') : `<p class="text-[13px] text-[#64748B] italic p-4 text-center">No properties assigned yet.</p>`}
         </div>
@@ -1967,6 +1883,11 @@ function screenContractorPublicProfile() {
                     <span class="text-[#64748B]">VAT Registration</span>
                     <span class="font-bold text-[#0F172A] text-right font-mono">${escapeHtml(profile.vatNumber)}</span>
                 </div>` : ''}
+                ${profile.nid ? `
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[#64748B]">National ID (NID)</span>
+                    <span class="font-bold text-[#0F172A] text-right font-mono bg-[#F8FAFC] px-1.5 py-0.5 rounded border border-[#E2E8F0]">${escapeHtml(profile.nid)}</span>
+                </div>` : ''}
                 ${profile.address ? `
                 <div class="flex items-start justify-between py-2 gap-2">
                     <span class="text-[#64748B] shrink-0">Business Address</span>
@@ -2060,146 +1981,56 @@ function screenContractorPublicProfile() {
 
 function screenContractorCertifications() {
     const u = CONTRACTOR_USER;
-    const tradeMeta = resolveContractorTrade(u);
-    const requiredSlots = getRequiredCertTypesForTrade(tradeMeta.id);
     const certs = ensureContractorCertificates(u);
-    
-    // Calculate compliance metrics
-    const uploadedRequiredCount = requiredSlots.filter(s => contractorCertByType(u, s.type)).length;
-    const totalRequired = requiredSlots.length;
-    const isFullyCompliant = uploadedRequiredCount === totalRequired;
-    const percentCompliant = Math.round((uploadedRequiredCount / totalRequired) * 100);
-
-    // Other / Elective Certificates (not in mandatory trade slots)
-    const requiredTypeKeys = requiredSlots.map(s => s.type);
-    const otherCerts = certs.filter(c => !requiredTypeKeys.includes(c.type));
-
     const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
 
-    return `${topBar('Certifications', { back: true })}
+    return `${topBar('Certificates', { back: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-16">
-        <!-- Top Profile & Compliance Score Hero Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm space-y-3 text-left">
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3 min-w-0">
-                    <img src="${contractorAvatarForTrade(tradeMeta.id)}" class="w-12 h-12 rounded-2xl object-cover border border-[#E2E8F0] shrink-0" alt="">
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <h3 class="text-[15.5px] font-extrabold text-[#0F172A] m-0 truncate">${esc(u.company || `${u.firstName} ${u.lastName}`)}</h3>
-                        </div>
-                        <p class="text-[12px] font-semibold text-[#2563EB] m-0 mt-0.5 flex items-center gap-1">
-                            <i data-lucide="${tradeMeta.icon}" class="w-3.5 h-3.5"></i>
-                            <span>${esc(tradeMeta.label)}</span>
-                        </p>
-                    </div>
-                </div>
-
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${isFullyCompliant ? 'bg-[#ECFDF5] text-[#166534] border border-[#BBF7D0]' : 'bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A]'} text-[11px] font-black shrink-0">
-                    <i data-lucide="${isFullyCompliant ? 'shield-check' : 'alert-circle'}" class="w-3.5 h-3.5 ${isFullyCompliant ? 'text-[#16A34A]' : 'text-[#F59E0B]'}"></i>
-                    ${percentCompliant}% Verified
-                </span>
+        <!-- Clean minimal header with Add Certificate button -->
+        <div class="flex items-center justify-between pt-1">
+            <div>
+                <h3 class="text-[16px] font-bold text-[#0F172A] m-0">Certificates</h3>
+                <p class="text-[12px] text-[#64748B] m-0 mt-0.5">Documents &amp; trade credentials</p>
             </div>
-
-            <!-- Compliance Progress Bar -->
-            <div class="space-y-1.5 pt-1 border-t border-[#F1F5F9]">
-                <div class="flex items-center justify-between text-[11.5px]">
-                    <span class="font-bold text-[#334155]">${uploadedRequiredCount} of ${totalRequired} Mandatory Credentials on File</span>
-                    <span class="font-medium text-[#64748B]">${isFullyCompliant ? 'Fully Compliant' : 'Action Required'}</span>
-                </div>
-                <div class="w-full h-2 rounded-full bg-[#E2E8F0] overflow-hidden">
-                    <div class="h-full rounded-full transition-all duration-500 ${isFullyCompliant ? 'bg-[#16A34A]' : 'bg-[#2563EB]'}" style="width: ${percentCompliant}%"></div>
-                </div>
-            </div>
-
-            <!-- Informational Banner -->
-            <div class="p-3 rounded-xl ${isFullyCompliant ? 'bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534]' : 'bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF]'} text-[11.5px] leading-relaxed flex items-start gap-2">
-                <i data-lucide="${isFullyCompliant ? 'check-circle-2' : 'info'}" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                <p class="m-0">
-                    ${isFullyCompliant
-                        ? 'Your profile is fully verified for statutory UK compliance. Landlords can dispatch emergency maintenance and routine servicing directly to you.'
-                        : `Please upload your remaining credentials. Landlords in London require verified insurance and trade registrations before booking.`}
-                </p>
-            </div>
-        </div>
-
-        <!-- Section 1: Mandatory Trade Accreditations -->
-        <div class="space-y-2.5">
-            <div class="flex items-center justify-between px-1">
-                <div>
-                    <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Mandatory Trade Accreditations</h3>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Statutory UK requirements for ${esc(tradeMeta.label)}</p>
-                </div>
-                <span class="text-[11px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded-md">UK Regulated</span>
-            </div>
-
-            <div class="space-y-2.5">
-                ${requiredSlots.map(slot => renderContractorCertSlot(slot)).join('')}
-            </div>
-        </div>
-
-        <!-- Section 2: Additional Compliance & Trust Credentials -->
-        <div class="pt-2 space-y-2.5">
-            <div class="flex items-center justify-between px-1">
-                <div>
-                    <h3 class="text-[14px] font-extrabold text-[#0F172A] m-0">Additional Trust &amp; Safety Credentials</h3>
-                    <p class="text-[11px] text-[#64748B] m-0 mt-0.5">Recommended documents to increase landlord booking rates</p>
-                </div>
-            </div>
-
-            <!-- Existing Elective Certificates List -->
-            ${otherCerts.length ? `
-            <div class="space-y-2.5">
-                ${otherCerts.map(cert => {
-                    const opt = contractorCertTypeOption(cert.type);
-                    return `
-                    <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs" style="color:${opt.color};background:${opt.bg}">
-                                <i data-lucide="${opt.icon}" class="w-5 h-5"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="text-[13.5px] font-bold text-[#0F172A] m-0 truncate">${esc(cert.name)}</h4>
-                                <p class="text-[11.5px] text-[#64748B] m-0 mt-0.5 truncate">${esc(cert.fileName)} · <strong class="text-[#059669]">${cert.validUntil ? `Expires ${esc(cert.validUntil)}` : 'Verified'}</strong></p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-[11.5px] font-bold border border-[#BFDBFE] cursor-pointer">View</button>
-                            <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-white text-[#94A3B8] hover:text-[#DC2626] border border-[#E2E8F0] flex items-center justify-center cursor-pointer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>`;
-                }).join('')}
-            </div>` : ''}
-
-            <!-- Quick Add Recommended Badges Grid -->
-            <div class="grid grid-cols-2 gap-2 pt-1">
-                ${CONTRACTOR_ELECTIVE_CERT_TYPES.map(el => {
-                    const alreadyUploaded = certs.some(c => c.type === el.type);
-                    if (alreadyUploaded) return '';
-                    return `
-                    <button type="button" data-action="open-contractor-cert-slot" data-cert-type="${el.type}" class="p-3 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#2563EB] hover:bg-[#F8FAFC] transition-all text-left flex items-start gap-2.5 shadow-2xs cursor-pointer group">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="color:${el.color};background:${el.bg}">
-                            <i data-lucide="${el.icon}" class="w-4 h-4"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-[12px] font-bold text-[#0F172A] m-0 truncate group-hover:text-[#2563EB] transition-colors">${esc(el.label)}</p>
-                            <span class="text-[10px] text-[#2563EB] font-bold mt-0.5 inline-flex items-center gap-0.5">
-                                <i data-lucide="plus" class="w-3 h-3"></i> Add
-                            </span>
-                        </div>
-                    </button>`;
-                }).filter(Boolean).join('')}
-            </div>
-
-            <button type="button" data-action="open-contractor-cert-slot" data-cert-type="other" class="btn-secondary w-full py-3 text-[13px] font-bold flex items-center justify-center gap-1.5 rounded-2xl border border-[#E2E8F0] bg-white shadow-sm hover:border-[#2563EB] transition-colors cursor-pointer">
-                <i data-lucide="plus" class="w-4 h-4"></i> Add Other Certificate
+            <button type="button" data-action="open-add-cert-modal" class="px-3.5 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[12.5px] font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add Certificate</span>
             </button>
         </div>
 
-        <!-- Compliance & Security Assurance Note -->
-        <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B] flex items-center gap-2.5">
-            <i data-lucide="shield" class="w-4 h-4 text-[#16A34A] shrink-0"></i>
-            <span>All trade credentials and insurance policies are verified by Landlord HQ compliance specialists before public badge issuance.</span>
-        </div>
+        <!-- Minimal list of certificates -->
+        ${certs.length === 0 ? `
+        <div class="card p-8 rounded-2xl bg-white border border-[#E2E8F0] text-center space-y-2">
+            <i data-lucide="file-text" class="w-8 h-8 text-[#94A3B8] mx-auto"></i>
+            <p class="text-[13px] font-semibold text-[#0F172A] m-0">No certificates added</p>
+            <p class="text-[12px] text-[#64748B] m-0">Tap 'Add Certificate' above to attach your trade documents.</p>
+        </div>` : `
+        <div class="space-y-2.5">
+            ${certs.map(cert => `
+            <div class="card p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs hover:border-[#CBD5E1] transition-all flex items-center justify-between gap-3 text-left">
+                <div class="min-w-0 space-y-1.5">
+                    <h4 class="text-[14px] font-bold text-[#0F172A] m-0 truncate">${esc(cert.name)}</h4>
+                    
+                    <!-- Attachment button (clicking views the attachment) -->
+                    <div>
+                        <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#2563EB] text-[11.5px] font-medium transition-colors cursor-pointer text-left max-w-full truncate" title="View attachment">
+                            <i data-lucide="paperclip" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span class="truncate">${esc(cert.fileName || 'certificate.pdf')}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" data-action="view-contractor-cert" data-cert="${cert.id}" class="px-2.5 py-1.5 rounded-xl bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] text-[11.5px] font-bold border border-[#BFDBFE] flex items-center gap-1 cursor-pointer transition-colors" title="View certificate">
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                        <span>View</span>
+                    </button>
+                    <button type="button" data-action="delete-contractor-cert" data-cert="${cert.id}" class="w-8 h-8 rounded-xl bg-white hover:bg-[#FEF2F2] text-[#94A3B8] hover:text-[#DC2626] border border-[#E2E8F0] flex items-center justify-center transition-colors cursor-pointer" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>`).join('')}
+        </div>`}
     </div>
     ${renderContractorCertUploadModal()}`;
 }
@@ -2216,6 +2047,7 @@ function setActiveContractorProfile(account) {
         ...tradeFields,
         companyReg: account.companyReg || '',
         vatNumber: account.vatNumber || '',
+        nid: account.nid || CONTRACTOR_USER.nid || '',
         gasSafe: !!account.gasSafe,
         liabilityInsurance: !!account.liabilityInsurance,
         certificates: account.certificates?.length ? JSON.parse(JSON.stringify(account.certificates)) : (CONTRACTOR_USER.certificates || []),
@@ -2236,6 +2068,7 @@ function registerContractorFromSignup(account) {
         img: contractorAvatarForTrade(tradeFields.tradeId),
         phone: account.phone || '',
         email: account.email,
+        nid: account.nid || '',
         gasSafe: !!account.gasSafe,
         liabilityInsurance: !!account.liabilityInsurance,
         certificates: account.certificates ? JSON.parse(JSON.stringify(account.certificates)) : [],
@@ -2265,6 +2098,7 @@ function captureContractorSignupDraft() {
         jobsFor: tradeMeta.jobsFor,
         companyReg: contractorSignupField('companyReg') || prev.companyReg || '',
         vatNumber: contractorSignupField('vatNumber') || prev.vatNumber || '',
+        nid: contractorSignupField('nid') || prev.nid || '',
         gasSafe: document.querySelector('[data-ctr-signup="gasSafe"]')?.checked ?? prev.gasSafe ?? false,
         liabilityInsurance: document.querySelector('[data-ctr-signup="liabilityInsurance"]')?.checked ?? prev.liabilityInsurance ?? false,
         password: contractorSignupField('password') || prev.password || '',
@@ -2279,15 +2113,36 @@ function validateContractorSignupStep(step) {
 }
 
 function advanceContractorSignup() {
-    // Prototype: skip field checks — enter contractor demo from any signup step
-    if (typeof demoLogin === 'function') {
-        demoLogin('contractor');
+    captureContractorSignupDraft();
+    const step = STATE.contractorSignupStep || 1;
+    if (step < 2) {
+        STATE.contractorSignupStep = 2;
+        render();
         return;
     }
     submitContractorSignup();
 }
 
 function submitContractorSignup() {
+    captureContractorSignupDraft();
+    const d = STATE.contractorSignupDraft || {};
+    if (typeof CONTRACTOR_USER !== 'undefined') {
+        if (d.firstName) CONTRACTOR_USER.firstName = d.firstName;
+        if (d.lastName) CONTRACTOR_USER.lastName = d.lastName;
+        if (d.email) CONTRACTOR_USER.email = d.email;
+        if (d.phone) CONTRACTOR_USER.phone = d.phone;
+        if (d.company) CONTRACTOR_USER.company = d.company;
+        if (d.trade) CONTRACTOR_USER.trade = d.trade;
+        if (d.companyReg) CONTRACTOR_USER.companyReg = d.companyReg;
+        if (d.vatNumber) CONTRACTOR_USER.vatNumber = d.vatNumber;
+        if (d.nid) CONTRACTOR_USER.nid = d.nid;
+        CONTRACTOR_USER.gasSafe = !!d.gasSafe;
+        CONTRACTOR_USER.liabilityInsurance = !!d.liabilityInsurance;
+    }
+    if (typeof registerContractorFromSignup === 'function') {
+        registerContractorFromSignup(CONTRACTOR_USER);
+    }
+    STATE.contractorSignupStep = 1;
     if (typeof demoLogin === 'function') {
         demoLogin('contractor');
         return;
@@ -2298,26 +2153,35 @@ function screenContractorSignUp() {
     const step = STATE.contractorSignupStep || 1;
     const d = STATE.contractorSignupDraft || {};
     const pwType = STATE.showPassword ? 'text' : 'password';
-    const stepLabels = ['About you', 'Company', 'Credentials', 'Review'];
+    const stepLabels = ['Personal info', 'Company & credentials'];
     const progress = `
         <div class="wizard-progress ctr-signup-progress">
             <div class="wizard-steps">
-                ${[1, 2, 3, 4].map(s => `<div class="wizard-step ${s <= step ? 'active' : ''} ${s < step ? 'done' : ''}"></div>`).join('')}
+                ${[1, 2].map(s => `<div class="wizard-step ${s <= step ? 'active' : ''} ${s < step ? 'done' : ''}"></div>`).join('')}
             </div>
-            <p class="wizard-step-label">Step ${step} of 4 · ${stepLabels[step - 1]}</p>
+            <p class="wizard-step-label">Step ${step} of 2 · ${stepLabels[step - 1]}</p>
         </div>`;
     const invited = STATE.contractorInviteContext;
     const stepBody = {
         1: `
-            <p class="ux-intro">Your contact details — landlords and tenants reach you here for job updates.</p>
+            <p class="ux-intro">Your personal and contact details — landlords and tenants reach you here for job updates.</p>
             <div class="auth-form" style="margin-top:16px">
                 <div class="auth-field"><label>First name</label><input type="text" data-ctr-signup="firstName" class="auth-input" placeholder="Mike" value="${d.firstName || ''}" autocomplete="given-name"></div>
                 <div class="auth-field"><label>Last name</label><input type="text" data-ctr-signup="lastName" class="auth-input" placeholder="Thompson" value="${d.lastName || ''}" autocomplete="family-name"></div>
                 <div class="auth-field"><label>Work email</label><input type="email" data-ctr-signup="email" class="auth-input" placeholder="you@company.co.uk" value="${d.email || ''}" autocomplete="email" inputmode="email"></div>
                 <div class="auth-field"><label>Mobile number</label><input type="tel" data-ctr-signup="phone" class="auth-input" placeholder="+44 7700 900000" value="${d.phone || ''}" autocomplete="tel"></div>
+                <div class="auth-field">
+                    <label>Password</label>
+                    <div class="auth-input-wrap">
+                        <input type="${pwType}" data-ctr-signup="password" class="auth-input" placeholder="Min. 8 characters" style="padding-right:44px" autocomplete="new-password">
+                        <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
+                    </div>
+                </div>
+                <div class="auth-field"><label>Confirm password</label><input type="password" data-ctr-signup="confirmPassword" class="auth-input" placeholder="Re-enter password" autocomplete="new-password"></div>
+                ${typeof passwordRequirementsHtml === 'function' ? passwordRequirementsHtml() : ''}
             </div>`,
         2: `
-            <p class="ux-intro">Choose your trade so landlords know which jobs to send you.</p>
+            <p class="ux-intro">Set up your trade business, company registration, and compliance certificates.</p>
             <div class="auth-form" style="margin-top:16px">
                 <div class="auth-field"><label>Company / trading name</label><input type="text" data-ctr-signup="company" class="auth-input" placeholder="Plumber Pro Ltd" value="${d.company || ''}" autocomplete="organization"></div>
                 <div class="auth-field">
@@ -2330,50 +2194,20 @@ function screenContractorSignUp() {
                     <p class="ctr-signup-trade-hint-label">Jobs landlords assign you for</p>
                     <p class="ctr-signup-trade-hint-text">${contractorJobsForLabel(d)}</p>
                 </div>
+                <div class="auth-field"><label>National ID / NID number</label><input type="text" data-ctr-signup="nid" class="auth-input font-mono" placeholder="Optional — e.g. NID-8821-4902-88" value="${d.nid || ''}"></div>
                 <div class="auth-field"><label>Company registration no.</label><input type="text" data-ctr-signup="companyReg" class="auth-input" placeholder="Optional — e.g. 12345678" value="${d.companyReg || ''}"></div>
                 <div class="auth-field"><label>VAT number</label><input type="text" data-ctr-signup="vatNumber" class="auth-input" placeholder="Optional — e.g. GB123456789" value="${d.vatNumber || ''}"></div>
-            </div>`,
-        3: `
-            <p class="ux-intro">Certifications help landlords trust your work. You can upload documents after sign-up.</p>
-            <div class="ctr-signup-checks card p-4" style="margin-top:12px">
+            </div>
+            <div class="ctr-signup-checks card p-4" style="margin-top:14px">
+                <p class="text-[12px] font-bold text-[#334155] uppercase mb-2">Trade Certifications &amp; Cover</p>
                 <label class="ctr-signup-check">
                     <input type="checkbox" data-ctr-signup="gasSafe" ${d.gasSafe ? 'checked' : ''}>
                     <span><strong>Gas Safe registered</strong><br><span class="text-[12px] text-[#64748B]">Required for gas and boiler work</span></span>
                 </label>
-                <label class="ctr-signup-check">
+                <label class="ctr-signup-check mt-2">
                     <input type="checkbox" data-ctr-signup="liabilityInsurance" ${d.liabilityInsurance ? 'checked' : ''}>
                     <span><strong>Public liability insurance</strong><br><span class="text-[12px] text-[#64748B]">Recommended for all trades</span></span>
                 </label>
-            </div>
-            <div class="auth-form" style="margin-top:16px">
-                <div class="auth-field">
-                    <label>Password</label>
-                    <div class="auth-input-wrap">
-                        <input type="${pwType}" data-ctr-signup="password" class="auth-input" placeholder="Min. 8 characters" style="padding-right:44px" autocomplete="new-password">
-                        <button type="button" data-action="toggle-password" class="auth-input-toggle"><i data-lucide="${STATE.showPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i></button>
-                    </div>
-                </div>
-                <div class="auth-field"><label>Confirm password</label><input type="password" data-ctr-signup="confirmPassword" class="auth-input" placeholder="Re-enter password" autocomplete="new-password"></div>
-                ${typeof passwordRequirementsHtml === 'function' ? passwordRequirementsHtml() : ''}
-            </div>`,
-        4: `
-            <p class="ux-intro">Check everything before creating your contractor workspace.</p>
-            <div class="card p-4 ctr-signup-review" style="margin-top:12px">
-                <p class="ctr-section-label">Contact</p>
-                <p class="text-[14px] font-semibold text-[#0F172A] mt-1">${d.firstName || '—'} ${d.lastName || ''}</p>
-                <p class="text-[13px] text-[#64748B] mt-1">${d.email || '—'} · ${d.phone || '—'}</p>
-                <p class="ctr-section-label" style="margin-top:14px">Trade & category</p>
-                <div class="flex flex-wrap gap-2 mt-2">${renderContractorTradeBadge(d)}</div>
-                <p class="text-[13px] text-[#64748B] mt-2">${d.company || '—'}</p>
-                <p class="text-[12px] text-[#94A3B8] mt-1">For: ${contractorJobsForLabel(d)}</p>
-                ${d.companyReg ? `<p class="text-[12px] text-[#94A3B8] mt-1">Reg ${d.companyReg}</p>` : ''}
-                ${d.vatNumber ? `<p class="text-[12px] text-[#94A3B8] mt-1">VAT ${d.vatNumber}</p>` : ''}
-                <p class="ctr-section-label" style="margin-top:14px">Credentials</p>
-                <div class="flex flex-wrap gap-2 mt-2">
-                    ${d.gasSafe ? '<span class="badge" style="background:#ECFDF5;color:#059669">Gas Safe</span>' : ''}
-                    ${d.liabilityInsurance ? '<span class="badge" style="background:#EFF6FF;color:#2563EB">Liability insurance</span>' : ''}
-                    ${!d.gasSafe && !d.liabilityInsurance ? '<span class="text-[12px] text-[#64748B]">None selected yet</span>' : ''}
-                </div>
             </div>
             <p class="auth-security-note" style="margin-top:16px"><i data-lucide="shield" class="w-3.5 h-3.5"></i> We'll email a verification code before activating your account</p>`,
     };
@@ -2396,7 +2230,7 @@ function screenContractorSignUp() {
             </div>` : ''}
             ${progress}
             ${stepBody[step]}
-            <button type="button" data-action="contractor-signup-next" class="btn-auth btn-auth-primary">${step < 4 ? 'Continue' : 'Create account'}</button>
+            <button type="button" data-action="contractor-signup-next" class="btn-auth btn-auth-primary" style="margin-top:16px">${step < 2 ? 'Continue to Company Details' : 'Create Contractor Account'}</button>
             ${step > 1 ? `<button type="button" data-action="contractor-signup-back" class="btn-auth btn-auth-outline" style="margin-top:12px">Back</button>` : ''}
             <p class="auth-footer-text" style="margin-top:20px">Already have an account? <button type="button" data-action="contractor-sign-in">Sign In</button></p>
         </div>
@@ -7508,12 +7342,15 @@ function screenContractorProfile() {
     return `${topBar('Profile', { hideBell: true })}
     <div class="screen-content screen-content-sm screen-enter space-y-4 text-left pb-8">
         <!-- Top Profile User Card -->
-        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5 text-left">
-            <img src="${av}" class="w-13 h-13 rounded-full object-cover shrink-0 border border-[#E2E8F0]" alt="">
-            <div class="min-w-0 flex-1">
-                <h3 class="text-[16.5px] font-extrabold text-[#0F172A] truncate m-0">${esc(displayName)}</h3>
-                <p class="text-[13px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(subLabel)}</p>
+        <div class="card p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-between gap-3 text-left">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <img src="${av}" class="w-12 h-12 rounded-full object-cover shrink-0 border border-[#E2E8F0]" style="width:48px;height:48px;min-width:48px;min-height:48px;" alt="${esc(displayName)}">
+                <div class="min-w-0">
+                    <h3 class="text-[16px] font-extrabold text-[#0F172A] truncate m-0">${esc(displayName)}</h3>
+                    <p class="text-[12.5px] font-medium text-[#64748B] m-0 mt-0.5 truncate">${esc(subLabel)}</p>
+                </div>
             </div>
+            <button type="button" data-go="personal-info" class="text-[#2563EB] text-[12px] font-bold hover:underline cursor-pointer shrink-0">Edit</button>
         </div>
 
         <!-- Inset Group 1: Business & Account Settings -->
@@ -7642,6 +7479,7 @@ function saveContractorCompany() {
     }
     CONTRACTOR_USER.companyReg = (typeof fieldVal === 'function' ? fieldVal('companyReg') : '') || '';
     CONTRACTOR_USER.vatNumber = (typeof fieldVal === 'function' ? fieldVal('vatNumber') : '') || '';
+    CONTRACTOR_USER.nid = (typeof fieldVal === 'function' ? fieldVal('nid') : CONTRACTOR_USER.nid) || CONTRACTOR_USER.nid || '';
     CONTRACTOR_USER.phone = (typeof fieldVal === 'function' ? fieldVal('phone') : CONTRACTOR_USER.phone) || CONTRACTOR_USER.phone;
     CONTRACTOR_USER.email = (typeof fieldVal === 'function' ? fieldVal('email') : CONTRACTOR_USER.email) || CONTRACTOR_USER.email;
     if (typeof contractorAccountByEmail === 'function') {
@@ -7654,6 +7492,7 @@ function saveContractorCompany() {
             acc.jobsFor = CONTRACTOR_USER.jobsFor;
             acc.companyReg = CONTRACTOR_USER.companyReg;
             acc.vatNumber = CONTRACTOR_USER.vatNumber;
+            acc.nid = CONTRACTOR_USER.nid;
             acc.phone = CONTRACTOR_USER.phone;
             acc.email = CONTRACTOR_USER.email;
             if (typeof saveContractorAccounts === 'function') saveContractorAccounts();
@@ -7715,6 +7554,7 @@ function screenContractorCompany() {
             ${renderContractorMultiTradesPicker()}
             ${formField('Company Reg. No.', CONTRACTOR_USER.companyReg || '', 'text', '12345678', 'companyReg')}
             ${formField('VAT Number', CONTRACTOR_USER.vatNumber || '', 'text', 'GB123456789', 'vatNumber')}
+            ${formField('National ID / NID', CONTRACTOR_USER.nid || '', 'text', 'NID-8821-4902-88', 'nid')}
             ${formField('Phone', CONTRACTOR_USER.phone || '', 'tel', '', 'phone')}
             ${formField('Email', CONTRACTOR_USER.email || '', 'email', '', 'email')}
         </div>
@@ -8027,6 +7867,9 @@ function bindContractorEvents() {
             if (hint) hint.textContent = contractorJobsForLabel(STATE.contractorSignupDraft);
         };
     });
+    app.querySelectorAll('[data-action="open-add-cert-modal"]').forEach(el => {
+        el.onclick = (e) => { e.preventDefault(); openContractorCertSlot('other'); };
+    });
     app.querySelectorAll('[data-action="open-contractor-cert-slot"]').forEach(el => {
         el.onclick = (e) => { e.preventDefault(); openContractorCertSlot(el.dataset.certType); };
     });
@@ -8039,16 +7882,15 @@ function bindContractorEvents() {
     app.querySelectorAll('[data-action="use-demo-contractor-cert-file"]').forEach(el => {
         el.onclick = (e) => {
             e.preventDefault();
-            if (!STATE.contractorCertUpload) return;
-            const opt = contractorCertTypeOption(STATE.contractorCertUpload.type);
+            if (!STATE.contractorCertUpload) STATE.contractorCertUpload = { open: true, type: 'other' };
+            const nameInput = document.querySelector('[data-ctr-cert-name]');
+            const nameVal = nameInput?.value?.trim() || STATE.contractorCertUpload.displayName || 'Gas Safe Registration';
+            STATE.contractorCertUpload.displayName = nameVal;
             STATE.contractorCertUpload.file = {
-                name: `${opt.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf`,
-                url: '#',
+                name: `${nameVal.toLowerCase().replace(/[^a-z0-9]/g, '-')}-2026.pdf`,
+                url: 'assets/sample_cert.pdf',
                 mime: 'application/pdf',
             };
-            STATE.contractorCertUpload.displayName = opt.label;
-            STATE.contractorCertUpload.validUntil = 'Mar 2027';
-            STATE.contractorCertUpload.step = 'review';
             render();
         };
     });
